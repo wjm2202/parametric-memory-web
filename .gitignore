@@ -35,7 +35,6 @@ npm-debug.log*
 Thumbs.db
 
 # IDE
-.vscode/
 .idea/
 # Docs
 docs/WEB-DROPLET-SETUP-GUIDE.md

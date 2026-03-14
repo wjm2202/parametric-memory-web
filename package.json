@@ -14,7 +14,8 @@
     "test:coverage": "vitest run --coverage",
     "generate-docs": "tsx scripts/generate-docs.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
-    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\""
+    "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
+    "preflight": "npm run format && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
     "@stripe/stripe-js": "^5.0.0",
