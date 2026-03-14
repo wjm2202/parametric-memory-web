@@ -3,9 +3,9 @@ export default function Home() {
     <main className="flex min-h-screen flex-col items-center justify-center px-6">
       <div className="mx-auto max-w-3xl text-center">
         {/* Placeholder logo — Sprint W2 will replace */}
-        <div className="mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-2xl bg-brand-500/10 ring-1 ring-brand-500/20">
+        <div className="bg-brand-500/10 ring-brand-500/20 mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-2xl ring-1">
           <svg
-            className="h-8 w-8 text-brand-400"
+            className="text-brand-400 h-8 w-8"
             fill="none"
             viewBox="0 0 24 24"
             strokeWidth={1.5}
@@ -23,20 +23,19 @@ export default function Home() {
           Parametric Memory
         </h1>
 
-        <p className="mb-2 text-xl text-brand-300 font-medium">
+        <p className="text-brand-300 mb-2 text-xl font-medium">
           Persistent, Verifiable Memory for AI
         </p>
 
-        <p className="mx-auto mb-10 max-w-xl text-lg text-surface-200/70">
-          Enterprise-grade memory substrate with cryptographic proofs,
-          Markov-chain prediction, and sub-millisecond recall. Built for AI
-          systems that need to remember.
+        <p className="text-surface-200/70 mx-auto mb-10 max-w-xl text-lg">
+          Enterprise-grade memory substrate with cryptographic proofs, Markov-chain prediction, and
+          sub-millisecond recall. Built for AI systems that need to remember.
         </p>
 
         <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
           <a
             href="/docs"
-            className="inline-flex items-center gap-2 rounded-lg bg-brand-500 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-brand-500/25 transition-all hover:bg-brand-400 hover:shadow-brand-400/25"
+            className="bg-brand-500 shadow-brand-500/25 hover:bg-brand-400 hover:shadow-brand-400/25 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white shadow-lg transition-all"
           >
             Read the Docs
             <svg
@@ -55,7 +54,7 @@ export default function Home() {
           </a>
           <a
             href="/pricing"
-            className="inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-surface-200 ring-1 ring-surface-200/20 transition-all hover:bg-surface-200/5 hover:ring-surface-200/40"
+            className="text-surface-200 ring-surface-200/20 hover:bg-surface-200/5 hover:ring-surface-200/40 inline-flex items-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold ring-1 transition-all"
           >
             View Pricing
           </a>
@@ -63,7 +62,7 @@ export default function Home() {
 
         {/* Version badge */}
         <div className="mt-16">
-          <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-500/10 px-3 py-1 text-xs font-medium text-brand-300 ring-1 ring-brand-500/20">
+          <span className="bg-brand-500/10 text-brand-300 ring-brand-500/20 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
             v0.1.0 — Now accepting early access signups
           </span>

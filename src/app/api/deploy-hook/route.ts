@@ -14,22 +14,12 @@ import crypto from "crypto";
  * - Content type: application/json
  */
 
-function verifySignature(
-  payload: string,
-  signature: string | null,
-  secret: string,
-): boolean {
+function verifySignature(payload: string, signature: string | null, secret: string): boolean {
   if (!signature) return false;
 
-  const expected = `sha256=${crypto
-    .createHmac("sha256", secret)
-    .update(payload)
-    .digest("hex")}`;
+  const expected = `sha256=${crypto.createHmac("sha256", secret).update(payload).digest("hex")}`;
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected),
-  );
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
 
 export async function POST(request: NextRequest) {
@@ -37,10 +27,7 @@ export async function POST(request: NextRequest) {
 
   if (!secret) {
     console.error("GITHUB_WEBHOOK_SECRET not configured");
-    return NextResponse.json(
-      { error: "Webhook not configured" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Webhook not configured" }, { status: 500 });
   }
 
   const body = await request.text();
@@ -56,19 +43,13 @@ export async function POST(request: NextRequest) {
 
   // Only deploy on push to main
   if (ref !== "refs/heads/main") {
-    return NextResponse.json(
-      { message: `Ignoring push to ${ref}` },
-      { status: 200 },
-    );
+    return NextResponse.json({ message: `Ignoring push to ${ref}` }, { status: 200 });
   }
 
   const commitSha = payload.after?.substring(0, 7) || "unknown";
-  const commitMessage =
-    payload.head_commit?.message?.substring(0, 100) || "no message";
+  const commitMessage = payload.head_commit?.message?.substring(0, 100) || "no message";
 
-  console.log(
-    `Deploy hook triggered: ${commitSha} — ${commitMessage}`,
-  );
+  console.log(`Deploy hook triggered: ${commitSha} — ${commitMessage}`);
 
   // In production, this triggers the deploy script as a background process.
   // The actual deploy is handled by a shell script on the host, not by Next.js.

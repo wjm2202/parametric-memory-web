@@ -9,22 +9,12 @@ import crypto from "crypto";
  * and triggers a Next.js rebuild (ISR handles page updates).
  */
 
-function verifySignature(
-  payload: string,
-  signature: string | null,
-  secret: string,
-): boolean {
+function verifySignature(payload: string, signature: string | null, secret: string): boolean {
   if (!signature) return false;
 
-  const expected = `sha256=${crypto
-    .createHmac("sha256", secret)
-    .update(payload)
-    .digest("hex")}`;
+  const expected = `sha256=${crypto.createHmac("sha256", secret).update(payload).digest("hex")}`;
 
-  return crypto.timingSafeEqual(
-    Buffer.from(signature),
-    Buffer.from(expected),
-  );
+  return crypto.timingSafeEqual(Buffer.from(signature), Buffer.from(expected));
 }
 
 export async function POST(request: NextRequest) {
@@ -32,10 +22,7 @@ export async function POST(request: NextRequest) {
 
   if (!secret) {
     console.error("DOCS_WEBHOOK_SECRET not configured");
-    return NextResponse.json(
-      { error: "Docs webhook not configured" },
-      { status: 500 },
-    );
+    return NextResponse.json({ error: "Docs webhook not configured" }, { status: 500 });
   }
 
   const body = await request.text();
@@ -48,10 +35,7 @@ export async function POST(request: NextRequest) {
   const payload = JSON.parse(body);
 
   if (payload.ref !== "refs/heads/main") {
-    return NextResponse.json(
-      { message: `Ignoring push to ${payload.ref}` },
-      { status: 200 },
-    );
+    return NextResponse.json({ message: `Ignoring push to ${payload.ref}` }, { status: 200 });
   }
 
   console.log("Docs hook triggered — regenerating documentation");
@@ -71,8 +55,5 @@ export async function POST(request: NextRequest) {
 }
 
 export async function GET() {
-  return NextResponse.json(
-    { error: "Method not allowed" },
-    { status: 405 },
-  );
+  return NextResponse.json({ error: "Method not allowed" }, { status: 405 });
 }

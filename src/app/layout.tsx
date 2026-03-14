@@ -28,17 +28,11 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="en" className="dark">
-      <body className="min-h-screen font-body">
-        <div className="relative flex min-h-screen flex-col">
-          {children}
-        </div>
+      <body className="font-body min-h-screen">
+        <div className="relative flex min-h-screen flex-col">{children}</div>
       </body>
     </html>
   );
