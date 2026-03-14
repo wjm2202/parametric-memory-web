@@ -24,7 +24,7 @@ ARG GIT_COMMIT_SHA=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 ENV NEXT_TELEMETRY_DISABLED=1
 
-# Ensure public directory exists (may be empty early in development)
+# Ensure public directory exists (may have no static assets yet)
 RUN mkdir -p public
 
 RUN npm run build
@@ -38,11 +38,12 @@ ENV NEXT_TELEMETRY_DISABLED=1
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# Create non-root user (fixes security_medium_1)
+# Create non-root user
 RUN addgroup --system --gid 1001 nodejs && \
     adduser --system --uid 1001 nextjs
 
-# Copy standalone output
+# Copy standalone output and static assets
+# public dir is guaranteed to exist from builder (mkdir -p above)
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static

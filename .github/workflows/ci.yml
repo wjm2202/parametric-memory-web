@@ -68,8 +68,3 @@ jobs:
         run: npm run build
         env:
           GIT_COMMIT_SHA: ${{ github.sha }}
-
-      - name: Check bundle size
-        run: |
-          echo "::notice::Build completed successfully"
-          du -sh .next/ || true
