@@ -64,7 +64,7 @@ export default function Home() {
         <div className="mt-16">
           <span className="bg-brand-500/10 text-brand-300 ring-brand-500/20 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium ring-1">
             <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" />
-            v0.1.0 — Now accepting early access signups
+            v0.1.1 — CI/CD Pipeline Live
           </span>
         </div>
       </div>
