@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://parametric-memory.dev/sitemap.xml
