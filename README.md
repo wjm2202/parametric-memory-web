@@ -29,16 +29,28 @@ npm run dev
 | `npm run lint` | ESLint check |
 | `npm run typecheck` | TypeScript check |
 | `npm run test` | Run tests (Vitest) |
+| `npm run format` | Auto-fix formatting with Prettier |
+| `npm run format:check` | Check formatting without fixing |
+| `npm run preflight` | Run all CI checks locally before pushing |
 | `npm run generate-docs` | Regenerate docs from MMPM source |
-| `npm run format` | Format code with Prettier |
 
 ## Deployment
 
 Pushes to `main` trigger automatic deployment via GitHub Actions.
 
-The pipeline: **Lint → Typecheck → Test → Build → Deploy → Health Check**
+The pipeline: **CI** (Lint → Typecheck → Format Check → Test → Build) → **Deploy** (SSH to droplet → Docker build → Health check)
 
-If the health check fails, the deploy auto-rolls back to the previous commit.
+The Deploy workflow only runs after CI passes. If the health check fails, container logs are dumped for debugging.
+
+## Before Pushing
+
+Always run preflight locally first to catch issues before they hit CI:
+
+```bash
+npm run preflight
+```
+
+VS Code is configured to auto-format on save (Prettier + ESLint).
 
 ## Project Structure
 
