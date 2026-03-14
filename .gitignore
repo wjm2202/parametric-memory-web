@@ -38,6 +38,8 @@ Thumbs.db
 # IDE
 .vscode/
 .idea/
+# Docs
+docs/WEB-DROPLET-SETUP-GUIDE.md
 
 # Docker
 docker-compose.override.yml

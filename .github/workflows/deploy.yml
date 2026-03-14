@@ -30,7 +30,7 @@ jobs:
           script: |
             set -euo pipefail
 
-            cd /opt/parametric-memory-web
+            cd /home/deploy/parametric-memory-web
 
             # Pull latest code
             git fetch origin main
