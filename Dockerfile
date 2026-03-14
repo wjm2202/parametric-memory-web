@@ -24,6 +24,9 @@ ARG GIT_COMMIT_SHA=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Ensure public directory exists (may be empty early in development)
+RUN mkdir -p public
+
 RUN npm run build
 
 # --- Stage 3: Production ---
