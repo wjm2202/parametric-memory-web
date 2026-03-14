@@ -9,7 +9,7 @@ Commercial website, documentation, and developer portal for [Parametric Memory](
 - **Payments:** Stripe Checkout
 - **Docs:** MDX, auto-generated from MMPM source
 - **Analytics:** PostHog
-- **Hosting:** Docker + Nginx on DigitalOcean
+- **Hosting:** Docker + Nginx on DigitalOcean (SSH hardened, key-only access)
 
 ## Development
 
@@ -51,6 +51,10 @@ npm run preflight
 ```
 
 VS Code is configured to auto-format on save (Prettier + ESLint).
+
+## Infrastructure
+
+The production droplet is SSH-hardened: root login disabled, password authentication disabled, access restricted to `deploy` and `recover` users only (key-based). CI/CD deploys via the `deploy` user. The `recover` user exists as an emergency fallback with sudo access.
 
 ## Project Structure
 
