@@ -21,6 +21,9 @@ services:
       - POSTHOG_KEY=${POSTHOG_KEY}
       - POSTHOG_HOST=${POSTHOG_HOST:-https://us.i.posthog.com}
       - CONTACT_EMAIL=${CONTACT_EMAIL:-entityone22@gmail.com}
+      # Sprint 16: MMPM connection for Substrate Viewer proxy
+      - MMPM_API_URL=${MMPM_API_URL:-https://mmpm.co.nz}
+      - MMPM_VIZ_API_KEY=${MMPM_VIZ_API_KEY}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3000/api/health"]
       interval: 30s
