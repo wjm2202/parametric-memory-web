@@ -21,6 +21,8 @@ const nextConfig: NextConfig = {
       ],
     },
   ],
+  // Three.js / R3F needs transpilation for ESM compat
+  transpilePackages: ["three"],
 };
 
 export default nextConfig;

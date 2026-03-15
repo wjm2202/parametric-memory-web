@@ -1,6 +1,66 @@
+import Link from "next/link";
+
 export default function Home() {
   return (
     <main className="flex min-h-screen flex-col items-center justify-center px-6">
+      {/* Nav */}
+      <nav className="bg-surface-950/60 border-surface-200/10 fixed top-0 right-0 left-0 z-50 flex items-center justify-between border-b px-6 py-4 backdrop-blur-md">
+        <Link href="/" className="flex items-center gap-2 font-semibold tracking-tight text-white">
+          <svg
+            className="text-brand-400 h-5 w-5"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={1.5}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M9.813 15.904 9 18.75l-.813-2.846a4.5 4.5 0 0 0-3.09-3.09L2.25 12l2.846-.813a4.5 4.5 0 0 0 3.09-3.09L9 5.25l.813 2.846a4.5 4.5 0 0 0 3.09 3.09L15.75 12l-2.846.813a4.5 4.5 0 0 0-3.09 3.09Z"
+            />
+          </svg>
+          Parametric Memory
+        </Link>
+        <div className="flex items-center gap-6">
+          <a
+            href="/docs"
+            className="text-surface-200/70 text-sm transition-colors hover:text-white"
+          >
+            Docs
+          </a>
+          <a
+            href="/pricing"
+            className="text-surface-200/70 text-sm transition-colors hover:text-white"
+          >
+            Pricing
+          </a>
+          <a
+            href="/visualise"
+            className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex items-center gap-1.5 rounded-lg px-4 py-2 text-sm font-medium ring-1 transition-all"
+          >
+            <svg
+              className="h-4 w-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              strokeWidth={1.5}
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+              />
+            </svg>
+            Visualise
+          </a>
+        </div>
+      </nav>
+
       <div className="mx-auto max-w-3xl text-center">
         {/* Placeholder logo — Sprint W2 will replace */}
         <div className="bg-brand-500/10 ring-brand-500/20 mx-auto mb-8 flex h-16 w-16 items-center justify-center rounded-2xl ring-1">

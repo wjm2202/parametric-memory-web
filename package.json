@@ -18,6 +18,9 @@
     "preflight": "npm run format && npm run lint && npm run typecheck && npm run test && npm run build"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.7",
+    "@react-three/fiber": "^9.5.0",
+    "@react-three/postprocessing": "^3.0.4",
     "@stripe/stripe-js": "^5.0.0",
     "clsx": "^2.1.0",
     "d3": "^7.9.0",
@@ -26,12 +29,15 @@
     "next": "^15.2.0",
     "next-mdx-remote": "^5.0.0",
     "posthog-js": "^1.200.0",
+    "postprocessing": "^6.38.3",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "resend": "^4.0.0",
     "shiki": "^3.0.0",
     "stripe": "^17.0.0",
-    "tailwind-merge": "^3.0.0"
+    "tailwind-merge": "^3.0.0",
+    "three": "^0.183.2",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3.0.0",
@@ -42,6 +48,7 @@
     "@types/node": "^22.0.0",
     "@types/react": "^19.0.0",
     "@types/react-dom": "^19.0.0",
+    "@types/three": "^0.183.1",
     "@vitejs/plugin-react": "^4.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "^15.2.0",

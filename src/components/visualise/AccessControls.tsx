@@ -1,0 +1,208 @@
+"use client";
+
+import { useState } from "react";
+import { useMemoryStore } from "@/stores/memory-store";
+import { atomTreeDepth } from "@/stores/memory-store";
+import { ATOM_COLORS, AtomType } from "@/types/memory";
+
+/**
+ * Floating overlay controls for the Merkle access-path feature.
+ *
+ * S16-4: Now includes cryptographic verification badge with proof metadata.
+ *
+ * Contains:
+ *  - "Random Atom" button (bottom-right)
+ *  - Detail panel (top-center) with close button on LEFT, atom info, and verification badge
+ */
+export default function AccessControls() {
+  const atoms = useMemoryStore((s) => s.atoms);
+  const accessPath = useMemoryStore((s) => s.accessPath);
+  const triggerRandomAccess = useMemoryStore((s) => s.triggerRandomAccess);
+  const clearAccessPath = useMemoryStore((s) => s.clearAccessPath);
+  const proofVerification = useMemoryStore((s) => s.proofVerification);
+  const accessProofs = useMemoryStore((s) => s.accessProofs);
+
+  const [showProofDetail, setShowProofDetail] = useState(false);
+
+  // Find the accessed atom's metadata for the tooltip
+  const accessedAtom = accessPath ? atoms.find((a) => a.key === accessPath.atomKey) : null;
+
+  const accessedDepth = accessedAtom
+    ? (() => {
+        const shardAtoms = atoms
+          .filter((a) => a.shard === accessedAtom.shard)
+          .sort((a, b) => a.index - b.index);
+        const sortedIdx = shardAtoms.findIndex((a) => a.key === accessedAtom.key);
+        return sortedIdx >= 0 ? atomTreeDepth(sortedIdx) : 0;
+      })()
+    : 0;
+
+  const atomType = accessedAtom?.type ?? "other";
+  const typeColor = ATOM_COLORS[atomType as AtomType] ?? ATOM_COLORS.other;
+
+  return (
+    <>
+      {/* Floating "Random Atom" button — bottom right */}
+      <div className="pointer-events-none absolute right-6 bottom-6 flex justify-center">
+        <button
+          onClick={triggerRandomAccess}
+          disabled={atoms.length === 0}
+          className="pointer-events-auto rounded-lg bg-slate-800/80 px-5 py-2.5 font-mono text-xs tracking-wider text-amber-400 shadow-lg ring-1 shadow-amber-900/20 ring-amber-500/30 backdrop-blur-md transition-all duration-200 hover:bg-slate-700/80 hover:shadow-amber-800/30 hover:ring-amber-400/50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
+        >
+          <span className="mr-2">⚡</span>
+          ACCESS RANDOM ATOM
+        </button>
+      </div>
+
+      {/* Detail panel for the accessed atom */}
+      {accessPath && accessedAtom && (
+        <div className="animate-in fade-in slide-in-from-top-2 pointer-events-none absolute inset-x-0 top-20 flex justify-center duration-300">
+          <div className="pointer-events-auto rounded-lg bg-slate-900/90 px-4 py-2.5 font-mono text-xs shadow-lg ring-1 shadow-amber-900/20 ring-amber-500/30 backdrop-blur-md">
+            {/* Row 1: Close button (LEFT) + atom info + verification badge */}
+            <div className="flex items-center gap-3">
+              {/* Close button — fixed on the left */}
+              <button
+                onClick={() => {
+                  clearAccessPath();
+                  setShowProofDetail(false);
+                }}
+                className="flex h-5 w-5 shrink-0 items-center justify-center rounded text-slate-500 transition-colors hover:bg-slate-700/60 hover:text-slate-300"
+                title="Close"
+              >
+                <svg
+                  width="10"
+                  height="10"
+                  viewBox="0 0 10 10"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                >
+                  <path d="M1 1l8 8M9 1l-8 8" />
+                </svg>
+              </button>
+
+              {/* Type color dot */}
+              <div
+                className="h-2.5 w-2.5 shrink-0 rounded-full"
+                style={{
+                  backgroundColor: typeColor,
+                  boxShadow: `0 0 8px ${typeColor}`,
+                }}
+              />
+
+              {/* Atom key */}
+              <span className="font-semibold text-slate-200">{accessedAtom.key}</span>
+
+              {/* Divider */}
+              <span className="text-slate-600">·</span>
+
+              {/* Shard + depth */}
+              <span className="text-slate-400">Shard {accessedAtom.shard}</span>
+              <span className="text-slate-600">·</span>
+              <span className="text-slate-400">Depth {accessedDepth}</span>
+
+              {/* Path length */}
+              <span className="text-slate-600">·</span>
+              <span className="text-amber-400/70">{accessPath.positions.length - 1} hops</span>
+
+              {/* S16-4: Verification badge */}
+              <span className="text-slate-600">·</span>
+              <VerificationBadge
+                proofVerification={proofVerification}
+                showDetail={showProofDetail}
+                onToggleDetail={() => setShowProofDetail((v) => !v)}
+              />
+            </div>
+
+            {/* Row 2: Proof detail (expandable on badge click) */}
+            {showProofDetail && proofVerification && accessProofs && (
+              <div className="mt-2 border-t border-slate-700/50 pt-2 text-[10px] text-slate-400">
+                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+                  <span className="text-slate-500">Leaf</span>
+                  <span className="truncate">{proofVerification.leafHash.slice(0, 16)}...</span>
+                  <span className="text-slate-500">Root</span>
+                  <span className="truncate">{proofVerification.expectedRoot.slice(0, 16)}...</span>
+                  <span className="text-slate-500">Path</span>
+                  <span>
+                    {accessProofs.current.auditPath.length} shard +{" "}
+                    {accessProofs.shardRoot.auditPath.length} top ={" "}
+                    {proofVerification.auditPathLength} total
+                  </span>
+                  <span className="text-slate-500">Verified in</span>
+                  <span>{proofVerification.verificationTimeMs}ms (SHA-256, client-side)</span>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+/* ─── S16-4: Verification Badge sub-component ─── */
+
+import type { VerificationResult } from "@/lib/verify-merkle-proof";
+
+function VerificationBadge({
+  proofVerification,
+  showDetail,
+  onToggleDetail,
+}: {
+  proofVerification: VerificationResult | null;
+  showDetail: boolean;
+  onToggleDetail: () => void;
+}) {
+  if (!proofVerification) {
+    // Still loading — show spinner state
+    return (
+      <span className="flex items-center gap-1 text-slate-500" title="Verifying proof...">
+        <svg className="h-3 w-3 animate-spin" viewBox="0 0 12 12" fill="none">
+          <circle
+            cx="6"
+            cy="6"
+            r="5"
+            stroke="currentColor"
+            strokeWidth="1.5"
+            strokeDasharray="20"
+            strokeDashoffset="5"
+          />
+        </svg>
+        <span>VERIFYING</span>
+      </span>
+    );
+  }
+
+  if (proofVerification.verified) {
+    return (
+      <button
+        onClick={onToggleDetail}
+        className="flex items-center gap-1 text-emerald-400 transition-colors hover:text-emerald-300"
+        title={`Proof verified in ${proofVerification.verificationTimeMs}ms — click for details`}
+      >
+        {/* Shield checkmark icon */}
+        <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+          <path d="M8 0L1 3v4.5c0 4.1 2.9 7.9 7 8.5 4.1-.6 7-4.4 7-8.5V3L8 0zm-1.2 11.3L4 8.5l1.4-1.4 1.4 1.4 3.8-3.8 1.4 1.4-5.2 5.2z" />
+        </svg>
+        <span className="font-semibold tracking-wider">VERIFIED</span>
+        {showDetail && <span className="text-emerald-600">▾</span>}
+      </button>
+    );
+  }
+
+  // Verification failed
+  return (
+    <button
+      onClick={onToggleDetail}
+      className="flex items-center gap-1 text-yellow-400 transition-colors hover:text-yellow-300"
+      title="Proof verification failed — click for details"
+    >
+      <svg className="h-3.5 w-3.5" viewBox="0 0 16 16" fill="currentColor">
+        <path d="M8 0L1 3v4.5c0 4.1 2.9 7.9 7 8.5 4.1-.6 7-4.4 7-8.5V3L8 0zm-.8 11.5V10h1.6v1.5H7.2zm0-3V4.5h1.6v4H7.2z" />
+      </svg>
+      <span className="font-semibold tracking-wider">UNVERIFIED</span>
+      {showDetail && <span className="text-yellow-600">▾</span>}
+    </button>
+  );
+}
