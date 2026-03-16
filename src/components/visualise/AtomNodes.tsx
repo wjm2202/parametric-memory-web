@@ -38,7 +38,6 @@ const HOVER_COLOR = new THREE.Color("#ffffff").multiplyScalar(BLOOM_BOOST);
 const SELECT_COLOR = new THREE.Color("#f0abfc").multiplyScalar(BLOOM_BOOST);
 const ACCESS_COLOR = new THREE.Color("#fbbf24").multiplyScalar(BLOOM_BOOST * 1.3); // bright amber
 const TOMBSTONED_COLOR = new THREE.Color("#475569").multiplyScalar(0.6); // dim slate gray
-const HIDDEN_COLOR = new THREE.Color(0, 0, 0); // invisible — for unused slots
 
 /** S16-7: SSE animation flash colors per event type */
 const SSE_FLASH_COLORS: Record<SseAnimationType, THREE.Color> = {

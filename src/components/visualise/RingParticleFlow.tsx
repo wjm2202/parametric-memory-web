@@ -37,6 +37,11 @@ const BASE_COLOR = new THREE.Color("#0ea5e9").multiplyScalar(0.8); // dim sky bl
 const ACTIVE_COLOR = new THREE.Color("#22d3ee").multiplyScalar(2.5); // bright cyan
 const RING_INNER_OFFSET = -0.1; // particles orbit slightly inside the ring
 
+/** Module-level reusable active shard buffer — avoids array allocation every frame */
+const MAX_ACTIVE_SHARDS = 16;
+const _activeShardAngles = new Float32Array(MAX_ACTIVE_SHARDS);
+const _activeShardIntensities = new Float32Array(MAX_ACTIVE_SHARDS);
+
 // Module-level particle state (no GC)
 const angles = new Float32Array(PARTICLE_COUNT);
 const speeds = new Float32Array(PARTICLE_COUNT);
@@ -66,18 +71,21 @@ export default function RingParticleFlow() {
     const { sseAnimations } = useMemoryStore.getState();
     const now = performance.now();
 
-    // Collect active shard angles and their intensities
-    const activeShards: { angle: number; intensity: number }[] = [];
+    // Collect active shard angles/intensities into module-level buffers — zero allocation
+    let activeShardCount = 0;
     for (const anim of sseAnimations) {
+      if (activeShardCount >= MAX_ACTIVE_SHARDS) break;
       const elapsed = now - anim.startTime;
       if (elapsed < 0 || elapsed > SSE_ANIM_DURATION_MS) continue;
       const ramp = Math.min(1, elapsed / 200);
       const fadeStart = SSE_ANIM_DURATION_MS * 0.5;
-      const fade = elapsed > fadeStart
-        ? 1.0 - Math.min(1.0, (elapsed - fadeStart) / (SSE_ANIM_DURATION_MS - fadeStart))
-        : 1.0;
-      const shardAngle = SHARD_ANGLES[anim.shardId] ?? 0;
-      activeShards.push({ angle: shardAngle, intensity: ramp * fade });
+      const fade =
+        elapsed > fadeStart
+          ? 1.0 - Math.min(1.0, (elapsed - fadeStart) / (SSE_ANIM_DURATION_MS - fadeStart))
+          : 1.0;
+      _activeShardAngles[activeShardCount] = SHARD_ANGLES[anim.shardId] ?? 0;
+      _activeShardIntensities[activeShardCount] = ramp * fade;
+      activeShardCount++;
     }
 
     const clampedDelta = Math.min(delta, 0.05); // cap for tab-out
@@ -86,13 +94,13 @@ export default function RingParticleFlow() {
       // Check proximity to active shards
       let accelFactor = 0;
       let glowFactor = 0;
-      for (const { angle: sa, intensity } of activeShards) {
-        let angleDist = Math.abs(angles[i] - sa);
+      for (let si = 0; si < activeShardCount; si++) {
+        let angleDist = Math.abs(angles[i] - _activeShardAngles[si]);
         if (angleDist > Math.PI) angleDist = Math.PI * 2 - angleDist;
         if (angleDist < ACCEL_ZONE) {
           const proximity = 1 - angleDist / ACCEL_ZONE;
-          accelFactor = Math.max(accelFactor, proximity * intensity);
-          glowFactor = Math.max(glowFactor, proximity * intensity);
+          accelFactor = Math.max(accelFactor, proximity * _activeShardIntensities[si]);
+          glowFactor = Math.max(glowFactor, proximity * _activeShardIntensities[si]);
         }
       }
 
@@ -129,7 +137,11 @@ export default function RingParticleFlow() {
   });
 
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, PARTICLE_COUNT]} frustumCulled={false}>
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, PARTICLE_COUNT]}
+      frustumCulled={false}
+    >
       <sphereGeometry args={[1, 4, 4]} />
       <meshBasicMaterial toneMapped={false} transparent opacity={0.7} depthWrite={false} />
     </instancedMesh>

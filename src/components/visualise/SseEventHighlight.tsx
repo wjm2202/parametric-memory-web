@@ -10,31 +10,19 @@ import {
   SSE_ANIM_LINE_START_MS,
   SSE_ANIM_LINE_END_MS,
 } from "@/stores/memory-store";
-import type { SseAnimationType } from "@/stores/memory-store";
 
 /**
- * S16-7: SSE Event Highlight — draws animated line cascades from the hash ring
- * down to target atoms whenever SSE events arrive.
+ * SSE Event Highlight — draws animated line cascades from the hash ring
+ * down to target atoms for ACCESS events only.
  *
- * Each active SseAnimation in the store produces a line per target atom:
- *   shard ring point → atom position
+ * Add/tombstone are handled by MerkleRehashCascade (multi-phase Merkle path animation).
+ * Train events are handled by TrainParticles (bezier arc lightning).
  *
- * Line color depends on event type:
- *   add       → green-cyan (#22d3ee × 2.5)
- *   tombstone → pink (#f472b6 × 2.5)
- *   train     → white (#ffffff × 2.5)
- *   access    → amber (#fbbf24 × 2.5)
- *
- * The cascade ramps brightness from 0→1 over the line window, then fades.
+ * Access events get a simple ring → atom line with amber brightness cascade.
  * All geometry uses a pre-allocated Float32Array pool — zero GC per frame.
  */
 
-const COLORS: Record<SseAnimationType, THREE.Color> = {
-  add: new THREE.Color("#22d3ee").multiplyScalar(2.5),
-  tombstone: new THREE.Color("#f472b6").multiplyScalar(2.5),
-  train: new THREE.Color("#ffffff").multiplyScalar(2.5),
-  access: new THREE.Color("#fbbf24").multiplyScalar(2.5),
-};
+const ACCESS_LINE_COLOR = new THREE.Color("#fbbf24").multiplyScalar(2.5); // amber
 
 /** Max simultaneous line segments we'll draw (avoids unbounded allocation) */
 const MAX_LINES = 128;
@@ -92,7 +80,7 @@ export default function SseEventHighlight() {
 
       if (brightness < 0.01) continue;
 
-      const color = COLORS[anim.type];
+      const color = ACCESS_LINE_COLOR;
       const ringPos = shardRingPosition(anim.shardId);
 
       for (const atomKey of anim.atomKeys) {
@@ -128,19 +116,18 @@ export default function SseEventHighlight() {
       }
     }
 
-    // Update geometry
-    const posAttr = line.geometry.getAttribute("position") as THREE.BufferAttribute;
-    const colAttr = line.geometry.getAttribute("color") as THREE.BufferAttribute;
-
-    if (posAttr && colAttr) {
-      (posAttr.array as Float32Array).set(posBuffer);
-      posAttr.needsUpdate = true;
-      (colAttr.array as Float32Array).set(colorBuffer);
-      colAttr.needsUpdate = true;
+    // Update geometry — only flag GPU upload when there's something to draw
+    const hasContent = lineCount > 0;
+    if (hasContent || line.visible) {
+      const posAttr = line.geometry.getAttribute("position") as THREE.BufferAttribute;
+      const colAttr = line.geometry.getAttribute("color") as THREE.BufferAttribute;
+      if (posAttr && colAttr) {
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+      }
+      line.geometry.setDrawRange(0, lineCount * 2);
+      line.visible = hasContent;
     }
-
-    line.geometry.setDrawRange(0, lineCount * 2); // 2 vertices per line
-    line.visible = lineCount > 0;
   });
 
   return (

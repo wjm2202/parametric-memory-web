@@ -88,6 +88,7 @@ export default function MerkleScene() {
   const selectAtom = useMemoryStore((s) => s.selectAtom);
   const connectSSE = useMemoryStore((s) => s.connectSSE);
   const disconnectSSE = useMemoryStore((s) => s.disconnectSSE);
+  const dispose = useMemoryStore((s) => s.dispose);
   const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const resolvedRef = useRef(false);
 
@@ -117,11 +118,18 @@ export default function MerkleScene() {
       // Schedule polling as fallback (SSE-aware — slows down when connected)
       scheduleNext();
     });
+
+    // Hard navigate / tab close — React cleanup doesn't fire reliably,
+    // so we also hook beforeunload to dispose SSE, worker, and timers.
+    const handleUnload = () => dispose();
+    window.addEventListener("beforeunload", handleUnload);
+
     return () => {
+      window.removeEventListener("beforeunload", handleUnload);
       if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      disconnectSSE();
+      dispose(); // Full teardown — SSE + worker + timers
     };
-  }, [fetchTree, connectSSE, disconnectSSE, scheduleNext]);
+  }, [fetchTree, connectSSE, disconnectSSE, dispose, scheduleNext]);
 
   // Phase 2: progressively resolve real positions in background
   const atoms = useMemoryStore((s) => s.atoms);

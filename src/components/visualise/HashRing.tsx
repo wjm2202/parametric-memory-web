@@ -11,8 +11,6 @@ import {
   SSE_ANIM_DURATION_MS,
   SSE_ANIM_RING_MS,
 } from "@/stores/memory-store";
-import type { SseAnimationType } from "@/stores/memory-store";
-
 /**
  * The Hash Ring — a flat rotating ring in the XZ plane at RING_Y.
  *
@@ -28,18 +26,26 @@ import type { SseAnimationType } from "@/stores/memory-store";
  */
 
 const RING_COLOR = new THREE.Color("#0ea5e9").multiplyScalar(1.5); // bright sky blue
-const RING_GLOW_COLOR = new THREE.Color("#22d3ee"); // base for glow (will be scaled)
+/** Pre-computed scaled glow color — avoids Color.clone().multiplyScalar() per frame */
+const RING_GLOW_SCALED = new THREE.Color("#22d3ee").multiplyScalar(3.0);
 const BUCKET_COLOR = new THREE.Color("#334155"); // dim hash buckets
 const SHARD_MARKER_COLOR = new THREE.Color("#22d3ee").multiplyScalar(2.0); // bright cyan
-const SHARD_GLOW_COLOR = new THREE.Color("#fbbf24"); // amber glow for the active shard marker
+const CENTER_ROOT_COLOR = new THREE.Color("#f59e0b").multiplyScalar(2); // amber root marker
+/** Pre-computed scaled shard glow — avoids Color.clone().multiplyScalar() per frame */
+const SHARD_GLOW_SCALED = new THREE.Color("#fbbf24").multiplyScalar(3.0);
 
-/** S16-7: Per-type ring glow colors for SSE animations */
-const SSE_GLOW_COLORS: Record<SseAnimationType, THREE.Color> = {
-  add: new THREE.Color("#22d3ee").multiplyScalar(3.0), // green-cyan
-  tombstone: new THREE.Color("#f472b6").multiplyScalar(3.0), // pink
-  train: new THREE.Color("#ffffff").multiplyScalar(2.5), // white
-  access: new THREE.Color("#fbbf24").multiplyScalar(3.0), // amber
-};
+/** Module-level reusable per-shard SSE glow state — avoids array allocation every frame */
+const _shardSseIntensity = new Float32Array(4);
+const _shardSseColorIdx = new Int8Array(4); // index into SSE_GLOW_COLORS_ARRAY
+const SSE_GLOW_COLORS_ARRAY: THREE.Color[] = [
+  new THREE.Color("#22d3ee").multiplyScalar(3.0), // add
+  new THREE.Color("#f472b6").multiplyScalar(3.0), // tombstone
+  new THREE.Color("#ffffff").multiplyScalar(2.5), // train
+  new THREE.Color("#fbbf24").multiplyScalar(3.0), // amber/access
+];
+const SSE_TYPE_TO_IDX: Record<string, number> = { add: 0, tombstone: 1, train: 2, access: 3 };
+
+/** S16-7: Per-type ring glow colors — see SSE_GLOW_COLORS_ARRAY above */
 const RING_SEGMENTS = 256; // smooth circle
 const HASH_BUCKETS = 64; // visual markers around the ring
 const RING_TUBE_RADIUS = 0.18; // thicker ring for compact layout
@@ -92,14 +98,15 @@ export default function HashRing() {
     }
 
     // S16-7: Compute per-shard SSE glow — strongest active animation per shard wins
+    // Uses module-level arrays — zero allocation per frame
     const sseAnimations = useMemoryStore.getState().sseAnimations;
     const now = performance.now();
-    const shardSseGlow: Array<{ intensity: number; color: THREE.Color }> = [
-      { intensity: 0, color: SHARD_MARKER_COLOR },
-      { intensity: 0, color: SHARD_MARKER_COLOR },
-      { intensity: 0, color: SHARD_MARKER_COLOR },
-      { intensity: 0, color: SHARD_MARKER_COLOR },
-    ];
+    _shardSseIntensity[0] =
+      _shardSseIntensity[1] =
+      _shardSseIntensity[2] =
+      _shardSseIntensity[3] =
+        0;
+    _shardSseColorIdx[0] = _shardSseColorIdx[1] = _shardSseColorIdx[2] = _shardSseColorIdx[3] = -1;
     let maxSseRingGlow = 0;
 
     for (const anim of sseAnimations) {
@@ -115,12 +122,9 @@ export default function HashRing() {
           : 1.0;
       const intensity = ramp * fade;
 
-      if (intensity > shardSseGlow[anim.shardId]?.intensity) {
-        const entry = shardSseGlow[anim.shardId];
-        if (entry) {
-          entry.intensity = intensity;
-          entry.color = SSE_GLOW_COLORS[anim.type];
-        }
+      if (intensity > _shardSseIntensity[anim.shardId]) {
+        _shardSseIntensity[anim.shardId] = intensity;
+        _shardSseColorIdx[anim.shardId] = SSE_TYPE_TO_IDX[anim.type] ?? 3;
       }
       if (intensity > maxSseRingGlow) maxSseRingGlow = intensity;
     }
@@ -134,18 +138,14 @@ export default function HashRing() {
       const baseOpacity = 0.15;
       const glowOpacity = 0.6;
       mat.opacity = baseOpacity + combinedRingGlow * (glowOpacity - baseOpacity);
-      mat.color
-        .copy(RING_COLOR)
-        .lerp(RING_GLOW_COLOR.clone().multiplyScalar(3.0), combinedRingGlow);
+      mat.color.copy(RING_COLOR).lerp(RING_GLOW_SCALED, combinedRingGlow);
     }
 
     // Apply glow to main ring line
     if (mainLineRef.current) {
       const mat = mainLineRef.current.material as THREE.LineBasicMaterial;
       mat.opacity = 0.35 + combinedRingGlow * 0.55;
-      mat.color
-        .copy(RING_COLOR)
-        .lerp(RING_GLOW_COLOR.clone().multiplyScalar(3.0), combinedRingGlow);
+      mat.color.copy(RING_COLOR).lerp(RING_GLOW_SCALED, combinedRingGlow);
     }
 
     // Apply glow to inner ring line
@@ -160,21 +160,19 @@ export default function HashRing() {
       if (!mesh) continue;
       const mat = mesh.material as THREE.MeshBasicMaterial;
 
-      const sseEntry = shardSseGlow[i];
       const accessGlow = i === activeShardId ? glowIntensity : 0;
-      const sseGlow = sseEntry?.intensity ?? 0;
+      const sseGlow = _shardSseIntensity[i];
 
       if (sseGlow > accessGlow && sseGlow > 0) {
-        // SSE animation wins — use type-specific color
-        _scratchColor.copy(SHARD_MARKER_COLOR).lerp(sseEntry!.color, sseGlow);
+        // SSE animation wins — use type-specific color from pre-allocated array
+        const sseColor = SSE_GLOW_COLORS_ARRAY[_shardSseColorIdx[i]] ?? SHARD_MARKER_COLOR;
+        _scratchColor.copy(SHARD_MARKER_COLOR).lerp(sseColor, sseGlow);
         mat.color.copy(_scratchColor);
         const pulse = 1 + Math.sin(now * 0.01) * 0.15 * sseGlow;
         mesh.scale.setScalar(1.0 + sseGlow * 0.8 * pulse);
       } else if (accessGlow > 0) {
-        // Access path wins — amber glow
-        mat.color
-          .copy(SHARD_MARKER_COLOR)
-          .lerp(SHARD_GLOW_COLOR.clone().multiplyScalar(3.0), accessGlow);
+        // Access path wins — amber glow (pre-computed scaled color)
+        mat.color.copy(SHARD_MARKER_COLOR).lerp(SHARD_GLOW_SCALED, accessGlow);
         const pulse = 1 + Math.sin(now * 0.01) * 0.15 * accessGlow;
         mesh.scale.setScalar(1.0 + accessGlow * 0.8 * pulse);
       } else {
@@ -286,7 +284,7 @@ export default function HashRing() {
         <mesh position={[0, RING_Y, 0]}>
           <sphereGeometry args={[0.25, 16, 16]} />
           <meshBasicMaterial
-            color={new THREE.Color("#f59e0b").multiplyScalar(2)}
+            color={CENTER_ROOT_COLOR}
             toneMapped={false}
             transparent
             opacity={0.9}

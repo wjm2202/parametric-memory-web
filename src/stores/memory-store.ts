@@ -89,6 +89,24 @@ export const SSE_ANIM_ATOM_START_MS = 300;
 
 let sseAnimIdCounter = 0;
 
+/* ─── Batched pulse reset — coalesces multiple setTimeout callbacks into one state update ─── */
+let _pulseResetTimer: ReturnType<typeof setTimeout> | null = null;
+const _pulseResetKeys = new Set<string>();
+const PULSE_RESET_BATCH_MS = 200; // batch pulse resets within 200ms
+
+function schedulePulseReset(key: string): void {
+  _pulseResetKeys.add(key);
+  if (_pulseResetTimer) return; // batch already scheduled
+  _pulseResetTimer = setTimeout(() => {
+    _pulseResetTimer = null;
+    const keys = new Set(_pulseResetKeys);
+    _pulseResetKeys.clear();
+    useMemoryStore.setState((s) => ({
+      atoms: s.atoms.map((a) => (keys.has(a.key) ? { ...a, pulse: false } : a)),
+    }));
+  }, 1200 + PULSE_RESET_BATCH_MS);
+}
+
 /* ─── Store state ─── */
 interface MemoryState {
   /* --- data --- */
@@ -161,6 +179,8 @@ interface MemoryState {
   connectSSE: () => void;
   /** S16-3: Disconnect SSE */
   disconnectSSE: () => void;
+  /** Full teardown — SSE, timers, worker, caches. Call on page unload or route change. */
+  dispose: () => void;
 }
 
 const API_BASE = "/api/memory";
@@ -910,11 +930,8 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
     set((s) => ({
       atoms: s.atoms.map((a) => (a.key === atom ? { ...a, pulse: true } : a)),
     }));
-    setTimeout(() => {
-      set((s) => ({
-        atoms: s.atoms.map((a) => (a.key === atom ? { ...a, pulse: false } : a)),
-      }));
-    }, 1200);
+    // Batched pulse reset — coalesces multiple resets into a single state update
+    schedulePulseReset(atom);
   },
 
   triggerRandomAccess: () => {
@@ -1026,10 +1043,14 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   },
 
   cleanExpiredAnimations: () => {
+    // Short-circuit: skip entirely if no animations to clean
+    const anims = get().sseAnimations;
+    if (anims.length === 0) return;
     const now = performance.now();
+    // Quick check: if the oldest animation hasn't expired yet, nothing to do
+    if (now - anims[0].startTime < MAX_ANIM_DURATION_MS) return;
     set((s) => {
       const live = s.sseAnimations.filter((a) => now - a.startTime < MAX_ANIM_DURATION_MS);
-      // Only update if something was removed (avoid unnecessary renders)
       return live.length < s.sseAnimations.length ? { sseAnimations: live } : {};
     });
   },
@@ -1115,12 +1136,8 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
               tombstoned: false,
             };
             atoms.push(newAtom);
-            // Clear pulse after animation
-            setTimeout(() => {
-              useMemoryStore.setState((inner) => ({
-                atoms: inner.atoms.map((a) => (a.key === key ? { ...a, pulse: false } : a)),
-              }));
-            }, 1200);
+            // Batched pulse reset — coalesces multiple resets into a single state update
+            schedulePulseReset(key);
           }
 
           // Process tombstoned atoms — mark as tombstoned for fade animation
@@ -1179,8 +1196,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         for (const sequence of data.trained) {
           if (sequence.length < 2) continue;
           // Use first atom's shard for ring glow
-          const shard =
-            currentAtomMap.get(sequence[0])?.shard ?? hashToShard(sequence[0]);
+          const shard = currentAtomMap.get(sequence[0])?.shard ?? hashToShard(sequence[0]);
           pushSseAnimation("train", sequence, shard);
         }
       } catch (err) {
@@ -1250,5 +1266,28 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   disconnectSSE: () => {
     cleanupSSE();
     set({ sseStatus: "disconnected", sseClientCount: 0 });
+  },
+
+  dispose: () => {
+    // ─── SSE ───
+    cleanupSSE();
+    set({ sseStatus: "disconnected", sseClientCount: 0, sseAnimations: [] });
+
+    // ─── Layout worker ───
+    if (layoutWorker) {
+      layoutWorker.terminate();
+      layoutWorker = null;
+    }
+    if (layoutTimer) {
+      clearTimeout(layoutTimer);
+      layoutTimer = null;
+    }
+
+    // ─── Pulse reset batch timer ───
+    if (_pulseResetTimer) {
+      clearTimeout(_pulseResetTimer);
+      _pulseResetTimer = null;
+      _pulseResetKeys.clear();
+    }
   },
 }));

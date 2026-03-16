@@ -49,6 +49,9 @@ function quadBezier(
   out[2] = u * u * a[2] + 2 * u * t * ctrl[2] + t * t * b[2];
 }
 
+/** Module-level reusable control point — eliminates tuple allocation per arc per frame */
+const _ctrlPoint: [number, number, number] = [0, 0, 0];
+
 function computeControlPoint(
   a: [number, number, number],
   b: [number, number, number],
@@ -61,12 +64,17 @@ function computeControlPoint(
   const px = dz;
   const pz = -dx;
   const pLen = Math.sqrt(px * px + pz * pz) || 1;
-  return [
-    mx + (px / pLen) * ARC_LIFT * 0.3,
-    my + ARC_LIFT,
-    mz + (pz / pLen) * ARC_LIFT * 0.3,
-  ];
+  _ctrlPoint[0] = mx + (px / pLen) * ARC_LIFT * 0.3;
+  _ctrlPoint[1] = my + ARC_LIFT;
+  _ctrlPoint[2] = mz + (pz / pLen) * ARC_LIFT * 0.3;
+  return _ctrlPoint;
 }
+
+/** Module-level cache for sorted top-N transitions — avoids sort/slice at 60fps */
+let _cachedAtomKey: string | null = null;
+let _cachedWeightsVersion = -1;
+let _cachedTopTransitions: { to: string; effectiveWeight: number }[] = [];
+let _cachedMaxWeight = 1;
 
 export default function PredictionArcs() {
   const lineRef = useRef<THREE.LineSegments>(null);
@@ -93,12 +101,19 @@ export default function PredictionArcs() {
         const now = performance.now();
         const pulse = 0.6 + Math.sin(now * 0.003) * 0.2; // gentle pulse
 
-        // Sort by effectiveWeight descending, take top N
-        const topTransitions = [...atomWeights.transitions]
-          .sort((a, b) => b.effectiveWeight - a.effectiveWeight)
-          .slice(0, MAX_PREDICTIONS);
+        // Cache sorted top-N transitions — only recompute when atom or weights change
+        const weightsVersion = atomWeights.transitions.length; // cheap proxy for change detection
+        if (selectedAtom !== _cachedAtomKey || weightsVersion !== _cachedWeightsVersion) {
+          _cachedAtomKey = selectedAtom;
+          _cachedWeightsVersion = weightsVersion;
+          _cachedTopTransitions = [...atomWeights.transitions]
+            .sort((a, b) => b.effectiveWeight - a.effectiveWeight)
+            .slice(0, MAX_PREDICTIONS);
+          _cachedMaxWeight = _cachedTopTransitions[0]?.effectiveWeight ?? 1;
+        }
 
-        const maxWeight = topTransitions[0]?.effectiveWeight ?? 1;
+        const topTransitions = _cachedTopTransitions;
+        const maxWeight = _cachedMaxWeight;
 
         for (let ti = 0; ti < topTransitions.length; ti++) {
           const transition = topTransitions[ti];
@@ -111,7 +126,8 @@ export default function PredictionArcs() {
           const ctrl = computeControlPoint(sourceAtom.position, targetAtom.position);
 
           // Select color based on rank
-          const arcColor = ti === 0 ? PRIMARY_ARC_COLOR : ti === 1 ? SECONDARY_ARC_COLOR : DIM_ARC_COLOR;
+          const arcColor =
+            ti === 0 ? PRIMARY_ARC_COLOR : ti === 1 ? SECONDARY_ARC_COLOR : DIM_ARC_COLOR;
 
           // Dash pattern: every other pair of segments is dimmed
           const dashPhase = Math.floor(now * 0.004) % ARC_SEGMENTS; // animated dash crawl
@@ -133,7 +149,7 @@ export default function PredictionArcs() {
             posBuffer[offset + 5] = tmpB[2];
 
             // Animated dash: segments alternate bright/dim, pattern shifts over time
-            const isDash = ((s + dashPhase) % 4) < 2;
+            const isDash = (s + dashPhase) % 4 < 2;
             const brightness = isDash ? relWeight * pulse : relWeight * 0.15;
 
             for (let v = 0; v < 2; v++) {
@@ -148,17 +164,18 @@ export default function PredictionArcs() {
       }
     }
 
-    // Update geometry
-    const posAttr = line.geometry.getAttribute("position") as THREE.BufferAttribute;
-    const colAttr = line.geometry.getAttribute("color") as THREE.BufferAttribute;
-    if (posAttr && colAttr) {
-      (posAttr.array as Float32Array).set(posBuffer);
-      posAttr.needsUpdate = true;
-      (colAttr.array as Float32Array).set(colorBuffer);
-      colAttr.needsUpdate = true;
+    // Update geometry — only flag GPU upload when there's something to draw
+    const hasContent = lineCount > 0;
+    if (hasContent || line.visible) {
+      const posAttr = line.geometry.getAttribute("position") as THREE.BufferAttribute;
+      const colAttr = line.geometry.getAttribute("color") as THREE.BufferAttribute;
+      if (posAttr && colAttr) {
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+      }
+      line.geometry.setDrawRange(0, lineCount * 2);
+      line.visible = hasContent;
     }
-    line.geometry.setDrawRange(0, lineCount * 2);
-    line.visible = lineCount > 0;
   });
 
   return (

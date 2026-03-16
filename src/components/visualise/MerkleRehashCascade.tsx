@@ -54,6 +54,9 @@ const TOMB_REHASH_COLOR = new THREE.Color("#ef4444").multiplyScalar(3.0); // red
 const TOMB_REHASH_BRIGHT = new THREE.Color("#fecaca").multiplyScalar(4.0); // bright red leading edge
 const PARTICLE_COLOR_ADD = new THREE.Color("#67e8f9").multiplyScalar(4.0); // bright cyan particle
 const PARTICLE_COLOR_TOMB = new THREE.Color("#fb7185").multiplyScalar(4.0); // bright pink particle
+/** Pre-computed rehash particle colors (1.5× rehash) — avoids per-frame multiplyScalar */
+const ADD_REHASH_PARTICLE = new THREE.Color("#fbbf24").multiplyScalar(3.0 * 1.5);
+const TOMB_REHASH_PARTICLE = new THREE.Color("#ef4444").multiplyScalar(3.0 * 1.5);
 
 /* ─── Buffer limits ─── */
 const MAX_CASCADE_LINES = 256; // edges across all active cascades
@@ -64,15 +67,15 @@ const PARTICLE_RADIUS = 0.12;
 /* ─── Path cache ─── */
 type MerklePath = [number, number, number][]; // ordered: [ringPos, root, ..., leaf]
 const _pathCache = new Map<string, Map<string, MerklePath>>();
+/** Track last cleanup time so we don't scan every frame */
+let _lastCacheCleanup = 0;
+const CACHE_CLEANUP_INTERVAL_MS = 2000;
 
 /**
  * Compute the Merkle tree path from ring → root → ... → leaf for an atom.
  * Returns positions ordered from ring (top) down to leaf (bottom).
  */
-function computeMerklePath(
-  atom: VisualAtom,
-  allAtoms: VisualAtom[],
-): MerklePath {
+function computeMerklePath(atom: VisualAtom, allAtoms: VisualAtom[]): MerklePath {
   const shard = atom.shard;
 
   // Find this atom's sorted index within its shard (BFS layout order)
@@ -137,15 +140,6 @@ function getAnimPaths(
     paths.set(key, computeMerklePath(atom, allAtoms));
   }
   _pathCache.set(anim.id, paths);
-
-  // Prune old cache entries (keep only last 32)
-  if (_pathCache.size > 32) {
-    const keys = Array.from(_pathCache.keys());
-    for (let i = 0; i < keys.length - 32; i++) {
-      _pathCache.delete(keys[i]);
-    }
-  }
-
   return paths;
 }
 
@@ -153,11 +147,7 @@ function getAnimPaths(
  * Interpolate position along a path given progress 0→1.
  * Progress 0 = first point, 1 = last point.
  */
-function interpolatePath(
-  path: MerklePath,
-  progress: number,
-  out: [number, number, number],
-): void {
+function interpolatePath(path: MerklePath, progress: number, out: [number, number, number]): void {
   if (path.length === 0) return;
   if (path.length === 1) {
     out[0] = path[0][0];
@@ -197,6 +187,15 @@ export default function MerkleRehashCascade() {
     const { sseAnimations, atomMap, atoms } = useMemoryStore.getState();
     const now = performance.now();
 
+    // Periodic cache cleanup — evict paths for animations that no longer exist
+    if (now - _lastCacheCleanup > CACHE_CLEANUP_INTERVAL_MS) {
+      _lastCacheCleanup = now;
+      const liveIds = new Set(sseAnimations.map((a) => a.id));
+      for (const cachedId of _pathCache.keys()) {
+        if (!liveIds.has(cachedId)) _pathCache.delete(cachedId);
+      }
+    }
+
     let lineCount = 0;
     let pIdx = 0;
 
@@ -218,18 +217,25 @@ export default function MerkleRehashCascade() {
       let atomIdx = 0;
       for (const [, path] of paths) {
         if (lineCount >= MAX_CASCADE_LINES) break;
-        if (path.length < 2) { atomIdx++; continue; }
+        if (path.length < 2) {
+          atomIdx++;
+          continue;
+        }
 
         // Stagger: each atom in a batch starts slightly later
         const staggerOffset = atomIdx * STAGGER_MS;
         const atomElapsed = elapsed - staggerOffset;
-        if (atomElapsed < 0) { atomIdx++; continue; }
+        if (atomElapsed < 0) {
+          atomIdx++;
+          continue;
+        }
 
         const edgeCount = path.length - 1;
 
         // ─── Phase 1: DESCENT (ring → leaf) ───
         if (atomElapsed >= DESCENT_START_MS && atomElapsed < DESCENT_END_MS) {
-          const descentProgress = (atomElapsed - DESCENT_START_MS) / (DESCENT_END_MS - DESCENT_START_MS);
+          const descentProgress =
+            (atomElapsed - DESCENT_START_MS) / (DESCENT_END_MS - DESCENT_START_MS);
           // How many edges have been "reached" by the descending particle
           const edgesReached = descentProgress * edgeCount;
 
@@ -281,7 +287,8 @@ export default function MerkleRehashCascade() {
 
         // ─── Phase 2: REHASH CASCADE (leaf → root, upward golden wave) ───
         if (atomElapsed >= REHASH_START_MS && atomElapsed < REHASH_END_MS) {
-          const rehashProgress = (atomElapsed - REHASH_START_MS) / (REHASH_END_MS - REHASH_START_MS);
+          const rehashProgress =
+            (atomElapsed - REHASH_START_MS) / (REHASH_END_MS - REHASH_START_MS);
           // Rehash travels from leaf (last edge) UP to root (first edge)
           const rehashEdgesReached = rehashProgress * edgeCount;
 
@@ -292,7 +299,8 @@ export default function MerkleRehashCascade() {
             const reverseE = edgeCount - 1 - e;
 
             let edgeBrightness = 0;
-            const isLeadingEdge = reverseE < rehashEdgesReached && reverseE >= Math.floor(rehashEdgesReached) - 0.5;
+            const isLeadingEdge =
+              reverseE < rehashEdgesReached && reverseE >= Math.floor(rehashEdgesReached) - 0.5;
 
             if (reverseE < Math.floor(rehashEdgesReached)) {
               // Already rehashed — bright sustained glow that fades slowly
@@ -325,16 +333,22 @@ export default function MerkleRehashCascade() {
             lineCount++;
           }
 
-          // Traveling particle moves upward (leaf → root) during rehash
+          // Traveling particle moves upward (leaf → root) during rehash.
+          // The Merkle rehash propagates leaf → root, NOT past the root to the ring.
+          // Path = [ring(0), root(1), ..., leaf(N)].
+          // rehashProgress 0 → leaf (path[N]) = interpolateProgress 1.0
+          // rehashProgress 1 → root (path[1]) = interpolateProgress 1/N
           if (particles && pIdx < MAX_PARTICLES) {
-            // Reverse interpolation: progress 0 = leaf, progress 1 = ring
-            interpolatePath(path, 1.0 - rehashProgress, tmpPos);
+            const N = path.length - 1;
+            const rootFraction = 1 / N; // where the root sits in interpolation space
+            const interpProgress = 1.0 - rehashProgress * (1.0 - rootFraction);
+            interpolatePath(path, interpProgress, tmpPos);
             tmpObj.position.set(tmpPos[0], tmpPos[1], tmpPos[2]);
             const pulse = 1.2 + Math.sin(atomElapsed * 0.03) * 0.3;
             tmpObj.scale.setScalar(PARTICLE_RADIUS * pulse * 1.5); // larger during rehash
             tmpObj.updateMatrix();
             particles.setMatrixAt(pIdx, tmpObj.matrix);
-            tmpColor.copy(isTombstone ? TOMB_REHASH_COLOR : ADD_REHASH_COLOR).multiplyScalar(1.5);
+            tmpColor.copy(isTombstone ? TOMB_REHASH_PARTICLE : ADD_REHASH_PARTICLE);
             particles.setColorAt(pIdx, tmpColor);
             pIdx++;
           }
@@ -342,7 +356,8 @@ export default function MerkleRehashCascade() {
 
         // ─── Phase 3: SETTLE (fade out) ───
         if (atomElapsed >= SETTLE_START_MS && atomElapsed < SETTLE_END_MS) {
-          const settleProgress = (atomElapsed - SETTLE_START_MS) / (SETTLE_END_MS - SETTLE_START_MS);
+          const settleProgress =
+            (atomElapsed - SETTLE_START_MS) / (SETTLE_END_MS - SETTLE_START_MS);
           const fade = 1.0 - settleProgress;
 
           for (let e = 0; e < edgeCount; e++) {
@@ -371,17 +386,19 @@ export default function MerkleRehashCascade() {
       }
     }
 
-    // Update line geometry
-    const posAttr = line.geometry.getAttribute("position") as THREE.BufferAttribute;
-    const colAttr = line.geometry.getAttribute("color") as THREE.BufferAttribute;
-    if (posAttr && colAttr) {
-      (posAttr.array as Float32Array).set(posBuffer);
-      posAttr.needsUpdate = true;
-      (colAttr.array as Float32Array).set(colorBuffer);
-      colAttr.needsUpdate = true;
+    // Update line geometry — only flag GPU upload when there's something to draw
+    // (posBuffer/colorBuffer ARE the attribute backing arrays, shared by reference)
+    const hasContent = lineCount > 0;
+    if (hasContent || line.visible) {
+      const posAttr = line.geometry.getAttribute("position") as THREE.BufferAttribute;
+      const colAttr = line.geometry.getAttribute("color") as THREE.BufferAttribute;
+      if (posAttr && colAttr) {
+        posAttr.needsUpdate = true;
+        colAttr.needsUpdate = true;
+      }
+      line.geometry.setDrawRange(0, lineCount * 2);
+      line.visible = hasContent;
     }
-    line.geometry.setDrawRange(0, lineCount * 2);
-    line.visible = lineCount > 0;
 
     // Hide unused particles
     if (particles) {
@@ -428,7 +445,11 @@ export default function MerkleRehashCascade() {
       </lineSegments>
 
       {/* Traveling particle */}
-      <instancedMesh ref={particleRef} args={[undefined, undefined, MAX_PARTICLES]} frustumCulled={false}>
+      <instancedMesh
+        ref={particleRef}
+        args={[undefined, undefined, MAX_PARTICLES]}
+        frustumCulled={false}
+      >
         <sphereGeometry args={[1, 8, 8]} />
         <meshBasicMaterial toneMapped={false} transparent opacity={0.9} />
       </instancedMesh>
