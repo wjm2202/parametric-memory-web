@@ -52,7 +52,7 @@ export default function SseEventHighlight() {
     const line = lineRef.current;
     if (!line) return;
 
-    const { sseAnimations, atoms, cleanExpiredAnimations } = useMemoryStore.getState();
+    const { sseAnimations, atomMap, cleanExpiredAnimations } = useMemoryStore.getState();
 
     // Garbage-collect expired animations once per frame
     cleanExpiredAnimations();
@@ -67,6 +67,9 @@ export default function SseEventHighlight() {
 
     for (const anim of sseAnimations) {
       if (lineCount >= MAX_LINES) break;
+
+      // Add/tombstone handled by MerkleRehashCascade, train by TrainArcLightning
+      if (anim.type === "add" || anim.type === "tombstone" || anim.type === "train") continue;
 
       const elapsed = now - anim.startTime;
       if (elapsed > SSE_ANIM_DURATION_MS) continue;
@@ -95,7 +98,7 @@ export default function SseEventHighlight() {
       for (const atomKey of anim.atomKeys) {
         if (lineCount >= MAX_LINES) break;
 
-        const atom = atoms.find((a) => a.key === atomKey);
+        const atom = atomMap.get(atomKey);
         if (!atom) continue;
 
         const [ax, ay, az] = atom.position;

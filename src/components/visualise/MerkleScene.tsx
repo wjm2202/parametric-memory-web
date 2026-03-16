@@ -15,6 +15,9 @@ import StatsOverlay from "./StatsOverlay";
 import AccessPathHighlight from "./AccessPathHighlight";
 import SseEventHighlight from "./SseEventHighlight";
 import TrainParticles from "./TrainParticles";
+import MerkleRehashCascade from "./MerkleRehashCascade";
+import RingParticleFlow from "./RingParticleFlow";
+import PredictionArcs from "./PredictionArcs";
 import AccessControls from "./AccessControls";
 
 /* ─── Polling intervals ─── */
@@ -171,6 +174,15 @@ export default function MerkleScene() {
         </Safe>
         <Safe name="TrainParticles">
           <TrainParticles />
+        </Safe>
+        <Safe name="MerkleRehashCascade">
+          <MerkleRehashCascade />
+        </Safe>
+        <Safe name="RingParticleFlow">
+          <RingParticleFlow />
+        </Safe>
+        <Safe name="PredictionArcs">
+          <PredictionArcs />
         </Safe>
         <Safe name="BackgroundParticles">
           <BackgroundParticles />

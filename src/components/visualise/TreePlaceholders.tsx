@@ -13,13 +13,21 @@ import {
 const PLACEHOLDER_RADIUS = 0.06;
 
 /**
+ * Fixed capacity for placeholder InstancedMesh — never recreated.
+ * 4 shards × up to 255 nodes per shard tree (depth 7 = 2^8 - 1) = 1020 max.
+ * Round up with headroom.
+ */
+const MAX_PLACEHOLDER_INSTANCES = 1280;
+
+/**
  * Renders small dim spheres at every node position in each shard's visual tree.
  *
  * KEY OPTIMISATION: Placeholders are STATIC — positions never change between
  * layout updates. Matrices are set ONCE via useEffect (not useFrame), so this
- * component costs zero per-frame work. The previous version updated 1000+
- * instance matrices every frame at 60 fps; this version updates them only
- * when the geometry changes.
+ * component costs zero per-frame work.
+ *
+ * BUG FIX: Uses fixed-capacity InstancedMesh with mesh.count to avoid
+ * React recreating the WebGL mesh when placeholder count changes.
  *
  * Prefers pre-computed Float32Arrays from the layout worker (store.geometry).
  * Falls back to local computation if the worker hasn't responded yet.
@@ -96,15 +104,21 @@ export default function TreePlaceholders() {
   const colors = geometry?.placeholderColors ?? localData?.colors;
   const count = geometry?.placeholderCount ?? localData?.count ?? 0;
 
-  // Apply matrices ONCE when geometry changes — not every frame
+  // Apply matrices ONCE when geometry changes — not every frame.
+  // Also update mesh.count so GPU only draws active instances.
   useEffect(() => {
     const mesh = meshRef.current;
-    if (!mesh || count === 0 || !positions || !colors) return;
+    if (!mesh || count === 0 || !positions || !colors) {
+      if (mesh) mesh.count = 0;
+      return;
+    }
 
     const tmpObj = new THREE.Object3D();
     const tmpColor = new THREE.Color();
 
-    for (let i = 0; i < count; i++) {
+    const drawCount = Math.min(count, MAX_PLACEHOLDER_INSTANCES);
+
+    for (let i = 0; i < drawCount; i++) {
       tmpObj.position.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
       tmpObj.scale.setScalar(PLACEHOLDER_RADIUS);
       tmpObj.updateMatrix();
@@ -114,14 +128,17 @@ export default function TreePlaceholders() {
       mesh.setColorAt(i, tmpColor);
     }
 
+    mesh.count = drawCount;
     mesh.instanceMatrix.needsUpdate = true;
     if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
   }, [positions, colors, count]);
 
-  if (count === 0) return null;
-
   return (
-    <instancedMesh ref={meshRef} args={[undefined, undefined, count]}>
+    <instancedMesh
+      ref={meshRef}
+      args={[undefined, undefined, MAX_PLACEHOLDER_INSTANCES]}
+      frustumCulled={false}
+    >
       <sphereGeometry args={[1, 8, 8]} />
       <meshBasicMaterial toneMapped={false} transparent opacity={0.6} />
     </instancedMesh>

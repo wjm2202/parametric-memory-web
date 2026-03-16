@@ -16,6 +16,13 @@ const BASE_RADIUS = 0.18;
 const PULSE_SCALE = 1.6;
 
 /**
+ * Fixed capacity for the InstancedMesh — pre-allocated once, never recreated.
+ * Must be >= the maximum number of atoms we'll ever display.
+ * 2048 supports ~500 atoms per shard with headroom for growth.
+ */
+const MAX_INSTANCES = 2048;
+
+/**
  * Bloom-ready per-type colors.
  * MeshBasicMaterial + toneMapped=false + bright colors → bloom picks them up.
  */
@@ -31,6 +38,7 @@ const HOVER_COLOR = new THREE.Color("#ffffff").multiplyScalar(BLOOM_BOOST);
 const SELECT_COLOR = new THREE.Color("#f0abfc").multiplyScalar(BLOOM_BOOST);
 const ACCESS_COLOR = new THREE.Color("#fbbf24").multiplyScalar(BLOOM_BOOST * 1.3); // bright amber
 const TOMBSTONED_COLOR = new THREE.Color("#475569").multiplyScalar(0.6); // dim slate gray
+const HIDDEN_COLOR = new THREE.Color(0, 0, 0); // invisible — for unused slots
 
 /** S16-7: SSE animation flash colors per event type */
 const SSE_FLASH_COLORS: Record<SseAnimationType, THREE.Color> = {
@@ -41,12 +49,19 @@ const SSE_FLASH_COLORS: Record<SseAnimationType, THREE.Color> = {
 };
 
 /**
+ * Module-level reusable Map — cleared each frame, never reallocated.
+ * Eliminates GC pressure from per-frame `new Map()` allocation.
+ */
+const _atomAnimMap = new Map<string, { type: SseAnimationType; progress: number }>();
+
+/**
  * Optimised per-frame rendering of atom spheres.
  *
- * Key optimisations over the original:
- *   1. Pre-compute a sin/cos lookup table instead of calling Math.sin/cos per atom per frame
- *   2. Use indices for selected/hovered comparison instead of string equality
- *   3. Only flag needsUpdate on instanceColor if any color actually changed
+ * Key optimisations:
+ *   1. Fixed-capacity InstancedMesh — never recreated when atom count changes
+ *   2. mesh.count updated to actual atom count (GPU only draws active instances)
+ *   3. Module-level reusable Map for SSE animation lookups (zero GC per frame)
+ *   4. Pre-computed sin/cos lookup, index-based comparisons
  */
 export default function AtomNodes() {
   const meshRef = useRef<THREE.InstancedMesh>(null);
@@ -78,7 +93,14 @@ export default function AtomNodes() {
 
   useFrame((state) => {
     const mesh = meshRef.current;
-    if (!mesh || atoms.length === 0) return;
+    if (!mesh) return;
+
+    const atomCount = atoms.length;
+
+    // Update mesh.count so GPU only draws active instances
+    mesh.count = atomCount;
+
+    if (atomCount === 0) return;
 
     const time = state.clock.elapsedTime;
     const now = performance.now();
@@ -88,23 +110,23 @@ export default function AtomNodes() {
     let colorChanged = false;
 
     // S16-7: Build a quick lookup of active SSE animations per atom key.
-    // Only done once per frame, not per-atom. Typically 0-4 animations.
+    // Reuse module-level Map — zero allocation per frame.
     const sseAnimations = useMemoryStore.getState().sseAnimations;
-    const atomAnimMap = new Map<string, { type: SseAnimationType; progress: number }>();
+    _atomAnimMap.clear();
     for (const anim of sseAnimations) {
       const elapsed = now - anim.startTime;
       if (elapsed < SSE_ANIM_ATOM_START_MS || elapsed > SSE_ANIM_DURATION_MS) continue;
       const progress =
         (elapsed - SSE_ANIM_ATOM_START_MS) / (SSE_ANIM_DURATION_MS - SSE_ANIM_ATOM_START_MS);
       for (const key of anim.atomKeys) {
-        const existing = atomAnimMap.get(key);
+        const existing = _atomAnimMap.get(key);
         if (!existing || progress < existing.progress) {
-          atomAnimMap.set(key, { type: anim.type, progress });
+          _atomAnimMap.set(key, { type: anim.type, progress });
         }
       }
     }
 
-    for (let i = 0; i < atoms.length; i++) {
+    for (let i = 0; i < atomCount; i++) {
       const atom = atoms[i];
       const [x, y, z] = atom.position;
 
@@ -116,7 +138,7 @@ export default function AtomNodes() {
       let scale = BASE_RADIUS;
 
       // S16-7: SSE animation effects on scale
-      const sseAnim = atomAnimMap.get(atom.key);
+      const sseAnim = _atomAnimMap.get(atom.key);
 
       if (atom.tombstoned) {
         // Tombstoned atoms are smaller and have no animation
@@ -198,7 +220,7 @@ export default function AtomNodes() {
         selectedIdx >= 0 ||
         hoveredIdx >= 0 ||
         accessedIdx >= 0 ||
-        atomAnimMap.size > 0)
+        _atomAnimMap.size > 0)
     ) {
       mesh.instanceColor.needsUpdate = true;
     }
@@ -207,7 +229,7 @@ export default function AtomNodes() {
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
-      if (e.instanceId !== undefined && atoms[e.instanceId]) {
+      if (e.instanceId !== undefined && e.instanceId < atoms.length && atoms[e.instanceId]) {
         selectAtom(atoms[e.instanceId].key);
       }
     },
@@ -217,7 +239,7 @@ export default function AtomNodes() {
   const handlePointerOver = useCallback(
     (e: ThreeEvent<PointerEvent>) => {
       e.stopPropagation();
-      if (e.instanceId !== undefined && atoms[e.instanceId]) {
+      if (e.instanceId !== undefined && e.instanceId < atoms.length && atoms[e.instanceId]) {
         hoverAtom(atoms[e.instanceId].key);
         document.body.style.cursor = "pointer";
       }
@@ -230,15 +252,14 @@ export default function AtomNodes() {
     document.body.style.cursor = "auto";
   }, [hoverAtom]);
 
-  if (atoms.length === 0) return null;
-
   return (
     <instancedMesh
       ref={meshRef}
-      args={[undefined, undefined, atoms.length]}
+      args={[undefined, undefined, MAX_INSTANCES]}
       onClick={handleClick}
       onPointerOver={handlePointerOver}
       onPointerOut={handlePointerOut}
+      frustumCulled={false}
     >
       <sphereGeometry args={[1, SPHERE_SEGMENTS, SPHERE_SEGMENTS]} />
       <meshBasicMaterial toneMapped={false} transparent opacity={0.92} />

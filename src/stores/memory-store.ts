@@ -75,6 +75,10 @@ export interface SseAnimation {
 
 /** Total animation duration — after this, the animation is garbage-collected */
 export const SSE_ANIM_DURATION_MS = 1200;
+/** Extended duration for Merkle cascade animations (add/tombstone) */
+export const CASCADE_ANIM_DURATION_MS = 2200;
+/** Max animation duration across all types — used for GC */
+export const MAX_ANIM_DURATION_MS = 2200;
 /** How long the ring glow ramps up */
 export const SSE_ANIM_RING_MS = 200;
 /** Line cascade: start after ring glow begins, finish before atom effect */
@@ -90,6 +94,8 @@ interface MemoryState {
   /* --- data --- */
   treeVersion: number;
   atoms: VisualAtom[];
+  /** O(1) key→atom lookup — maintained alongside atoms array. Use in render loops instead of atoms.find(). */
+  atomMap: Map<string, VisualAtom>;
   atomDetails: Map<string, AtomDetailResponse>;
   weights: Map<string, WeightsResponse>;
   treeHead: TreeHeadResponse | null;
@@ -201,7 +207,7 @@ export const RING_RADIUS = 5;
 /** Hash ring Y position — where shard roots meet the ring */
 export const RING_Y = 14;
 /** Gap between ring and root node */
-const ROOT_GAP = 1.5;
+export const ROOT_GAP = 1.5;
 
 /**
  * Spacing between adjacent nodes at each level.
@@ -401,19 +407,23 @@ function handleWorkerResult(e: MessageEvent) {
     posMap.set(key, position);
   }
 
-  useMemoryStore.setState((s) => ({
-    atoms: s.atoms.map((a) => {
+  useMemoryStore.setState((s) => {
+    const updatedAtoms = s.atoms.map((a) => {
       const pos = posMap.get(a.key);
       return pos ? { ...a, position: pos } : a;
-    }),
-    geometry: {
-      placeholderPositions: placeholderPositions as Float32Array,
-      placeholderColors: placeholderColors as Float32Array,
-      placeholderCount: placeholderCount as number,
-      treeEdges: treeEdges as Float32Array,
-      ringEdges: ringEdges as Float32Array,
-    },
-  }));
+    });
+    return {
+      atoms: updatedAtoms,
+      atomMap: buildAtomMap(updatedAtoms),
+      geometry: {
+        placeholderPositions: placeholderPositions as Float32Array,
+        placeholderColors: placeholderColors as Float32Array,
+        placeholderCount: placeholderCount as number,
+        treeEdges: treeEdges as Float32Array,
+        ringEdges: ringEdges as Float32Array,
+      },
+    };
+  });
 }
 
 /**
@@ -442,7 +452,7 @@ function requestLayout() {
   } else {
     // Main-thread fallback (synchronous)
     const positioned = relayout(atoms);
-    useMemoryStore.setState({ atoms: positioned });
+    useMemoryStore.setState({ atoms: positioned, atomMap: buildAtomMap(positioned) });
     // No geometry pre-computation in fallback — components compute their own via useMemo
   }
 }
@@ -515,6 +525,15 @@ function delay(ms: number): Promise<void> {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
+/** Rebuild atomMap from atoms array — O(n), called when atoms change */
+function buildAtomMap(atoms: VisualAtom[]): Map<string, VisualAtom> {
+  const map = new Map<string, VisualAtom>();
+  for (const a of atoms) {
+    map.set(a.key, a);
+  }
+  return map;
+}
+
 /* ─── S16-3: SSE connection management (module-level) ─── */
 
 let eventSource: EventSource | null = null;
@@ -541,6 +560,7 @@ function cleanupSSE(resetAttempts = true): void {
 export const useMemoryStore = create<MemoryState>((set, get) => ({
   treeVersion: 0,
   atoms: [],
+  atomMap: new Map(),
   atomDetails: new Map(),
   weights: new Map(),
   treeHead: null,
@@ -594,7 +614,10 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
       const list: { atoms: AtomListItem[]; treeVersion: number } = await listRes.json();
 
       const currentVersion = get().treeVersion;
-      if (head.version === currentVersion && currentVersion > 0) {
+      // BUG FIX: Use <= instead of === to prevent race condition.
+      // When SSE already advanced treeVersion beyond the poll response,
+      // the poll data is stale — skip instead of rebuilding from old data.
+      if (head.version <= currentVersion && currentVersion > 0) {
         set({ isLoading: false, consecutiveFailures: 0 });
         return;
       }
@@ -643,6 +666,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         treeVersion: head.version,
         treeHead: head,
         atoms: allVisual,
+        atomMap: buildAtomMap(allVisual),
         healthy: true,
         isLoading: false,
         consecutiveFailures: 0,
@@ -697,6 +721,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         const resolved = updated.filter((a) => a.resolved).length;
         return {
           atoms: updated,
+          atomMap: buildAtomMap(updated),
           resolvedCount: resolved,
           positionsResolved: resolved === updated.length,
         };
@@ -1003,7 +1028,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   cleanExpiredAnimations: () => {
     const now = performance.now();
     set((s) => {
-      const live = s.sseAnimations.filter((a) => now - a.startTime < SSE_ANIM_DURATION_MS);
+      const live = s.sseAnimations.filter((a) => now - a.startTime < MAX_ANIM_DURATION_MS);
       // Only update if something was removed (avoid unnecessary renders)
       return live.length < s.sseAnimations.length ? { sseAnimations: live } : {};
     });
@@ -1055,6 +1080,11 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
           // Process added atoms — insert new VisualAtom nodes
           // Enriched payload provides { key, shard, index, hash } per atom;
           // falls back to FNV-1a guess for plain-string payloads (compat).
+          //
+          // BUG FIX: Compute position INLINE using treeNodePosition() instead
+          // of [0,0,0]. New atoms at [0,0,0] miss their SSE animation window
+          // because SseEventHighlight skips unpositioned atoms and the layout
+          // worker responds ~200-400ms later — after the line cascade window.
           for (const entry of data.added) {
             const isEnriched = typeof entry === "object" && entry !== null && "key" in entry;
             const key = isEnriched ? entry.key : (entry as string);
@@ -1065,6 +1095,14 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
             const hash = isEnriched ? entry.hash : "";
             const resolved = isEnriched && entry.index >= 0;
 
+            // Compute approximate BFS position inline.
+            // Count existing atoms in this shard to determine sorted index.
+            const shardCount = atoms.filter((a) => a.shard === shard).length;
+            const sortedIdx = shardCount; // new atom goes at the end
+            const depth = atomTreeDepth(sortedIdx);
+            const posInLevel = atomTreePosInLevel(sortedIdx);
+            const position = treeNodePosition(shard, depth, posInLevel);
+
             const newAtom: VisualAtom = {
               key,
               type: parseAtomType(key),
@@ -1072,7 +1110,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
               index,
               hash,
               resolved,
-              position: [0, 0, 0], // Will be set by layout
+              position,
               pulse: true,
               tombstoned: false,
             };
@@ -1092,6 +1130,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
 
           return {
             atoms,
+            atomMap: buildAtomMap(atoms),
             treeVersion: data.version,
             treeHead,
           };
@@ -1104,7 +1143,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
 
         // S16-7: Push SSE animations for visual feedback
         const { pushSseAnimation } = get();
-        const currentAtoms = get().atoms;
+        const currentAtomMap = get().atomMap;
 
         // Animate added atoms — group by shard for one animation per shard
         if (data.added.length > 0) {
@@ -1114,7 +1153,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
             const key = isEnriched ? entry.key : (entry as string);
             const shard = isEnriched
               ? entry.shard
-              : (currentAtoms.find((a) => a.key === key)?.shard ?? hashToShard(key));
+              : (currentAtomMap.get(key)?.shard ?? hashToShard(key));
             if (!addByShard.has(shard)) addByShard.set(shard, []);
             addByShard.get(shard)!.push(key);
           }
@@ -1127,7 +1166,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         if (data.tombstoned.length > 0) {
           const tombByShard = new Map<number, string[]>();
           for (const key of data.tombstoned) {
-            const shard = currentAtoms.find((a) => a.key === key)?.shard ?? hashToShard(key);
+            const shard = currentAtomMap.get(key)?.shard ?? hashToShard(key);
             if (!tombByShard.has(shard)) tombByShard.set(shard, []);
             tombByShard.get(shard)!.push(key);
           }
@@ -1141,7 +1180,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
           if (sequence.length < 2) continue;
           // Use first atom's shard for ring glow
           const shard =
-            currentAtoms.find((a) => a.key === sequence[0])?.shard ?? hashToShard(sequence[0]);
+            currentAtomMap.get(sequence[0])?.shard ?? hashToShard(sequence[0]);
           pushSseAnimation("train", sequence, shard);
         }
       } catch (err) {
@@ -1158,11 +1197,11 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         const data = JSON.parse(e.data) as { atoms: string[] };
         // S16-7: Push access animations grouped by shard
         const { pushSseAnimation } = get();
-        const atoms = get().atoms;
+        const currentAtomMap = get().atomMap;
         const byShard = new Map<number, string[]>();
         for (const atomKey of data.atoms) {
           get().pulseAtom(atomKey);
-          const shard = atoms.find((a) => a.key === atomKey)?.shard ?? hashToShard(atomKey);
+          const shard = currentAtomMap.get(atomKey)?.shard ?? hashToShard(atomKey);
           if (!byShard.has(shard)) byShard.set(shard, []);
           byShard.get(shard)!.push(atomKey);
         }
