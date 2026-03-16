@@ -33,18 +33,19 @@ export default function VisualiseClient() {
   return (
     <div className="h-screen w-full overflow-hidden bg-[#030712]">
       {/* Navigation bar */}
-      <nav className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-6 py-4">
+      <nav className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 py-3 md:px-6 md:py-4">
         <Link
           href="/"
-          className="font-mono text-sm font-semibold tracking-wider text-slate-400 transition-colors hover:text-white"
+          className="font-mono text-xs font-semibold tracking-wider text-slate-400 transition-colors hover:text-white md:text-sm"
         >
-          PARAMETRIC MEMORY
+          <span className="hidden sm:inline">PARAMETRIC MEMORY</span>
+          <span className="sm:hidden">PMEM</span>
         </Link>
         <div className="flex items-center gap-1">
-          <span className="font-mono text-xs tracking-widest text-cyan-500/60">
+          <span className="hidden font-mono text-xs tracking-widest text-cyan-500/60 sm:inline">
             SUBSTRATE VIEWER
           </span>
-          <span className="ml-2 rounded-full bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-400 ring-1 ring-cyan-500/20">
+          <span className="ml-1 rounded-full bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-400 ring-1 ring-cyan-500/20 sm:ml-2">
             LIVE
           </span>
         </div>

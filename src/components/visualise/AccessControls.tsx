@@ -42,25 +42,25 @@ export default function AccessControls() {
 
   return (
     <>
-      {/* Floating "Random Atom" button — bottom right */}
-      <div className="pointer-events-none absolute right-6 bottom-6 flex justify-center">
+      {/* Floating "Random Atom" button — bottom-center on mobile (in the control bar), bottom-right on desktop */}
+      <div className="pointer-events-none absolute right-3 bottom-3 flex justify-end md:right-6 md:bottom-6">
         <button
           onClick={triggerRandomAccess}
           disabled={atoms.length === 0}
-          className="pointer-events-auto rounded-lg bg-slate-800/80 px-5 py-2.5 font-mono text-xs tracking-wider text-amber-400 shadow-lg ring-1 shadow-amber-900/20 ring-amber-500/30 backdrop-blur-md transition-all duration-200 hover:bg-slate-700/80 hover:shadow-amber-800/30 hover:ring-amber-400/50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30"
+          className="pointer-events-auto rounded-lg bg-slate-800/80 px-3 py-2 font-mono text-[10px] tracking-wider text-amber-400 shadow-lg ring-1 shadow-amber-900/20 ring-amber-500/30 backdrop-blur-md transition-all duration-200 hover:bg-slate-700/80 hover:shadow-amber-800/30 hover:ring-amber-400/50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 md:px-5 md:py-2.5 md:text-xs"
         >
-          <span className="mr-2">⚡</span>
-          ACCESS RANDOM ATOM
+          <span className="mr-1 md:mr-2">⚡</span>
+          <span className="md:hidden">RANDOM ACCESS</span>
+          <span className="hidden md:inline">ACCESS RANDOM ATOM</span>
         </button>
       </div>
 
       {/* Detail panel for the accessed atom */}
       {accessPath && accessedAtom && (
-        <div className="animate-in fade-in slide-in-from-top-2 pointer-events-none absolute inset-x-0 top-20 flex justify-center duration-300">
-          <div className="pointer-events-auto rounded-lg bg-slate-900/90 px-4 py-2.5 font-mono text-xs shadow-lg ring-1 shadow-amber-900/20 ring-amber-500/30 backdrop-blur-md">
-            {/* Row 1: Close button (LEFT) + atom info + verification badge */}
-            <div className="flex items-center gap-3">
-              {/* Close button — fixed on the left */}
+        <div className="animate-in fade-in slide-in-from-top-2 pointer-events-none absolute inset-x-2 top-16 flex justify-center duration-300 md:inset-x-0 md:top-20">
+          <div className="pointer-events-auto max-w-[calc(100vw-1rem)] rounded-lg bg-slate-900/90 px-3 py-2 font-mono text-[10px] shadow-lg ring-1 shadow-amber-900/20 ring-amber-500/30 backdrop-blur-md md:max-w-none md:px-4 md:py-2.5 md:text-xs">
+            {/* Row 1: Close button + atom key + badge */}
+            <div className="flex items-center gap-2 md:gap-3">
               <button
                 onClick={() => {
                   clearAccessPath();
@@ -82,7 +82,6 @@ export default function AccessControls() {
                 </svg>
               </button>
 
-              {/* Type color dot */}
               <div
                 className="h-2.5 w-2.5 shrink-0 rounded-full"
                 style={{
@@ -91,23 +90,21 @@ export default function AccessControls() {
                 }}
               />
 
-              {/* Atom key */}
-              <span className="font-semibold text-slate-200">{accessedAtom.key}</span>
+              <span className="min-w-0 truncate font-semibold text-slate-200">
+                {accessedAtom.key}
+              </span>
 
-              {/* Divider */}
-              <span className="text-slate-600">·</span>
+              {/* Desktop: inline metadata */}
+              <span className="hidden text-slate-600 md:inline">·</span>
+              <span className="hidden text-slate-400 md:inline">Shard {accessedAtom.shard}</span>
+              <span className="hidden text-slate-600 md:inline">·</span>
+              <span className="hidden text-slate-400 md:inline">Depth {accessedDepth}</span>
+              <span className="hidden text-slate-600 md:inline">·</span>
+              <span className="hidden text-amber-400/70 md:inline">
+                {accessPath.positions.length - 1} hops
+              </span>
+              <span className="hidden text-slate-600 md:inline">·</span>
 
-              {/* Shard + depth */}
-              <span className="text-slate-400">Shard {accessedAtom.shard}</span>
-              <span className="text-slate-600">·</span>
-              <span className="text-slate-400">Depth {accessedDepth}</span>
-
-              {/* Path length */}
-              <span className="text-slate-600">·</span>
-              <span className="text-amber-400/70">{accessPath.positions.length - 1} hops</span>
-
-              {/* S16-4: Verification badge */}
-              <span className="text-slate-600">·</span>
               <VerificationBadge
                 proofVerification={proofVerification}
                 showDetail={showProofDetail}
@@ -115,10 +112,19 @@ export default function AccessControls() {
               />
             </div>
 
-            {/* Row 2: Proof detail (expandable on badge click) */}
+            {/* Mobile: second row with compact metadata */}
+            <div className="mt-1 flex items-center gap-2 text-[9px] text-slate-500 md:hidden">
+              <span>S{accessedAtom.shard}</span>
+              <span className="text-slate-700">·</span>
+              <span>D{accessedDepth}</span>
+              <span className="text-slate-700">·</span>
+              <span className="text-amber-400/60">{accessPath.positions.length - 1} hops</span>
+            </div>
+
+            {/* Proof detail (expandable) */}
             {showProofDetail && proofVerification && accessProofs && (
-              <div className="mt-2 border-t border-slate-700/50 pt-2 text-[10px] text-slate-400">
-                <div className="grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5">
+              <div className="mt-2 border-t border-slate-700/50 pt-2 text-[9px] text-slate-400 md:text-[10px]">
+                <div className="grid grid-cols-[auto_1fr] gap-x-2 gap-y-0.5 md:gap-x-3">
                   <span className="text-slate-500">Leaf</span>
                   <span className="truncate">{proofVerification.leafHash.slice(0, 16)}...</span>
                   <span className="text-slate-500">Root</span>
