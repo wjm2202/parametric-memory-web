@@ -39,19 +39,19 @@ const SELECT_COLOR = new THREE.Color("#f0abfc").multiplyScalar(BLOOM_BOOST);
 const ACCESS_COLOR = new THREE.Color("#fbbf24").multiplyScalar(BLOOM_BOOST * 1.3); // bright amber
 const TOMBSTONED_COLOR = new THREE.Color("#475569").multiplyScalar(0.6); // dim slate gray
 
-/** S16-7: SSE animation flash colors per event type */
+/** S16-7: SSE animation flash colors per event type (vivid — tuned for bloom 1.2+) */
 const SSE_FLASH_COLORS: Record<SseAnimationType, THREE.Color> = {
-  add: new THREE.Color("#22d3ee").multiplyScalar(3.0), // bright cyan-green
-  tombstone: new THREE.Color("#f472b6").multiplyScalar(3.0), // bright pink
-  train: new THREE.Color("#ffffff").multiplyScalar(3.0), // bright white
-  access: new THREE.Color("#fbbf24").multiplyScalar(3.0), // bright amber
+  add: new THREE.Color("#22d3ee").multiplyScalar(5.0), // vivid cyan flash
+  tombstone: new THREE.Color("#f472b6").multiplyScalar(5.0), // vivid pink flash
+  train: new THREE.Color("#ffffff").multiplyScalar(5.0), // vivid white flash
+  access: new THREE.Color("#fbbf24").multiplyScalar(5.0), // vivid amber flash
 };
 
 /**
  * Module-level reusable Map — cleared each frame, never reallocated.
  * Eliminates GC pressure from per-frame `new Map()` allocation.
  */
-const _atomAnimMap = new Map<string, { type: SseAnimationType; progress: number }>();
+const _atomAnimMap = new Map<string, { type: SseAnimationType; progress: number; seqIndex: number; seqLen: number }>();
 
 /**
  * Optimised per-frame rendering of atom spheres.
@@ -109,6 +109,7 @@ export default function AtomNodes() {
     let colorChanged = false;
 
     // S16-7: Build a quick lookup of active SSE animations per atom key.
+    // Includes sequence position (seqIndex/seqLen) for staggered growth.
     // Reuse module-level Map — zero allocation per frame.
     const sseAnimations = useMemoryStore.getState().sseAnimations;
     _atomAnimMap.clear();
@@ -117,10 +118,12 @@ export default function AtomNodes() {
       if (elapsed < SSE_ANIM_ATOM_START_MS || elapsed > SSE_ANIM_DURATION_MS) continue;
       const progress =
         (elapsed - SSE_ANIM_ATOM_START_MS) / (SSE_ANIM_DURATION_MS - SSE_ANIM_ATOM_START_MS);
-      for (const key of anim.atomKeys) {
+      const seqLen = anim.atomKeys.length;
+      for (let si = 0; si < seqLen; si++) {
+        const key = anim.atomKeys[si];
         const existing = _atomAnimMap.get(key);
         if (!existing || progress < existing.progress) {
-          _atomAnimMap.set(key, { type: anim.type, progress });
+          _atomAnimMap.set(key, { type: anim.type, progress, seqIndex: si, seqLen });
         }
       }
     }
@@ -140,26 +143,41 @@ export default function AtomNodes() {
       const sseAnim = _atomAnimMap.get(atom.key);
 
       if (atom.tombstoned) {
-        // Tombstoned atoms are smaller and have no animation
         scale *= 0.7;
       } else if (sseAnim) {
-        // Animation-driven scale
-        const p = sseAnim.progress; // 0→1
+        // Sequential staggered growth: each atom in the chain gets a
+        // delayed window. It grows to 2× then returns to 1× within its window.
+        // Window length = 1 / seqLen of the total progress, with overlap.
+        const p = sseAnim.progress; // 0→1 overall
+        const si = sseAnim.seqIndex;
+        const sl = sseAnim.seqLen;
+
+        // Per-atom timing: stagger start, each atom gets ~60% of total duration
+        // (overlapping windows so the chain feels continuous)
+        const windowLen = Math.max(0.4, 1.0 / sl + 0.3);
+        const windowStart = sl > 1 ? (si / (sl - 1)) * (1.0 - windowLen) : 0;
+        const windowEnd = windowStart + windowLen;
+
+        // Local progress within this atom's window (0→1)
+        const localP = Math.max(0, Math.min(1, (p - windowStart) / (windowEnd - windowStart)));
+
         if (sseAnim.type === "add") {
-          // Scale up from 0 → full, then settle
-          const ramp = Math.min(1, p * 3); // ramps up in first third
-          const eased = 1 - Math.pow(1 - ramp, 3);
-          scale *= eased * (1 + Math.sin(p * Math.PI) * 0.4);
+          // Ramp up to 2× then ease back to 1×
+          const grow = Math.sin(localP * Math.PI); // 0→1→0 bell curve
+          scale *= 1.0 + grow * 1.0; // 1× → 2× → 1×
         } else if (sseAnim.type === "tombstone") {
-          // Shrink from full → 0.7 over duration
-          scale *= 1 - p * 0.3;
+          // Grow to 2× then collapse to 0.3×
+          const grow = localP < 0.3 ? Math.sin((localP / 0.3) * Math.PI * 0.5) : 1.0;
+          const shrink = localP > 0.3 ? (localP - 0.3) / 0.7 : 0;
+          scale *= (1.0 + grow * 1.0) * (1.0 - shrink * 0.85);
         } else if (sseAnim.type === "train") {
-          // Bright pulse — scale bump
-          scale *= 1 + Math.sin(p * Math.PI) * 0.5;
+          // Staggered pulse: each atom grows to 2× and returns
+          const grow = Math.sin(localP * Math.PI);
+          scale *= 1.0 + grow * 1.0;
         } else {
-          // access — regular pulse
-          const pulsePhase = (time * 4) % (Math.PI * 2);
-          scale *= 1 + Math.sin(pulsePhase) * (PULSE_SCALE - 1);
+          // access — same staggered growth
+          const grow = Math.sin(localP * Math.PI);
+          scale *= 1.0 + grow * 1.0;
         }
       } else if (atom.pulse) {
         const pulsePhase = (time * 4) % (Math.PI * 2);
@@ -179,15 +197,14 @@ export default function AtomNodes() {
       tmpObj.updateMatrix();
       mesh.setMatrixAt(i, tmpObj.matrix);
 
-      // Color — SSE animation flash takes priority over base type color
+      // Color — SSE animation flash takes priority (only for affected atoms)
       if (sseAnim && i !== selectedIdx && i !== hoveredIdx && i !== accessedIdx) {
         const flashColor = SSE_FLASH_COLORS[sseAnim.type];
         const baseColor = atom.tombstoned
           ? TOMBSTONED_COLOR
           : (TYPE_COLORS[atom.type] ?? TYPE_COLORS.other);
-        // Flash intensity: strong at start, fades to base color
         const flashT = 1 - sseAnim.progress;
-        tmpColor.copy(baseColor).lerp(flashColor, flashT * 0.8);
+        tmpColor.copy(baseColor).lerp(flashColor, flashT * 0.95);
         colorChanged = true;
       } else if (atom.tombstoned && i !== selectedIdx && i !== hoveredIdx) {
         tmpColor.copy(TOMBSTONED_COLOR);

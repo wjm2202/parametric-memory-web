@@ -1,28 +1,92 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useRef, useEffect } from "react";
 import { useMemoryStore } from "@/stores/memory-store";
 import { atomTreeDepth } from "@/stores/memory-store";
 import { ATOM_COLORS, AtomType } from "@/types/memory";
 
+/* ─── Per-type Test Animation Config ─── */
+
+/** Pick random live atoms, optionally from a preferred shard */
+function pickRandomAtoms(count: number, preferShard?: number): { keys: string[]; shard: number } {
+  const { atoms } = useMemoryStore.getState();
+  const live = atoms.filter((a) => !a.tombstoned);
+  if (live.length === 0) return { keys: [], shard: 0 };
+
+  const pool =
+    preferShard !== undefined
+      ? live.filter((a) => a.shard === preferShard)
+      : live;
+  const source = pool.length >= count ? pool : live;
+
+  const shuffled = [...source].sort(() => Math.random() - 0.5);
+  const picked = shuffled.slice(0, Math.min(count, shuffled.length));
+  return {
+    keys: picked.map((a) => a.key),
+    shard: picked[0]?.shard ?? 0,
+  };
+}
+
+const ANIM_ITEMS: {
+  type: "add" | "tombstone" | "train" | "access";
+  label: string;
+  icon: string;
+  count: number;
+  color: string;
+  bgHover: string;
+}[] = [
+  { type: "add", label: "Add", icon: "+", count: 2, color: "text-cyan-400", bgHover: "hover:bg-cyan-500/10" },
+  { type: "tombstone", label: "Tombstone", icon: "✕", count: 1, color: "text-pink-400", bgHover: "hover:bg-pink-500/10" },
+  { type: "train", label: "Train", icon: "⚡", count: 3, color: "text-indigo-400", bgHover: "hover:bg-indigo-500/10" },
+  { type: "access", label: "Access", icon: "◎", count: 1, color: "text-amber-400", bgHover: "hover:bg-amber-500/10" },
+];
+
 /**
- * Floating overlay controls for the Merkle access-path feature.
- *
- * S16-4: Now includes cryptographic verification badge with proof metadata.
+ * Floating overlay controls for the Merkle visualiser.
  *
  * Contains:
+ *  - Test animation dropdown (top-left)
  *  - "Random Atom" button (bottom-right)
- *  - Detail panel (top-center) with close button on LEFT, atom info, and verification badge
+ *  - Detail panel (top-center) with close button, atom info, and verification badge
  */
 export default function AccessControls() {
   const atoms = useMemoryStore((s) => s.atoms);
   const accessPath = useMemoryStore((s) => s.accessPath);
-  const triggerRandomAccess = useMemoryStore((s) => s.triggerRandomAccess);
   const clearAccessPath = useMemoryStore((s) => s.clearAccessPath);
   const proofVerification = useMemoryStore((s) => s.proofVerification);
   const accessProofs = useMemoryStore((s) => s.accessProofs);
+  const pushSseAnimation = useMemoryStore((s) => s.pushSseAnimation);
 
   const [showProofDetail, setShowProofDetail] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  /* Close dropdown on outside click / tap */
+  useEffect(() => {
+    if (!menuOpen) return;
+    function handleClick(e: MouseEvent | TouchEvent) {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setMenuOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClick);
+    document.addEventListener("touchstart", handleClick);
+    return () => {
+      document.removeEventListener("mousedown", handleClick);
+      document.removeEventListener("touchstart", handleClick);
+    };
+  }, [menuOpen]);
+
+  /** Fire a single test animation of the given type */
+  const fireTestAnim = useCallback(
+    (type: "add" | "tombstone" | "train" | "access", count: number) => {
+      const preferShard = Math.floor(Math.random() * 4);
+      const { keys, shard } = pickRandomAtoms(count, preferShard);
+      if (keys.length === 0) return;
+      pushSseAnimation(type, keys, shard);
+    },
+    [pushSseAnimation],
+  );
 
   // Find the accessed atom's metadata for the tooltip
   const accessedAtom = accessPath ? atoms.find((a) => a.key === accessPath.atomKey) : null;
@@ -42,20 +106,37 @@ export default function AccessControls() {
 
   return (
     <>
-      {/* Floating "Random Atom" button — bottom-center on mobile (in the control bar), bottom-right on desktop */}
-      <div className="pointer-events-none absolute right-3 bottom-3 flex justify-end md:right-6 md:bottom-6">
-        <button
-          onClick={triggerRandomAccess}
-          disabled={atoms.length === 0}
-          className="pointer-events-auto rounded-lg bg-slate-800/80 px-3 py-2 font-mono text-[10px] tracking-wider text-amber-400 shadow-lg ring-1 shadow-amber-900/20 ring-amber-500/30 backdrop-blur-md transition-all duration-200 hover:bg-slate-700/80 hover:shadow-amber-800/30 hover:ring-amber-400/50 active:scale-95 disabled:cursor-not-allowed disabled:opacity-30 md:px-5 md:py-2.5 md:text-xs"
-        >
-          <span className="mr-1 md:mr-2">⚡</span>
-          <span className="md:hidden">RANDOM ACCESS</span>
-          <span className="hidden md:inline">ACCESS RANDOM ATOM</span>
-        </button>
+      {/* ─── Test Animation Dropdown — top-center ─── */}
+      <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center md:top-6" ref={menuRef}>
+        <div className="relative">
+          <button
+            onClick={() => setMenuOpen((v) => !v)}
+            className="pointer-events-auto flex items-center gap-1.5 rounded-lg bg-slate-800/80 px-2.5 py-1.5 font-mono text-[10px] tracking-wider text-slate-300 shadow-lg ring-1 ring-slate-600/50 backdrop-blur-md transition-all duration-200 hover:bg-slate-700/80 hover:text-slate-100 active:scale-95 md:px-3 md:py-2 md:text-xs"
+          >
+            <span className="text-slate-400">▶</span>
+            <span>TEST</span>
+            <span className={`ml-0.5 text-[8px] text-slate-500 transition-transform duration-150 ${menuOpen ? "rotate-180" : ""}`}>▾</span>
+          </button>
+
+          {menuOpen && (
+            <div className="pointer-events-auto absolute left-1/2 mt-1.5 min-w-[140px] -translate-x-1/2 overflow-hidden rounded-lg bg-slate-800/95 shadow-xl ring-1 ring-slate-600/50 backdrop-blur-md md:min-w-[160px]">
+              {ANIM_ITEMS.map((item) => (
+                <button
+                  key={item.type}
+                  onClick={() => fireTestAnim(item.type, item.count)}
+                  disabled={atoms.length === 0}
+                  className={`flex w-full items-center gap-2.5 px-3 py-2.5 text-left font-mono text-[11px] tracking-wider transition-colors disabled:opacity-30 md:px-4 md:py-2.5 md:text-xs ${item.color} ${item.bgHover}`}
+                >
+                  <span className="w-4 text-center text-sm">{item.icon}</span>
+                  <span>{item.label}</span>
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
       </div>
 
-      {/* Detail panel for the accessed atom */}
+      {/* ─── Detail panel for the accessed atom ─── */}
       {accessPath && accessedAtom && (
         <div className="animate-in fade-in slide-in-from-top-2 pointer-events-none absolute inset-x-2 top-16 flex justify-center duration-300 md:inset-x-0 md:top-20">
           <div className="pointer-events-auto max-w-[calc(100vw-1rem)] rounded-lg bg-slate-900/90 px-3 py-2 font-mono text-[10px] shadow-lg ring-1 shadow-amber-900/20 ring-amber-500/30 backdrop-blur-md md:max-w-none md:px-4 md:py-2.5 md:text-xs">

@@ -12,17 +12,16 @@ import {
 } from "@/stores/memory-store";
 
 /**
- * SSE Event Highlight — draws animated line cascades from the hash ring
- * down to target atoms for ACCESS events only.
+ * SSE Event Highlight — currently a no-op.
  *
- * Add/tombstone are handled by MerkleRehashCascade (multi-phase Merkle path animation).
- * Train events are handled by TrainParticles (bezier arc lightning).
+ * All animation types are now handled by dedicated components:
+ *   - Add/tombstone/access: MerkleRehashCascade (edge-following descent)
+ *   - Train: TrainParticles (bezier arc lightning)
  *
- * Access events get a simple ring → atom line with amber brightness cascade.
- * All geometry uses a pre-allocated Float32Array pool — zero GC per frame.
+ * Kept for structural compatibility — cleanExpiredAnimations() GC runs here.
  */
 
-const ACCESS_LINE_COLOR = new THREE.Color("#fbbf24").multiplyScalar(2.5); // amber
+const ACCESS_LINE_COLOR = new THREE.Color("#fbbf24").multiplyScalar(2.5); // amber (unused)
 
 /** Max simultaneous line segments we'll draw (avoids unbounded allocation) */
 const MAX_LINES = 128;
@@ -56,8 +55,8 @@ export default function SseEventHighlight() {
     for (const anim of sseAnimations) {
       if (lineCount >= MAX_LINES) break;
 
-      // Add/tombstone handled by MerkleRehashCascade, train by TrainArcLightning
-      if (anim.type === "add" || anim.type === "tombstone" || anim.type === "train") continue;
+      // Add/tombstone/access handled by MerkleRehashCascade, train by TrainArcLightning
+      if (anim.type === "add" || anim.type === "tombstone" || anim.type === "train" || anim.type === "access") continue;
 
       const elapsed = now - anim.startTime;
       if (elapsed > SSE_ANIM_DURATION_MS) continue;

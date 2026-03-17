@@ -36,16 +36,16 @@ const FLASH_END = SSE_ANIM_DURATION_MS;
 
 /* ─── Arc tessellation ─── */
 const ARC_SEGMENTS = 16; // segments per bezier arc
-const ARC_LIFT = 3.0; // perpendicular offset for the bezier control point
+const ARC_LIFT = 4.0; // perpendicular offset for the bezier control point (taller arcs)
 const MAX_ARCS = 32; // max simultaneous arcs
 const MAX_ARC_LINES = MAX_ARCS * ARC_SEGMENTS;
 const FLOATS_PER_LINE = 6;
 
-/* ─── Colors ─── */
-const ARC_COLOR = new THREE.Color("#818cf8").multiplyScalar(2.5); // indigo/violet
-const ARC_BRIGHT = new THREE.Color("#c7d2fe").multiplyScalar(4.0); // bright flash
-const ARC_TRAIL = new THREE.Color("#6366f1").multiplyScalar(1.5); // dim trail
-const SIGNAL_COLOR = new THREE.Color("#e0e7ff").multiplyScalar(5.0); // bright white-indigo
+/* ─── Colors (vivid — tuned for bloom at intensity 1.2+) ─── */
+const ARC_COLOR = new THREE.Color("#818cf8").multiplyScalar(4.0); // indigo/violet
+const ARC_BRIGHT = new THREE.Color("#c7d2fe").multiplyScalar(6.0); // bright flash
+const ARC_TRAIL = new THREE.Color("#6366f1").multiplyScalar(2.5); // dim trail
+const SIGNAL_COLOR = new THREE.Color("#e0e7ff").multiplyScalar(7.0); // bright white-indigo
 
 /** Module-level reusable control point — eliminates tuple allocation per arc per frame */
 const _ctrlPoint: [number, number, number] = [0, 0, 0];
@@ -55,12 +55,12 @@ const _positions: ([number, number, number] | null)[] = new Array(32).fill(null)
 
 /* ─── Signal particles ─── */
 const MAX_SIGNALS = 16;
-const SIGNAL_RADIUS = 0.1;
+const SIGNAL_RADIUS = 0.18;
 
 /* ─── Phase 1 halos: instanced spheres that bloom around each atom in sequence ─── */
 const MAX_HALOS = 16;
-const HALO_RADIUS = 0.35; // larger than atom radius (0.18) to create a glow halo
-const HALO_COLOR = new THREE.Color("#c7d2fe").multiplyScalar(3.5); // bright indigo-white
+const HALO_RADIUS = 0.5; // larger than atom radius (0.18) to create a vivid glow halo
+const HALO_COLOR = new THREE.Color("#c7d2fe").multiplyScalar(5.0); // bright indigo-white
 
 /**
  * Compute a quadratic bezier point at t ∈ [0,1].

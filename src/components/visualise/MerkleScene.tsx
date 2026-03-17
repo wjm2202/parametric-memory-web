@@ -1,6 +1,6 @@
 "use client";
 
-import { Component, useEffect, useRef, useCallback, Suspense, type ReactNode } from "react";
+import { Component, useEffect, useRef, Suspense, type ReactNode } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import { useMemoryStore } from "@/stores/memory-store";
@@ -18,25 +18,11 @@ import TrainParticles from "./TrainParticles";
 import MerkleRehashCascade from "./MerkleRehashCascade";
 import RingParticleFlow from "./RingParticleFlow";
 import PredictionArcs from "./PredictionArcs";
+
 import AccessControls from "./AccessControls";
 
-/* ─── Polling intervals ─── */
-const POLL_HEALTHY = 5_000; // 5s when connected
-const POLL_BACKOFF = 15_000; // 15s when disconnected
-const POLL_RATE_LIMITED = 30_000; // 30s after 429
-const MAX_BACKOFF = 60_000; // 1min ceiling
-
-/**
- * Compute poll delay with exponential backoff on consecutive failures.
- * Healthy: 5s. Disconnected: 15s. Rate-limited or repeated failures: exponential up to 60s.
- */
-function getPollDelay(): number {
-  const { healthy, consecutiveFailures } = useMemoryStore.getState();
-  if (consecutiveFailures === 0) return healthy ? POLL_HEALTHY : POLL_BACKOFF;
-  // Exponential backoff: base * 2^(failures-1), clamped
-  const base = POLL_RATE_LIMITED;
-  return Math.min(base * Math.pow(2, consecutiveFailures - 1), MAX_BACKOFF);
-}
+/* ─── Fallback poll interval (only used when SSE is down) ─── */
+const FALLBACK_POLL_MS = 15_000;
 
 /**
  * Error boundary that reports to the store error log.
@@ -87,56 +73,56 @@ export default function MerkleScene() {
   const autoRotate = useMemoryStore((s) => s.autoRotate);
   const selectAtom = useMemoryStore((s) => s.selectAtom);
   const connectSSE = useMemoryStore((s) => s.connectSSE);
-  const disconnectSSE = useMemoryStore((s) => s.disconnectSSE);
   const dispose = useMemoryStore((s) => s.dispose);
-  const timeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const resolvedRef = useRef(false);
 
-  const scheduleNext = useCallback(() => {
-    // S16-3: Skip polling when SSE is connected — live updates handle it
-    const { sseStatus: currentSse } = useMemoryStore.getState();
-    if (currentSse === "connected") {
-      // Still poll at a very slow rate as a safety net (every 60s)
-      timeoutRef.current = setTimeout(async () => {
-        await fetchTree();
-        scheduleNext();
-      }, 60_000);
-      return;
-    }
-    const delay = getPollDelay();
-    timeoutRef.current = setTimeout(async () => {
-      await fetchTree();
-      scheduleNext();
-    }, delay);
-  }, [fetchTree]);
-
-  // Initial fetch + SSE connection + adaptive polling fallback
   useEffect(() => {
+    // 1. Bootstrap: one-time fetch to build the initial scene
     fetchTree().then(() => {
-      // S16-3: After bootstrap, connect to SSE for real-time updates
+      // 2. Connect SSE — all future updates come through here
       connectSSE();
-      // Schedule polling as fallback (SSE-aware — slows down when connected)
-      scheduleNext();
     });
 
-    // Hard navigate / tab close — React cleanup doesn't fire reliably,
-    // so we also hook beforeunload to dispose SSE, worker, and timers.
+    // 3. Subscribe to sseStatus — start/stop fallback poll accordingly
+    let prevStatus = useMemoryStore.getState().sseStatus;
+    const unsub = useMemoryStore.subscribe((state) => {
+      const status = state.sseStatus;
+      if (status === prevStatus) return;
+      prevStatus = status;
+
+      // SSE connected → kill any fallback poll
+      if (status === "connected" || status === "connecting") {
+        if (pollRef.current) {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+        }
+        return;
+      }
+      // SSE down (fallback / disconnected) → start slow poll if not already running
+      if (!pollRef.current) {
+        pollRef.current = setInterval(() => {
+          fetchTree();
+        }, FALLBACK_POLL_MS);
+      }
+    });
+
     const handleUnload = () => dispose();
     window.addEventListener("beforeunload", handleUnload);
 
     return () => {
       window.removeEventListener("beforeunload", handleUnload);
-      if (timeoutRef.current) clearTimeout(timeoutRef.current);
-      dispose(); // Full teardown — SSE + worker + timers
+      if (pollRef.current) clearInterval(pollRef.current);
+      unsub();
+      dispose();
     };
-  }, [fetchTree, connectSSE, disconnectSSE, dispose, scheduleNext]);
+  }, [fetchTree, connectSSE, dispose]);
 
   // Phase 2: progressively resolve real positions in background
   const atoms = useMemoryStore((s) => s.atoms);
   useEffect(() => {
     if (atoms.length > 0 && !resolvedRef.current) {
       resolvedRef.current = true;
-      // Fire and forget — runs in background, yields between chunks
       fetchRealPositions();
     }
   }, [atoms.length, fetchRealPositions]);
@@ -203,6 +189,9 @@ export default function MerkleScene() {
         <Safe name="Effects">
           <Effects />
         </Safe>
+
+        {/* No-op — kept for import compatibility */}
+
 
         {/* Controls */}
         <OrbitControls

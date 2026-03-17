@@ -10,6 +10,7 @@ import {
   atomTreeDepth,
   atomTreePosInLevel,
   CASCADE_ANIM_DURATION_MS,
+  SSE_ANIM_DURATION_MS,
 } from "@/stores/memory-store";
 import type { SseAnimation, VisualAtom } from "@/stores/memory-store";
 
@@ -45,24 +46,28 @@ const SETTLE_END_MS = CASCADE_ANIM_DURATION_MS;
 /** Stagger between atoms in a batch (ms) */
 const STAGGER_MS = 80;
 
-/* ─── Colors ─── */
-const ADD_DESCENT_COLOR = new THREE.Color("#22d3ee").multiplyScalar(2.0); // cyan descent
-const ADD_REHASH_COLOR = new THREE.Color("#fbbf24").multiplyScalar(3.0); // golden rehash
-const ADD_REHASH_BRIGHT = new THREE.Color("#fef3c7").multiplyScalar(4.0); // bright gold leading edge
-const TOMB_DESCENT_COLOR = new THREE.Color("#f472b6").multiplyScalar(2.0); // pink descent
-const TOMB_REHASH_COLOR = new THREE.Color("#ef4444").multiplyScalar(3.0); // red rehash
-const TOMB_REHASH_BRIGHT = new THREE.Color("#fecaca").multiplyScalar(4.0); // bright red leading edge
-const PARTICLE_COLOR_ADD = new THREE.Color("#67e8f9").multiplyScalar(4.0); // bright cyan particle
-const PARTICLE_COLOR_TOMB = new THREE.Color("#fb7185").multiplyScalar(4.0); // bright pink particle
+/* ─── Colors (vivid — tuned for bloom at intensity 1.2+) ─── */
+const ADD_DESCENT_COLOR = new THREE.Color("#22d3ee").multiplyScalar(3.5); // cyan descent
+const ADD_REHASH_COLOR = new THREE.Color("#fbbf24").multiplyScalar(5.0); // golden rehash
+const ADD_REHASH_BRIGHT = new THREE.Color("#fef3c7").multiplyScalar(7.0); // bright gold leading edge
+const TOMB_DESCENT_COLOR = new THREE.Color("#f472b6").multiplyScalar(3.5); // pink descent
+const TOMB_REHASH_COLOR = new THREE.Color("#ef4444").multiplyScalar(5.0); // red rehash
+const TOMB_REHASH_BRIGHT = new THREE.Color("#fecaca").multiplyScalar(7.0); // bright red leading edge
+const PARTICLE_COLOR_ADD = new THREE.Color("#67e8f9").multiplyScalar(6.0); // bright cyan particle
+const PARTICLE_COLOR_TOMB = new THREE.Color("#fb7185").multiplyScalar(6.0); // bright pink particle
 /** Pre-computed rehash particle colors (1.5× rehash) — avoids per-frame multiplyScalar */
-const ADD_REHASH_PARTICLE = new THREE.Color("#fbbf24").multiplyScalar(3.0 * 1.5);
-const TOMB_REHASH_PARTICLE = new THREE.Color("#ef4444").multiplyScalar(3.0 * 1.5);
+const ADD_REHASH_PARTICLE = new THREE.Color("#fbbf24").multiplyScalar(5.0 * 1.5);
+const TOMB_REHASH_PARTICLE = new THREE.Color("#ef4444").multiplyScalar(5.0 * 1.5);
+
+/* ─── Access-specific colors (descent only, no rehash) ─── */
+const ACCESS_DESCENT_COLOR = new THREE.Color("#fbbf24").multiplyScalar(3.5); // amber descent
+const PARTICLE_COLOR_ACCESS = new THREE.Color("#fef3c7").multiplyScalar(6.0); // bright amber particle
 
 /* ─── Buffer limits ─── */
 const MAX_CASCADE_LINES = 256; // edges across all active cascades
 const FLOATS_PER_LINE = 6; // 2 vertices × 3 components
 const MAX_PARTICLES = 16; // traveling particles (one per atom in active cascades)
-const PARTICLE_RADIUS = 0.12;
+const PARTICLE_RADIUS = 0.22;
 
 /* ─── Path cache ─── */
 type MerklePath = [number, number, number][]; // ordered: [ringPos, root, ..., leaf]
@@ -200,17 +205,20 @@ export default function MerkleRehashCascade() {
     let pIdx = 0;
 
     for (const anim of sseAnimations) {
-      if (anim.type !== "add" && anim.type !== "tombstone") continue;
+      // Handle add, tombstone, AND access (access = descent only, no rehash)
+      if (anim.type !== "add" && anim.type !== "tombstone" && anim.type !== "access") continue;
       if (lineCount >= MAX_CASCADE_LINES) break;
 
+      const isAccess = anim.type === "access";
+      const maxDuration = isAccess ? SSE_ANIM_DURATION_MS : CASCADE_ANIM_DURATION_MS;
       const elapsed = now - anim.startTime;
-      if (elapsed < 0 || elapsed > CASCADE_ANIM_DURATION_MS) continue;
+      if (elapsed < 0 || elapsed > maxDuration) continue;
 
       const isTombstone = anim.type === "tombstone";
-      const descentColor = isTombstone ? TOMB_DESCENT_COLOR : ADD_DESCENT_COLOR;
+      const descentColor = isAccess ? ACCESS_DESCENT_COLOR : isTombstone ? TOMB_DESCENT_COLOR : ADD_DESCENT_COLOR;
       const rehashColor = isTombstone ? TOMB_REHASH_COLOR : ADD_REHASH_COLOR;
       const rehashBright = isTombstone ? TOMB_REHASH_BRIGHT : ADD_REHASH_BRIGHT;
-      const particleColor = isTombstone ? PARTICLE_COLOR_TOMB : PARTICLE_COLOR_ADD;
+      const particleColor = isAccess ? PARTICLE_COLOR_ACCESS : isTombstone ? PARTICLE_COLOR_TOMB : PARTICLE_COLOR_ADD;
 
       const paths = getAnimPaths(anim, atomMap, atoms);
 
@@ -285,8 +293,35 @@ export default function MerkleRehashCascade() {
           }
         }
 
+        // ─── Access: FADE after descent (no rehash, no settle) ───
+        if (isAccess && atomElapsed >= DESCENT_END_MS) {
+          const fadeDuration = SSE_ANIM_DURATION_MS - DESCENT_END_MS;
+          const fade = 1.0 - Math.min(1.0, (atomElapsed - DESCENT_END_MS) / fadeDuration);
+          if (fade > 0.01) {
+            for (let e = 0; e < edgeCount; e++) {
+              if (lineCount >= MAX_CASCADE_LINES) break;
+              const offset = lineCount * FLOATS_PER_LINE;
+              posBuffer[offset + 0] = path[e][0];
+              posBuffer[offset + 1] = path[e][1];
+              posBuffer[offset + 2] = path[e][2];
+              posBuffer[offset + 3] = path[e + 1][0];
+              posBuffer[offset + 4] = path[e + 1][1];
+              posBuffer[offset + 5] = path[e + 1][2];
+              const brightness = 0.6 * fade;
+              for (let v = 0; v < 2; v++) {
+                const co = offset + v * 3;
+                colorBuffer[co + 0] = descentColor.r * brightness;
+                colorBuffer[co + 1] = descentColor.g * brightness;
+                colorBuffer[co + 2] = descentColor.b * brightness;
+              }
+              lineCount++;
+            }
+          }
+        }
+
         // ─── Phase 2: REHASH CASCADE (leaf → root, upward golden wave) ───
-        if (atomElapsed >= REHASH_START_MS && atomElapsed < REHASH_END_MS) {
+        // (skipped for access — access is read-only, no tree mutation)
+        if (!isAccess && atomElapsed >= REHASH_START_MS && atomElapsed < REHASH_END_MS) {
           const rehashProgress =
             (atomElapsed - REHASH_START_MS) / (REHASH_END_MS - REHASH_START_MS);
           // Rehash travels from leaf (last edge) UP to root (first edge)
@@ -354,8 +389,8 @@ export default function MerkleRehashCascade() {
           }
         }
 
-        // ─── Phase 3: SETTLE (fade out) ───
-        if (atomElapsed >= SETTLE_START_MS && atomElapsed < SETTLE_END_MS) {
+        // ─── Phase 3: SETTLE (fade out) — add/tombstone only ───
+        if (!isAccess && atomElapsed >= SETTLE_START_MS && atomElapsed < SETTLE_END_MS) {
           const settleProgress =
             (atomElapsed - SETTLE_START_MS) / (SETTLE_END_MS - SETTLE_START_MS);
           const fade = 1.0 - settleProgress;
