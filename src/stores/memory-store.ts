@@ -576,6 +576,156 @@ function cleanupSSE(resetAttempts = true): void {
   }
 }
 
+/* ─── S16-3 Step 3: SSE event processing layers ─── */
+
+/**
+ * Parsed commit event payload — typed for downstream layers.
+ * This is the only place we define the wire format shape.
+ */
+export interface CommitEventData {
+  version: number;
+  root: string;
+  added: Array<{ key: string; shard: number; index: number; hash: string }> | string[];
+  tombstoned: string[];
+  trained: string[][];
+}
+
+/**
+ * Layer 1 — Event parser. Thin, ~5 lines.
+ * Parses raw SSE JSON into a typed CommitEventData. Throws on malformed input.
+ */
+export function parseCommitEvent(raw: string): CommitEventData {
+  return JSON.parse(raw) as CommitEventData;
+}
+
+/**
+ * Layer 2 — State updater.
+ * Updates atoms[], atomMap, treeVersion, treeHead. Schedules layout worker
+ * if atoms changed. Does NOT queue animations — that's Layer 3's job.
+ */
+export function applyCommitToState(
+  data: CommitEventData,
+  set: (fn: (s: MemoryState) => Partial<MemoryState>) => void,
+): void {
+  set((s) => {
+    let atoms = [...s.atoms];
+    const treeHead = s.treeHead
+      ? { ...s.treeHead, version: data.version, root: data.root }
+      : s.treeHead;
+
+    // Process added atoms — insert new VisualAtom nodes
+    for (const entry of data.added) {
+      const isEnriched = typeof entry === "object" && entry !== null && "key" in entry;
+      const key = isEnriched ? entry.key : (entry as string);
+      if (atoms.some((a) => a.key === key)) continue;
+
+      const shard = isEnriched ? entry.shard : hashToShard(key);
+      const index = isEnriched ? entry.index : atoms.filter((a) => a.shard === shard).length;
+      const hash = isEnriched ? entry.hash : "";
+      const resolved = isEnriched && entry.index >= 0;
+
+      // Compute approximate BFS position inline so animations can target it
+      // immediately. The layout worker will refine ~150ms later.
+      const shardCount = atoms.filter((a) => a.shard === shard).length;
+      const depth = atomTreeDepth(shardCount);
+      const posInLevel = atomTreePosInLevel(shardCount);
+      const position = treeNodePosition(shard, depth, posInLevel);
+
+      atoms.push({
+        key,
+        type: parseAtomType(key),
+        shard,
+        index,
+        hash,
+        resolved,
+        position,
+        pulse: true,
+        tombstoned: false,
+      });
+      schedulePulseReset(key);
+    }
+
+    // Process tombstoned atoms — mark for fade animation
+    for (const key of data.tombstoned) {
+      atoms = atoms.map((a) => (a.key === key ? { ...a, tombstoned: true } : a));
+    }
+
+    return {
+      atoms,
+      atomMap: buildAtomMap(atoms),
+      treeVersion: data.version,
+      treeHead,
+    };
+  });
+
+  // Recompute layout for new atoms
+  if (data.added.length > 0) {
+    requestLayoutDebounced();
+  }
+}
+
+/**
+ * Layer 3 — Animation dispatcher.
+ * Reads commit data, groups by shard, pushes to sseAnimations[] queue.
+ * ThreeJS components consume the queue per-frame — no rendering logic here.
+ */
+export function dispatchCommitAnimations(data: CommitEventData, get: () => MemoryState): void {
+  const { pushSseAnimation, atomMap } = get();
+
+  // Animate added atoms — group by shard
+  if (data.added.length > 0) {
+    const addByShard = new Map<number, string[]>();
+    for (const entry of data.added) {
+      const isEnriched = typeof entry === "object" && entry !== null && "key" in entry;
+      const key = isEnriched ? entry.key : (entry as string);
+      const shard = isEnriched ? entry.shard : (atomMap.get(key)?.shard ?? hashToShard(key));
+      if (!addByShard.has(shard)) addByShard.set(shard, []);
+      addByShard.get(shard)!.push(key);
+    }
+    for (const [shard, keys] of addByShard) {
+      pushSseAnimation("add", keys, shard);
+    }
+  }
+
+  // Animate tombstoned atoms — group by shard
+  if (data.tombstoned.length > 0) {
+    const tombByShard = new Map<number, string[]>();
+    for (const key of data.tombstoned) {
+      const shard = atomMap.get(key)?.shard ?? hashToShard(key);
+      if (!tombByShard.has(shard)) tombByShard.set(shard, []);
+      tombByShard.get(shard)!.push(key);
+    }
+    for (const [shard, keys] of tombByShard) {
+      pushSseAnimation("tombstone", keys, shard);
+    }
+  }
+
+  // Animate trained sequences
+  for (const sequence of data.trained) {
+    if (sequence.length < 2) continue;
+    const shard = atomMap.get(sequence[0])?.shard ?? hashToShard(sequence[0]);
+    pushSseAnimation("train", sequence, shard);
+  }
+}
+
+/**
+ * Dispatch access animations — groups accessed atoms by shard, pulses each,
+ * and pushes access animation to the queue.
+ */
+export function dispatchAccessEvent(data: { atoms: string[] }, get: () => MemoryState): void {
+  const { pushSseAnimation, pulseAtom, atomMap } = get();
+  const byShard = new Map<number, string[]>();
+  for (const atomKey of data.atoms) {
+    pulseAtom(atomKey);
+    const shard = atomMap.get(atomKey)?.shard ?? hashToShard(atomKey);
+    if (!byShard.has(shard)) byShard.set(shard, []);
+    byShard.get(shard)!.push(atomKey);
+  }
+  for (const [shard, keys] of byShard) {
+    pushSseAnimation("access", keys, shard);
+  }
+}
+
 /* ─── Store ─── */
 export const useMemoryStore = create<MemoryState>((set, get) => ({
   treeVersion: 0,
@@ -1084,121 +1234,9 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
 
     es.addEventListener("commit", (e) => {
       try {
-        const data = JSON.parse(e.data) as {
-          version: number;
-          root: string;
-          added: Array<{ key: string; shard: number; index: number; hash: string }> | string[];
-          tombstoned: string[];
-          trained: string[][];
-        };
-
-        set((s) => {
-          let atoms = [...s.atoms];
-          const treeHead = s.treeHead
-            ? { ...s.treeHead, version: data.version, root: data.root }
-            : s.treeHead;
-
-          // Process added atoms — insert new VisualAtom nodes
-          // Enriched payload provides { key, shard, index, hash } per atom;
-          // falls back to FNV-1a guess for plain-string payloads (compat).
-          //
-          // BUG FIX: Compute position INLINE using treeNodePosition() instead
-          // of [0,0,0]. New atoms at [0,0,0] miss their SSE animation window
-          // because SseEventHighlight skips unpositioned atoms and the layout
-          // worker responds ~200-400ms later — after the line cascade window.
-          for (const entry of data.added) {
-            const isEnriched = typeof entry === "object" && entry !== null && "key" in entry;
-            const key = isEnriched ? entry.key : (entry as string);
-            if (atoms.some((a) => a.key === key)) continue; // Already exists
-
-            const shard = isEnriched ? entry.shard : hashToShard(key);
-            const index = isEnriched ? entry.index : atoms.filter((a) => a.shard === shard).length;
-            const hash = isEnriched ? entry.hash : "";
-            const resolved = isEnriched && entry.index >= 0;
-
-            // Compute approximate BFS position inline.
-            // Count existing atoms in this shard to determine sorted index.
-            const shardCount = atoms.filter((a) => a.shard === shard).length;
-            const sortedIdx = shardCount; // new atom goes at the end
-            const depth = atomTreeDepth(sortedIdx);
-            const posInLevel = atomTreePosInLevel(sortedIdx);
-            const position = treeNodePosition(shard, depth, posInLevel);
-
-            const newAtom: VisualAtom = {
-              key,
-              type: parseAtomType(key),
-              shard,
-              index,
-              hash,
-              resolved,
-              position,
-              pulse: true,
-              tombstoned: false,
-            };
-            atoms.push(newAtom);
-            // Batched pulse reset — coalesces multiple resets into a single state update
-            schedulePulseReset(key);
-          }
-
-          // Process tombstoned atoms — mark as tombstoned for fade animation
-          for (const key of data.tombstoned) {
-            atoms = atoms.map((a) => (a.key === key ? { ...a, tombstoned: true } : a));
-          }
-
-          return {
-            atoms,
-            atomMap: buildAtomMap(atoms),
-            treeVersion: data.version,
-            treeHead,
-          };
-        });
-
-        // Recompute layout for new atoms
-        if (data.added.length > 0) {
-          requestLayoutDebounced();
-        }
-
-        // S16-7: Push SSE animations for visual feedback
-        const { pushSseAnimation } = get();
-        const currentAtomMap = get().atomMap;
-
-        // Animate added atoms — group by shard for one animation per shard
-        if (data.added.length > 0) {
-          const addByShard = new Map<number, string[]>();
-          for (const entry of data.added) {
-            const isEnriched = typeof entry === "object" && entry !== null && "key" in entry;
-            const key = isEnriched ? entry.key : (entry as string);
-            const shard = isEnriched
-              ? entry.shard
-              : (currentAtomMap.get(key)?.shard ?? hashToShard(key));
-            if (!addByShard.has(shard)) addByShard.set(shard, []);
-            addByShard.get(shard)!.push(key);
-          }
-          for (const [shard, keys] of addByShard) {
-            pushSseAnimation("add", keys, shard);
-          }
-        }
-
-        // Animate tombstoned atoms
-        if (data.tombstoned.length > 0) {
-          const tombByShard = new Map<number, string[]>();
-          for (const key of data.tombstoned) {
-            const shard = currentAtomMap.get(key)?.shard ?? hashToShard(key);
-            if (!tombByShard.has(shard)) tombByShard.set(shard, []);
-            tombByShard.get(shard)!.push(key);
-          }
-          for (const [shard, keys] of tombByShard) {
-            pushSseAnimation("tombstone", keys, shard);
-          }
-        }
-
-        // Animate trained sequences
-        for (const sequence of data.trained) {
-          if (sequence.length < 2) continue;
-          // Use first atom's shard for ring glow
-          const shard = currentAtomMap.get(sequence[0])?.shard ?? hashToShard(sequence[0]);
-          pushSseAnimation("train", sequence, shard);
-        }
+        const data = parseCommitEvent(e.data);
+        applyCommitToState(data, set);
+        dispatchCommitAnimations(data, get);
       } catch (err) {
         logError(
           "SSE:commit",
@@ -1211,19 +1249,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
     es.addEventListener("access", (e) => {
       try {
         const data = JSON.parse(e.data) as { atoms: string[] };
-        // S16-7: Push access animations grouped by shard
-        const { pushSseAnimation } = get();
-        const currentAtomMap = get().atomMap;
-        const byShard = new Map<number, string[]>();
-        for (const atomKey of data.atoms) {
-          get().pulseAtom(atomKey);
-          const shard = currentAtomMap.get(atomKey)?.shard ?? hashToShard(atomKey);
-          if (!byShard.has(shard)) byShard.set(shard, []);
-          byShard.get(shard)!.push(atomKey);
-        }
-        for (const [shard, keys] of byShard) {
-          pushSseAnimation("access", keys, shard);
-        }
+        dispatchAccessEvent(data, get);
       } catch {
         // Ignore malformed access events
       }

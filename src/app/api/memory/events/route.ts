@@ -10,13 +10,19 @@
  *
  * Auth: Uses the server-side MMPM_VIZ_API_KEY (read-only) so the
  * browser never sees the bearer token.
+ *
+ * Connection lifecycle: When the browser closes the EventSource (tab close,
+ * navigation, component unmount), Next.js aborts the request signal. We
+ * forward that signal to the upstream fetch so the MMPM server can clean
+ * up its SSE client slot. Without this, every page refresh leaks a phantom
+ * connection that inflates the client count indefinitely.
  */
 import { getMmpmSseUrl, getMmpmAuthHeader } from "@/lib/mmpm";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
 
-export async function GET(): Promise<Response> {
+export async function GET(request: Request): Promise<Response> {
   const upstreamUrl = getMmpmSseUrl();
   const auth = getMmpmAuthHeader();
 
@@ -28,10 +34,15 @@ export async function GET(): Promise<Response> {
     headers["Authorization"] = auth;
   }
 
+  // Use the request signal so the upstream fetch aborts when the browser
+  // disconnects. This is the critical fix for connection leak — without it,
+  // the upstream SSE connection survives indefinitely after the browser leaves.
+  const signal = request.signal;
+
   try {
     const upstream = await fetch(upstreamUrl, {
       headers,
-      // No AbortSignal — SSE connections are long-lived
+      signal,
     });
 
     if (!upstream.ok) {
@@ -54,7 +65,9 @@ export async function GET(): Promise<Response> {
       });
     }
 
-    // Pipe the upstream SSE stream directly to the client
+    // Pipe the upstream SSE stream directly to the client.
+    // When the browser disconnects, `signal` aborts, which cancels the
+    // upstream ReadableStream and closes the TCP connection to MMPM.
     return new Response(upstream.body, {
       status: 200,
       headers: {
@@ -66,6 +79,10 @@ export async function GET(): Promise<Response> {
       },
     });
   } catch (err) {
+    // AbortError is expected when the browser disconnects — not a real error
+    if (err instanceof DOMException && err.name === "AbortError") {
+      return new Response(null, { status: 499 }); // Client Closed Request
+    }
     const message = err instanceof Error ? err.message : "SSE proxy failed";
     console.error("[sse-proxy] Failed to connect to upstream:", message);
     return new Response(JSON.stringify({ error: "SSE proxy connection failed", detail: message }), {
