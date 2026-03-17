@@ -56,7 +56,13 @@ export default function SseEventHighlight() {
       if (lineCount >= MAX_LINES) break;
 
       // Add/tombstone/access handled by MerkleRehashCascade, train by TrainArcLightning
-      if (anim.type === "add" || anim.type === "tombstone" || anim.type === "train" || anim.type === "access") continue;
+      if (
+        anim.type === "add" ||
+        anim.type === "tombstone" ||
+        anim.type === "train" ||
+        anim.type === "access"
+      )
+        continue;
 
       const elapsed = now - anim.startTime;
       if (elapsed > SSE_ANIM_DURATION_MS) continue;

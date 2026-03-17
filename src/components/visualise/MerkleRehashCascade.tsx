@@ -215,10 +215,18 @@ export default function MerkleRehashCascade() {
       if (elapsed < 0 || elapsed > maxDuration) continue;
 
       const isTombstone = anim.type === "tombstone";
-      const descentColor = isAccess ? ACCESS_DESCENT_COLOR : isTombstone ? TOMB_DESCENT_COLOR : ADD_DESCENT_COLOR;
+      const descentColor = isAccess
+        ? ACCESS_DESCENT_COLOR
+        : isTombstone
+          ? TOMB_DESCENT_COLOR
+          : ADD_DESCENT_COLOR;
       const rehashColor = isTombstone ? TOMB_REHASH_COLOR : ADD_REHASH_COLOR;
       const rehashBright = isTombstone ? TOMB_REHASH_BRIGHT : ADD_REHASH_BRIGHT;
-      const particleColor = isAccess ? PARTICLE_COLOR_ACCESS : isTombstone ? PARTICLE_COLOR_TOMB : PARTICLE_COLOR_ADD;
+      const particleColor = isAccess
+        ? PARTICLE_COLOR_ACCESS
+        : isTombstone
+          ? PARTICLE_COLOR_TOMB
+          : PARTICLE_COLOR_ADD;
 
       const paths = getAnimPaths(anim, atomMap, atoms);
 

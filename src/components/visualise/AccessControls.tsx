@@ -13,10 +13,7 @@ function pickRandomAtoms(count: number, preferShard?: number): { keys: string[];
   const live = atoms.filter((a) => !a.tombstoned);
   if (live.length === 0) return { keys: [], shard: 0 };
 
-  const pool =
-    preferShard !== undefined
-      ? live.filter((a) => a.shard === preferShard)
-      : live;
+  const pool = preferShard !== undefined ? live.filter((a) => a.shard === preferShard) : live;
   const source = pool.length >= count ? pool : live;
 
   const shuffled = [...source].sort(() => Math.random() - 0.5);
@@ -35,10 +32,38 @@ const ANIM_ITEMS: {
   color: string;
   bgHover: string;
 }[] = [
-  { type: "add", label: "Add", icon: "+", count: 2, color: "text-cyan-400", bgHover: "hover:bg-cyan-500/10" },
-  { type: "tombstone", label: "Tombstone", icon: "✕", count: 1, color: "text-pink-400", bgHover: "hover:bg-pink-500/10" },
-  { type: "train", label: "Train", icon: "⚡", count: 3, color: "text-indigo-400", bgHover: "hover:bg-indigo-500/10" },
-  { type: "access", label: "Access", icon: "◎", count: 1, color: "text-amber-400", bgHover: "hover:bg-amber-500/10" },
+  {
+    type: "add",
+    label: "Add",
+    icon: "+",
+    count: 2,
+    color: "text-cyan-400",
+    bgHover: "hover:bg-cyan-500/10",
+  },
+  {
+    type: "tombstone",
+    label: "Tombstone",
+    icon: "✕",
+    count: 1,
+    color: "text-pink-400",
+    bgHover: "hover:bg-pink-500/10",
+  },
+  {
+    type: "train",
+    label: "Train",
+    icon: "⚡",
+    count: 3,
+    color: "text-indigo-400",
+    bgHover: "hover:bg-indigo-500/10",
+  },
+  {
+    type: "access",
+    label: "Access",
+    icon: "◎",
+    count: 1,
+    color: "text-amber-400",
+    bgHover: "hover:bg-amber-500/10",
+  },
 ];
 
 /**
@@ -107,7 +132,10 @@ export default function AccessControls() {
   return (
     <>
       {/* ─── Test Animation Dropdown — top-center ─── */}
-      <div className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center md:top-6" ref={menuRef}>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-3 z-20 flex justify-center md:top-6"
+        ref={menuRef}
+      >
         <div className="relative">
           <button
             onClick={() => setMenuOpen((v) => !v)}
@@ -115,7 +143,11 @@ export default function AccessControls() {
           >
             <span className="text-slate-400">▶</span>
             <span>TEST</span>
-            <span className={`ml-0.5 text-[8px] text-slate-500 transition-transform duration-150 ${menuOpen ? "rotate-180" : ""}`}>▾</span>
+            <span
+              className={`ml-0.5 text-[8px] text-slate-500 transition-transform duration-150 ${menuOpen ? "rotate-180" : ""}`}
+            >
+              ▾
+            </span>
           </button>
 
           {menuOpen && (

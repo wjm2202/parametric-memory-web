@@ -192,7 +192,6 @@ export default function MerkleScene() {
 
         {/* No-op — kept for import compatibility */}
 
-
         {/* Controls */}
         <OrbitControls
           makeDefault

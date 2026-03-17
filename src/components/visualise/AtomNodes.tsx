@@ -51,7 +51,10 @@ const SSE_FLASH_COLORS: Record<SseAnimationType, THREE.Color> = {
  * Module-level reusable Map — cleared each frame, never reallocated.
  * Eliminates GC pressure from per-frame `new Map()` allocation.
  */
-const _atomAnimMap = new Map<string, { type: SseAnimationType; progress: number; seqIndex: number; seqLen: number }>();
+const _atomAnimMap = new Map<
+  string,
+  { type: SseAnimationType; progress: number; seqIndex: number; seqLen: number }
+>();
 
 /**
  * Optimised per-frame rendering of atom spheres.
