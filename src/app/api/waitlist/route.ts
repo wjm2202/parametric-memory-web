@@ -1,13 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 /** Simple email validation */
 const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
 
 export async function POST(req: NextRequest) {
+  // Instantiate inside the handler so the missing key fails at runtime
+  // (request time) not at build time during Next.js page data collection.
+  const resend = new Resend(process.env.RESEND_API_KEY);
+
   try {
     const body = (await req.json()) as { email?: unknown };
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
