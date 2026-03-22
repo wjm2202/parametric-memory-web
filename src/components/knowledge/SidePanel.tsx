@@ -41,14 +41,14 @@ function pct(n: number): string {
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export default function SidePanel() {
-  const selectedAtom  = useKnowledgeStore((s) => s.selectedAtom);
+  const selectedAtom = useKnowledgeStore((s) => s.selectedAtom);
   const cachedDetails = useKnowledgeStore((s) => s.cachedDetails);
-  const cacheDetail   = useKnowledgeStore((s) => s.cacheDetail);
-  const selectAtom    = useKnowledgeStore((s) => s.selectAtom);
+  const cacheDetail = useKnowledgeStore((s) => s.cacheDetail);
+  const selectAtom = useKnowledgeStore((s) => s.selectAtom);
 
-  const [detail,    setDetail]    = useState<AtomDetailResponse | null>(null);
+  const [detail, setDetail] = useState<AtomDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
-  const [error,     setError]     = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   /* ── Fetch on atom select ─────────────────────────────────────────── */
 
@@ -86,21 +86,22 @@ export default function SidePanel() {
 
   /* ── Derived ──────────────────────────────────────────────────────── */
 
-  const isOpen    = !!selectedAtom;
-  const type      = selectedAtom ? parseAtomType(selectedAtom) : "other";
-  const label     = selectedAtom ? parseLabel(selectedAtom) : "";
+  const isOpen = !!selectedAtom;
+  const type = selectedAtom ? parseAtomType(selectedAtom) : "other";
+  const label = selectedAtom ? parseLabel(selectedAtom) : "";
   const typeColor = ATOM_COLORS[type];
 
-  const sortedTransitions = detail?.outgoingTransitions
-    .slice()
-    .sort((a, b) => b.effectiveWeight - a.effectiveWeight)
-    .slice(0, 8) ?? [];
+  const sortedTransitions =
+    detail?.outgoingTransitions
+      .slice()
+      .sort((a, b) => b.effectiveWeight - a.effectiveWeight)
+      .slice(0, 8) ?? [];
 
   /* ── Render ───────────────────────────────────────────────────────── */
 
   return (
     <div
-      className={`absolute right-0 top-0 z-20 flex h-full w-80 transform flex-col overflow-hidden border-l border-slate-800/60 bg-slate-950/95 backdrop-blur-md transition-transform duration-300 ease-in-out ${
+      className={`absolute top-0 right-0 z-20 flex h-full w-80 transform flex-col overflow-hidden border-l border-slate-800/60 bg-slate-950/95 backdrop-blur-md transition-transform duration-300 ease-in-out ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
     >
@@ -109,11 +110,10 @@ export default function SidePanel() {
           {/* ── Header ─────────────────────────────────────────────── */}
           <div className="flex items-start justify-between border-b border-slate-800/60 p-4">
             <div className="min-w-0 flex-1 pr-3">
-
               {/* Type + status badges */}
               <div className="mb-1.5 flex flex-wrap items-center gap-1.5">
                 <span
-                  className="inline-block rounded px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider"
+                  className="inline-block rounded px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-wider uppercase"
                   style={{
                     backgroundColor: `${typeColor}20`,
                     color: typeColor,
@@ -124,19 +124,19 @@ export default function SidePanel() {
                 </span>
 
                 {detail?.status === "tombstoned" && (
-                  <span className="inline-block rounded border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase tracking-wider text-red-400">
+                  <span className="inline-block rounded border border-red-500/20 bg-red-500/10 px-1.5 py-0.5 font-mono text-[10px] font-medium tracking-wider text-red-400 uppercase">
                     tombstoned
                   </span>
                 )}
               </div>
 
               {/* Label */}
-              <p className="break-words font-mono text-sm font-medium leading-snug text-slate-100">
+              <p className="font-mono text-sm leading-snug font-medium break-words text-slate-100">
                 {label}
               </p>
 
               {/* Full key */}
-              <p className="mt-0.5 break-all font-mono text-[10px] text-slate-600">
+              <p className="mt-0.5 font-mono text-[10px] break-all text-slate-600">
                 {selectedAtom}
               </p>
             </div>
@@ -147,7 +147,13 @@ export default function SidePanel() {
               aria-label="Close panel"
               className="flex-shrink-0 rounded-md p-1 text-slate-500 transition hover:bg-slate-800/60 hover:text-slate-300"
             >
-              <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <svg
+                className="h-4 w-4"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                strokeWidth={2}
+              >
                 <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
@@ -155,7 +161,6 @@ export default function SidePanel() {
 
           {/* ── Body ───────────────────────────────────────────────── */}
           <div className="flex-1 space-y-4 overflow-y-auto p-4">
-
             {/* Loading */}
             {isLoading && (
               <div className="flex items-center gap-2 text-slate-500">
@@ -165,9 +170,7 @@ export default function SidePanel() {
             )}
 
             {/* Error */}
-            {error && (
-              <p className="font-mono text-xs text-red-400">{error}</p>
-            )}
+            {error && <p className="font-mono text-xs text-red-400">{error}</p>}
 
             {/* Detail content */}
             {detail && (
@@ -175,20 +178,32 @@ export default function SidePanel() {
                 {/* ── Meta ─────────────────────────────────────────── */}
                 <div className="space-y-1.5 rounded-lg border border-slate-800/60 bg-slate-900/40 p-3">
                   <div className="flex justify-between">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">Created</span>
-                    <span className="font-mono text-[10px] text-slate-400">{formatDate(detail.createdAtMs)}</span>
+                    <span className="font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                      Created
+                    </span>
+                    <span className="font-mono text-[10px] text-slate-400">
+                      {formatDate(detail.createdAtMs)}
+                    </span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">Shard</span>
+                    <span className="font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                      Shard
+                    </span>
                     <span className="font-mono text-[10px] text-slate-400">{detail.shard}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">Version</span>
-                    <span className="font-mono text-[10px] text-slate-400">v{detail.committedAtVersion}</span>
+                    <span className="font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                      Version
+                    </span>
+                    <span className="font-mono text-[10px] text-slate-400">
+                      v{detail.committedAtVersion}
+                    </span>
                   </div>
                   {detail.ttl !== null && (
                     <div className="flex justify-between">
-                      <span className="font-mono text-[10px] uppercase tracking-wider text-slate-500">TTL</span>
+                      <span className="font-mono text-[10px] tracking-wider text-slate-500 uppercase">
+                        TTL
+                      </span>
                       <span className="font-mono text-[10px] text-amber-400">{detail.ttl}s</span>
                     </div>
                   )}
@@ -197,14 +212,15 @@ export default function SidePanel() {
                 {/* ── Conflict warning ──────────────────────────────── */}
                 {detail.contradiction.hasConflict && (
                   <div className="rounded-lg border border-amber-500/20 bg-amber-500/5 p-3">
-                    <p className="mb-1.5 font-mono text-[10px] font-medium uppercase tracking-wider text-amber-400">
-                      ⚠ Conflict — {detail.contradiction.competingClaims.length} competing claim{detail.contradiction.competingClaims.length !== 1 ? "s" : ""}
+                    <p className="mb-1.5 font-mono text-[10px] font-medium tracking-wider text-amber-400 uppercase">
+                      ⚠ Conflict — {detail.contradiction.competingClaims.length} competing claim
+                      {detail.contradiction.competingClaims.length !== 1 ? "s" : ""}
                     </p>
                     <div className="space-y-1">
                       {detail.contradiction.competingClaims.map((claim, i) => (
                         <p
                           key={i}
-                          className="break-words font-mono text-[10px] text-amber-300/70"
+                          className="font-mono text-[10px] break-words text-amber-300/70"
                           title={claim.atom}
                         >
                           {parseLabel(claim.atom)}
@@ -217,7 +233,7 @@ export default function SidePanel() {
                 {/* ── Outgoing transitions ──────────────────────────── */}
                 {sortedTransitions.length > 0 ? (
                   <div>
-                    <p className="mb-2 font-mono text-[10px] uppercase tracking-wider text-slate-500">
+                    <p className="mb-2 font-mono text-[10px] tracking-wider text-slate-500 uppercase">
                       Markov transitions
                       <span className="ml-1 text-slate-600">({sortedTransitions.length})</span>
                     </p>

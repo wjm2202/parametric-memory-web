@@ -102,9 +102,7 @@ export async function fetchAtomGraph(
 ): Promise<{ atoms: AtomWithEdges[]; treeVersion: number }> {
   // KG-14: Combine caller abort + hard timeout
   const timeoutSignal = AbortSignal.timeout(REQUEST_TIMEOUT_MS);
-  const combinedSignal = signal
-    ? AbortSignal.any([signal, timeoutSignal])
-    : timeoutSignal;
+  const combinedSignal = signal ? AbortSignal.any([signal, timeoutSignal]) : timeoutSignal;
 
   const res = await fetch("/api/memory/atoms?includeWeights=true", {
     method: "GET",
@@ -242,9 +240,7 @@ export async function expandAtom(
       effectiveWeight: t.effectiveWeight,
     }));
 
-  const newAtoms = edges
-    .map((e) => e.target)
-    .filter((key) => !existingKeys.has(key));
+  const newAtoms = edges.map((e) => e.target).filter((key) => !existingKeys.has(key));
 
   return { newAtoms, edges };
 }

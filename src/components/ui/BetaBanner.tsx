@@ -9,10 +9,10 @@ export function BetaBanner() {
     <div
       role="alert"
       aria-label="Public Beta notice"
-      className="relative z-50 flex min-h-[42px] flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-500/10 px-4 py-2 text-center ring-1 ring-inset ring-amber-500/25"
+      className="relative z-50 flex min-h-[42px] flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-amber-500/10 px-4 py-2 text-center ring-1 ring-amber-500/25 ring-inset"
     >
       {/* Badge */}
-      <span className="flex flex-shrink-0 items-center gap-1.5 text-[11px] font-bold uppercase tracking-widest text-amber-400">
+      <span className="flex flex-shrink-0 items-center gap-1.5 text-[11px] font-bold tracking-widest text-amber-400 uppercase">
         <svg
           className="h-3.5 w-3.5 flex-shrink-0"
           fill="currentColor"

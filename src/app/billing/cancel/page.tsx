@@ -2,12 +2,12 @@ import Link from "next/link";
 
 export default function BillingCancelPage() {
   return (
-    <main className="min-h-screen bg-surface-950 flex items-center justify-center px-4">
-      <div className="max-w-md w-full text-center">
+    <main className="bg-surface-950 flex min-h-screen items-center justify-center px-4">
+      <div className="w-full max-w-md text-center">
         {/* Icon */}
-        <div className="mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full bg-surface-800 ring-1 ring-surface-700">
+        <div className="bg-surface-800 ring-surface-700 mx-auto mb-6 flex h-16 w-16 items-center justify-center rounded-full ring-1">
           <svg
-            className="h-8 w-8 text-surface-400"
+            className="text-surface-400 h-8 w-8"
             fill="none"
             viewBox="0 0 24 24"
             stroke="currentColor"
@@ -17,23 +17,21 @@ export default function BillingCancelPage() {
           </svg>
         </div>
 
-        <h1 className="text-2xl font-semibold text-surface-100 mb-3">
-          Payment cancelled
-        </h1>
+        <h1 className="text-surface-100 mb-3 text-2xl font-semibold">Payment cancelled</h1>
         <p className="text-surface-400 mb-8">
           No charge was made. You can try again whenever you&apos;re ready.
         </p>
 
-        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+        <div className="flex flex-col justify-center gap-3 sm:flex-row">
           <Link
             href="/pricing"
-            className="inline-flex items-center justify-center rounded-lg bg-brand-500 hover:bg-brand-400 px-5 py-2.5 text-sm font-semibold text-white transition-colors"
+            className="bg-brand-500 hover:bg-brand-400 inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold text-white transition-colors"
           >
             Back to pricing
           </Link>
           <Link
             href="/"
-            className="inline-flex items-center justify-center rounded-lg bg-surface-800 hover:bg-surface-700 ring-1 ring-surface-700 px-5 py-2.5 text-sm font-semibold text-surface-200 transition-colors"
+            className="bg-surface-800 hover:bg-surface-700 ring-surface-700 text-surface-200 inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold ring-1 transition-colors"
           >
             Go home
           </Link>

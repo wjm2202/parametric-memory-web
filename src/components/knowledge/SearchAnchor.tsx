@@ -29,13 +29,13 @@ import type { ForceGraphHandle } from "./useForceGraph";
 
 /* ─── Constants ──────────────────────────────────────────────────────── */
 
-const BLOOM_BOOST   = 2.2;
+const BLOOM_BOOST = 2.2;
 /** Same amber as SEARCH_HIT_COLOR in GraphNodes — visual continuity */
-const ANCHOR_COLOR  = new THREE.Color("#f59e0b").multiplyScalar(BLOOM_BOOST);
+const ANCHOR_COLOR = new THREE.Color("#f59e0b").multiplyScalar(BLOOM_BOOST);
 /** Spokes are dimmer so they read as connectors, not features */
-const SPOKE_COLOR   = new THREE.Color("#f59e0b").multiplyScalar(BLOOM_BOOST * 0.35);
+const SPOKE_COLOR = new THREE.Color("#f59e0b").multiplyScalar(BLOOM_BOOST * 0.35);
 /** Max search hits the component allocates for (matches searchAtoms limit: 5) */
-const MAX_SPOKES    = 8;
+const MAX_SPOKES = 8;
 
 interface SearchAnchorProps {
   handle: ForceGraphHandle;
@@ -45,15 +45,12 @@ export default function SearchAnchor({ handle }: SearchAnchorProps) {
   const { simNodes } = handle;
 
   /* ── Refs ──────────────────────────────────────────────────────────── */
-  const sphereRef   = useRef<THREE.Mesh>(null);
-  const linesRef    = useRef<THREE.LineSegments>(null);
+  const sphereRef = useRef<THREE.Mesh>(null);
+  const linesRef = useRef<THREE.LineSegments>(null);
 
   /* ── Geometry: pre-allocated spoke buffer ──────────────────────────── */
   // Each spoke = 2 vertices (origin → hit). MAX_SPOKES × 2 × 3 floats.
-  const spokePositions = useMemo(
-    () => new Float32Array(MAX_SPOKES * 2 * 3),
-    [],
-  );
+  const spokePositions = useMemo(() => new Float32Array(MAX_SPOKES * 2 * 3), []);
 
   const spokeGeometry = useMemo(() => {
     const geo = new THREE.BufferGeometry();
@@ -86,13 +83,13 @@ export default function SearchAnchor({ handle }: SearchAnchorProps) {
   useFrame(({ clock }) => {
     const { searchHits, visibleAtoms } = useKnowledgeStore.getState();
     const sphere = sphereRef.current;
-    const lines  = linesRef.current;
+    const lines = linesRef.current;
     if (!sphere || !lines) return;
 
     // Hide everything when no search is active
     const active = searchHits.size > 0 && visibleAtoms !== null;
     sphere.visible = active;
-    lines.visible  = active;
+    lines.visible = active;
     if (!active) return;
 
     // Animate the anchor sphere — slow breathe, slightly faster than the hit nodes
@@ -116,7 +113,9 @@ export default function SearchAnchor({ handle }: SearchAnchorProps) {
 
       const base = spokeCount * 6; // 2 vertices × 3 floats
       // Vertex 0: origin
-      pos[base + 0] = 0; pos[base + 1] = 0; pos[base + 2] = 0;
+      pos[base + 0] = 0;
+      pos[base + 1] = 0;
+      pos[base + 2] = 0;
       // Vertex 1: hit node position
       pos[base + 3] = node.x ?? 0;
       pos[base + 4] = node.y ?? 0;
@@ -146,7 +145,12 @@ export default function SearchAnchor({ handle }: SearchAnchorProps) {
       </mesh>
 
       {/* Spoke lines */}
-      <lineSegments ref={linesRef} geometry={spokeGeometry} material={spokeMaterial} visible={false} />
+      <lineSegments
+        ref={linesRef}
+        geometry={spokeGeometry}
+        material={spokeMaterial}
+        visible={false}
+      />
     </>
   );
 }

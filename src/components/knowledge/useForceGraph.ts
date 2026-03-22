@@ -17,12 +17,7 @@
 
 import { useRef, useEffect } from "react";
 import { useFrame } from "@react-three/fiber";
-import {
-  forceSimulation,
-  forceLink,
-  forceManyBody,
-  forceCenter,
-} from "d3-force-3d";
+import { forceSimulation, forceLink, forceManyBody, forceCenter } from "d3-force-3d";
 import type { Simulation, LinkForce, SimLink } from "d3-force-3d";
 import { useKnowledgeStore, type KGNode, type KGEdge } from "@/stores/knowledge-store";
 
@@ -47,8 +42,8 @@ export interface ForceGraphHandle {
 /* ─── Constants ──────────────────────────────────────────────────────────── */
 
 const ALPHA_MIN = 0.005;
-const ALPHA_DECAY = 0.015;       // slower decay → more time to settle
-const VELOCITY_DECAY = 0.35;     // slightly less damping for smoother spread
+const ALPHA_DECAY = 0.015; // slower decay → more time to settle
+const VELOCITY_DECAY = 0.35; // slightly less damping for smoother spread
 /**
  * Charge: -30 with distanceMax=120 avoids O(n²) blowup from distant
  * nodes while still giving enough repulsion for 500-1000 atom graphs.

@@ -28,7 +28,7 @@ import type { KGNode, KGEdge } from "@/stores/knowledge-store";
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
 const MAX_EDGES = 2048; // 1024 nodes × avg 2 outgoing arcs
-const BASE_COLOR_WEAK   = new THREE.Color("#7c3aed"); // violet — weak edges
+const BASE_COLOR_WEAK = new THREE.Color("#7c3aed"); // violet — weak edges
 const BASE_COLOR_STRONG = new THREE.Color("#22d3ee"); // cyan — strong edges
 
 /* ─── KG-11: d3 link resolution safety ──────────────────────────────────── */
@@ -51,14 +51,14 @@ interface GraphEdgesProps {
 }
 
 export default function GraphEdges({ handle }: GraphEdgesProps) {
-  const { simNodes, simEdges, isSettled } = handle;  // KG-09: destructure isSettled
+  const { simNodes, simEdges, isSettled } = handle; // KG-09: destructure isSettled
 
   // Pre-allocated typed arrays — updated in place, never recreated
   const positions = useMemo(() => new Float32Array(MAX_EDGES * 2 * 3), []);
-  const colors    = useMemo(() => new Float32Array(MAX_EDGES * 2 * 3), []);
+  const colors = useMemo(() => new Float32Array(MAX_EDGES * 2 * 3), []);
 
   const geometryRef = useRef<THREE.BufferGeometry>(null);
-  const lineRef     = useRef<THREE.LineSegments>(null);
+  const lineRef = useRef<THREE.LineSegments>(null);
 
   // Build a key→index lookup into simNodes so edge resolution is O(1)
   const nodeIndexRef = useRef<Map<string, number>>(new Map());
@@ -97,12 +97,12 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
     // in useForceGraph and updates resume automatically.
     if (isSettled.current) return;
 
-    const geo  = geometryRef.current;
+    const geo = geometryRef.current;
     const line = lineRef.current;
     if (!geo || !line) return;
 
     const edges = simEdges.current;
-    const idx   = nodeIndexRef.current;
+    const idx = nodeIndexRef.current;
 
     let edgeCount = 0;
 
@@ -140,8 +140,12 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
       const g = tmpColor.g * opacity;
       const b = tmpColor.b * opacity;
 
-      colors[base + 0] = r; colors[base + 1] = g; colors[base + 2] = b;
-      colors[base + 3] = r; colors[base + 4] = g; colors[base + 5] = b;
+      colors[base + 0] = r;
+      colors[base + 1] = g;
+      colors[base + 2] = b;
+      colors[base + 3] = r;
+      colors[base + 4] = g;
+      colors[base + 5] = b;
 
       edgeCount++;
     }
@@ -159,13 +163,13 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
     const prevDrawn = lastDrawnRef.current;
     if (edgeCount < prevDrawn) {
       const clearStart = edgeCount * 6;
-      const clearEnd   = prevDrawn  * 6;
+      const clearEnd = prevDrawn * 6;
       positions.fill(0, clearStart, clearEnd);
     }
     lastDrawnRef.current = edgeCount;
 
     geo.attributes.position.needsUpdate = true;
-    geo.attributes.color.needsUpdate    = true;
+    geo.attributes.color.needsUpdate = true;
     geo.setDrawRange(0, edgeCount * 2);
   });
 

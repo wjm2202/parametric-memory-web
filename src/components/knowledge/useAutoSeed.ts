@@ -104,10 +104,7 @@ export function useAutoSeed() {
           for (const edge of atom.edges) {
             // Only include edges where the target is also in the graph
             // and the weight meets the minimum threshold
-            if (
-              edge.effectiveWeight >= MIN_EDGE_WEIGHT &&
-              knownKeys.has(edge.to)
-            ) {
+            if (edge.effectiveWeight >= MIN_EDGE_WEIGHT && knownKeys.has(edge.to)) {
               allEdges.push({
                 source: sourceKey,
                 target: edge.to,
@@ -117,7 +114,6 @@ export function useAutoSeed() {
             }
           }
         }
-
       }
 
       if (signal.aborted) return;

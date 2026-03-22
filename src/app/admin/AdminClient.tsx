@@ -205,13 +205,9 @@ function InstanceSection({ accountId }: { accountId: string }) {
   useEffect(() => {
     const transitional = instances?.some(
       (i) =>
-        i.state === "provisioning" ||
-        i.state === "traefik_pending" ||
-        i.state === "destroying",
+        i.state === "provisioning" || i.state === "traefik_pending" || i.state === "destroying",
     );
-    const hasLive = instances?.some(
-      (i) => i.state === "running" || i.state === "paused",
-    );
+    const hasLive = instances?.some((i) => i.state === "running" || i.state === "paused");
 
     if (!transitional && !hasLive) return;
 
@@ -270,13 +266,7 @@ function InstanceSection({ accountId }: { accountId: string }) {
 }
 
 /* ── Individual instance card ────────────────────────────────────────────── */
-function InstanceCard({
-  instance,
-  accountId: _accountId,
-}: {
-  instance: InstanceInfo;
-  accountId: string;
-}) {
+function InstanceCard({ instance }: { instance: InstanceInfo; accountId: string }) {
   const [detail, setDetail] = useState<InstanceDetail | null>(null);
   const [keysCopied, setKeysCopied] = useState<Record<string, boolean>>({});
   const [showDestroy, setShowDestroy] = useState(false);
@@ -351,11 +341,7 @@ function InstanceCard({
   }
 
   async function copyDesktopConfig(url: string) {
-    const json = JSON.stringify(
-      { mcpServers: { memory: { url } } },
-      null,
-      2,
-    );
+    const json = JSON.stringify({ mcpServers: { memory: { url } } }, null, 2);
     await navigator.clipboard.writeText(json);
     setConfigCopied(true);
     setTimeout(() => setConfigCopied(false), 2000);
@@ -366,7 +352,9 @@ function InstanceCard({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className={`h-2.5 w-2.5 shrink-0 rounded-full ${stateColours[live.state] ?? "bg-white/30"}`} />
+          <div
+            className={`h-2.5 w-2.5 shrink-0 rounded-full ${stateColours[live.state] ?? "bg-white/30"}`}
+          />
           <div>
             {live.subdomain ? (
               <span className="font-mono text-sm font-medium text-white/90">{live.subdomain}</span>
@@ -443,8 +431,8 @@ function InstanceCard({
       )}
 
       {/* MCP Connection panel — the main event (hidden when destroyed) */}
-      {live.state !== "destroyed" && (
-        live.mcpEndpointUrl ? (
+      {live.state !== "destroyed" &&
+        (live.mcpEndpointUrl ? (
           <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/[0.06] p-4">
             <p className="mb-3 text-xs font-semibold tracking-wider text-indigo-300/80 uppercase">
               MCP Connection URL
@@ -470,7 +458,7 @@ function InstanceCard({
             </p>
             <div className="relative">
               <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-3 font-mono text-xs leading-relaxed text-white/50">
-{`{
+                {`{
   "mcpServers": {
     "memory": {
       "url": "${live.mcpEndpointUrl}"
@@ -491,8 +479,7 @@ function InstanceCard({
             SSL certificate setup failed. Contact support with your instance ID:{" "}
             <code className="font-mono text-red-300/70">{live.id}</code>
           </div>
-        ) : null
-      )}
+        ) : null)}
 
       {/* One-time key reveal */}
       {(detail?.masterKey || detail?.vizKey) && (

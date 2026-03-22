@@ -194,14 +194,13 @@ function CrystallisationScene() {
 
     // ── Compute phase progress ─────────────────────────────────────────────
 
-    let chaosT = 0; // 0–1 within chaos phase
     let attractT = 0; // 0–1 within attract phase
     let settleT = 0; // 0–1 within settle phase
     let pulseT = 0; // 0–1 within pulse phase
     let dissolveT = 0; // 0–1 within dissolve phase
 
     if (t < PHASE.CHAOS) {
-      chaosT = t / PHASE.CHAOS;
+      // chaos phase — particles drift freely, no interpolation variable needed
     } else if (t < PHASE.CHAOS + PHASE.ATTRACT) {
       attractT = (t - PHASE.CHAOS) / PHASE.ATTRACT;
     } else if (t < PHASE.CHAOS + PHASE.ATTRACT + PHASE.SETTLE) {

@@ -46,9 +46,18 @@ function Logomark({ size = 24 }: { size?: number }) {
 
 function SubstrateIcon() {
   return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round"
-        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+    <svg
+      className="h-3.5 w-3.5"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
+      />
       <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
     </svg>
   );
@@ -56,18 +65,36 @@ function SubstrateIcon() {
 
 function KnowledgeIcon() {
   return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round"
-        d="M7.5 3.75H6A2.25 2.25 0 0 0 3.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0 1 20.25 6v1.5m0 9V18A2.25 2.25 0 0 1 18 20.25h-1.5m-9 0H6A2.25 2.25 0 0 1 3.75 18v-1.5M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+    <svg
+      className="h-3.5 w-3.5"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M7.5 3.75H6A2.25 2.25 0 0 0 3.75 6v1.5M16.5 3.75H18A2.25 2.25 0 0 1 20.25 6v1.5m0 9V18A2.25 2.25 0 0 1 18 20.25h-1.5m-9 0H6A2.25 2.25 0 0 1 3.75 18v-1.5M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+      />
     </svg>
   );
 }
 
 function UserIcon() {
   return (
-    <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-      <path strokeLinecap="round" strokeLinejoin="round"
-        d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+    <svg
+      className="h-3.5 w-3.5"
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={1.5}
+      stroke="currentColor"
+    >
+      <path
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+      />
     </svg>
   );
 }
@@ -161,9 +188,7 @@ export default function SiteNavbar({
           "Dashboard"
         )}
       </span>
-      <span className="sm:hidden">
-        {email ? email.split("@")[0] : "Admin"}
-      </span>
+      <span className="sm:hidden">{email ? email.split("@")[0] : "Admin"}</span>
     </Link>
   ) : (
     <Link
@@ -195,9 +220,7 @@ export default function SiteNavbar({
             <a
               href="/docs"
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                isActive("/docs")
-                  ? "text-white"
-                  : "text-surface-400 hover:text-white"
+                isActive("/docs") ? "text-white" : "text-surface-400 hover:text-white"
               }`}
             >
               Docs
@@ -206,7 +229,7 @@ export default function SiteNavbar({
               href="/pricing"
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 isActive("/pricing")
-                  ? "text-white font-medium"
+                  ? "font-medium text-white"
                   : "text-surface-400 hover:text-white"
               }`}
             >
@@ -253,10 +276,7 @@ export default function SiteNavbar({
       ? "bg-violet-500/10 text-violet-400 ring-violet-500/20"
       : "bg-cyan-500/10 text-cyan-400 ring-cyan-500/20";
 
-  const labelClasses =
-    accentColor === "violet"
-      ? "text-violet-500/60"
-      : "text-cyan-500/60";
+  const labelClasses = accentColor === "violet" ? "text-violet-500/60" : "text-cyan-500/60";
 
   return (
     <nav className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 py-3 md:px-6 md:py-4">
@@ -296,11 +316,7 @@ export default function SiteNavbar({
             className="font-mono text-xs text-slate-500 transition-colors hover:text-white"
             title={email ?? "Admin"}
           >
-            {email ? (
-              <span>{email.split("@")[0]}</span>
-            ) : (
-              <UserIcon />
-            )}
+            {email ? <span>{email.split("@")[0]}</span> : <UserIcon />}
           </Link>
         ) : (
           <Link
@@ -317,7 +333,9 @@ export default function SiteNavbar({
             <span className={`hidden font-mono text-xs tracking-widest sm:inline ${labelClasses}`}>
               {pageLabel}
             </span>
-            <span className={`ml-1 rounded-full px-2 py-0.5 font-mono text-[10px] ring-1 sm:ml-2 ${badgeClasses}`}>
+            <span
+              className={`ml-1 rounded-full px-2 py-0.5 font-mono text-[10px] ring-1 sm:ml-2 ${badgeClasses}`}
+            >
               LIVE
             </span>
           </div>

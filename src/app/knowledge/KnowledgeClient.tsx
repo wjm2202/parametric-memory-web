@@ -18,13 +18,10 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 import SearchBar from "@/components/knowledge/SearchBar";
 import SidePanel from "@/components/knowledge/SidePanel";
 
-const KnowledgeScene = dynamic(
-  () => import("@/components/knowledge/KnowledgeScene"),
-  {
-    ssr: false,
-    loading: () => <LoadingSkeleton />,
-  },
-);
+const KnowledgeScene = dynamic(() => import("@/components/knowledge/KnowledgeScene"), {
+  ssr: false,
+  loading: () => <LoadingSkeleton />,
+});
 
 function LoadingSkeleton() {
   return (
@@ -36,9 +33,7 @@ function LoadingSkeleton() {
         </div>
         <div className="flex items-center justify-center gap-2">
           <div className="h-3 w-3 animate-spin rounded-full border border-violet-400/30 border-t-violet-400" />
-          <span className="font-mono text-xs text-slate-500">
-            Initialising force graph…
-          </span>
+          <span className="font-mono text-xs text-slate-500">Initialising force graph…</span>
         </div>
       </div>
     </div>
@@ -68,7 +63,7 @@ export default function KnowledgeClient({ isLoggedIn }: KnowledgeClientProps) {
       <KnowledgeScene />
 
       {/* SidePanel — absolute overlay, slides in from the right edge */}
-      <div className="absolute inset-y-0 right-0 top-14 z-20 md:top-16">
+      <div className="absolute inset-y-0 top-14 right-0 z-20 md:top-16">
         <SidePanel />
       </div>
     </div>

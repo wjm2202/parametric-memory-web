@@ -63,7 +63,7 @@ interface GraphNodesProps {
 }
 
 export default function GraphNodes({ handle }: GraphNodesProps) {
-  const { simNodes, isSettled } = handle;   // KG-09: destructure isSettled
+  const { simNodes, isSettled } = handle; // KG-09: destructure isSettled
   const meshRef = useRef<THREE.InstancedMesh>(null);
 
   /**
@@ -118,7 +118,7 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
       useKnowledgeStore.getState();
 
     // KG-04: O(1) index lookups — integer compare in the hot loop below
-    const hoveredIdx  = hoveredAtom  ? (_simNodeIndex.get(hoveredAtom)  ?? -1) : -1;
+    const hoveredIdx = hoveredAtom ? (_simNodeIndex.get(hoveredAtom) ?? -1) : -1;
     const selectedIdx = selectedAtom ? (_simNodeIndex.get(selectedAtom) ?? -1) : -1;
 
     // Track whether this frame has an active filter (used by the early-exit guard below).
@@ -137,12 +137,13 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
     if (
       isSettled.current &&
       !justCleared &&
-      hoveredIdx    < 0 &&
-      selectedIdx   < 0 &&
-      loadingAtoms.size  === 0 &&
-      searchHits.size    === 0 &&
-      visibleAtoms       === null
-    ) return;
+      hoveredIdx < 0 &&
+      selectedIdx < 0 &&
+      loadingAtoms.size === 0 &&
+      searchHits.size === 0 &&
+      visibleAtoms === null
+    )
+      return;
 
     // KG-15: Warn once if node count exceeds the instanced mesh cap
     if (!_warnedNodeCap && nodes.length > MAX_INSTANCES) {
@@ -171,7 +172,7 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
 
       let scale = BASE_SCALE;
 
-      const isLoading   = loadingAtoms.has(node.key);
+      const isLoading = loadingAtoms.has(node.key);
       const isSearchHit = searchHits.has(node.key);
 
       if (isLoading) {
@@ -213,11 +214,11 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
     // Pattern mirrors the colorChanged guard in AtomNodes.tsx (/visualise).
     if (mesh.instanceColor) {
       const hasInteraction =
-        hoveredIdx        >= 0 ||
-        selectedIdx       >= 0 ||
-        loadingAtoms.size  > 0 ||
-        searchHits.size    > 0 ||  // keep pulsing search hit colours
-        visibleAtoms      !== null; // keep uploading while filter is active
+        hoveredIdx >= 0 ||
+        selectedIdx >= 0 ||
+        loadingAtoms.size > 0 ||
+        searchHits.size > 0 || // keep pulsing search hit colours
+        visibleAtoms !== null; // keep uploading while filter is active
       if (hasInteraction || !isSettled.current) {
         mesh.instanceColor.needsUpdate = true;
       }
@@ -233,8 +234,13 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
       const node = simNodes.current[e.instanceId ?? -1] as KGNode | undefined;
       if (!node) return;
 
-      const { selectAtom: sel, selectedAtom, expandedAtoms, nodes, markLoading } =
-        useKnowledgeStore.getState();
+      const {
+        selectAtom: sel,
+        selectedAtom,
+        expandedAtoms,
+        nodes,
+        markLoading,
+      } = useKnowledgeStore.getState();
 
       // ── 1. Toggle selection ──────────────────────────────────────────
       sel(node.key === selectedAtom ? null : node.key);

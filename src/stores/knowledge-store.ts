@@ -191,7 +191,7 @@ interface KnowledgeState {
 export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
   nodes: new Map(),
   edges: [],
-  edgeKeys: new Set(),   // KG-03
+  edgeKeys: new Set(), // KG-03
   expandedAtoms: new Set(),
   loadingAtoms: new Set(),
   selectedAtom: null,
@@ -313,7 +313,11 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
   markLoading: (key, loading) => {
     set((s) => {
       const next = new Set(s.loadingAtoms);
-      if (loading) { next.add(key); } else { next.delete(key); }
+      if (loading) {
+        next.add(key);
+      } else {
+        next.delete(key);
+      }
       return { loadingAtoms: next };
     });
   },
@@ -322,7 +326,11 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
     set((s) => {
       const next = new Set(s.loadingAtoms);
       for (const key of keys) {
-        if (loading) { next.add(key); } else { next.delete(key); }
+        if (loading) {
+          next.add(key);
+        } else {
+          next.delete(key);
+        }
       }
       return { loadingAtoms: next };
     });
@@ -358,7 +366,7 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
     set({
       nodes: new Map(),
       edges: [],
-      edgeKeys: new Set(),   // KG-03
+      edgeKeys: new Set(), // KG-03
       expandedAtoms: new Set(),
       loadingAtoms: new Set(),
       selectedAtom: null,

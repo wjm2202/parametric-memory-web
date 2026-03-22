@@ -67,29 +67,29 @@ function TypeDot({ type }: { type: AtomType }) {
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export default function SearchBar() {
-  const [query, setQuery]               = useState("");
-  const [isLoading, setIsLoading]       = useState(false);
-  const [error, setError]               = useState<string | null>(null);
-  const [suggestions, setSuggestions]   = useState<KGNode[]>([]);
+  const [query, setQuery] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [suggestions, setSuggestions] = useState<KGNode[]>([]);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [activeIdx, setActiveIdx]       = useState(-1);   // keyboard nav index
+  const [activeIdx, setActiveIdx] = useState(-1); // keyboard nav index
   const [totalMatches, setTotalMatches] = useState(0);
 
-  const inputRef    = useRef<HTMLInputElement>(null);
+  const inputRef = useRef<HTMLInputElement>(null);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Prevent blur from closing dropdown before a click registers
   const mouseInDropdown = useRef(false);
 
   /* ── Store actions (stable refs — no re-renders on node additions) ────── */
-  const addNodesLoaded    = useKnowledgeStore((s) => s.addNodesLoaded);
-  const addEdges          = useKnowledgeStore((s) => s.addEdges);
+  const addNodesLoaded = useKnowledgeStore((s) => s.addNodesLoaded);
+  const addEdges = useKnowledgeStore((s) => s.addEdges);
   const markExpandedBatch = useKnowledgeStore((s) => s.markExpandedBatch);
-  const setSearchHits     = useKnowledgeStore((s) => s.setSearchHits);
-  const setVisibleAtoms   = useKnowledgeStore((s) => s.setVisibleAtoms);
+  const setSearchHits = useKnowledgeStore((s) => s.setSearchHits);
+  const setVisibleAtoms = useKnowledgeStore((s) => s.setVisibleAtoms);
   // reset, setSearchHits, setVisibleAtoms, selectAtom, hoverAtom all accessed
   // via getState() inside handleReset — no subscription needed there.
-  const nodeCount         = useKnowledgeStore((s) => s.nodes.size);
+  const nodeCount = useKnowledgeStore((s) => s.nodes.size);
 
   /* ── Typeahead filter (client-side) ──────────────────────────────────── */
   //
@@ -122,25 +122,28 @@ export default function SearchBar() {
     setActiveIdx(-1);
   }, []);
 
-  const filterSuggestions = useCallback((value: string, prevValue: string) => {
-    if (debounceRef.current) clearTimeout(debounceRef.current);
+  const filterSuggestions = useCallback(
+    (value: string, prevValue: string) => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
 
-    if (!value.trim()) {
-      setSuggestions([]);
-      setShowDropdown(false);
-      setActiveIdx(-1);
-      return;
-    }
+      if (!value.trim()) {
+        setSuggestions([]);
+        setShowDropdown(false);
+        setActiveIdx(-1);
+        return;
+      }
 
-    // First character typed: run immediately so the dropdown appears at once
-    if (!prevValue.trim()) {
-      runFilter(value);
-      return;
-    }
+      // First character typed: run immediately so the dropdown appears at once
+      if (!prevValue.trim()) {
+        runFilter(value);
+        return;
+      }
 
-    // Subsequent keystrokes: debounce 200ms
-    debounceRef.current = setTimeout(() => runFilter(value), 200);
-  }, [runFilter]);
+      // Subsequent keystrokes: debounce 200ms
+      debounceRef.current = setTimeout(() => runFilter(value), 200);
+    },
+    [runFilter],
+  );
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -230,7 +233,6 @@ export default function SearchBar() {
       markExpandedBatch(Array.from(allNewKeys));
       setSearchHits(seedKeys);
       setVisibleAtoms(Array.from(allNewKeys));
-
     } catch (err) {
       if ((err as Error).name !== "AbortError") {
         setError("Search failed. Check your connection.");
@@ -238,7 +240,15 @@ export default function SearchBar() {
     } finally {
       setIsLoading(false);
     }
-  }, [query, isLoading, addNodesLoaded, addEdges, markExpandedBatch, setSearchHits, setVisibleAtoms]);
+  }, [
+    query,
+    isLoading,
+    addNodesLoaded,
+    addEdges,
+    markExpandedBatch,
+    setSearchHits,
+    setVisibleAtoms,
+  ]);
 
   /* ── Clear — restores the full graph view without reloading ─────────── */
   //
@@ -306,7 +316,6 @@ export default function SearchBar() {
 
   return (
     <div className="flex items-center gap-2">
-
       {/* Search input + dropdown wrapper */}
       <div className="relative flex items-center">
         <input
@@ -318,7 +327,7 @@ export default function SearchBar() {
           onFocus={() => query.trim() && suggestions.length > 0 && setShowDropdown(true)}
           onBlur={handleBlur}
           placeholder="Search memory substrate…"
-          className="w-72 rounded-full border border-slate-700/50 bg-slate-900/80 py-1.5 pl-9 pr-4 font-mono text-xs text-slate-200 placeholder-slate-500 outline-none backdrop-blur-md transition focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20"
+          className="w-72 rounded-full border border-slate-700/50 bg-slate-900/80 py-1.5 pr-4 pl-9 font-mono text-xs text-slate-200 placeholder-slate-500 backdrop-blur-md transition outline-none focus:border-violet-500/50 focus:ring-1 focus:ring-violet-500/20"
           disabled={isLoading}
           autoComplete="off"
           spellCheck={false}
@@ -327,10 +336,16 @@ export default function SearchBar() {
         {/* Search icon */}
         <svg
           className="pointer-events-none absolute left-3 h-3 w-3 text-slate-500"
-          fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}
+          fill="none"
+          viewBox="0 0 24 24"
+          stroke="currentColor"
+          strokeWidth={2}
         >
-          <path strokeLinecap="round" strokeLinejoin="round"
-            d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z" />
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M21 21l-4.35-4.35M17 11A6 6 0 1 1 5 11a6 6 0 0 1 12 0z"
+          />
         </svg>
 
         {/* Inline spinner */}
@@ -342,9 +357,13 @@ export default function SearchBar() {
         {showDropdown && (
           <div
             ref={dropdownRef}
-            onMouseEnter={() => { mouseInDropdown.current = true; }}
-            onMouseLeave={() => { mouseInDropdown.current = false; }}
-            className="absolute left-0 top-full z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/95 shadow-2xl shadow-black/50 backdrop-blur-md"
+            onMouseEnter={() => {
+              mouseInDropdown.current = true;
+            }}
+            onMouseLeave={() => {
+              mouseInDropdown.current = false;
+            }}
+            className="absolute top-full left-0 z-50 mt-1.5 w-full overflow-hidden rounded-xl border border-slate-700/60 bg-slate-900/95 shadow-2xl shadow-black/50 backdrop-blur-md"
           >
             <ul className="max-h-64 overflow-y-auto">
               {suggestions.map((node, idx) => (
@@ -354,9 +373,7 @@ export default function SearchBar() {
                   onClick={() => handleSuggestionClick(node)}
                   className={[
                     "flex cursor-pointer items-start gap-2 px-3 py-2 transition-colors",
-                    idx === activeIdx
-                      ? "bg-violet-500/15"
-                      : "hover:bg-slate-800/60",
+                    idx === activeIdx ? "bg-violet-500/15" : "hover:bg-slate-800/60",
                   ].join(" ")}
                 >
                   {/* Type indicator dot */}
@@ -396,9 +413,7 @@ export default function SearchBar() {
                     ? `${MAX_SUGGESTIONS} of ${totalMatches} — keep typing to narrow`
                     : `${totalMatches} atom${totalMatches !== 1 ? "s" : ""} matched`}
                 </span>
-                <span className="font-mono text-[10px] text-slate-600">
-                  ↵ semantic search
-                </span>
+                <span className="font-mono text-[10px] text-slate-600">↵ semantic search</span>
               </div>
             )}
           </div>
@@ -425,9 +440,7 @@ export default function SearchBar() {
       )}
 
       {/* Error */}
-      {error && (
-        <span className="font-mono text-xs text-red-400/80">{error}</span>
-      )}
+      {error && <span className="font-mono text-xs text-red-400/80">{error}</span>}
     </div>
   );
 }
