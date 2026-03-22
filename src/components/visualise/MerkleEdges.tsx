@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { useRef, useEffect, useMemo } from "react";
 import * as THREE from "three";
 import { useMemoryStore } from "@/stores/memory-store";
 import { getVisualDepth, treeNodePosition, shardRingPosition } from "@/stores/memory-store";
@@ -13,6 +13,13 @@ import { getVisualDepth, treeNodePosition, shardRingPosition } from "@/stores/me
  *
  * Either way, this component does NO per-frame work — geometry is static
  * and only recomputed when the atom set changes.
+ *
+ * BUG FIX: R3F v9 treats `args` as constructor-only — changing `args` on a
+ * mounted <bufferAttribute> does NOT update the underlying THREE.BufferAttribute.
+ * Solution: use refs + useEffect to imperatively call setAttribute() whenever
+ * the edge data changes, exactly like TreePlaceholders does for its InstancedMesh.
+ * Also adds frustumCulled={false} so new depth-level edges are never clipped by
+ * a stale bounding sphere.
  */
 
 const EDGE_COLOR = new THREE.Color("#38bdf8").multiplyScalar(1.2); // bright sky-blue, bloom-visible
@@ -21,6 +28,9 @@ const RING_EDGE_COLOR = new THREE.Color("#22d3ee").multiplyScalar(1.5); // brigh
 export default function MerkleEdges() {
   const atoms = useMemoryStore((s) => s.atoms);
   const geometry = useMemoryStore((s) => s.geometry);
+
+  const treeGeoRef = useRef<THREE.BufferGeometry>(null);
+  const ringGeoRef = useRef<THREE.BufferGeometry>(null);
 
   // Fallback: compute locally if worker geometry isn't available
   const localEdges = useMemo(() => {
@@ -65,20 +75,31 @@ export default function MerkleEdges() {
   const treeEdges = geometry?.treeEdges ?? localEdges?.treeEdges;
   const ringEdges = geometry?.ringEdges ?? localEdges?.ringEdges;
 
-  if (!treeEdges || !ringEdges || atoms.length === 0) return null;
+  // Imperatively push new edge data into the BufferGeometry whenever it changes.
+  // This is necessary because R3F v9 does not re-apply `args` on mounted elements —
+  // only initial construction gets the buffer. Without this, new depth-level edges
+  // computed by the layout worker are silently dropped.
+  useEffect(() => {
+    const geo = treeGeoRef.current;
+    if (!geo || !treeEdges || treeEdges.length === 0) return;
+    geo.setAttribute("position", new THREE.BufferAttribute(treeEdges, 3));
+    geo.computeBoundingSphere();
+  }, [treeEdges]);
+
+  useEffect(() => {
+    const geo = ringGeoRef.current;
+    if (!geo || !ringEdges || ringEdges.length === 0) return;
+    geo.setAttribute("position", new THREE.BufferAttribute(ringEdges, 3));
+    geo.computeBoundingSphere();
+  }, [ringEdges]);
+
+  if (atoms.length === 0) return null;
 
   return (
     <group>
-      {treeEdges.length > 0 && (
-        <lineSegments>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              args={[treeEdges, 3]}
-              count={treeEdges.length / 3}
-              itemSize={3}
-            />
-          </bufferGeometry>
+      {treeEdges && treeEdges.length > 0 && (
+        <lineSegments frustumCulled={false}>
+          <bufferGeometry ref={treeGeoRef} />
           <lineBasicMaterial
             color={EDGE_COLOR}
             transparent
@@ -89,16 +110,9 @@ export default function MerkleEdges() {
         </lineSegments>
       )}
 
-      {ringEdges.length > 0 && (
-        <lineSegments>
-          <bufferGeometry>
-            <bufferAttribute
-              attach="attributes-position"
-              args={[ringEdges, 3]}
-              count={ringEdges.length / 3}
-              itemSize={3}
-            />
-          </bufferGeometry>
+      {ringEdges && ringEdges.length > 0 && (
+        <lineSegments frustumCulled={false}>
+          <bufferGeometry ref={ringGeoRef} />
           <lineBasicMaterial
             color={RING_EDGE_COLOR}
             transparent

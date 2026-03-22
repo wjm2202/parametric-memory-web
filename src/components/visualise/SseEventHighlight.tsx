@@ -22,6 +22,8 @@ import {
  */
 
 const ACCESS_LINE_COLOR = new THREE.Color("#fbbf24").multiplyScalar(2.5); // amber (unused)
+const SEARCH_LINE_COLOR = new THREE.Color("#10b981").multiplyScalar(3.0); // emerald — scanned atoms
+const BOOTSTRAP_LINE_COLOR = new THREE.Color("#818cf8").multiplyScalar(2.5); // indigo — session load
 
 /** Max simultaneous line segments we'll draw (avoids unbounded allocation) */
 const MAX_LINES = 128;
@@ -55,7 +57,8 @@ export default function SseEventHighlight() {
     for (const anim of sseAnimations) {
       if (lineCount >= MAX_LINES) break;
 
-      // Add/tombstone/access handled by MerkleRehashCascade, train by TrainArcLightning
+      // add/tombstone/access handled by MerkleRehashCascade, train by TrainArcLightning
+      // search and bootstrap render here as ring→atom spotlight lines
       if (
         anim.type === "add" ||
         anim.type === "tombstone" ||
@@ -85,7 +88,12 @@ export default function SseEventHighlight() {
 
       if (brightness < 0.01) continue;
 
-      const color = ACCESS_LINE_COLOR;
+      const color =
+        anim.type === "search"
+          ? SEARCH_LINE_COLOR
+          : anim.type === "bootstrap"
+            ? BOOTSTRAP_LINE_COLOR
+            : ACCESS_LINE_COLOR;
       const ringPos = shardRingPosition(anim.shardId);
 
       for (const atomKey of anim.atomKeys) {

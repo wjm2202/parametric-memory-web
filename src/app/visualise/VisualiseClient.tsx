@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import SiteNavbar from "@/components/ui/SiteNavbar";
 
 /**
  * Dynamic import — Three.js / R3F cannot render server-side.
@@ -29,29 +29,19 @@ function LoadingSkeleton() {
   );
 }
 
-export default function VisualiseClient() {
+interface VisualiseClientProps {
+  isLoggedIn: boolean;
+}
+
+export default function VisualiseClient({ isLoggedIn }: VisualiseClientProps) {
   return (
     <div className="h-screen w-full overflow-hidden bg-[#030712]">
-      {/* Navigation bar */}
-      <nav className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 py-3 md:px-6 md:py-4">
-        <Link
-          href="/"
-          className="font-mono text-xs font-semibold tracking-wider text-slate-400 transition-colors hover:text-white md:text-sm"
-        >
-          <span className="hidden sm:inline">PARAMETRIC MEMORY</span>
-          <span className="sm:hidden">PMEM</span>
-        </Link>
-        <div className="flex items-center gap-1">
-          <span className="hidden font-mono text-xs tracking-widest text-cyan-500/60 sm:inline">
-            SUBSTRATE VIEWER
-          </span>
-          <span className="ml-1 rounded-full bg-cyan-500/10 px-2 py-0.5 font-mono text-[10px] text-cyan-400 ring-1 ring-cyan-500/20 sm:ml-2">
-            LIVE
-          </span>
-        </div>
-      </nav>
-
-      {/* Full-screen 3D scene */}
+      <SiteNavbar
+        isLoggedIn={isLoggedIn}
+        variant="immersive"
+        pageLabel="SUBSTRATE VIEWER"
+        accentColor="cyan"
+      />
       <MerkleScene />
     </div>
   );

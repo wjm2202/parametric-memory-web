@@ -10,30 +10,25 @@ import {
   atomTreePosInLevel,
 } from "@/stores/memory-store";
 
-const PLACEHOLDER_RADIUS = 0.06;
-
 /**
- * Fixed capacity for placeholder InstancedMesh — never recreated.
- * 4 shards × up to 255 nodes per shard tree (depth 7 = 2^8 - 1) = 1020 max.
- * Round up with headroom.
+ * Renders a dim dot at every BFS node position in each shard's visual tree,
+ * showing the full Merkle skeleton (occupied and empty positions).
+ *
+ * Uses THREE.Points instead of InstancedMesh:
+ * - No fixed capacity limit — grows organically with the tree depth
+ * - Single draw call regardless of node count
+ * - Positions and per-vertex colors pushed imperatively via useEffect,
+ *   same pattern as MerkleEdges, so R3F args-update issues don't apply
+ * - Worker already computes placeholderPositions + placeholderColors as
+ *   Float32Arrays — we just forward them straight to the GPU
+ *
+ * Zero per-frame work — geometry is only updated when the atom set changes.
  */
-const MAX_PLACEHOLDER_INSTANCES = 1280;
 
-/**
- * Renders small dim spheres at every node position in each shard's visual tree.
- *
- * KEY OPTIMISATION: Placeholders are STATIC — positions never change between
- * layout updates. Matrices are set ONCE via useEffect (not useFrame), so this
- * component costs zero per-frame work.
- *
- * BUG FIX: Uses fixed-capacity InstancedMesh with mesh.count to avoid
- * React recreating the WebGL mesh when placeholder count changes.
- *
- * Prefers pre-computed Float32Arrays from the layout worker (store.geometry).
- * Falls back to local computation if the worker hasn't responded yet.
- */
+const POINT_SIZE = 0.12; // world-space point radius (THREE.Points sizeAttenuation)
+
 export default function TreePlaceholders() {
-  const meshRef = useRef<THREE.InstancedMesh>(null);
+  const geoRef = useRef<THREE.BufferGeometry>(null);
   const geometry = useMemoryStore((s) => s.geometry);
   const atoms = useMemoryStore((s) => s.atoms);
 
@@ -42,7 +37,6 @@ export default function TreePlaceholders() {
     if (geometry) return null; // worker data available, skip local computation
 
     const shardCounts: Record<number, number> = { 0: 0, 1: 0, 2: 0, 3: 0 };
-    // Track which BFS tree positions are occupied (level * 1000 + pos)
     const occupiedNodes: Record<number, Set<number>> = {
       0: new Set(),
       1: new Set(),
@@ -54,7 +48,6 @@ export default function TreePlaceholders() {
       shardCounts[a.shard] = (shardCounts[a.shard] ?? 0) + 1;
     }
 
-    // Group by shard, sort, then mark BFS positions as occupied
     const sortedByShard: Record<number, typeof atoms> = { 0: [], 1: [], 2: [], 3: [] };
     for (const a of atoms) {
       (sortedByShard[a.shard] ?? (sortedByShard[a.shard] = [])).push(a);
@@ -95,52 +88,37 @@ export default function TreePlaceholders() {
     return {
       positions: new Float32Array(posArr),
       colors: new Float32Array(colArr),
-      count: posArr.length / 3,
     };
   }, [geometry, atoms]);
 
-  // Determine which data source to use
   const positions = geometry?.placeholderPositions ?? localData?.positions;
   const colors = geometry?.placeholderColors ?? localData?.colors;
-  const count = geometry?.placeholderCount ?? localData?.count ?? 0;
 
-  // Apply matrices ONCE when geometry changes — not every frame.
-  // Also update mesh.count so GPU only draws active instances.
+  // Push new geometry to the GPU whenever the data changes.
+  // setAttribute replaces buffers in-place — no capacity limit, no remount.
   useEffect(() => {
-    const mesh = meshRef.current;
-    if (!mesh || count === 0 || !positions || !colors) {
-      if (mesh) mesh.count = 0;
-      return;
+    const geo = geoRef.current;
+    if (!geo || !positions || positions.length === 0) return;
+    geo.setAttribute("position", new THREE.BufferAttribute(positions, 3));
+    if (colors && colors.length === positions.length) {
+      geo.setAttribute("color", new THREE.BufferAttribute(colors, 3));
     }
+    geo.computeBoundingSphere();
+  }, [positions, colors]);
 
-    const tmpObj = new THREE.Object3D();
-    const tmpColor = new THREE.Color();
-
-    const drawCount = Math.min(count, MAX_PLACEHOLDER_INSTANCES);
-
-    for (let i = 0; i < drawCount; i++) {
-      tmpObj.position.set(positions[i * 3], positions[i * 3 + 1], positions[i * 3 + 2]);
-      tmpObj.scale.setScalar(PLACEHOLDER_RADIUS);
-      tmpObj.updateMatrix();
-      mesh.setMatrixAt(i, tmpObj.matrix);
-
-      tmpColor.setRGB(colors[i * 3], colors[i * 3 + 1], colors[i * 3 + 2]);
-      mesh.setColorAt(i, tmpColor);
-    }
-
-    mesh.count = drawCount;
-    mesh.instanceMatrix.needsUpdate = true;
-    if (mesh.instanceColor) mesh.instanceColor.needsUpdate = true;
-  }, [positions, colors, count]);
+  if (atoms.length === 0) return null;
 
   return (
-    <instancedMesh
-      ref={meshRef}
-      args={[undefined, undefined, MAX_PLACEHOLDER_INSTANCES]}
-      frustumCulled={false}
-    >
-      <sphereGeometry args={[1, 8, 8]} />
-      <meshBasicMaterial toneMapped={false} transparent opacity={0.6} />
-    </instancedMesh>
+    <points frustumCulled={false}>
+      <bufferGeometry ref={geoRef} />
+      <pointsMaterial
+        size={POINT_SIZE}
+        sizeAttenuation
+        vertexColors
+        toneMapped={false}
+        transparent
+        opacity={0.55}
+      />
+    </points>
   );
 }

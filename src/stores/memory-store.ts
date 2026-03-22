@@ -60,7 +60,7 @@ export interface AccessPath {
 }
 
 /* ─── S16-7: SSE animation queue ─── */
-export type SseAnimationType = "add" | "tombstone" | "train" | "access";
+export type SseAnimationType = "add" | "tombstone" | "train" | "access" | "search" | "bootstrap";
 
 export interface SseAnimation {
   id: string;
@@ -260,9 +260,6 @@ export const ARC_FILL = 0.92;
  */
 export const LEVEL_DROP = 3.5;
 
-/** Maximum visual depth cap */
-export const MAX_VISUAL_DEPTH = 7;
-
 /** Number of shards (used for overlap math) */
 export const NUM_SHARDS = 4;
 
@@ -292,7 +289,7 @@ export function shardRingPosition(shardId: number): [number, number, number] {
 export function getVisualDepth(atomCount: number): number {
   if (atomCount <= 0) return 0;
   if (atomCount === 1) return 0;
-  return Math.min(Math.floor(Math.log2(atomCount)), MAX_VISUAL_DEPTH);
+  return Math.floor(Math.log2(atomCount));
 }
 
 /**
@@ -519,7 +516,6 @@ function layoutShard(
   return atoms.map((a, sortedIdx) => {
     const depth = atomTreeDepth(sortedIdx);
     const posInLevel = atomTreePosInLevel(sortedIdx);
-
     return {
       ...a,
       position: treeNodePosition(shardId, depth, posInLevel),
@@ -1261,6 +1257,46 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         set({ sseClientCount: data.count });
       } catch {
         // Ignore
+      }
+    });
+
+    es.addEventListener("search", (e) => {
+      try {
+        const data = JSON.parse(e.data) as {
+          query: string;
+          atoms: Array<{ atom: string; shardId: number; similarity: number }>;
+        };
+        const { pushSseAnimation } = get();
+        const byShard = new Map<number, string[]>();
+        for (const item of data.atoms) {
+          if (!byShard.has(item.shardId)) byShard.set(item.shardId, []);
+          byShard.get(item.shardId)!.push(item.atom);
+        }
+        for (const [shard, keys] of byShard) {
+          pushSseAnimation("search", keys, shard);
+        }
+      } catch {
+        // Ignore malformed search events
+      }
+    });
+
+    es.addEventListener("bootstrap", (e) => {
+      try {
+        const data = JSON.parse(e.data) as {
+          objective: string | null;
+          atoms: Array<{ atom: string; shardId: number }>;
+        };
+        const { pushSseAnimation } = get();
+        const byShard = new Map<number, string[]>();
+        for (const item of data.atoms) {
+          if (!byShard.has(item.shardId)) byShard.set(item.shardId, []);
+          byShard.get(item.shardId)!.push(item.atom);
+        }
+        for (const [shard, keys] of byShard) {
+          pushSseAnimation("bootstrap", keys, shard);
+        }
+      } catch {
+        // Ignore malformed bootstrap events
       }
     });
 

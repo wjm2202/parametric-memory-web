@@ -1,0 +1,44 @@
+# Parametric Memory
+
+> Persistent, verifiable memory for AI agents. Enterprise-grade memory substrate with cryptographic Merkle proofs, Markov-chain prediction, and MCP-native integration.
+
+## Pages
+
+- [Home](https://parametric-memory.dev): Overview and product introduction
+- [Pricing](https://parametric-memory.dev/pricing): 5 tiers from $9/mo to $499/mo, comparison tables, FAQ
+- [Visualise](https://parametric-memory.dev/visualise): Live 3D Merkle tree visualization of the memory substrate
+- [GitHub](https://github.com/wjm2202/Parametric-Memory): Source repository
+
+## Product
+
+Parametric Memory is a persistent memory substrate for AI agents. It stores knowledge as atoms in a SHA-256 Merkle tree with RFC 6962 consistency proofs, providing cryptographic proof of what was stored and when. A Markov-chain prediction layer anticipates what an agent will need next with 64% hit rate, reducing latency and token usage.
+
+## Key Specifications
+
+- Access latency: 0.045ms p50, 0.074ms p95
+- Throughput: 6,423 ops/sec
+- Proof verification: 0.032ms p95
+- Markov prediction hit rate: 64%
+- Compact proofs: 37% token savings (4,102 → 2,580 tokens)
+- Storage: LevelDB with JumpHash sharding (4 shards)
+- Transport: MCP (25+ tools), HTTP REST API, OAuth2, Streamable HTTP
+
+## Pricing
+
+- Starter: $9/mo — 512 MiB RAM, 10 GiB storage, dedicated instance, all features
+- Solo: $29/mo — 1 GiB RAM, 25 GiB storage, dedicated instance, email support
+- Team: $79/mo — 4 GiB RAM, 80 GiB storage, priority support, custom domain
+- Enterprise Cloud: $299/mo — 8 GiB RAM, 100+ GiB, 99.9% SLA, SSO/SAML, SOC 2
+- Enterprise Self-Hosted: $499/mo — commercial license, deploy on your own cloud, source access
+
+All plans include Merkle proofs, Markov prediction, MCP integration, and compact proofs. No feature gating. No per-query charges.
+
+## Differentiators vs Competitors
+
+- vs Mem0 ($19-249/mo): Parametric Memory offers Merkle proofs (Mem0 doesn't), dedicated instances (Mem0 is shared), and Markov prediction. Mem0 paywalls graph features behind $249/mo.
+- vs Zep ($25/mo): Parametric Memory offers Merkle proofs (Zep doesn't), dedicated instances (Zep is shared), and Markov prediction. Zep uses credit-based pricing with overage charges.
+- vs Letta/MemGPT: Parametric Memory offers cryptographic verification, managed hosting, and commercial support.
+
+## Integration
+
+Works natively with Claude, Claude Code, Cowork, and any MCP-compatible client. Docker Compose deployment on DigitalOcean with nginx, Let's Encrypt SSL, and Prometheus monitoring.

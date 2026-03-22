@@ -1,3 +1,7 @@
 User-agent: *
 Allow: /
 Sitemap: https://parametric-memory.dev/sitemap.xml
+
+# AI agent discovery — see https://llmstxt.org
+# Provides structured context for LLMs, AI coding assistants, and agents
+# llms.txt: https://parametric-memory.dev/llms.txt

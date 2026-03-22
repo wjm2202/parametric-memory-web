@@ -45,6 +45,8 @@ const SSE_FLASH_COLORS: Record<SseAnimationType, THREE.Color> = {
   tombstone: new THREE.Color("#f472b6").multiplyScalar(5.0), // vivid pink flash
   train: new THREE.Color("#ffffff").multiplyScalar(5.0), // vivid white flash
   access: new THREE.Color("#fbbf24").multiplyScalar(5.0), // vivid amber flash
+  search: new THREE.Color("#10b981").multiplyScalar(5.0), // vivid emerald flash
+  bootstrap: new THREE.Color("#818cf8").multiplyScalar(5.0), // vivid indigo flash
 };
 
 /**

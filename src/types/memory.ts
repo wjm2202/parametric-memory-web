@@ -12,8 +12,37 @@ export interface AtomListItem {
   status: "active" | "tombstoned";
 }
 
+/**
+ * Edge summary returned when `?includeWeights=true` is passed to GET /atoms.
+ * Lighter than full WeightsResponse — omits lastUpdatedMs and response metadata.
+ */
+export interface AtomEdgeSummary {
+  to: string;
+  weight: number;
+  effectiveWeight: number;
+}
+
+/**
+ * Atom entry enriched with outgoing Markov edges.
+ * Returned by GET /atoms?includeWeights=true.
+ */
+export interface AtomWithEdges extends AtomListItem {
+  edges: AtomEdgeSummary[];
+}
+
 export interface AtomListResponse {
   atoms: AtomListItem[];
+  treeVersion: number;
+}
+
+/**
+ * Response shape when GET /atoms?includeWeights=true is used.
+ * Each atom entry includes an `edges` array of outgoing Markov transitions.
+ * This collapses N+1 HTTP round trips into a single request — critical for
+ * the Knowledge Graph page, especially on mobile.
+ */
+export interface AtomGraphResponse {
+  atoms: AtomWithEdges[];
   treeVersion: number;
 }
 

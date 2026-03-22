@@ -47,3 +47,7 @@ content/docs/api/
 
 # Stripe CLI
 .stripe/
+.gitnexus
+
+# Claude / AI tooling
+.claude/

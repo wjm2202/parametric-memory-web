@@ -114,11 +114,13 @@ function buildHeaders(): HeadersInit {
  * @param pathSegments  e.g. ["atoms"] or ["atoms", "v1.fact.xxx"]
  * @param method        "GET" or "POST"
  * @param body          JSON body for POST requests
+ * @param queryString   Raw query string to forward (e.g. "?includeWeights=true&type=fact")
  */
 export async function proxyToMmpm(
   pathSegments: string[],
   method: "GET" | "POST",
   body?: unknown,
+  queryString?: string,
 ): Promise<ProxyResult> {
   if (pathSegments.length === 0) {
     return { status: 400, body: '{"error":"Empty path"}', contentType: "application/json" };
@@ -145,7 +147,9 @@ export async function proxyToMmpm(
     };
   }
 
-  const url = `${MMPM_URL}${targetPath}`;
+  // Append query string if present (e.g. ?includeWeights=true&type=fact)
+  const qs = queryString && queryString !== "?" ? queryString : "";
+  const url = `${MMPM_URL}${targetPath}${qs}`;
   const headers = buildHeaders();
 
   const fetchInit: RequestInit = {

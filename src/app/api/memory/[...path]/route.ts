@@ -38,8 +38,10 @@ export async function GET(
   { params }: { params: Promise<{ path: string[] }> },
 ) {
   const { path } = await params;
+  // Forward query params (e.g. ?includeWeights=true, ?type=fact, ?limit=10)
+  const queryString = _request.nextUrl.search;
   const start = Date.now();
-  const result = await proxyToMmpm(path, "GET");
+  const result = await proxyToMmpm(path, "GET", undefined, queryString);
   logRequest("GET", path, result.status, Date.now() - start);
 
   return new NextResponse(result.body, {

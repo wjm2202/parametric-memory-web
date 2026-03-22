@@ -18,7 +18,6 @@ const ROOT_GAP = 1.5;
 const NODE_SPACING = 0.8;
 const CONE_RATIO = 0.45;
 const LEVEL_DROP = 3.5;
-const MAX_VISUAL_DEPTH = 7;
 const NUM_SHARDS = 4;
 const ARC_FILL = 0.92;
 
@@ -44,7 +43,7 @@ const SHARD_ANGLES: Record<number, number> = {
 function getVisualDepth(atomCount: number): number {
   if (atomCount <= 0) return 0;
   if (atomCount === 1) return 0;
-  return Math.min(Math.floor(Math.log2(atomCount)), MAX_VISUAL_DEPTH);
+  return Math.floor(Math.log2(atomCount));
 }
 
 /** Full 3D position for a tree node — angular arc distribution. */
@@ -122,7 +121,6 @@ function computeAtomPositions(
       const a = shardAtoms[i];
       const depth = atomTreeDepth(i);
       const posInLevel = atomTreePosInLevel(i);
-
       result.push({
         key: a.key,
         position: treeNodePosition(sid, depth, posInLevel),
