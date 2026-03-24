@@ -73,7 +73,10 @@ export default function SidePanel() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   /** S-EDGE-VIZ: Structural edges for the selected atom (not cached — cheap to re-fetch) */
-  const [structEdges, setStructEdges] = useState<{ outgoing: StructuralEdge[]; incoming: StructuralEdge[] }>({
+  const [structEdges, setStructEdges] = useState<{
+    outgoing: StructuralEdge[];
+    incoming: StructuralEdge[];
+  }>({
     outgoing: [],
     incoming: [],
   });

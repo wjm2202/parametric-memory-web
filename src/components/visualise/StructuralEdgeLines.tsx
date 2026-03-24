@@ -31,11 +31,11 @@ const SETTLED_OPACITY = 0.4;
 /* ─── Edge type colour palette (matches GraphEdges.tsx in /knowledge) ──── */
 
 const EDGE_TYPE_COLORS: Record<string, THREE.Color> = {
-  references: new THREE.Color("#38bdf8"),   // sky blue
-  depends_on: new THREE.Color("#f97316"),   // amber/orange
-  supersedes: new THREE.Color("#a855f7"),   // purple
-  constrains: new THREE.Color("#ef4444"),   // red
-  member_of: new THREE.Color("#22c55e"),    // green
+  references: new THREE.Color("#38bdf8"), // sky blue
+  depends_on: new THREE.Color("#f97316"), // amber/orange
+  supersedes: new THREE.Color("#a855f7"), // purple
+  constrains: new THREE.Color("#ef4444"), // red
+  member_of: new THREE.Color("#22c55e"), // green
   derived_from: new THREE.Color("#2dd4bf"), // teal
 };
 const FALLBACK_COLOR = new THREE.Color("#94a3b8"); // slate
@@ -84,9 +84,10 @@ export default function StructuralEdgeLines() {
 
       // Flash animation: new edges start at opacity 1.0, settle to 0.4
       const age = now - edge.arrivedAt;
-      const opacity = age < FLASH_DURATION_MS
-        ? 1.0 - (1.0 - SETTLED_OPACITY) * (age / FLASH_DURATION_MS)
-        : SETTLED_OPACITY;
+      const opacity =
+        age < FLASH_DURATION_MS
+          ? 1.0 - (1.0 - SETTLED_OPACITY) * (age / FLASH_DURATION_MS)
+          : SETTLED_OPACITY;
 
       const r = typeColor.r * opacity;
       const g = typeColor.g * opacity;

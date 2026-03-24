@@ -33,11 +33,11 @@ const BASE_COLOR_STRONG = new THREE.Color("#22d3ee"); // cyan — strong Markov 
 
 /* ─── S-EDGE-VIZ: Structural edge type colour palette ──────────────────── */
 const STRUCTURAL_EDGE_COLORS: Record<string, THREE.Color> = {
-  references: new THREE.Color("#38bdf8"),   // sky blue
-  depends_on: new THREE.Color("#f97316"),   // amber/orange
-  supersedes: new THREE.Color("#a855f7"),   // purple
-  constrains: new THREE.Color("#ef4444"),   // red
-  member_of: new THREE.Color("#22c55e"),    // green
+  references: new THREE.Color("#38bdf8"), // sky blue
+  depends_on: new THREE.Color("#f97316"), // amber/orange
+  supersedes: new THREE.Color("#a855f7"), // purple
+  constrains: new THREE.Color("#ef4444"), // red
+  member_of: new THREE.Color("#22c55e"), // green
   derived_from: new THREE.Color("#2dd4bf"), // teal
 };
 const STRUCTURAL_FALLBACK_COLOR = new THREE.Color("#94a3b8"); // slate
@@ -149,7 +149,8 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
 
       if (typedEdge.kind === "structural") {
         // Structural edges: fixed colour by edgeType, constant opacity
-        const typeColor = STRUCTURAL_EDGE_COLORS[typedEdge.edgeType ?? ""] ?? STRUCTURAL_FALLBACK_COLOR;
+        const typeColor =
+          STRUCTURAL_EDGE_COLORS[typedEdge.edgeType ?? ""] ?? STRUCTURAL_FALLBACK_COLOR;
         r = typeColor.r * STRUCTURAL_OPACITY;
         g = typeColor.g * STRUCTURAL_OPACITY;
         b = typeColor.b * STRUCTURAL_OPACITY;
