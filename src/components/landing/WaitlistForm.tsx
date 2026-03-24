@@ -23,10 +23,14 @@ export function WaitlistForm() {
         body: JSON.stringify({ email }),
       });
 
-      const data = (await res.json()) as { error?: string };
+      let data: { error?: string } = {};
+      const ct = res.headers.get("content-type") ?? "";
+      if (ct.includes("application/json")) {
+        data = (await res.json()) as { error?: string };
+      }
 
       if (!res.ok) {
-        throw new Error(data.error ?? "Something went wrong");
+        throw new Error(data.error ?? "Something went wrong. Please try again.");
       }
 
       setState("success");

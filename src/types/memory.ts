@@ -46,6 +46,33 @@ export interface AtomGraphResponse {
   treeVersion: number;
 }
 
+/* ─── Structural (knowledge-graph) edge types ─────────────────────────────── */
+
+/** The six structural edge types — mirrors EDGE_TYPES from the substrate */
+export type StructuralEdgeType =
+  | "references"
+  | "depends_on"
+  | "supersedes"
+  | "constrains"
+  | "member_of"
+  | "derived_from";
+
+/** A structural edge between two atoms (full detail, returned by GET /edges/:atom) */
+export interface StructuralEdge {
+  source: string;
+  target: string;
+  type: StructuralEdgeType;
+  confidence: number;
+  createdAtMs?: number;
+}
+
+/** Lightweight structural edge ref — used in SSE commit payloads */
+export interface StructuralEdgeRef {
+  source: string;
+  target: string;
+  type: string;
+}
+
 export interface MerkleProof {
   leaf: string;
   root: string;

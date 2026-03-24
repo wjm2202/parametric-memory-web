@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * GraphEdges — renders directed Markov arcs as LineSegments.
+ * GraphEdges — renders directed Markov arcs AND structural edges as LineSegments.
  *
  * CRITICAL RULES (from sprint plan):
  *   1. Position buffer updated IN PLACE every frame — never rebuild BufferGeometry.
@@ -28,8 +28,20 @@ import type { KGNode, KGEdge } from "@/stores/knowledge-store";
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
 const MAX_EDGES = 2048; // 1024 nodes × avg 2 outgoing arcs
-const BASE_COLOR_WEAK = new THREE.Color("#7c3aed"); // violet — weak edges
-const BASE_COLOR_STRONG = new THREE.Color("#22d3ee"); // cyan — strong edges
+const BASE_COLOR_WEAK = new THREE.Color("#7c3aed"); // violet — weak Markov edges
+const BASE_COLOR_STRONG = new THREE.Color("#22d3ee"); // cyan — strong Markov edges
+
+/* ─── S-EDGE-VIZ: Structural edge type colour palette ──────────────────── */
+const STRUCTURAL_EDGE_COLORS: Record<string, THREE.Color> = {
+  references: new THREE.Color("#38bdf8"),   // sky blue
+  depends_on: new THREE.Color("#f97316"),   // amber/orange
+  supersedes: new THREE.Color("#a855f7"),   // purple
+  constrains: new THREE.Color("#ef4444"),   // red
+  member_of: new THREE.Color("#22c55e"),    // green
+  derived_from: new THREE.Color("#2dd4bf"), // teal
+};
+const STRUCTURAL_FALLBACK_COLOR = new THREE.Color("#94a3b8"); // slate
+const STRUCTURAL_OPACITY = 0.6;
 
 /* ─── KG-11: d3 link resolution safety ──────────────────────────────────── */
 /**
@@ -131,14 +143,25 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
       positions[base + 4] = tgt.y ?? 0;
       positions[base + 5] = tgt.z ?? 0;
 
-      // Colour: lerp violet → cyan based on effectiveWeight, then opacity
-      const ew = Math.min((edge as KGEdge).effectiveWeight, 1.0);
-      tmpColor.copy(BASE_COLOR_WEAK).lerp(BASE_COLOR_STRONG, ew);
-      const opacity = 0.15 + ew * 0.65; // 0.15 → 0.8
+      // S-EDGE-VIZ: Branch colour by edge kind
+      const typedEdge = edge as KGEdge;
+      let r: number, g: number, b: number;
 
-      const r = tmpColor.r * opacity;
-      const g = tmpColor.g * opacity;
-      const b = tmpColor.b * opacity;
+      if (typedEdge.kind === "structural") {
+        // Structural edges: fixed colour by edgeType, constant opacity
+        const typeColor = STRUCTURAL_EDGE_COLORS[typedEdge.edgeType ?? ""] ?? STRUCTURAL_FALLBACK_COLOR;
+        r = typeColor.r * STRUCTURAL_OPACITY;
+        g = typeColor.g * STRUCTURAL_OPACITY;
+        b = typeColor.b * STRUCTURAL_OPACITY;
+      } else {
+        // Markov arcs: lerp violet → cyan based on effectiveWeight (unchanged)
+        const ew = Math.min(typedEdge.effectiveWeight, 1.0);
+        tmpColor.copy(BASE_COLOR_WEAK).lerp(BASE_COLOR_STRONG, ew);
+        const opacity = 0.15 + ew * 0.65; // 0.15 → 0.8
+        r = tmpColor.r * opacity;
+        g = tmpColor.g * opacity;
+        b = tmpColor.b * opacity;
+      }
 
       colors[base + 0] = r;
       colors[base + 1] = g;

@@ -23,7 +23,10 @@ import type {
   AtomListItem,
   AtomWithEdges,
   AtomGraphResponse,
+  StructuralEdge,
+  StructuralEdgeType,
 } from "@/types/memory";
+import type { KGEdge } from "@/stores/knowledge-store";
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
@@ -204,43 +207,110 @@ export async function fetchAtomDetail(atom: string): Promise<AtomDetailResponse>
   return res.json();
 }
 
+/* ─── Structural edges ─────────────────────────────────────────────────── */
+
+/**
+ * S-EDGE-VIZ: Fetch structural (knowledge-graph) edges for a single atom.
+ * Returns both outgoing and incoming edges via GET /edges/:atom.
+ * Non-fatal — returns empty arrays on failure so Markov expand still succeeds.
+ */
+export async function fetchAtomEdges(
+  atom: string,
+): Promise<{ outgoing: StructuralEdge[]; incoming: StructuralEdge[] }> {
+  try {
+    const res = await fetch(`/api/memory/edges/${encodeURIComponent(atom)}`, {
+      method: "GET",
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+
+    if (!res.ok) {
+      return { outgoing: [], incoming: [] };
+    }
+
+    return res.json();
+  } catch {
+    // Non-fatal — structural edges are supplementary context
+    return { outgoing: [], incoming: [] };
+  }
+}
+
 /* ─── Expand helper ─────────────────────────────────────────────────────── */
 
 export interface ExpandResult {
   /** Atom names that are new to the graph (not previously known) */
   newAtoms: string[];
-  /** All outgoing edges from the expanded atom */
-  edges: Array<{
-    source: string;
-    target: string;
-    weight: number;
-    effectiveWeight: number;
-  }>;
+  /** All edges from the expanded atom — Markov arcs and structural edges */
+  edges: KGEdge[];
 }
 
 /**
- * Expand an atom — fetch its outgoing Markov arcs and return structured data
- * for the store. The caller is responsible for adding nodes and edges.
+ * Expand an atom — fetch its outgoing Markov arcs AND structural edges
+ * concurrently and return structured data for the store.
+ * The caller is responsible for adding nodes and edges.
  *
- * Filters out zero-weight transitions (atoms that were trained once then decayed).
+ * S-EDGE-VIZ: Uses Promise.allSettled so a structural edge failure
+ * never blocks the Markov expand path.
+ *
+ * Filters out zero-weight Markov transitions (atoms that were trained once then decayed).
  */
 export async function expandAtom(
   atom: string,
   existingKeys: Set<string>,
   minEffectiveWeight = 0.01,
 ): Promise<ExpandResult> {
-  const weights = await fetchAtomWeights(atom);
+  const [weightsResult, edgesResult] = await Promise.allSettled([
+    fetchAtomWeights(atom),
+    fetchAtomEdges(atom),
+  ]);
 
-  const edges = weights.transitions
+  // Markov arcs — unchanged logic
+  const weights =
+    weightsResult.status === "fulfilled" ? weightsResult.value : { transitions: [] as never[] };
+  const markovEdges: KGEdge[] = weights.transitions
     .filter((t) => t.effectiveWeight >= minEffectiveWeight)
     .map((t) => ({
       source: atom,
       target: t.to,
       weight: t.weight,
       effectiveWeight: t.effectiveWeight,
+      kind: "markov" as const,
     }));
 
-  const newAtoms = edges.map((e) => e.target).filter((key) => !existingKeys.has(key));
+  // Structural edges — new, non-fatal
+  const structEdges: KGEdge[] = [];
+  if (edgesResult.status === "fulfilled") {
+    const { outgoing, incoming } = edgesResult.value;
+    for (const e of outgoing) {
+      structEdges.push({
+        source: atom,
+        target: e.target,
+        weight: 0,
+        effectiveWeight: 0,
+        kind: "structural",
+        edgeType: e.type as StructuralEdgeType,
+      });
+    }
+    for (const e of incoming) {
+      structEdges.push({
+        source: e.source,
+        target: atom,
+        weight: 0,
+        effectiveWeight: 0,
+        kind: "structural",
+        edgeType: e.type as StructuralEdgeType,
+      });
+    }
+  }
 
-  return { newAtoms, edges };
+  const allEdges = [...markovEdges, ...structEdges];
+
+  // Collect new atoms from both Markov targets and structural neighbours
+  const newAtomSet = new Set<string>();
+  for (const e of allEdges) {
+    const other = e.source === atom ? e.target : e.source;
+    if (!existingKeys.has(other)) newAtomSet.add(other);
+  }
+
+  return { newAtoms: [...newAtomSet], edges: allEdges };
 }

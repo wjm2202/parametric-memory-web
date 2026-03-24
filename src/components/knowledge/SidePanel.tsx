@@ -20,9 +20,9 @@
 
 import { useEffect, useState } from "react";
 import { useKnowledgeStore, parseLabel } from "@/stores/knowledge-store";
-import { fetchAtomDetail } from "@/lib/knowledge-api";
+import { fetchAtomDetail, fetchAtomEdges } from "@/lib/knowledge-api";
 import { parseAtomType, ATOM_COLORS } from "@/types/memory";
-import type { AtomDetailResponse } from "@/types/memory";
+import type { AtomDetailResponse, StructuralEdge } from "@/types/memory";
 
 /* ─── Helpers ────────────────────────────────────────────────────────────── */
 
@@ -38,6 +38,29 @@ function pct(n: number): string {
   return `${Math.round(n * 100)}%`;
 }
 
+/* ─── S-EDGE-VIZ: Edge type colour map (matches GraphEdges palette) ────── */
+
+const EDGE_TYPE_COLORS: Record<string, string> = {
+  references: "#38bdf8",
+  depends_on: "#f97316",
+  supersedes: "#a855f7",
+  constrains: "#ef4444",
+  member_of: "#22c55e",
+  derived_from: "#2dd4bf",
+};
+
+function EdgeTypeBadge({ type }: { type: string }) {
+  const color = EDGE_TYPE_COLORS[type] ?? "#94a3b8";
+  return (
+    <span
+      className="inline-block rounded px-1 py-0.5 font-mono text-[9px] font-medium tracking-wider uppercase"
+      style={{ backgroundColor: `${color}20`, color, border: `1px solid ${color}40` }}
+    >
+      {type.replace("_", " ")}
+    </span>
+  );
+}
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export default function SidePanel() {
@@ -49,6 +72,11 @@ export default function SidePanel() {
   const [detail, setDetail] = useState<AtomDetailResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** S-EDGE-VIZ: Structural edges for the selected atom (not cached — cheap to re-fetch) */
+  const [structEdges, setStructEdges] = useState<{ outgoing: StructuralEdge[]; incoming: StructuralEdge[] }>({
+    outgoing: [],
+    incoming: [],
+  });
 
   /* ── Fetch on atom select ─────────────────────────────────────────── */
 
@@ -56,25 +84,34 @@ export default function SidePanel() {
     if (!selectedAtom) {
       setDetail(null);
       setError(null);
+      setStructEdges({ outgoing: [], incoming: [] });
       return;
     }
 
-    // Cache hit — no fetch needed
+    // Cache hit for detail — still fetch structural edges (not cached)
     const cached = cachedDetails.get(selectedAtom);
     if (cached) {
       setDetail(cached);
       setError(null);
-      return;
     }
 
-    setIsLoading(true);
-    setDetail(null);
-    setError(null);
+    if (!cached) {
+      setIsLoading(true);
+      setDetail(null);
+      setError(null);
+    }
 
-    fetchAtomDetail(selectedAtom)
-      .then((d) => {
-        cacheDetail(selectedAtom, d);
-        setDetail(d);
+    // S-EDGE-VIZ: Fetch detail + structural edges concurrently
+    Promise.all([
+      cached ? Promise.resolve(cached) : fetchAtomDetail(selectedAtom),
+      fetchAtomEdges(selectedAtom),
+    ])
+      .then(([d, edges]) => {
+        if (!cached) {
+          cacheDetail(selectedAtom, d);
+          setDetail(d);
+        }
+        setStructEdges(edges);
       })
       .catch((err: Error) => {
         if (err.name !== "AbortError") {
@@ -266,6 +303,46 @@ export default function SidePanel() {
                   </div>
                 ) : (
                   <p className="font-mono text-[10px] text-slate-600">No outgoing transitions.</p>
+                )}
+
+                {/* ── S-EDGE-VIZ: Structural connections ──────────────── */}
+                {(structEdges.outgoing.length > 0 || structEdges.incoming.length > 0) && (
+                  <div className="space-y-1.5 rounded-lg border border-slate-800/60 bg-slate-900/40 p-3">
+                    <p className="font-mono text-[10px] font-medium tracking-wider text-slate-500 uppercase">
+                      Connections
+                      <span className="ml-1 text-slate-600">
+                        ({structEdges.outgoing.length + structEdges.incoming.length})
+                      </span>
+                    </p>
+                    {/* Outgoing: this atom → target */}
+                    {structEdges.outgoing.map((e) => (
+                      <button
+                        key={`out-${e.target}-${e.type}`}
+                        onClick={() => selectAtom(e.target)}
+                        className="flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left transition hover:bg-slate-800/60"
+                      >
+                        <EdgeTypeBadge type={e.type} />
+                        <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-slate-400">
+                          {parseLabel(e.target)}
+                        </span>
+                        <span className="font-mono text-[9px] text-slate-600">→</span>
+                      </button>
+                    ))}
+                    {/* Incoming: source → this atom */}
+                    {structEdges.incoming.map((e) => (
+                      <button
+                        key={`in-${e.source}-${e.type}`}
+                        onClick={() => selectAtom(e.source)}
+                        className="flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left transition hover:bg-slate-800/60"
+                      >
+                        <span className="font-mono text-[9px] text-slate-600">←</span>
+                        <EdgeTypeBadge type={e.type} />
+                        <span className="min-w-0 flex-1 truncate font-mono text-[10px] text-slate-400">
+                          {parseLabel(e.source)}
+                        </span>
+                      </button>
+                    ))}
+                  </div>
                 )}
               </>
             )}

@@ -10,7 +10,7 @@
  * reads happen directly from node objects inside useFrame.
  */
 import { create } from "zustand";
-import type { AtomType, AtomDetailResponse } from "@/types/memory";
+import type { AtomType, AtomDetailResponse, StructuralEdgeType } from "@/types/memory";
 import { parseAtomType } from "@/types/memory";
 import * as THREE from "three";
 
@@ -72,6 +72,11 @@ export interface KGEdge {
   target: string;
   weight: number;
   effectiveWeight: number;
+  /** S-EDGE-VIZ: Distinguishes Markov arcs from structural knowledge-graph edges.
+   *  Defaults to 'markov' when omitted — existing callers are unaffected. */
+  kind?: "markov" | "structural";
+  /** S-EDGE-VIZ: Only meaningful when kind === 'structural' */
+  edgeType?: StructuralEdgeType;
 }
 
 /* ─── Store ─────────────────────────────────────────────────────────────── */
@@ -282,10 +287,15 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
    */
   addEdges: (newEdges) => {
     set((s) => {
-      const toAdd = newEdges.filter((e) => !s.edgeKeys.has(`${e.source}→${e.target}`));
+      // S-EDGE-VIZ: Include kind+edgeType in the dedup key so a Markov arc
+      // and a structural edge between the same pair can coexist.
+      // Backwards compatible: kind=undefined normalises to 'markov'.
+      const edgeKey = (e: KGEdge) =>
+        `${e.source}→${e.target}:${e.kind ?? "markov"}:${e.edgeType ?? ""}`;
+      const toAdd = newEdges.filter((e) => !s.edgeKeys.has(edgeKey(e)));
       if (toAdd.length === 0) return {};
       const nextKeys = new Set(s.edgeKeys);
-      for (const e of toAdd) nextKeys.add(`${e.source}→${e.target}`);
+      for (const e of toAdd) nextKeys.add(edgeKey(e));
       return { edges: [...s.edges, ...toAdd], edgeKeys: nextKeys };
     });
   },

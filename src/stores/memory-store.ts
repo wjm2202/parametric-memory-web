@@ -59,6 +59,16 @@ export interface AccessPath {
   startTime: number;
 }
 
+/* ─── S-EDGE-VIZ: Structural edges received via SSE ─── */
+export interface VisualStructuralEdge {
+  source: string;
+  target: string;
+  type: string;
+  confidence: number;
+  /** performance.now() when this edge was first received — drives creation flash */
+  arrivedAt: number;
+}
+
 /* ─── S16-7: SSE animation queue ─── */
 export type SseAnimationType = "add" | "tombstone" | "train" | "access" | "search" | "bootstrap";
 
@@ -150,6 +160,9 @@ interface MemoryState {
   /* --- S16-7: SSE animation queue --- */
   sseAnimations: SseAnimation[];
 
+  /* --- S-EDGE-VIZ: Structural edges from SSE commit events --- */
+  structuralEdges: VisualStructuralEdge[];
+
   /* --- S16-4: Proof verification state --- */
   /** Verification result for the currently accessed atom (null = not yet verified) */
   proofVerification: VerificationResult | null;
@@ -179,6 +192,8 @@ interface MemoryState {
   connectSSE: () => void;
   /** S16-3: Disconnect SSE */
   disconnectSSE: () => void;
+  /** S-EDGE-VIZ: Add structural edges from SSE commit events */
+  addStructuralEdges: (edges: VisualStructuralEdge[]) => void;
   /** Full teardown — SSE, timers, worker, caches. Call on page unload or route change. */
   dispose: () => void;
 }
@@ -584,6 +599,12 @@ export interface CommitEventData {
   added: Array<{ key: string; shard: number; index: number; hash: string }> | string[];
   tombstoned: string[];
   trained: string[][];
+  /** S-EDGE-VIZ: Present only when structural edges were mutated in this commit.
+   *  Optional — older payloads without this field parse cleanly. */
+  edges?: {
+    added: Array<{ source: string; target: string; type: string; confidence: number }>;
+    removed: Array<{ source: string; target: string; type: string }>;
+  };
 }
 
 /**
@@ -722,6 +743,27 @@ export function dispatchAccessEvent(data: { atoms: string[] }, get: () => Memory
   }
 }
 
+/**
+ * S-EDGE-VIZ Layer 3 — Dispatch structural edge events from SSE commit data.
+ * Converts the raw SSE edge payloads into VisualStructuralEdge objects with
+ * arrival timestamps for the flash animation.
+ */
+export function dispatchEdgeCommit(
+  edges: NonNullable<CommitEventData["edges"]>,
+  get: () => MemoryState,
+): void {
+  if (edges.added.length === 0) return;
+  const now = performance.now();
+  const visualEdges: VisualStructuralEdge[] = edges.added.map((e) => ({
+    source: e.source,
+    target: e.target,
+    type: e.type,
+    confidence: e.confidence,
+    arrivedAt: now,
+  }));
+  get().addStructuralEdges(visualEdges);
+}
+
 /* ─── Store ─── */
 export const useMemoryStore = create<MemoryState>((set, get) => ({
   treeVersion: 0,
@@ -747,6 +789,7 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
   sseStatus: "disconnected",
   sseClientCount: 0,
   sseAnimations: [],
+  structuralEdges: [],
   proofVerification: null,
   accessProofs: null,
 
@@ -1201,6 +1244,12 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
     });
   },
 
+  /* ── S-EDGE-VIZ: Structural edges from SSE ── */
+  addStructuralEdges: (edges) => {
+    if (edges.length === 0) return;
+    set((s) => ({ structuralEdges: [...s.structuralEdges, ...edges] }));
+  },
+
   /* ── S16-3: SSE real-time updates ── */
   connectSSE: () => {
     if (typeof window === "undefined") return; // SSR guard
@@ -1233,6 +1282,8 @@ export const useMemoryStore = create<MemoryState>((set, get) => ({
         const data = parseCommitEvent(e.data);
         applyCommitToState(data, set);
         dispatchCommitAnimations(data, get);
+        // S-EDGE-VIZ: Dispatch structural edge events if present
+        if (data.edges) dispatchEdgeCommit(data.edges, get);
       } catch (err) {
         logError(
           "SSE:commit",

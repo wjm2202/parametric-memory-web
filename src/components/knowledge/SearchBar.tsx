@@ -209,12 +209,7 @@ export default function SearchBar() {
       );
 
       const allNewKeys = new Set<string>(seedKeys);
-      const allEdges: Array<{
-        source: string;
-        target: string;
-        weight: number;
-        effectiveWeight: number;
-      }> = [];
+      const allEdges: import("@/stores/knowledge-store").KGEdge[] = [];
 
       for (const result of results) {
         if (!result) continue;

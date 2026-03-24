@@ -18,6 +18,7 @@ import TrainParticles from "./TrainParticles";
 import MerkleRehashCascade from "./MerkleRehashCascade";
 import RingParticleFlow from "./RingParticleFlow";
 import PredictionArcs from "./PredictionArcs";
+import StructuralEdgeLines from "./StructuralEdgeLines";
 
 import AccessControls from "./AccessControls";
 
@@ -177,6 +178,9 @@ export default function MerkleScene() {
         </Safe>
         <Safe name="PredictionArcs">
           <PredictionArcs />
+        </Safe>
+        <Safe name="StructuralEdgeLines">
+          <StructuralEdgeLines />
         </Safe>
         <Safe name="BackgroundParticles">
           <BackgroundParticles />

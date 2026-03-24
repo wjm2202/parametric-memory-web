@@ -6,11 +6,10 @@ const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
 
 export async function POST(req: NextRequest) {
-  // Instantiate inside the handler so the missing key fails at runtime
-  // (request time) not at build time during Next.js page data collection.
-  const resend = new Resend(process.env.RESEND_API_KEY);
-
   try {
+    // Instantiate inside try-catch so a missing/invalid key returns a proper
+    // JSON error response rather than an empty 500 with no body.
+    const resend = new Resend(process.env.RESEND_API_KEY);
     const body = (await req.json()) as { email?: unknown };
     const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
 
