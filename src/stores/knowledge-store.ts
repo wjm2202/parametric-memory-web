@@ -170,7 +170,9 @@ interface KnowledgeState {
    * Sprint 5: Batch add nodes with Poincaré coordinates for position seeding.
    * Falls back to random positions when poincare is null/undefined.
    */
-  addNodesLoadedWithPoincare: (items: Array<{ key: string; poincare?: [number, number] | null }>) => void;
+  addNodesLoadedWithPoincare: (
+    items: Array<{ key: string; poincare?: [number, number] | null }>,
+  ) => void;
 
   /** Update a node's status after a fetch completes or fails */
   updateNodeStatus: (key: string, status: KGNode["status"]) => void;

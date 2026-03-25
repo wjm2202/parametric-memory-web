@@ -26,7 +26,7 @@ export default function ViewToggle() {
   const setLayoutMode = useKnowledgeStore((s) => s.setLayoutMode);
 
   return (
-    <div className="flex items-center gap-1 rounded-lg bg-slate-900/80 p-1 backdrop-blur-sm ring-1 ring-white/10">
+    <div className="flex items-center gap-1 rounded-lg bg-slate-900/80 p-1 ring-1 ring-white/10 backdrop-blur-sm">
       {modes.map((mode) => (
         <button
           key={mode.value}

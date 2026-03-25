@@ -178,7 +178,15 @@ export interface HealthResponse {
 }
 
 /** Atom type derived from naming convention */
-export type AtomType = "fact" | "state" | "event" | "relation" | "procedure" | "domain" | "task" | "other";
+export type AtomType =
+  | "fact"
+  | "state"
+  | "event"
+  | "relation"
+  | "procedure"
+  | "domain"
+  | "task"
+  | "other";
 
 /** Parse atom type from atom name (e.g. "v1.fact.xxx" → "fact") */
 export function parseAtomType(atom: string): AtomType {
