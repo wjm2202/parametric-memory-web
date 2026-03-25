@@ -17,6 +17,7 @@ import dynamic from "next/dynamic";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import SearchBar from "@/components/knowledge/SearchBar";
 import SidePanel from "@/components/knowledge/SidePanel";
+import ViewToggle from "@/components/knowledge/ViewToggle";
 
 const KnowledgeScene = dynamic(() => import("@/components/knowledge/KnowledgeScene"), {
   ssr: false,
@@ -61,6 +62,11 @@ export default function KnowledgeClient({ isLoggedIn }: KnowledgeClientProps) {
 
       {/* Full-screen 3D scene */}
       <KnowledgeScene />
+
+      {/* Sprint 5.5: ViewToggle — bottom-left overlay */}
+      <div className="absolute bottom-4 left-4 z-10">
+        <ViewToggle />
+      </div>
 
       {/* SidePanel — absolute overlay, slides in from the right edge */}
       <div className="absolute inset-y-0 top-14 right-0 z-20 md:top-16">

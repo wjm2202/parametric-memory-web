@@ -28,6 +28,8 @@ export interface AtomEdgeSummary {
  */
 export interface AtomWithEdges extends AtomListItem {
   edges: AtomEdgeSummary[];
+  /** Sprint 4: Poincaré disk [x, y] from server. Null if projection not yet run. */
+  poincare?: [number, number] | null;
 }
 
 export interface AtomListResponse {
@@ -48,14 +50,15 @@ export interface AtomGraphResponse {
 
 /* ─── Structural (knowledge-graph) edge types ─────────────────────────────── */
 
-/** The six structural edge types — mirrors EDGE_TYPES from the substrate */
+/** The seven structural edge types — mirrors EDGE_TYPES from the substrate */
 export type StructuralEdgeType =
   | "references"
   | "depends_on"
   | "supersedes"
   | "constrains"
   | "member_of"
-  | "derived_from";
+  | "derived_from"
+  | "produced_by";
 
 /** A structural edge between two atoms (full detail, returned by GET /edges/:atom) */
 export interface StructuralEdge {
@@ -175,27 +178,29 @@ export interface HealthResponse {
 }
 
 /** Atom type derived from naming convention */
-export type AtomType = "fact" | "state" | "event" | "relation" | "procedure" | "other";
+export type AtomType = "fact" | "state" | "event" | "relation" | "procedure" | "domain" | "task" | "other";
 
 /** Parse atom type from atom name (e.g. "v1.fact.xxx" → "fact") */
 export function parseAtomType(atom: string): AtomType {
   const parts = atom.split(".");
   if (parts.length >= 2) {
     const type = parts[1];
-    if (["fact", "state", "event", "relation", "procedure"].includes(type)) {
+    if (["fact", "state", "event", "relation", "procedure", "domain", "task"].includes(type)) {
       return type as AtomType;
     }
   }
   return "other";
 }
 
-/** Colour mapping for atom types */
+/** Colour mapping for atom types (fallback when Poincaré colour is unavailable) */
 export const ATOM_COLORS: Record<AtomType, string> = {
   fact: "#22d3ee", // cyan-400
   state: "#fbbf24", // amber-400
   event: "#34d399", // emerald-400
   procedure: "#a78bfa", // violet-400
   relation: "#f472b6", // pink-400
+  domain: "#f97316", // orange-500 — anchor nodes
+  task: "#38bdf8", // sky-400 — mid-hierarchy
   other: "#94a3b8", // slate-400
 };
 

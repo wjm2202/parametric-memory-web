@@ -30,6 +30,10 @@ export interface KGNode {
   x: number;
   y: number;
   z: number;
+  /** Sprint 5: Poincaré disk coordinates from server [x, y] in unit disk.
+   *  Used for initial position seeding and continuous colour derivation.
+   *  Null when projection not available (fallback to random positions). */
+  poincare?: [number, number] | null;
   /** Allow d3-force-3d to attach vx, vy, vz, fx, fy, fz */
   [key: string]: unknown;
 }
@@ -49,6 +53,21 @@ export function parseLabel(atom: string): string {
 export function randomPosition(radius = 80): { x: number; y: number; z: number } {
   _tmpVec3.randomDirection().multiplyScalar(Math.random() * radius);
   return { x: _tmpVec3.x, y: _tmpVec3.y, z: _tmpVec3.z };
+}
+
+/**
+ * Sprint 5: Seed a node from Poincaré disk coordinates.
+ * Maps 2D disk [x, y] ∈ (-1, 1) to 3D space:
+ *   x → px * SCALE, y → py * SCALE, z → small jitter.
+ * SCALE=80 matches the randomPosition radius for visual consistency.
+ */
+export function poincarePosition(px: number, py: number): { x: number; y: number; z: number } {
+  const SCALE = 80;
+  return {
+    x: px * SCALE,
+    y: py * SCALE,
+    z: (Math.random() - 0.5) * 4, // small z jitter for 3D depth
+  };
 }
 
 /**
@@ -80,6 +99,9 @@ export interface KGEdge {
 }
 
 /* ─── Store ─────────────────────────────────────────────────────────────── */
+
+/** Sprint 5.5: Layout mode for the force graph visualisation. */
+export type LayoutMode = "semantic" | "provenance";
 
 interface KnowledgeState {
   /** All nodes in the graph. Positions are mutated by the force sim. */
@@ -117,6 +139,12 @@ interface KnowledgeState {
    * is preserved and no sim restart is triggered.
    */
   visibleAtoms: Set<string> | null;
+  /**
+   * Sprint 5.5: Active layout mode.
+   * "semantic" — Poincaré-derived positions (default when coords available).
+   * "provenance" — Tree layout with strong member_of/produced_by edge attraction.
+   */
+  layoutMode: LayoutMode;
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -137,6 +165,12 @@ interface KnowledgeState {
    * Avoids the N× updateNodeStatus anti-pattern.
    */
   addNodesLoaded: (keys: string[], anchor?: { x: number; y: number; z: number }) => void;
+
+  /**
+   * Sprint 5: Batch add nodes with Poincaré coordinates for position seeding.
+   * Falls back to random positions when poincare is null/undefined.
+   */
+  addNodesLoadedWithPoincare: (items: Array<{ key: string; poincare?: [number, number] | null }>) => void;
 
   /** Update a node's status after a fetch completes or fails */
   updateNodeStatus: (key: string, status: KGNode["status"]) => void;
@@ -189,6 +223,9 @@ interface KnowledgeState {
   /** Store a fetched AtomDetailResponse for the side panel */
   cacheDetail: (key: string, detail: AtomDetailResponse) => void;
 
+  /** Sprint 5.5: Switch between semantic and provenance layout modes */
+  setLayoutMode: (mode: LayoutMode) => void;
+
   /** Hard reset — clears all nodes, edges, and state */
   reset: () => void;
 }
@@ -205,6 +242,7 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
   cachedDetails: new Map(),
   searchHits: new Set(),
   visibleAtoms: null,
+  layoutMode: "semantic",
 
   addNode: (key, anchor) => {
     const { nodes } = get();
@@ -262,6 +300,31 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
           label: parseLabel(key),
           type: parseAtomType(key),
           status: "loaded",
+          ...pos,
+        });
+        changed = true;
+      }
+      return changed ? { nodes: next } : {};
+    });
+  },
+
+  /**
+   * Sprint 5: Batch add nodes with Poincaré coordinates.
+   * Uses Poincaré positions when available, falls back to random.
+   */
+  addNodesLoadedWithPoincare: (items) => {
+    set((s) => {
+      const next = new Map(s.nodes);
+      let changed = false;
+      for (const { key, poincare } of items) {
+        if (next.has(key)) continue;
+        const pos = poincare ? poincarePosition(poincare[0], poincare[1]) : randomPosition();
+        next.set(key, {
+          key,
+          label: parseLabel(key),
+          type: parseAtomType(key),
+          status: "loaded",
+          poincare: poincare ?? null,
           ...pos,
         });
         changed = true;
@@ -356,6 +419,8 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
 
   setVisibleAtoms: (keys) => set({ visibleAtoms: keys === null ? null : new Set(keys) }),
 
+  setLayoutMode: (mode) => set({ layoutMode: mode }),
+
   /**
    * KG-16: LRU cap at 50 entries — evicts oldest on overflow.
    * Prevents unbounded Map growth from side-panel atom clicks.
@@ -385,5 +450,6 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
       cachedDetails: new Map(),
       searchHits: new Set(),
       visibleAtoms: null,
+      layoutMode: "semantic",
     }),
 }));

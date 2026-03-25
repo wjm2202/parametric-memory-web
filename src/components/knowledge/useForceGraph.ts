@@ -68,6 +68,7 @@ export function useForceGraph(): ForceGraphHandle {
   // Track store collection sizes to detect when to re-sync the sim
   const nodeCount = useKnowledgeStore((s) => s.nodes.size);
   const edgeCount = useKnowledgeStore((s) => s.edges.length);
+  const layoutMode = useKnowledgeStore((s) => s.layoutMode);
 
   /* ── Initialise simulation once ─────────────────────────────────────── */
   useEffect(() => {
@@ -75,7 +76,8 @@ export function useForceGraph(): ForceGraphHandle {
       .id((d) => d.key)
       .distance(LINK_DISTANCE)
       .strength((link) => {
-        const ew = (link as unknown as KGEdge).effectiveWeight ?? 0.5;
+        const typedLink = link as unknown as KGEdge;
+        const ew = typedLink.effectiveWeight ?? 0.5;
         return Math.min(ew * 2, 1.0);
       });
 
@@ -152,6 +154,43 @@ export function useForceGraph(): ForceGraphHandle {
       sim.alpha(reheated);
     }
   }, [nodeCount, edgeCount]);
+
+  /* ── Sprint 5.5: Adjust forces when layout mode changes ─────────────── */
+  useEffect(() => {
+    const sim = simRef.current;
+    const lf = linkForceRef.current;
+    if (!sim || !lf) return;
+
+    if (layoutMode === "provenance") {
+      // Provenance mode: strong attraction along structural edges,
+      // weaker charge to allow tree structure to form
+      lf.strength((link) => {
+        const typedLink = link as unknown as KGEdge;
+        if (typedLink.kind === "structural") {
+          const et = typedLink.edgeType;
+          if (et === "member_of" || et === "produced_by") return 1.5;
+          return 0.8;
+        }
+        return Math.min((typedLink.effectiveWeight ?? 0.5) * 1.0, 0.5);
+      });
+      lf.distance((link) => {
+        const typedLink = link as unknown as KGEdge;
+        if (typedLink.kind === "structural") return 10;
+        return 25;
+      });
+    } else {
+      // Semantic mode: standard forces — Poincaré positions do the work
+      lf.strength((link) => {
+        const typedLink = link as unknown as KGEdge;
+        return Math.min((typedLink.effectiveWeight ?? 0.5) * 2, 1.0);
+      });
+      lf.distance(LINK_DISTANCE);
+    }
+
+    // Reheat to let the graph settle into the new layout
+    isSettled.current = false;
+    sim.alpha(0.6);
+  }, [layoutMode]);
 
   /* ── Tick in render loop ────────────────────────────────────────────── */
   // Priority -1: runs BEFORE GraphNodes/GraphEdges (priority 0) so

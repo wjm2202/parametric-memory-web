@@ -11,6 +11,8 @@ const TYPE_LABELS: Record<AtomType, string> = {
   event: "Events",
   procedure: "Procedures",
   relation: "Relations",
+  domain: "Domains",
+  task: "Tasks",
   other: "Other",
 };
 

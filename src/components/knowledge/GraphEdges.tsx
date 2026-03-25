@@ -30,6 +30,8 @@ import type { KGNode, KGEdge } from "@/stores/knowledge-store";
 const MAX_EDGES = 2048; // 1024 nodes × avg 2 outgoing arcs
 const BASE_COLOR_WEAK = new THREE.Color("#7c3aed"); // violet — weak Markov edges
 const BASE_COLOR_STRONG = new THREE.Color("#22d3ee"); // cyan — strong Markov edges
+/** Sprint 5.4: Cross-domain bridge arcs rendered in gold/white to highlight them */
+const CROSS_DOMAIN_COLOR = new THREE.Color("#fbbf24"); // amber — cross-domain bridges
 
 /* ─── S-EDGE-VIZ: Structural edge type colour palette ──────────────────── */
 const STRUCTURAL_EDGE_COLORS: Record<string, THREE.Color> = {
@@ -155,10 +157,36 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
         g = typeColor.g * STRUCTURAL_OPACITY;
         b = typeColor.b * STRUCTURAL_OPACITY;
       } else {
-        // Markov arcs: lerp violet → cyan based on effectiveWeight (unchanged)
+        // Markov arcs: lerp violet → cyan based on effectiveWeight
         const ew = Math.min(typedEdge.effectiveWeight, 1.0);
-        tmpColor.copy(BASE_COLOR_WEAK).lerp(BASE_COLOR_STRONG, ew);
         const opacity = 0.15 + ew * 0.65; // 0.15 → 0.8
+
+        // Sprint 5.4: Domain-aware tinting for Markov arcs
+        // Same-domain arcs get the source node's Poincaré hue tint.
+        // Cross-domain arcs render in gold to highlight bridges.
+        const srcPoinc = (src as KGNode).poincare as [number, number] | null | undefined;
+        const tgtPoinc = (tgt as KGNode).poincare as [number, number] | null | undefined;
+
+        if (srcPoinc && tgtPoinc) {
+          // Compare angular sectors — if >60° apart, treat as cross-domain
+          const srcAngle = Math.atan2(srcPoinc[1], srcPoinc[0]);
+          const tgtAngle = Math.atan2(tgtPoinc[1], tgtPoinc[0]);
+          let angleDiff = Math.abs(srcAngle - tgtAngle);
+          if (angleDiff > Math.PI) angleDiff = 2 * Math.PI - angleDiff;
+
+          if (angleDiff > Math.PI / 3) {
+            // Cross-domain bridge — gold highlight
+            tmpColor.copy(CROSS_DOMAIN_COLOR);
+          } else {
+            // Same-domain — tint with source node's hue
+            const hue = (Math.atan2(srcPoinc[1], srcPoinc[0]) / (2 * Math.PI) + 1) % 1;
+            tmpColor.setHSL(hue, 0.5 + ew * 0.3, 0.5);
+          }
+        } else {
+          // No Poincaré data — fall back to original violet→cyan lerp
+          tmpColor.copy(BASE_COLOR_WEAK).lerp(BASE_COLOR_STRONG, ew);
+        }
+
         r = tmpColor.r * opacity;
         g = tmpColor.g * opacity;
         b = tmpColor.b * opacity;

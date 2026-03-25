@@ -32,6 +32,40 @@ const TYPE_COLORS: Record<AtomType, THREE.Color> = Object.fromEntries(
   ]),
 ) as Record<AtomType, THREE.Color>;
 
+/* ─── Sprint 5: Poincaré-derived colour helpers ──────────────────────────── */
+
+/**
+ * Derive a continuous colour from Poincaré disk coordinates.
+ * - Hue: angular position → full 360° spectrum (same-domain = similar hue)
+ * - Saturation: radius-based (general atoms = desaturated, specific = vivid)
+ * - Lightness: fixed at 0.65 for readability against dark background
+ *
+ * Returns a THREE.Color (mutates the provided output color object).
+ */
+function poincareColor(px: number, py: number, out: THREE.Color): THREE.Color {
+  const hue = (Math.atan2(py, px) / (2 * Math.PI) + 1) % 1; // [0, 1]
+  const radius = Math.sqrt(px * px + py * py);
+  const saturation = 0.3 + Math.min(radius, 1.0) * 0.7; // 0.3 → 1.0
+  const lightness = 0.65;
+  out.setHSL(hue, saturation, lightness);
+  out.multiplyScalar(BLOOM_BOOST);
+  return out;
+}
+
+/**
+ * Sprint 5.3: Depth-encoded scale from Poincaré radius and atom type.
+ * Domain atoms: large (anchor points). Task atoms: medium. Knowledge: small.
+ * Formula: scale = BASE_SCALE * (1.4 - radius * 0.6), min 0.6.
+ */
+function poincareScale(px: number, py: number, type: AtomType): number {
+  const radius = Math.sqrt(px * px + py * py);
+  let scale = BASE_SCALE * Math.max(1.4 - radius * 0.6, 0.6);
+  // Type bonus — anchor points in the visualisation
+  if (type === "domain") scale += 0.3;
+  else if (type === "task") scale += 0.15;
+  return scale;
+}
+
 const HOVER_COLOR = new THREE.Color("#ffffff").multiplyScalar(BLOOM_BOOST);
 const SELECT_COLOR = new THREE.Color("#f0abfc").multiplyScalar(BLOOM_BOOST);
 const LOADING_COLOR = new THREE.Color("#94a3b8").multiplyScalar(BLOOM_BOOST * 0.6);
@@ -170,19 +204,21 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
         continue;
       }
 
-      let scale = BASE_SCALE;
+      // Sprint 5.3: Base scale from Poincaré depth encoding (or default)
+      const poinc = node.poincare as [number, number] | null | undefined;
+      let scale = poinc ? poincareScale(poinc[0], poinc[1], node.type) : BASE_SCALE;
 
       const isLoading = loadingAtoms.has(node.key);
       const isSearchHit = searchHits.has(node.key);
 
       if (isLoading) {
         // Loading: fast breathe (t * 4) — waiting for data
-        scale = BASE_SCALE * (1.0 + (Math.sin(t * 4 + i) * 0.5 + 0.5) * (PULSE_SCALE - 1.0));
+        scale = scale * (1.0 + (Math.sin(t * 4 + i) * 0.5 + 0.5) * (PULSE_SCALE - 1.0));
       } else if (isSearchHit && i !== selectedIdx) {
         // Search hit: slow breathe (t * 1.5) — draws the eye without being distracting.
-        scale = BASE_SCALE * (1.15 + Math.sin(t * 1.5 + i * 0.3) * 0.25);
+        scale = scale * (1.15 + Math.sin(t * 1.5 + i * 0.3) * 0.25);
       } else if (i === selectedIdx) {
-        scale = BASE_SCALE * 1.3;
+        scale = scale * 1.3;
       }
 
       tmpObj.position.set(node.x ?? 0, node.y ?? 0, node.z ?? 0);
@@ -190,7 +226,7 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
       tmpObj.updateMatrix();
       mesh.setMatrixAt(i, tmpObj.matrix);
 
-      // Colour priority: hover > select > loading > search hit > type colour
+      // Colour priority: hover > select > loading > search hit > poincaré > type colour
       if (i === hoveredIdx) {
         tmpColor.copy(HOVER_COLOR);
       } else if (i === selectedIdx) {
@@ -199,6 +235,9 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
         tmpColor.copy(LOADING_COLOR);
       } else if (isSearchHit) {
         tmpColor.copy(SEARCH_HIT_COLOR);
+      } else if (poinc) {
+        // Sprint 5.2: Continuous colour derived from Poincaré position
+        poincareColor(poinc[0], poinc[1], tmpColor);
       } else {
         tmpColor.copy(TYPE_COLORS[node.type] ?? TYPE_COLORS.other);
       }

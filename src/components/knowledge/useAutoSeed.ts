@@ -50,7 +50,7 @@ export function useAutoSeed() {
   const seeded = useRef(false);
   const abortRef = useRef<AbortController | null>(null);
 
-  const addNodesLoaded = useKnowledgeStore((s) => s.addNodesLoaded);
+  const addNodesLoadedWithPoincare = useKnowledgeStore((s) => s.addNodesLoadedWithPoincare);
   const addEdges = useKnowledgeStore((s) => s.addEdges);
   // KG-01: batch action — one Set clone instead of N individual markExpanded calls
   const markExpandedBatch = useKnowledgeStore((s) => s.markExpandedBatch);
@@ -86,8 +86,12 @@ export function useAutoSeed() {
       // Build a set of known keys for edge validation
       const knownKeys = new Set(atomKeys);
 
-      // ── Store update 1: ALL nodes in one call ──
-      addNodesLoaded(atomKeys);
+      // ── Store update 1: ALL nodes in one call (with Poincaré coords) ──
+      const nodeItems = activeAtoms.map((a) => ({
+        key: extractAtomKey(a.atom),
+        poincare: a.poincare ?? null,
+      }));
+      addNodesLoadedWithPoincare(nodeItems);
 
       // ── Collect all edges from the server response ──
       const allEdges: Array<{
