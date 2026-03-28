@@ -1,5 +1,6 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { verifyCsrfOrigin } from "@/lib/csrf";
 
 const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
 
@@ -63,6 +64,9 @@ export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
 ): Promise<NextResponse> {
+  const csrfError = verifyCsrfOrigin(request);
+  if (csrfError) return csrfError;
+
   const { path } = await params;
   const subPath = path.join("/");
   const sessionToken = await getSessionToken();
@@ -86,10 +90,11 @@ export async function POST(
 
     // If logging out, also clear the cookie on the website side
     if (subPath === "logout" && res.ok) {
+      const isLocalhost = request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
       const cookieStore = await cookies();
       cookieStore.set(SESSION_COOKIE, "", {
         httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
+        secure: !isLocalhost,
         sameSite: "lax",
         path: "/",
         maxAge: 0, // Expire immediately
@@ -102,6 +107,43 @@ export async function POST(
     });
   } catch (err) {
     console.error(`[auth-proxy] POST /api/auth/${subPath} failed:`, err);
+    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
+  }
+}
+
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ path: string[] }> },
+): Promise<NextResponse> {
+  const csrfError = verifyCsrfOrigin(request);
+  if (csrfError) return csrfError;
+
+  const { path } = await params;
+  const subPath = path.join("/");
+  const sessionToken = await getSessionToken();
+
+  let body: unknown;
+  try {
+    body = await request.json();
+  } catch {
+    body = {};
+  }
+
+  try {
+    const res = await fetch(`${COMPUTE_URL}/api/auth/${subPath}`, {
+      method: "DELETE",
+      headers: buildHeaders(sessionToken),
+      body: JSON.stringify(body),
+      cache: "no-store",
+    });
+
+    const responseBody = await res.text();
+    return new NextResponse(responseBody, {
+      status: res.status,
+      headers: { "Content-Type": "application/json" },
+    });
+  } catch (err) {
+    console.error(`[auth-proxy] DELETE /api/auth/${subPath} failed:`, err);
     return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
   }
 }

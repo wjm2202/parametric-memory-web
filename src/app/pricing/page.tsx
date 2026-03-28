@@ -24,8 +24,8 @@ const tiers = [
     price: 9,
     description: "For prototypes and small projects",
     highlightedBadge: null as string | null,
-    cta: "Start Free",
-    ctaLink: "#",
+    cta: "Get Started Free",
+    ctaLink: "/signup",
     features: [
       { name: "Dedicated instance", included: true },
       { name: "SSL/TLS certificate", included: true },
@@ -44,7 +44,7 @@ const tiers = [
     price: 29,
     description: "For individual developers",
     highlightedBadge: "Most Popular",
-    cta: "Start Free",
+    cta: "Get Solo",
     ctaLink: "#",
     features: [
       { name: "Dedicated instance", included: true },
@@ -64,7 +64,7 @@ const tiers = [
     price: 79,
     description: "For growing teams",
     highlightedBadge: null,
-    cta: "Start Free",
+    cta: "Get Team",
     ctaLink: "#",
     features: [
       { name: "Dedicated instance", included: true },
@@ -84,8 +84,8 @@ const tiers = [
     price: 299,
     description: "For mission-critical AI systems",
     highlightedBadge: null,
-    cta: "Start Free",
-    ctaLink: "#",
+    cta: "Contact Sales",
+    ctaLink: "mailto:entityone22@gmail.com?subject=Enterprise%20Cloud%20Inquiry",
     features: [
       { name: "Dedicated General Purpose instance", included: true },
       { name: "SSL/TLS certificate", included: true },
@@ -216,7 +216,7 @@ const productSchemas = tiers.map((tier) => ({
     priceCurrency: "USD",
     price: tier.price.toString(),
     priceValidUntil: "2027-03-19",
-    availability: "https://schema.org/PreOrder",
+    availability: "https://schema.org/InStock",
     priceSpecification: {
       "@type": "UnitPriceSpecification",
       priceType: "https://schema.org/RecurringPrice",
@@ -274,7 +274,7 @@ const faqSchema = {
       name: "Is there a free trial?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. All plans include a free trial. No credit card required. Spin up a dedicated instance in under 5 minutes.",
+        text: "Yes. All plans include a free trial with no credit card required. Spin up a dedicated instance in under 5 minutes from the pricing page.",
       },
     },
     {
@@ -317,10 +317,10 @@ export default async function PricingPage() {
           className="flex flex-col items-center gap-6 px-6 pt-32 pb-8 text-center"
           aria-label="Pricing hero"
         >
-          <div className="inline-flex items-center gap-2 rounded-full border border-amber-500/30 bg-amber-500/10 px-4 py-1.5">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-amber-400" />
-            <span className="text-xs font-semibold tracking-widest text-amber-400 uppercase">
-              Public Beta — Pre-v1.0.0
+          <div className="inline-flex items-center gap-2 rounded-full border border-brand-400/30 bg-brand-500/10 px-4 py-1.5">
+            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-brand-400" />
+            <span className="text-xs font-semibold tracking-widest text-brand-300 uppercase">
+              Now Available
             </span>
           </div>
           <h1 className="text-5xl font-bold tracking-tight text-white sm:text-6xl">
@@ -332,53 +332,12 @@ export default async function PricingPage() {
             per-query charges.
           </p>
           <p className="text-surface-400 text-sm">
-            Purchasing opens at v1.0.0 &mdash; prices and tiers are final.
+            All plans include a free trial &mdash; no credit card required to start.
           </p>
         </section>
 
-        {/* Beta callout */}
-        <section className="mx-auto max-w-3xl px-6 pb-12" aria-label="Beta notice">
-          <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-6 backdrop-blur-sm">
-            <div className="flex items-start gap-4">
-              <div className="mt-0.5 flex-shrink-0 rounded-full bg-amber-500/15 p-2">
-                <svg
-                  className="h-5 w-5 text-amber-400"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <path
-                    fillRule="evenodd"
-                    d="M8.485 2.495c.673-1.167 2.357-1.167 3.03 0l6.28 10.875c.673 1.167-.17 2.625-1.516 2.625H3.72c-1.347 0-2.189-1.458-1.515-2.625L8.485 2.495zM10 5a.75.75 0 01.75.75v3.5a.75.75 0 01-1.5 0v-3.5A.75.75 0 0110 5zm0 9a1 1 0 100-2 1 1 0 000 2z"
-                    clipRule="evenodd"
-                  />
-                </svg>
-              </div>
-              <div className="space-y-1.5">
-                <h2 className="text-base font-semibold text-amber-300">
-                  Experimental Software — Beta Notice
-                </h2>
-                <p className="text-sm leading-relaxed text-amber-200/60">
-                  Parametric Memory is currently in Public Beta (pre-v1.0.0). This is experimental
-                  software under active development.{" "}
-                  <strong className="text-amber-200/80">Data loss is possible</strong> before the
-                  v1.0.0 stable release. Anyone using the service prior to v1.0.0 does so with full
-                  knowledge that storage guarantees are not yet in effect.
-                </p>
-                <p className="text-sm text-amber-200/60">
-                  Paid plans are not available during the Beta. Use the{" "}
-                  <a
-                    href="#early-access"
-                    className="text-amber-300 underline underline-offset-2 hover:text-amber-200"
-                  >
-                    early access form below
-                  </a>{" "}
-                  to try the service or help shape development.
-                </p>
-              </div>
-            </div>
-          </div>
-        </section>
+        {/* Spacer between hero and cards */}
+        <div className="pb-8" />
 
         {/* Pricing cards */}
         <section className="mx-auto max-w-7xl px-6 pb-24" aria-label="Pricing plans">
@@ -410,10 +369,10 @@ export default async function PricingPage() {
                     <span className="text-surface-200/70 text-sm">/month</span>
                   </div>
                   <p className="text-surface-200/50 mt-2 text-xs">
-                    Billed monthly &mdash; available at v1.0.0
+                    Billed monthly &mdash; cancel anytime
                   </p>
                 </div>
-                <PricingCTA tierId={tier.id} tierName={tier.name} label={tier.cta} />
+                <PricingCTA tierId={tier.id} tierName={tier.name} label={tier.cta} isLoggedIn={isLoggedIn} ctaLink={tier.ctaLink} />
                 <div className="space-y-3" role="list">
                   {tier.features.map((feature, idx) => (
                     <div key={idx} className="flex items-start gap-3" role="listitem">
@@ -530,11 +489,11 @@ export default async function PricingPage() {
           <FAQAccordion />
         </section>
 
-        {/* Early Access / Beta Tester */}
+        {/* Stay Updated */}
         <section
           id="early-access"
           className="mx-auto max-w-4xl px-6 pb-32"
-          aria-labelledby="early-access-heading"
+          aria-labelledby="updates-heading"
         >
           <div className="border-brand-400/20 from-brand-500/5 to-surface-900/50 rounded-2xl border bg-gradient-to-b p-8 backdrop-blur-sm">
             <div className="mb-6 flex items-start gap-4">
@@ -555,52 +514,13 @@ export default async function PricingPage() {
                 </svg>
               </div>
               <div>
-                <h3 id="early-access-heading" className="mb-2 text-xl font-bold text-white">
-                  Request Early Access
+                <h3 id="updates-heading" className="mb-2 text-xl font-bold text-white">
+                  Stay Updated
                 </h3>
                 <p className="text-surface-200/70 text-sm leading-relaxed">
-                  We&apos;re accepting two kinds of early participants during the Beta:
-                </p>
-                <ul className="mt-3 space-y-2">
-                  <li className="text-surface-200/70 flex items-start gap-2 text-sm">
-                    <svg
-                      className="text-brand-400 mt-0.5 h-4 w-4 flex-shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span>
-                      <strong className="text-white">Beta testers</strong> — developers who want to
-                      try the service, stress-test the API, or build integrations before v1.0.0.
-                    </span>
-                  </li>
-                  <li className="text-surface-200/70 flex items-start gap-2 text-sm">
-                    <svg
-                      className="text-brand-400 mt-0.5 h-4 w-4 flex-shrink-0"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span>
-                      <strong className="text-white">Contributors</strong> — engineers and
-                      researchers interested in the Markov-Merkle memory substrate itself:
-                      algorithms, proofs, performance, and architecture.
-                    </span>
-                  </li>
-                </ul>
-                <p className="text-surface-400 mt-3 text-xs">
-                  Beta participants who submit bugs or contributions during the Beta will receive
-                  founding-member pricing (locked for life) once v1.0.0 launches.
+                  Get notified about new features, integrations, and platform updates.
+                  Founding customers who provide feedback receive priority support
+                  and influence the roadmap directly.
                 </p>
               </div>
             </div>
@@ -608,7 +528,7 @@ export default async function PricingPage() {
             {/* Email capture */}
             <div className="border-surface-200/10 border-t pt-6">
               <p className="mb-4 text-sm font-medium text-white">
-                Leave your email and we&apos;ll be in touch:
+                Leave your email for product updates:
               </p>
               <WaitlistForm />
             </div>

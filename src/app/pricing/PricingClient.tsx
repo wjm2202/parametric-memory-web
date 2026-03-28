@@ -27,7 +27,7 @@ const faqs = [
   {
     question: "Is there a free trial?",
     answer:
-      "Not yet — Parametric Memory is currently in Public Beta (pre-v1.0.0). Paid plans are not available during the Beta. We're accepting early access requests from developers who want to test the service or contribute to the memory substrate. Use the early access form on this page to join. Once v1.0.0 launches, all plans will include a free trial with no credit card required.",
+      "Yes. All plans include a free trial with no credit card required. Spin up a dedicated instance in under 5 minutes from the pricing page above. Your trial includes full access to all features — cryptographic proofs, Markov prediction, MCP tools — so you can evaluate the service before committing.",
   },
   {
     question: "What happens if I outgrow my plan?",

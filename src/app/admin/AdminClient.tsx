@@ -90,6 +90,12 @@ export default function AdminClient({ account }: { account: AccountInfo }) {
           </Link>
           <div className="flex items-center gap-4">
             <span className="text-sm text-white/40">{account.email}</span>
+            <Link
+              href="/admin/security"
+              className="text-sm text-white/50 transition-colors hover:text-white/80"
+            >
+              Security
+            </Link>
             <button
               onClick={handleLogout}
               disabled={loggingOut}

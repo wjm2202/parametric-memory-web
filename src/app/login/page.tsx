@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, Suspense } from "react";
+import { useState, useEffect, FormEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -27,6 +27,21 @@ function ErrorBanner() {
       {errorMessage}
     </div>
   );
+}
+
+function RedirectCookieSetter() {
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+
+  useEffect(() => {
+    // Store the redirect destination in a cookie so the auth callback can use it.
+    // Only allow relative paths starting with / to prevent open redirect attacks.
+    if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
+      document.cookie = `mmpm_redirect=${encodeURIComponent(redirectParam)};path=/;max-age=900;samesite=lax`;
+    }
+  }, [redirectParam]);
+
+  return null;
 }
 
 function LoginForm() {
@@ -170,6 +185,11 @@ export default function LoginPage() {
             </span>
           </Link>
         </div>
+
+        {/* Persist ?redirect= param as a cookie so auth callback can redirect after login */}
+        <Suspense>
+          <RedirectCookieSetter />
+        </Suspense>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-sm">
           <LoginForm />

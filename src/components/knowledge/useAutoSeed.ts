@@ -32,8 +32,13 @@
 
 import { useEffect, useRef } from "react";
 import { useKnowledgeStore } from "@/stores/knowledge-store";
-import { fetchAtomGraph } from "@/lib/knowledge-api";
-import { extractAtomKey } from "@/lib/knowledge-api";
+import {
+  fetchAtomGraph,
+  fetchAllStructuralEdges,
+  fetchPoincareCoords,
+  extractAtomKey,
+} from "@/lib/knowledge-api";
+import type { StructuralEdgeType } from "@/types/memory";
 
 /* ─── Constants ──────────────────────────────────────────────────────── */
 
@@ -75,30 +80,44 @@ export function useAutoSeed() {
 
   async function seed(signal: AbortSignal) {
     try {
-      // Single request: atoms + edges in one payload
-      const { atoms } = await fetchAtomGraph(signal);
-      if (signal.aborted || atoms.length === 0) return;
+      // Parallel fetch: atoms + structural edges + poincaré in one round-trip batch.
+      // fetchAllStructuralEdges and fetchPoincareCoords are non-fatal — failures
+      // return empty results so the Markov-only graph still loads cleanly.
+      const [atomResult, structEdges, poincareMap] = await Promise.all([
+        fetchAtomGraph(signal),
+        fetchAllStructuralEdges(),
+        fetchPoincareCoords(),
+      ]);
+
+      if (signal.aborted || atomResult.atoms.length === 0) return;
 
       // Filter to active atoms and extract keys
-      const activeAtoms = atoms.filter((a) => a.status === "active");
+      const activeAtoms = atomResult.atoms.filter((a) => a.status === "active");
       const atomKeys = activeAtoms.map((a) => extractAtomKey(a.atom));
 
       // Build a set of known keys for edge validation
       const knownKeys = new Set(atomKeys);
 
-      // ── Store update 1: ALL nodes in one call (with Poincaré coords) ──
-      const nodeItems = activeAtoms.map((a) => ({
-        key: extractAtomKey(a.atom),
-        poincare: a.poincare ?? null,
-      }));
+      // ── Store update 1: ALL nodes in one call ──
+      // Prefer poincaré from the atoms response; fall back to the bulk poincaré
+      // endpoint if the per-atom field is missing (cold embedding cache).
+      const nodeItems = activeAtoms.map((a) => {
+        const key = extractAtomKey(a.atom);
+        const poincare =
+          a.poincare ??
+          (poincareMap.has(key) ? poincareMap.get(key)! : null);
+        return { key, poincare };
+      });
       addNodesLoadedWithPoincare(nodeItems);
 
-      // ── Collect all edges from the server response ──
+      // ── Collect Markov edges from the atoms payload ──
       const allEdges: Array<{
         source: string;
         target: string;
         weight: number;
         effectiveWeight: number;
+        kind?: "markov" | "structural";
+        edgeType?: StructuralEdgeType;
       }> = [];
 
       for (const atom of activeAtoms) {
@@ -106,17 +125,32 @@ export function useAutoSeed() {
 
         if (atom.edges && atom.edges.length > 0) {
           for (const edge of atom.edges) {
-            // Only include edges where the target is also in the graph
-            // and the weight meets the minimum threshold
             if (edge.effectiveWeight >= MIN_EDGE_WEIGHT && knownKeys.has(edge.to)) {
               allEdges.push({
                 source: sourceKey,
                 target: edge.to,
                 weight: edge.weight,
                 effectiveWeight: edge.effectiveWeight,
+                kind: "markov",
               });
             }
           }
+        }
+      }
+
+      // ── Append structural KG edges (member_of, supersedes, depends_on, etc.) ──
+      // These are the authored, non-decaying edges that give the graph its structure.
+      // Only include edges where both endpoints exist in the current atom set.
+      for (const e of structEdges) {
+        if (knownKeys.has(e.source) && knownKeys.has(e.target)) {
+          allEdges.push({
+            source: e.source,
+            target: e.target,
+            weight: 0,
+            effectiveWeight: 0,
+            kind: "structural",
+            edgeType: e.type as StructuralEdgeType,
+          });
         }
       }
 
@@ -128,12 +162,15 @@ export function useAutoSeed() {
       }
 
       // ── KG-01: mark ALL atoms expanded in ONE store update ──
-      // Previously: markExpanded(sourceKey) called inside the loop = N Set clones.
-      // Now: single markExpandedBatch call = 1 Set clone regardless of atom count.
       markExpandedBatch(atomKeys);
 
+      const markovCount = allEdges.filter((e) => e.kind === "markov").length;
+      const structCount = allEdges.filter((e) => e.kind === "structural").length;
+      const poincareCount = nodeItems.filter((n) => n.poincare != null).length;
       console.log(
-        `[useAutoSeed] Graph loaded: ${atomKeys.length} nodes, ${allEdges.length} edges (single request)`,
+        `[useAutoSeed] Graph loaded: ${atomKeys.length} nodes, ` +
+        `${markovCount} Markov arcs, ${structCount} structural edges, ` +
+        `${poincareCount} poincaré coords (single parallel request)`,
       );
     } catch (err) {
       if ((err as Error).name !== "AbortError") {

@@ -18,6 +18,8 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 import SearchBar from "@/components/knowledge/SearchBar";
 import SidePanel from "@/components/knowledge/SidePanel";
 import ViewToggle from "@/components/knowledge/ViewToggle";
+import DegreeSizeSlider from "@/components/knowledge/DegreeSizeSlider";
+import KnowledgeLegend from "@/components/knowledge/KnowledgeLegend";
 
 const KnowledgeScene = dynamic(() => import("@/components/knowledge/KnowledgeScene"), {
   ssr: false,
@@ -63,9 +65,15 @@ export default function KnowledgeClient({ isLoggedIn }: KnowledgeClientProps) {
       {/* Full-screen 3D scene */}
       <KnowledgeScene />
 
-      {/* Sprint 5.5: ViewToggle — bottom-left overlay */}
-      <div className="absolute bottom-4 left-4 z-10">
+      {/* Bottom-left controls — stacked vertically */}
+      <div className="absolute bottom-4 left-4 z-10 flex flex-col items-start gap-2">
+        <DegreeSizeSlider />
         <ViewToggle />
+      </div>
+
+      {/* Bottom-right legend — "?" toggle opens the visual key */}
+      <div className="absolute bottom-4 right-4 z-10 flex flex-col items-end gap-2">
+        <KnowledgeLegend />
       </div>
 
       {/* SidePanel — absolute overlay, slides in from the right edge */}

@@ -217,7 +217,7 @@ export default async function HomePage() {
             <div className="border-brand-500/20 bg-brand-950/60 mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 backdrop-blur-sm">
               <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-hidden="true" />
               <span className="text-brand-300 font-mono text-[11px] tracking-widest uppercase">
-                v0.1.1 — Early Access
+                Now Available
               </span>
             </div>
 
@@ -529,22 +529,22 @@ export default async function HomePage() {
         >
           <div className="mx-auto max-w-xl px-6 text-center">
             <p className="text-brand-400 mb-4 font-mono text-[11px] tracking-widest uppercase">
-              Early Access
+              Get Started
             </p>
             <h2
               id="waitlist-heading"
               className="font-display mb-4 text-3xl font-bold text-white"
               style={{ letterSpacing: "-0.025em" }}
             >
-              Get early access.
+              Stay in the loop.
             </h2>
             <p className="font-body text-surface-400 mb-8 text-base leading-relaxed">
-              We&apos;re onboarding early customers now. Dedicated instance, full MCP integration,
+              Dedicated AI memory instance, full MCP integration,
               direct line to the founding team. Starting at $9/mo.
             </p>
             <WaitlistForm />
             <p className="text-surface-600 mt-4 font-mono text-[11px]">
-              No spam. We&apos;ll reach out when your instance is ready.
+              No spam. Product updates and new features only.
             </p>
           </div>
         </section>

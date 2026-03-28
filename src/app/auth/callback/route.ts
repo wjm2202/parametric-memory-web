@@ -10,14 +10,17 @@ const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 /**
  * Magic link callback — exchanges the raw token for a session.
  *
- * Flow:
+ * Flow (no TOTP):
  *   1. Email contains link: GET /auth/callback?token=RAW_TOKEN
  *   2. This handler calls mmpm-compute /api/auth/verify?token=RAW_TOKEN
  *   3. On success: sets httpOnly session cookie, redirects to /admin
  *   4. On failure: redirects to /login?error=...
  *
- * Using a Route Handler (not a Server Component) because only Route
- * Handlers can set cookies on the response in Next.js App Router.
+ * Flow (TOTP enrolled):
+ *   1-2. Same as above.
+ *   3. Compute returns { totpRequired: true, pendingToken, accountId }
+ *   4. This handler redirects to /auth/totp?pending=PENDING_TOKEN
+ *   5. User enters TOTP code → POST /api/auth/totp/challenge → session set
  *
  * IMPORTANT: redirect() in Next.js App Router works by throwing a special
  * NEXT_REDIRECT error internally. Calling redirect() inside a try/catch means
@@ -32,10 +35,16 @@ export async function GET(request: NextRequest): Promise<Response> {
     redirect("/login?error=missing_token");
   }
 
-  // Resolve the verify call — store result or error path, redirect after the try/catch.
+  // Resolve the verify call — store outcome or redirect path outside the try/catch.
   let sessionToken: string | null = null;
   let accountId: string | null = null;
-  let errorPath: string | null = null;
+  /**
+   * redirectPath is set for any non-cookie outcome:
+   *   - Error:          /login?error=*
+   *   - TOTP required:  /auth/totp?pending=*
+   * When set, we redirect instead of setting a cookie.
+   */
+  let redirectPath: string | null = null;
 
   try {
     const res = await fetch(`${COMPUTE_URL}/api/auth/verify?token=${encodeURIComponent(token)}`, {
@@ -45,33 +54,42 @@ export async function GET(request: NextRequest): Promise<Response> {
     if (!res.ok) {
       const body = await res.json().catch(() => ({}));
       console.warn("[auth/callback] Verify failed:", res.status, body);
-      // Mark for redirect — do NOT call redirect() here, it throws and the catch
-      // would intercept it and mask the real error with "server_error".
-      errorPath = "/login?error=invalid_token";
+      redirectPath = "/login?error=invalid_token";
     } else {
       const data = (await res.json()) as {
         ok: boolean;
-        sessionToken: string;
+        totpRequired?: boolean;
+        sessionToken?: string;
+        pendingToken?: string;
         accountId: string;
       };
-      sessionToken = data.sessionToken;
       accountId = data.accountId;
+
+      if (data.totpRequired && data.pendingToken) {
+        // TOTP enrolled — redirect to challenge page with the pending token.
+        // Do NOT set a cookie yet — the full session is only issued after TOTP succeeds.
+        redirectPath = `/auth/totp?pending=${encodeURIComponent(data.pendingToken)}`;
+      } else {
+        sessionToken = data.sessionToken ?? null;
+      }
     }
   } catch (err) {
     console.error("[auth/callback] Network error:", err);
-    errorPath = "/login?error=server_error";
+    redirectPath = "/login?error=server_error";
   }
 
   // All redirects happen outside the try/catch so Next.js NEXT_REDIRECT is never swallowed.
-  if (errorPath) {
-    redirect(errorPath);
+  if (redirectPath) {
+    redirect(redirectPath);
   }
 
-  // Set the session cookie — httpOnly so JS can't read it
+  // Set the session cookie — httpOnly so JS can't read it.
+  // SEC: secure must be false on localhost (HTTP) or the browser silently drops the cookie.
+  const isLocalhost = request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, sessionToken!, {
     httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
+    secure: !isLocalhost,
     sameSite: "lax",
     path: "/",
     maxAge: SESSION_MAX_AGE,
@@ -79,6 +97,17 @@ export async function GET(request: NextRequest): Promise<Response> {
 
   console.info(`[auth/callback] Session set for account ${accountId}`);
 
-  // Redirect to admin dashboard
-  redirect("/admin");
+  // Check for a post-login redirect destination (set by /login page as a cookie).
+  // Only allow relative paths starting with / to prevent open redirect attacks.
+  const rawRedirect = cookieStore.get("mmpm_redirect")?.value;
+  const postLoginRedirect = rawRedirect ? decodeURIComponent(rawRedirect) : null;
+  let destination = "/admin";
+
+  if (postLoginRedirect && postLoginRedirect.startsWith("/") && !postLoginRedirect.startsWith("//")) {
+    destination = postLoginRedirect;
+    // Clear the redirect cookie — it's single-use
+    cookieStore.delete("mmpm_redirect");
+  }
+
+  redirect(destination);
 }

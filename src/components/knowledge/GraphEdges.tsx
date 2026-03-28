@@ -23,15 +23,21 @@ import { useRef, useMemo } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import type { ForceGraphHandle } from "./useForceGraph";
-import type { KGNode, KGEdge } from "@/stores/knowledge-store";
+import { useKnowledgeStore, type KGNode, type KGEdge } from "@/stores/knowledge-store";
 
 /* ─── Constants ─────────────────────────────────────────────────────────── */
 
-const MAX_EDGES = 2048; // 1024 nodes × avg 2 outgoing arcs
+const MAX_EDGES = 16384; // raised to 16384 — member_of edges now emit 3 sub-segments each (centre-fade effect)
 const BASE_COLOR_WEAK = new THREE.Color("#7c3aed"); // violet — weak Markov edges
 const BASE_COLOR_STRONG = new THREE.Color("#22d3ee"); // cyan — strong Markov edges
 /** Sprint 5.4: Cross-domain bridge arcs rendered in gold/white to highlight them */
 const CROSS_DOMAIN_COLOR = new THREE.Color("#fbbf24"); // amber — cross-domain bridges
+
+/* ─── Markov arc glow layer ──────────────────────────────────────────────── */
+/** Separate buffer cap for the Markov-arc-only glow pass */
+const MAX_MARKOV_EDGES = 4096;
+/** Glow halo is this fraction of the core brightness — bleeds outward for apparent thickness */
+const MARKOV_GLOW_OPACITY = 0.32;
 
 /* ─── S-EDGE-VIZ: Structural edge type colour palette ──────────────────── */
 const STRUCTURAL_EDGE_COLORS: Record<string, THREE.Color> = {
@@ -44,6 +50,18 @@ const STRUCTURAL_EDGE_COLORS: Record<string, THREE.Color> = {
 };
 const STRUCTURAL_FALLBACK_COLOR = new THREE.Color("#94a3b8"); // slate
 const STRUCTURAL_OPACITY = 0.6;
+/** member_of edges use a lower peak opacity — they're the most numerous and overwhelm the canvas */
+const MEMBER_OF_OPACITY = 0.22;
+/** How opaque the centre third of a member_of edge is (fraction of MEMBER_OF_OPACITY) */
+const MEMBER_OF_CENTER_FADE = 0.05;
+/**
+ * Mycelial root asymmetry: the ATOM end of a member_of edge is this fraction
+ * of full brightness — the HUB end is always full. Gives a "branch tapering
+ * toward the root" reading where the hub is clearly the generative centre.
+ */
+const MEMBER_OF_LEAF_DIM = 0.35;
+/** Centre-fade for all other structural edges — slightly more visible than member_of */
+const STRUCTURAL_CENTER_FADE = 0.08;
 
 /* ─── KG-11: d3 link resolution safety ──────────────────────────────────── */
 /**
@@ -83,6 +101,22 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
   // Track last drawn count to avoid zeroing the full buffer every frame
   const lastDrawnRef = useRef(0);
 
+  // Track visibleAtoms reference — detecting a change bypasses isSettled so
+  // the edge buffer is re-filtered immediately when a search starts or clears.
+  const lastVisibleAtomsRef = useRef<Set<string> | null>(null);
+
+  // Tracks the bridge atom key we last wrote to the store — avoids spamming setState
+  const lastBridgeAtomRef = useRef<string | null>(null);
+
+  // ── Glow layer: Markov arcs rendered a second time behind the main layer ──
+  // Two identical passes at different renderOrder create the appearance of
+  // a thicker, luminous line without needing Line2 or post-processing.
+  const glowPositions = useMemo(() => new Float32Array(MAX_MARKOV_EDGES * 2 * 3), []);
+  const glowColors = useMemo(() => new Float32Array(MAX_MARKOV_EDGES * 2 * 3), []);
+  const glowGeoRef = useRef<THREE.BufferGeometry>(null);
+  const glowLineRef = useRef<THREE.LineSegments>(null);
+  const lastGlowDrawnRef = useRef(0);
+
   /* ── KG-10: Single merged useFrame ─────────────────────────────────────
    *
    * Previously two separate useFrame registrations:
@@ -105,11 +139,52 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
       nodeIndexRef.current = idx;
     }
 
+    // ── Read search filter state ──────────────────────────────────────────
+    const { visibleAtoms, setBridgeAtom } = useKnowledgeStore.getState();
+    const filterChanged = visibleAtoms !== lastVisibleAtomsRef.current;
+    lastVisibleAtomsRef.current = visibleAtoms;
+
+    // ── Bridge atom computation — runs only when filter changes ──────────
+    // Find the atom OUTSIDE the result set with the most edges into it.
+    // This is the atom the search cluster is most entangled with externally.
+    if (filterChanged) {
+      if (visibleAtoms !== null && visibleAtoms.size > 0) {
+        const connectionCount = new Map<string, number>();
+        for (const e of simEdges.current) {
+          const sk = edgeKey((e as KGEdge).source);
+          const tk = edgeKey((e as KGEdge).target);
+          const srcIn = visibleAtoms.has(sk);
+          const tgtIn = visibleAtoms.has(tk);
+          // Count external atom connections into the visible set
+          if (srcIn && !tgtIn) connectionCount.set(tk, (connectionCount.get(tk) ?? 0) + 1);
+          else if (tgtIn && !srcIn) connectionCount.set(sk, (connectionCount.get(sk) ?? 0) + 1);
+        }
+        let bestKey: string | null = null;
+        let bestCount = 0;
+        for (const [key, count] of connectionCount) {
+          if (count > bestCount) { bestCount = count; bestKey = key; }
+        }
+        if (bestKey !== lastBridgeAtomRef.current) {
+          lastBridgeAtomRef.current = bestKey;
+          setBridgeAtom(bestKey);
+        }
+      } else {
+        // Search cleared — remove bridge atom
+        if (lastBridgeAtomRef.current !== null) {
+          lastBridgeAtomRef.current = null;
+          setBridgeAtom(null);
+        }
+      }
+    }
+
+    // Read the (possibly just updated) bridge atom for use in the edge loop
+    const bridgeAtom = useKnowledgeStore.getState().bridgeAtom;
+
     // ── KG-09: Skip position/color upload when sim has settled ──
-    // Positions are frozen — nothing to recompute or upload to the GPU.
-    // On the next expand-on-click, isSettled will be reset to false
-    // in useForceGraph and updates resume automatically.
-    if (isSettled.current) return;
+    // Exception: if the search filter just changed (on or off, or new results),
+    // we must run one pass to re-filter the edge buffer even when positions
+    // are frozen — then we can go idle again until the next change.
+    if (isSettled.current && !filterChanged) return;
 
     const geo = geometryRef.current;
     const line = lineRef.current;
@@ -119,6 +194,7 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
     const idx = nodeIndexRef.current;
 
     let edgeCount = 0;
+    let markovCount = 0; // tracks slots used in the glow buffer this frame
 
     for (const edge of edges) {
       if (edgeCount >= MAX_EDGES) break;
@@ -132,6 +208,30 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
       const src = nodes[si];
       const tgt = nodes[ti];
       if (!src || !tgt) continue;
+
+      // ── Search filter: hide edges where either endpoint is not visible ──
+      // Allow edges when both endpoints are in the result set, OR when one
+      // endpoint is the bridge atom and the other is in the result set.
+      if (visibleAtoms !== null) {
+        const srcKey = (src as KGNode).key ?? "";
+        const tgtKey = (tgt as KGNode).key ?? "";
+        const srcIn = visibleAtoms.has(srcKey) || srcKey === bridgeAtom;
+        const tgtIn = visibleAtoms.has(tgtKey) || tgtKey === bridgeAtom;
+        // Must be drawable AND at least one endpoint in the search result set
+        // (prevents bridge→bridge self-edges if somehow bridgeAtom connects to itself)
+        const eitherInResult = visibleAtoms.has(srcKey) || visibleAtoms.has(tgtKey);
+        if (!srcIn || !tgtIn || !eitherInResult) continue;
+      }
+
+      // Brightness multiplier — two sources of boost, applied together:
+      //  1. Search active: all surviving edges boosted 2× for vivid focus view.
+      //  2. Hub endpoint: edges touching a hub node boosted 1.6× so the root
+      //     structure of each cluster reads clearly even in the resting view.
+      const srcIsHub = ((src as KGNode).key ?? "").includes("hub_");
+      const tgtIsHub = ((tgt as KGNode).key ?? "").includes("hub_");
+      const hubBoost = (srcIsHub || tgtIsHub) && visibleAtoms === null ? 1.6 : 1.0;
+      const searchBoost = visibleAtoms !== null ? 2.0 : 1.0;
+      const edgeBoost = searchBoost * hubBoost;
 
       const base = edgeCount * 6; // 2 verts × 3 components
 
@@ -150,16 +250,133 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
       let r: number, g: number, b: number;
 
       if (typedEdge.kind === "structural") {
-        // Structural edges: fixed colour by edgeType, constant opacity
         const typeColor =
           STRUCTURAL_EDGE_COLORS[typedEdge.edgeType ?? ""] ?? STRUCTURAL_FALLBACK_COLOR;
-        r = typeColor.r * STRUCTURAL_OPACITY;
-        g = typeColor.g * STRUCTURAL_OPACITY;
-        b = typeColor.b * STRUCTURAL_OPACITY;
+
+        if (typedEdge.edgeType === "member_of") {
+          // member_of: render as 3 sub-segments — full → transparent → full
+          // This gives a "fade at centre" effect that reduces visual dominance
+          // while still showing where edges start and end.
+          if (edgeCount + 3 > MAX_EDGES) break;
+
+          const sx = src.x ?? 0, sy = src.y ?? 0, sz = src.z ?? 0;
+          const tx = tgt.x ?? 0, ty = tgt.y ?? 0, tz = tgt.z ?? 0;
+
+          // Interpolated 1/3 and 2/3 positions along the edge
+          const m1x = sx + (tx - sx) / 3;
+          const m1y = sy + (ty - sy) / 3;
+          const m1z = sz + (tz - sz) / 3;
+          const m2x = sx + (2 * (tx - sx)) / 3;
+          const m2y = sy + (2 * (ty - sy)) / 3;
+          const m2z = sz + (2 * (tz - sz)) / 3;
+
+          const rFull = typeColor.r * MEMBER_OF_OPACITY * edgeBoost;
+          const gFull = typeColor.g * MEMBER_OF_OPACITY * edgeBoost;
+          const bFull = typeColor.b * MEMBER_OF_OPACITY * edgeBoost;
+          const rDim = rFull * MEMBER_OF_CENTER_FADE;
+          const gDim = gFull * MEMBER_OF_CENTER_FADE;
+          const bDim = bFull * MEMBER_OF_CENTER_FADE;
+
+          // ── Mycelial root asymmetry ──────────────────────────────────
+          // Hub end = bright root. Atom end = dim leaf tip.
+          // Detect which endpoint is the hub by key pattern.
+          const tgtIsHub = ((tgt as KGNode).key ?? "").includes("hub_");
+          const srcIsHub = ((src as KGNode).key ?? "").includes("hub_");
+
+          // Root colours (hub end) — full brightness
+          const rRoot = rFull, gRoot = gFull, bRoot = bFull;
+          // Leaf colours (atom end) — dim, still slightly visible
+          const rLeaf = rFull * MEMBER_OF_LEAF_DIM;
+          const gLeaf = gFull * MEMBER_OF_LEAF_DIM;
+          const bLeaf = bFull * MEMBER_OF_LEAF_DIM;
+
+          // srcColor = colour at the source endpoint
+          // tgtColor = colour at the target endpoint
+          const [srC, sgC, sbC, trC, tgC, tbC] = tgtIsHub
+            ? [rLeaf, gLeaf, bLeaf, rRoot, gRoot, bRoot] // atom→hub: leaf→root
+            : srcIsHub
+            ? [rRoot, gRoot, bRoot, rLeaf, gLeaf, bLeaf] // hub→atom: root→leaf
+            : [rFull, gFull, bFull, rFull, gFull, bFull]; // symmetric fallback
+
+          // Segment A: src endpoint → 1/3 (fades to invisible centre)
+          let mBase = edgeCount * 6;
+          positions[mBase + 0] = sx;  positions[mBase + 1] = sy;  positions[mBase + 2] = sz;
+          positions[mBase + 3] = m1x; positions[mBase + 4] = m1y; positions[mBase + 5] = m1z;
+          colors[mBase + 0] = srC; colors[mBase + 1] = sgC; colors[mBase + 2] = sbC;
+          colors[mBase + 3] = rDim; colors[mBase + 4] = gDim; colors[mBase + 5] = bDim;
+          edgeCount++;
+
+          // Segment B: 1/3 → 2/3 — transparent void at centre
+          mBase = edgeCount * 6;
+          positions[mBase + 0] = m1x; positions[mBase + 1] = m1y; positions[mBase + 2] = m1z;
+          positions[mBase + 3] = m2x; positions[mBase + 4] = m2y; positions[mBase + 5] = m2z;
+          colors[mBase + 0] = rDim; colors[mBase + 1] = gDim; colors[mBase + 2] = bDim;
+          colors[mBase + 3] = rDim; colors[mBase + 4] = gDim; colors[mBase + 5] = bDim;
+          edgeCount++;
+
+          // Segment C: 2/3 → tgt endpoint (fades in from invisible centre)
+          mBase = edgeCount * 6;
+          positions[mBase + 0] = m2x; positions[mBase + 1] = m2y; positions[mBase + 2] = m2z;
+          positions[mBase + 3] = tx;  positions[mBase + 4] = ty;  positions[mBase + 5] = tz;
+          colors[mBase + 0] = rDim; colors[mBase + 1] = gDim; colors[mBase + 2] = bDim;
+          colors[mBase + 3] = trC; colors[mBase + 4] = tgC; colors[mBase + 5] = tbC;
+          edgeCount++;
+
+          // Skip the shared vertex-write block below — already committed
+          continue;
+        }
+
+        // All other structural edges: 3-segment centre-fade — same pattern as member_of
+        // Endpoints are visible; centre third is almost transparent.
+        if (edgeCount + 3 > MAX_EDGES) break;
+
+        const sx2 = src.x ?? 0, sy2 = src.y ?? 0, sz2 = src.z ?? 0;
+        const tx2 = tgt.x ?? 0, ty2 = tgt.y ?? 0, tz2 = tgt.z ?? 0;
+
+        const n1x = sx2 + (tx2 - sx2) / 3;
+        const n1y = sy2 + (ty2 - sy2) / 3;
+        const n1z = sz2 + (tz2 - sz2) / 3;
+        const n2x = sx2 + (2 * (tx2 - sx2)) / 3;
+        const n2y = sy2 + (2 * (ty2 - sy2)) / 3;
+        const n2z = sz2 + (2 * (tz2 - sz2)) / 3;
+
+        const sRFull = typeColor.r * STRUCTURAL_OPACITY * edgeBoost;
+        const sGFull = typeColor.g * STRUCTURAL_OPACITY * edgeBoost;
+        const sBFull = typeColor.b * STRUCTURAL_OPACITY * edgeBoost;
+        const sRDim = sRFull * STRUCTURAL_CENTER_FADE;
+        const sGDim = sGFull * STRUCTURAL_CENTER_FADE;
+        const sBDim = sBFull * STRUCTURAL_CENTER_FADE;
+
+        // Segment A: src (bright) → 1/3 (dim)
+        let sBase = edgeCount * 6;
+        positions[sBase + 0] = sx2;  positions[sBase + 1] = sy2;  positions[sBase + 2] = sz2;
+        positions[sBase + 3] = n1x;  positions[sBase + 4] = n1y;  positions[sBase + 5] = n1z;
+        colors[sBase + 0] = sRFull;  colors[sBase + 1] = sGFull;  colors[sBase + 2] = sBFull;
+        colors[sBase + 3] = sRDim;   colors[sBase + 4] = sGDim;   colors[sBase + 5] = sBDim;
+        edgeCount++;
+
+        // Segment B: 1/3 (dim) → 2/3 (dim) — invisible centre
+        sBase = edgeCount * 6;
+        positions[sBase + 0] = n1x;  positions[sBase + 1] = n1y;  positions[sBase + 2] = n1z;
+        positions[sBase + 3] = n2x;  positions[sBase + 4] = n2y;  positions[sBase + 5] = n2z;
+        colors[sBase + 0] = sRDim;   colors[sBase + 1] = sGDim;   colors[sBase + 2] = sBDim;
+        colors[sBase + 3] = sRDim;   colors[sBase + 4] = sGDim;   colors[sBase + 5] = sBDim;
+        edgeCount++;
+
+        // Segment C: 2/3 (dim) → tgt (bright)
+        sBase = edgeCount * 6;
+        positions[sBase + 0] = n2x;  positions[sBase + 1] = n2y;  positions[sBase + 2] = n2z;
+        positions[sBase + 3] = tx2;  positions[sBase + 4] = ty2;  positions[sBase + 5] = tz2;
+        colors[sBase + 0] = sRDim;   colors[sBase + 1] = sGDim;   colors[sBase + 2] = sBDim;
+        colors[sBase + 3] = sRFull;  colors[sBase + 4] = sGFull;  colors[sBase + 5] = sBFull;
+        edgeCount++;
+
+        continue; // skip shared single-vertex write below
       } else {
         // Markov arcs: lerp violet → cyan based on effectiveWeight
         const ew = Math.min(typedEdge.effectiveWeight, 1.0);
-        const opacity = 0.15 + ew * 0.65; // 0.15 → 0.8
+        // Boosted brightness: floor raised from 0.15 → 0.55 so even weak arcs are visible
+        const opacity = 0.55 + ew * 0.45; // 0.55 → 1.0
 
         // Sprint 5.4: Domain-aware tinting for Markov arcs
         // Same-domain arcs get the source node's Poincaré hue tint.
@@ -187,9 +404,29 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
           tmpColor.copy(BASE_COLOR_WEAK).lerp(BASE_COLOR_STRONG, ew);
         }
 
-        r = tmpColor.r * opacity;
-        g = tmpColor.g * opacity;
-        b = tmpColor.b * opacity;
+        r = tmpColor.r * opacity * edgeBoost;
+        g = tmpColor.g * opacity * edgeBoost;
+        b = tmpColor.b * opacity * edgeBoost;
+
+        // ── Glow layer: write this Markov arc to the secondary halo buffer ──
+        // Rendered behind the main layer — the soft halo creates apparent thickness.
+        const glowGeo = glowGeoRef.current;
+        if (glowGeo && markovCount < MAX_MARKOV_EDGES) {
+          const gBase = markovCount * 6;
+          glowPositions[gBase + 0] = src.x ?? 0;
+          glowPositions[gBase + 1] = src.y ?? 0;
+          glowPositions[gBase + 2] = src.z ?? 0;
+          glowPositions[gBase + 3] = tgt.x ?? 0;
+          glowPositions[gBase + 4] = tgt.y ?? 0;
+          glowPositions[gBase + 5] = tgt.z ?? 0;
+          glowColors[gBase + 0] = r * MARKOV_GLOW_OPACITY;
+          glowColors[gBase + 1] = g * MARKOV_GLOW_OPACITY;
+          glowColors[gBase + 2] = b * MARKOV_GLOW_OPACITY;
+          glowColors[gBase + 3] = r * MARKOV_GLOW_OPACITY;
+          glowColors[gBase + 4] = g * MARKOV_GLOW_OPACITY;
+          glowColors[gBase + 5] = b * MARKOV_GLOW_OPACITY;
+          markovCount++;
+        }
       }
 
       colors[base + 0] = r;
@@ -223,27 +460,65 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
     geo.attributes.position.needsUpdate = true;
     geo.attributes.color.needsUpdate = true;
     geo.setDrawRange(0, edgeCount * 2);
+
+    // ── Glow layer flush ──────────────────────────────────────────────────
+    const glowGeo = glowGeoRef.current;
+    if (glowGeo) {
+      const prevGlow = lastGlowDrawnRef.current;
+      if (markovCount < prevGlow) {
+        glowPositions.fill(0, markovCount * 6, prevGlow * 6);
+        glowColors.fill(0, markovCount * 6, prevGlow * 6);
+      }
+      lastGlowDrawnRef.current = markovCount;
+      glowGeo.attributes.position.needsUpdate = true;
+      glowGeo.attributes.color.needsUpdate = true;
+      glowGeo.setDrawRange(0, markovCount * 2);
+    }
   });
 
   return (
-    <lineSegments ref={lineRef} renderOrder={-1}>
-      <bufferGeometry ref={geometryRef}>
-        {/* KG-08: DynamicDrawUsage — hints to the GPU driver that these buffers
-            are updated frequently, matching PredictionArcs.tsx in /visualise. */}
-        <bufferAttribute
-          attach="attributes-position"
-          args={[positions, 3]}
-          count={MAX_EDGES * 2}
-          usage={THREE.DynamicDrawUsage}
-        />
-        <bufferAttribute
-          attach="attributes-color"
-          args={[colors, 3]}
-          count={MAX_EDGES * 2}
-          usage={THREE.DynamicDrawUsage}
-        />
-      </bufferGeometry>
-      <lineBasicMaterial vertexColors transparent opacity={1} depthWrite={false} />
-    </lineSegments>
+    <>
+      {/* ── Glow halo layer — Markov arcs only, behind main layer ── */}
+      {/* Renders at renderOrder -2 so it sits under the main LineSegments.
+          The soft halo bleeds outward giving the illusion of line thickness. */}
+      <lineSegments ref={glowLineRef} renderOrder={-2}>
+        <bufferGeometry ref={glowGeoRef}>
+          <bufferAttribute
+            attach="attributes-position"
+            args={[glowPositions, 3]}
+            count={MAX_MARKOV_EDGES * 2}
+            usage={THREE.DynamicDrawUsage}
+          />
+          <bufferAttribute
+            attach="attributes-color"
+            args={[glowColors, 3]}
+            count={MAX_MARKOV_EDGES * 2}
+            usage={THREE.DynamicDrawUsage}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial vertexColors transparent opacity={1} depthWrite={false} />
+      </lineSegments>
+
+      {/* ── Main layer — all edges at full brightness ── */}
+      <lineSegments ref={lineRef} renderOrder={-1}>
+        <bufferGeometry ref={geometryRef}>
+          {/* KG-08: DynamicDrawUsage — hints to the GPU driver that these buffers
+              are updated frequently, matching PredictionArcs.tsx in /visualise. */}
+          <bufferAttribute
+            attach="attributes-position"
+            args={[positions, 3]}
+            count={MAX_EDGES * 2}
+            usage={THREE.DynamicDrawUsage}
+          />
+          <bufferAttribute
+            attach="attributes-color"
+            args={[colors, 3]}
+            count={MAX_EDGES * 2}
+            usage={THREE.DynamicDrawUsage}
+          />
+        </bufferGeometry>
+        <lineBasicMaterial vertexColors transparent opacity={1} depthWrite={false} />
+      </lineSegments>
+    </>
   );
 }

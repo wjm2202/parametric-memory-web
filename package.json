@@ -4,7 +4,7 @@
   "private": true,
   "description": "Commercial website, documentation, and developer portal for Parametric Memory",
   "scripts": {
-    "dev": "next dev",
+    "dev": "next dev --port 3000",
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
