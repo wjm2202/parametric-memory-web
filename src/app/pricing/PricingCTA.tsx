@@ -2,17 +2,7 @@
 
 import { useState } from "react";
 import Link from "next/link";
-
-/**
- * Map website tier IDs to compute API substrate tier IDs.
- * The compute API uses: free, indie, pro, team
- * The website uses: starter, solo, team, enterprise-cloud, enterprise-self-hosted
- */
-const TIER_TO_CHECKOUT: Record<string, string> = {
-  starter: "indie",      // $9/mo → indie tier on compute
-  solo: "pro",           // $29/mo → pro tier on compute
-  team: "team",          // $79/mo → team tier on compute
-};
+import { isValidTierId } from "@/config/tiers";
 
 interface PricingCTAProps {
   tierId: string;
@@ -26,8 +16,7 @@ interface PricingCTAProps {
  * Pricing CTA button.
  *
  * Flow:
- *   - Logged in + paid tier  → POST /api/checkout → redirect to Stripe
- *   - Logged in + free tier  → Link to /signup (no Stripe needed)
+ *   - Logged in              → POST /api/checkout → redirect to Stripe (all tiers incl. free $1/mo)
  *   - Not logged in          → Redirect to /login?redirect=/pricing
  *   - Enterprise self-hosted → Email contact link (manual sales)
  *   - Enterprise cloud       → Email contact link (custom pricing)
@@ -64,7 +53,7 @@ export function PricingCTA({ tierId, tierName, label, isLoggedIn, ctaLink }: Pri
     );
   }
 
-  // ── Paid tiers: starter ($9), solo ($29), team ($79) ────────────────
+  // ── Billing tiers: free ($1), indie ($9), pro ($29), team ($79) ────────────────
 
   // Not logged in → send to login with redirect back to pricing
   if (!isLoggedIn) {
@@ -85,8 +74,7 @@ export function PricingCTA({ tierId, tierName, label, isLoggedIn, ctaLink }: Pri
     setLoading(true);
     setError(null);
 
-    const checkoutTier = TIER_TO_CHECKOUT[tierId];
-    if (!checkoutTier) {
+    if (!isValidTierId(tierId)) {
       setError("This tier is not available for checkout.");
       setLoading(false);
       return;
@@ -96,7 +84,7 @@ export function PricingCTA({ tierId, tierName, label, isLoggedIn, ctaLink }: Pri
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: checkoutTier }),
+        body: JSON.stringify({ tier: tierId }),
       });
 
       if (res.status === 401) {

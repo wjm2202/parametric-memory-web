@@ -12,7 +12,7 @@ const faqs = [
   {
     question: "How much does Parametric Memory cost?",
     answer:
-      "Plans range from $9/mo (Starter, 512 MiB, 10 GiB) to $499/mo (Enterprise Self-Hosted, unlimited everything). Solo at $29/mo is most popular—it gives you 1 GiB RAM, 25 GiB storage, email support, and all features for the price of a coffee per day. Team ($79/mo) adds priority support and Grafana dashboards. Enterprise Cloud ($299/mo) includes 99.9% SLA and SSO. Enterprise Self-Hosted ($499/mo) gives you full source code and deployment flexibility. All plans include cryptographic proofs, Markov prediction, and MCP.",
+      "Plans start at $1/mo (Free: 500 atoms, 100 bootstraps/month, 50 MB storage). Indie is $9/mo (10,000 atoms). Pro at $29/mo is most popular — 100,000 atoms, knowledge graph edges, and priority support. Team ($79/mo) adds 500,000 atoms, unlimited bootstraps, and dedicated support. Enterprise Cloud ($299/mo) includes a 99.9% SLA and SSO. Enterprise Self-Hosted ($499/mo) gives you full source code and full deployment control. All plans billed monthly, cancel anytime.",
   },
   {
     question: "Does Parametric Memory work with Claude and MCP?",
@@ -25,9 +25,9 @@ const faqs = [
       "Yes. Enterprise Self-Hosted ($499/mo) gives you the full source code, commercial license, and deployment guide. Deploy on AWS, Azure, GCP, or your own Kubernetes cluster. You own the data, the proofs, the ML. No cloud lock-in. We provide a 2-hour architecture review, deployment guide, and quarterly health reviews to help you scale.",
   },
   {
-    question: "Is there a free trial?",
+    question: "Is there a free plan?",
     answer:
-      "Yes. All plans include a free trial with no credit card required. Spin up a dedicated instance in under 5 minutes from the pricing page above. Your trial includes full access to all features — cryptographic proofs, Markov prediction, MCP tools — so you can evaluate the service before committing.",
+      "Yes. The Free plan is $1/month — the lowest-cost entry to a real substrate with 500 atoms, 100 bootstraps/month, and 50 MB storage. All plans use Stripe subscriptions so tier changes are instant with no re-provisioning. Cancel anytime from your dashboard.",
   },
   {
     question: "What happens if I outgrow my plan?",

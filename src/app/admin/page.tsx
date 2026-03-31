@@ -15,6 +15,20 @@ interface AccountInfo {
   createdAt: string;
 }
 
+async function getTotpStatus(sessionToken: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${COMPUTE_URL}/api/auth/totp/status`, {
+      headers: { Authorization: `Bearer ${sessionToken}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as { enrolled: boolean };
+    return data.enrolled;
+  } catch {
+    return false;
+  }
+}
+
 async function getAccount(sessionToken: string): Promise<AccountInfo | null> {
   try {
     const res = await fetch(`${COMPUTE_URL}/api/auth/me`, {
@@ -36,12 +50,16 @@ export default async function AdminPage() {
   // to catch expired/revoked sessions that slipped through.
   if (!sessionToken) redirect("/login");
 
-  const account = await getAccount(sessionToken);
+  const [account, totpEnrolled] = await Promise.all([
+    getAccount(sessionToken),
+    getTotpStatus(sessionToken),
+  ]);
+
   if (!account) {
     // Session cookie exists but is invalid — clear and redirect
     cookieStore.set(SESSION_COOKIE, "", { maxAge: 0, path: "/" });
     redirect("/login?error=session_expired");
   }
 
-  return <AdminClient account={account} />;
+  return <AdminClient account={account} totpEnrolled={totpEnrolled} />;
 }

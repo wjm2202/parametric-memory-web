@@ -63,6 +63,28 @@ function LoginForm() {
       });
 
       if (!res.ok) {
+        if (res.status === 429) {
+          // Rate limit hit — show reset time if available
+          const resetHeader = res.headers.get("X-RateLimit-Reset");
+          if (resetHeader) {
+            const resetMs = parseInt(resetHeader, 10) * 1000;
+            const minutesUntil = Math.ceil((resetMs - Date.now()) / 60_000);
+            const resetTime = new Date(resetMs).toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit",
+            });
+            setSubmitError(
+              minutesUntil > 1
+                ? `Too many sign-in links sent. You can request another at ${resetTime} (in ~${minutesUntil} minutes).`
+                : `Too many sign-in links sent. You can request another at ${resetTime}.`,
+            );
+          } else {
+            setSubmitError(
+              "Too many sign-in links sent to this address. Please wait an hour before trying again.",
+            );
+          }
+          return;
+        }
         const data = await res.json().catch(() => ({}));
         setSubmitError(data.error ?? "Failed to send sign-in link. Please try again.");
         return;
@@ -144,7 +166,11 @@ function LoginForm() {
           />
         </div>
 
-        {submitError && <p className="text-sm text-red-400">{submitError}</p>}
+        {submitError && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {submitError}
+          </div>
+        )}
 
         <button
           type="submit"

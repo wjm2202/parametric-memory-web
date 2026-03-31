@@ -101,9 +101,18 @@ export async function POST(
       });
     }
 
+    // Forward rate-limit headers so the client can show contextual error messages
+    const responseHeaders: Record<string, string> = {
+      "Content-Type": "application/json",
+    };
+    for (const h of ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"]) {
+      const v = res.headers.get(h);
+      if (v) responseHeaders[h] = v;
+    }
+
     return new NextResponse(responseBody, {
       status: res.status,
-      headers: { "Content-Type": "application/json" },
+      headers: responseHeaders,
     });
   } catch (err) {
     console.error(`[auth-proxy] POST /api/auth/${subPath} failed:`, err);

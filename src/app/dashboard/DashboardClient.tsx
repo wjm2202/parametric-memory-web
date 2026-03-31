@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { TIER_ORDER, getTierLabel, getTierPrice } from "@/config/tiers";
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -47,25 +48,10 @@ interface SubstrateInfo {
   storageUsedMB: number;
   provisionedAt: string | null;
   gracePeriodEndsAt: string | null;
+  cancelAt: string | null;
 }
 
-// ── Constants ───────────────────────────────────────────────────────────────
-
-const TIER_LABELS: Record<string, string> = {
-  free: "Free",
-  indie: "Indie",
-  pro: "Pro",
-  team: "Team",
-};
-
-const TIER_PRICES: Record<string, number> = {
-  free: 0,
-  indie: 9,
-  pro: 29,
-  team: 79,
-};
-
-const TIER_ORDER = ["free", "indie", "pro", "team"];
+// ── Constants (imported from @/config/tiers — canonical registry) ────────────
 
 // ── Helper Components ───────────────────────────────────────────────────────
 
@@ -341,17 +327,19 @@ export default function DashboardClient({
   const router = useRouter();
   const searchParams = useSearchParams();
   const [loggingOut, setLoggingOut] = useState(false);
-  const [regenerating, setRegenerating] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
   const [cancelConfirm, setCancelConfirm] = useState(false);
   const [cancelling, setCancelling] = useState(false);
 
-  // Check for checkout success/cancel
+  // Check for checkout success/cancel query param
   const checkoutStatus = searchParams.get("checkout");
 
   // Poll for provisioning status
   const [liveSubstrate, setLiveSubstrate] = useState(substrate);
   const isProvisioning = liveSubstrate?.status === "provisioning";
+
+  // True when user just came back from Stripe checkout and the webhook may not have fired yet
+  const [awaitingWebhook, setAwaitingWebhook] = useState(checkoutStatus === "success");
 
   const pollSubstrate = useCallback(async () => {
     try {
@@ -359,17 +347,38 @@ export default function DashboardClient({
       if (res.ok) {
         const data = await res.json();
         setLiveSubstrate(data);
+        return data;
       }
     } catch {
       // Ignore polling errors
     }
+    return null;
   }, []);
 
+  // Normal provisioning poll (every 5s while status === "provisioning")
   useEffect(() => {
     if (!isProvisioning) return;
     const interval = setInterval(pollSubstrate, 5000);
     return () => clearInterval(interval);
   }, [isProvisioning, pollSubstrate]);
+
+  // Post-checkout aggressive poll: every 1.5s until substrate is running, max 60s
+  useEffect(() => {
+    if (!awaitingWebhook) return;
+    let attempts = 0;
+    const interval = setInterval(async () => {
+      attempts++;
+      const data = await pollSubstrate();
+      const isReady = data?.status === "running" || data?.status === "provisioning";
+      if (isReady || attempts >= 40) {
+        setAwaitingWebhook(false);
+        clearInterval(interval);
+        // Remove ?checkout=success from the URL once we have a substrate
+        if (isReady) router.replace("/dashboard");
+      }
+    }, 1500);
+    return () => clearInterval(interval);
+  }, [awaitingWebhook, pollSubstrate, router]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -380,36 +389,34 @@ export default function DashboardClient({
     }
   }
 
-  async function handleRegenerateKey() {
-    setRegenerating(true);
-    try {
-      const res = await fetch(`/api/substrate/${account.id}/regenerate-key`, {
-        method: "POST",
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setNewApiKey(data.apiKey);
-      }
-    } finally {
-      setRegenerating(false);
-    }
-  }
-
   async function handleCancel() {
     setCancelling(true);
     try {
-      const res = await fetch("/api/my-substrate/cancel", {
-        method: "POST",
-      });
-      if (res.ok) {
-        // Stripe webhook will set substrate to read_only — poll to pick up the change
-        setTimeout(() => pollSubstrate(), 1000);
-        setTimeout(() => pollSubstrate(), 3000);
-        router.refresh();
-      }
+      const res = await fetch("/api/my-substrate/cancel", { method: "POST" });
+      if (!res.ok) return;
+
+      // Poll until cancelAt or status change is reflected (webhook may take a few seconds).
+      // Max 30s (15 attempts × 2s) — after that the user can manually refresh.
+      let attempts = 0;
+      const pollInterval = setInterval(async () => {
+        attempts++;
+        await pollSubstrate();
+        const sub = liveSubstrate;
+        const settled = sub?.cancelAt != null || sub?.status !== "running";
+        if (settled || attempts >= 15) clearInterval(pollInterval);
+      }, 2000);
     } finally {
       setCancelling(false);
       setCancelConfirm(false);
+    }
+  }
+
+  async function handleReactivate() {
+    try {
+      const res = await fetch("/api/my-substrate/reactivate", { method: "POST" });
+      if (res.ok) await pollSubstrate();
+    } catch {
+      // Ignore — user can try again
     }
   }
 
@@ -439,7 +446,13 @@ export default function DashboardClient({
           mcpServers: {
             "parametric-memory": {
               command: "npx",
-              args: ["-y", "mcp-remote", mcpEndpoint],
+              args: [
+                "-y",
+                "mcp-remote",
+                mcpEndpoint,
+                "--header",
+                `Authorization: Bearer ${newApiKey ?? "<YOUR_API_KEY>"}`,
+              ],
             },
           },
         },
@@ -481,11 +494,11 @@ export default function DashboardClient({
           </div>
         </div>
 
-        {/* Checkout success banner */}
-        {checkoutStatus === "success" && (
-          <div className="mb-6 rounded-lg border border-emerald-500/30 bg-emerald-500/10 p-4 text-sm text-emerald-400">
-            Upgrade successful! Your substrate is being reconfigured with the
-            new tier limits.
+        {/* Post-checkout provisioning banner — shown while waiting for Stripe webhook */}
+        {awaitingWebhook && (
+          <div className="mb-3 flex items-center gap-3 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-300">
+            <span className="h-4 w-4 shrink-0 animate-spin rounded-full border-2 border-indigo-400/30 border-t-indigo-400" />
+            Payment received — activating your substrate…
           </div>
         )}
 
@@ -508,19 +521,24 @@ export default function DashboardClient({
             {/* Tier + Status row */}
             <div className="flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
               <div className="flex-1">
-                <div className="flex items-center gap-3">
+                <div className="flex items-center gap-3 flex-wrap">
                   <span className="text-lg font-semibold">
-                    {TIER_LABELS[currentTier] ?? currentTier} Plan
+                    {getTierLabel(currentTier)} Plan
                   </span>
                   <StatusBadge status={sub.status} />
                   {sub.status === "running" && sub.health && (
                     <HealthBadges health={sub.health} />
                   )}
+                  {sub.cancelAt && (
+                    <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-400">
+                      Cancels {new Date(sub.cancelAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                    </span>
+                  )}
                 </div>
                 <p className="mt-0.5 text-sm text-zinc-400">
-                  {TIER_PRICES[currentTier] === 0
+                  {getTierPrice(currentTier) === 0
                     ? "Free forever"
-                    : `$${TIER_PRICES[currentTier]}/month`}
+                    : `$${getTierPrice(currentTier)}/month`}
                   {sub.gracePeriodEndsAt && (
                     <span className="ml-2 text-amber-400">
                       — Grace period ends{" "}
@@ -530,7 +548,7 @@ export default function DashboardClient({
                 </p>
               </div>
               <div className="flex gap-2">
-                {currentTier !== "team" && (
+                {!sub.cancelAt && currentTier !== "team" && (
                   <button
                     onClick={() =>
                       handleUpgrade(TIER_ORDER[currentTierIndex + 1])
@@ -538,7 +556,15 @@ export default function DashboardClient({
                     className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium transition hover:bg-indigo-500"
                   >
                     Upgrade to{" "}
-                    {TIER_LABELS[TIER_ORDER[currentTierIndex + 1]] ?? "Next"}
+                    {getTierLabel(TIER_ORDER[currentTierIndex + 1]) ?? "Next"}
+                  </button>
+                )}
+                {sub.cancelAt && (
+                  <button
+                    onClick={handleReactivate}
+                    className="rounded-md border border-indigo-500/40 px-4 py-2 text-sm font-medium text-indigo-400 transition hover:bg-indigo-500/10"
+                  >
+                    Reactivate
                   </button>
                 )}
               </div>
@@ -638,7 +664,7 @@ export default function DashboardClient({
               {newApiKey ? (
                 <div className="space-y-2">
                   <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
-                    Save this key now — it won&apos;t be shown again.
+                    Save this key and the config block above now — they won&apos;t be shown again.
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 rounded-md border border-zinc-700 bg-zinc-800/50 px-3 py-1.5 font-mono text-sm text-emerald-400">
@@ -648,23 +674,16 @@ export default function DashboardClient({
                   </div>
                 </div>
               ) : (
-                <div className="flex items-center justify-between">
-                  <p className="text-sm text-zinc-400">
-                    Your API key is hidden. Generate a new one if you need it.
-                  </p>
-                  <button
-                    onClick={handleRegenerateKey}
-                    disabled={regenerating}
-                    className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white disabled:opacity-50"
-                  >
-                    {regenerating ? "Generating..." : "Regenerate API Key"}
-                  </button>
-                </div>
+                <p className="text-sm text-zinc-400">
+                  Your API key was shown when you first claimed your substrate.
+                  It is included in the config block above when visible.
+                  Contact support if you need to rotate your key.
+                </p>
               )}
             </div>
 
             {/* Cancel / Danger zone */}
-            {currentTier !== "free" && (
+            {currentTier !== "free" && !sub.cancelAt && (
               <div className="rounded-xl border border-red-900/30 bg-red-950/20 px-5 py-4">
                 <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-red-400/80">
                   Danger Zone
@@ -672,11 +691,12 @@ export default function DashboardClient({
                 {!cancelConfirm ? (
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-zinc-400">
-                      Cancel your subscription. Data preserved 30 days in read-only mode.
+                      Cancel your subscription. You keep access until the end of your billing period.
+                      Data is preserved for 30 days in read-only mode after that.
                     </p>
                     <button
                       onClick={() => setCancelConfirm(true)}
-                      className="rounded-md border border-red-800/50 px-3 py-1.5 text-sm text-red-400 transition hover:border-red-700 hover:bg-red-950/30"
+                      className="ml-4 shrink-0 rounded-md border border-red-800/50 px-3 py-1.5 text-sm text-red-400 transition hover:border-red-700 hover:bg-red-950/30"
                     >
                       Cancel Subscription
                     </button>
@@ -684,8 +704,9 @@ export default function DashboardClient({
                 ) : (
                   <div className="space-y-2">
                     <p className="text-sm text-red-300">
-                      Are you sure? Your substrate will become read-only and
-                      your data will be deleted after 30 days.
+                      Are you sure? Your subscription will end at the close of the current billing
+                      period. After that, your substrate becomes read-only and data is deleted after
+                      30 days.
                     </p>
                     <div className="flex gap-2">
                       <button
@@ -693,9 +714,7 @@ export default function DashboardClient({
                         disabled={cancelling}
                         className="rounded-md bg-red-600 px-4 py-2 text-sm font-medium text-white transition hover:bg-red-500 disabled:opacity-50"
                       >
-                        {cancelling
-                          ? "Cancelling..."
-                          : "Yes, Cancel My Subscription"}
+                        {cancelling ? "Scheduling..." : "Yes, Cancel at Period End"}
                       </button>
                       <button
                         onClick={() => setCancelConfirm(false)}

@@ -23,8 +23,8 @@ export const SUBSTRATE_TIERS: SubstrateTierInfo[] = [
   {
     id: "free",
     name: "Free",
-    price: 0,
-    description: "Try MMPM. No credit card required.",
+    price: 1,
+    description: "Get started with MMPM. $1/month, cancel anytime.",
     features: [
       "500 atoms",
       "100 bootstraps/month",

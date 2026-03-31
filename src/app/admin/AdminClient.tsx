@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { getTierLabel } from "@/config/tiers";
 
 interface AccountInfo {
   id: string;
@@ -33,12 +34,7 @@ interface InstanceDetail extends InstanceInfo {
   vizKey?: string;
 }
 
-const TIER_LABELS: Record<string, string> = {
-  starter: "Starter",
-  solo: "Solo",
-  team: "Team",
-  enterprise_cloud: "Enterprise Cloud",
-};
+// TIER_LABELS and TIER_PRICES are imported from @/config/tiers (canonical registry)
 
 function formatBalance(cents: number): string {
   return `$${(cents / 100).toFixed(2)}`;
@@ -59,9 +55,17 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default function AdminClient({ account }: { account: AccountInfo }) {
+export default function AdminClient({
+  account,
+  totpEnrolled = false,
+}: {
+  account: AccountInfo;
+  totpEnrolled?: boolean;
+}) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [totpNudgeDismissed, setTotpNudgeDismissed] = useState(false);
+  const showTotpNudge = !totpEnrolled && !totpNudgeDismissed;
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -115,6 +119,44 @@ export default function AdminClient({ account }: { account: AccountInfo }) {
           <p className="text-sm text-white/40">Manage your Parametric Memory instance</p>
         </div>
 
+        {/* ── 2FA nudge banner ── */}
+        {showTotpNudge && (
+          <div className="mb-6 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-5 py-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
+                <svg className="h-5 w-5 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z" />
+                </svg>
+              </div>
+              <div>
+                <p className="text-sm font-medium text-white/90">
+                  Secure your account with two-factor authentication
+                </p>
+                <p className="mt-0.5 text-xs text-white/40">
+                  Add an authenticator app as a second step when signing in.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              <Link
+                href="/admin/security"
+                className="shrink-0 rounded-lg bg-amber-600/80 px-3.5 py-2 text-xs font-medium text-white transition-colors hover:bg-amber-500"
+              >
+                Set up 2FA
+              </Link>
+              <button
+                onClick={() => setTotpNudgeDismissed(true)}
+                className="shrink-0 rounded-lg p-2 text-white/30 transition-colors hover:bg-white/5 hover:text-white/60"
+                aria-label="Dismiss"
+              >
+                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </div>
+          </div>
+        )}
+
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
             <p className="mb-1 text-xs tracking-wider text-white/40 uppercase">Account</p>
@@ -126,7 +168,7 @@ export default function AdminClient({ account }: { account: AccountInfo }) {
           <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
             <p className="mb-1 text-xs tracking-wider text-white/40 uppercase">Plan</p>
             <p className="text-sm text-white/80">
-              {hasTier ? (TIER_LABELS[account.tier!] ?? account.tier) : "No active plan"}
+              {hasTier ? getTierLabel(account.tier) : "No active plan"}
             </p>
             {!hasTier && (
               <Link

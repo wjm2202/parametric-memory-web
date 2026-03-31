@@ -4,142 +4,74 @@ import { FAQAccordion } from "./PricingClient";
 import { PricingCTA } from "./PricingCTA";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { WaitlistForm } from "@/components/landing/WaitlistForm";
+import { TIERS, ENTERPRISE_TIERS } from "@/config/tiers";
 
 export const metadata: Metadata = {
   title: "Pricing",
   description:
-    "Parametric Memory pricing from $9/mo. Dedicated AI memory instances with Merkle proofs, Markov prediction, and MCP. Solo $29/mo, Team $79/mo, Enterprise from $299/mo.",
+    "Parametric Memory pricing from $1/month. AI memory with Merkle proofs, Markov prediction, and MCP. Free $1/mo, Indie $9/mo, Pro $29/mo, Team $79/mo, Enterprise from $299/mo.",
   openGraph: {
     title: "Pricing | Parametric Memory",
     description:
-      "Dedicated AI memory instances from $9/mo. All features included. No per-query charges.",
+      "AI memory from $1/month. All plans include Merkle proofs, Markov prediction, and MCP. No per-query charges.",
   },
 };
 
-/* ── Pricing tier definitions ────────────────────────────────────────── */
+/* ── Pricing tier definitions — sourced from @/config/tiers ─────────────── */
+// Combine billing tiers and enterprise tiers into a single display list.
+// Billing tiers (free/indie/pro/team) have no ctaLink — PricingCTA handles checkout.
+// Enterprise tiers have a ctaLink that opens a mailto: for the sales flow.
 const tiers = [
-  {
-    id: "starter",
-    name: "Starter",
-    price: 9,
-    description: "For prototypes and small projects",
-    highlightedBadge: null as string | null,
-    cta: "Get Started Free",
-    ctaLink: "/signup",
-    features: [
-      { name: "Dedicated instance", included: true },
-      { name: "SSL/TLS certificate", included: true },
-      { name: "512 MiB RAM", included: true },
-      { name: "10 GiB storage", included: true },
-      { name: "All features (proofs, Markov, MCP)", included: true },
-      { name: "500 GiB transfer", included: true },
-      { name: "Community support", included: true },
-      { name: "Priority support", included: false },
-      { name: "Custom domain", included: false },
-    ],
-  },
-  {
-    id: "solo",
-    name: "Solo",
-    price: 29,
-    description: "For individual developers",
-    highlightedBadge: "Most Popular",
-    cta: "Get Solo",
-    ctaLink: "#",
-    features: [
-      { name: "Dedicated instance", included: true },
-      { name: "SSL/TLS certificate", included: true },
-      { name: "1 GiB RAM", included: true },
-      { name: "25 GiB storage", included: true },
-      { name: "All features (proofs, Markov, MCP)", included: true },
-      { name: "1,000 GiB transfer", included: true },
-      { name: "Email support (48hr SLA)", included: true },
-      { name: "Priority support", included: false },
-      { name: "Custom domain", included: false },
-    ],
-  },
-  {
-    id: "team",
-    name: "Team",
-    price: 79,
-    description: "For growing teams",
-    highlightedBadge: null,
-    cta: "Get Team",
-    ctaLink: "#",
-    features: [
-      { name: "Dedicated instance", included: true },
-      { name: "SSL/TLS certificate", included: true },
-      { name: "4 GiB RAM", included: true },
-      { name: "80 GiB storage", included: true },
-      { name: "All features (proofs, Markov, MCP)", included: true },
-      { name: "4,000 GiB transfer", included: true },
-      { name: "Priority support (24hr SLA)", included: true },
-      { name: "Custom domain", included: true },
-      { name: "Multi-user API keys", included: true },
-    ],
-  },
-  {
-    id: "enterprise-cloud",
-    name: "Enterprise Cloud",
-    price: 299,
-    description: "For mission-critical AI systems",
-    highlightedBadge: null,
-    cta: "Contact Sales",
-    ctaLink: "mailto:entityone22@gmail.com?subject=Enterprise%20Cloud%20Inquiry",
-    features: [
-      { name: "Dedicated General Purpose instance", included: true },
-      { name: "SSL/TLS certificate", included: true },
-      { name: "8 GiB RAM", included: true },
-      { name: "100+ GiB expandable storage", included: true },
-      { name: "All features (proofs, Markov, MCP)", included: true },
-      { name: "99.9% SLA", included: true },
-      { name: "SSO/SAML", included: true },
-      { name: "SOC 2 artifacts", included: true },
-      { name: "Dedicated support channel", included: true },
-    ],
-  },
-  {
-    id: "enterprise-self-hosted",
-    name: "Enterprise Self-Hosted",
-    price: 499,
-    description: "Complete control and sovereignty",
-    highlightedBadge: null,
-    cta: "Contact Sales",
-    ctaLink: "mailto:entityone22@gmail.com?subject=Enterprise%20Self-Hosted%20Inquiry",
-    features: [
-      { name: "Commercial license", included: true },
-      { name: "Deploy on your own cloud", included: true },
-      { name: "SSL/TLS (via deployment guide)", included: true },
-      { name: "Full source access", included: true },
-      { name: "Unlimited instances", included: true },
-      { name: "Architecture review", included: true },
-      { name: "Deployment guide", included: true },
-      { name: "Quarterly reviews", included: true },
-      { name: "Upgrade assistance", included: true },
-    ],
-  },
+  ...TIERS.map((t) => ({ ...t, ctaLink: undefined as string | undefined })),
+  ...ENTERPRISE_TIERS.map((t) => ({ ...t })),
 ];
 
 /* ── Comparison matrix ───────────────────────────────────────────────── */
+// Columns: Free · Indie · Pro · Team · Enterprise Cloud · Enterprise Self-Hosted
 const comparisonRows = [
-  { feature: "Dedicated instance", tiers: [true, true, true, true, true] },
-  { feature: "SSL/TLS certificate (Let's Encrypt)", tiers: [true, true, true, true, true] },
-  { feature: "RAM", tiers: ["512 MiB", "1 GiB", "4 GiB", "8 GiB", "Unlimited"] },
-  { feature: "Storage", tiers: ["10 GiB", "25 GiB", "80 GiB", "100+ GiB", "Unlimited"] },
-  { feature: "Transfer", tiers: ["500 GiB", "1,000 GiB", "4,000 GiB", "Unlimited", "Unlimited"] },
-  { feature: "Merkle proofs", tiers: [true, true, true, true, true] },
-  { feature: "Markov prediction", tiers: [true, true, true, true, true] },
-  { feature: "MCP native", tiers: [true, true, true, true, true] },
+  {
+    feature: "Atoms",
+    tiers: ["500", "10,000", "100,000", "500,000", "Unlimited", "Unlimited"],
+  },
+  {
+    feature: "Bootstraps / month",
+    tiers: ["100", "1,000", "10,000", "Unlimited", "Unlimited", "Unlimited"],
+  },
+  {
+    feature: "Storage",
+    tiers: ["50 MB", "500 MB", "2 GB", "10 GB", "100+ GB", "Unlimited"],
+  },
+  { feature: "Merkle proofs", tiers: [true, true, true, true, true, true] },
+  { feature: "Markov prediction", tiers: [true, true, true, true, true, true] },
+  { feature: "MCP native", tiers: [true, true, true, true, true, true] },
+  { feature: "Knowledge graph edges", tiers: [false, false, true, true, true, true] },
   {
     feature: "Support",
-    tiers: ["Community", "Email (48hr)", "Priority (24hr)", "Dedicated", "Dedicated"],
+    tiers: [
+      "Community",
+      "Email (48hr)",
+      "Priority (24hr)",
+      "Dedicated",
+      "Dedicated",
+      "Dedicated",
+    ],
   },
-  { feature: "SLA", tiers: ["Best effort", "Best effort", "Best effort", "99.9%", "Custom"] },
-  { feature: "Custom domain", tiers: [false, false, true, true, true] },
-  { feature: "SSO/SAML", tiers: [false, false, false, true, true] },
-  { feature: "SOC 2 artifacts", tiers: [false, false, false, true, true] },
-  { feature: "Quarterly reviews", tiers: [false, false, false, false, true] },
-  { feature: "Source access", tiers: [false, false, false, false, true] },
+  {
+    feature: "SLA",
+    tiers: [
+      "Best effort",
+      "Best effort",
+      "Best effort",
+      "Best effort",
+      "99.9%",
+      "Custom",
+    ],
+  },
+  { feature: "Custom domain", tiers: [false, false, false, true, true, true] },
+  { feature: "SSO/SAML", tiers: [false, false, false, false, true, true] },
+  { feature: "SOC 2 artifacts", tiers: [false, false, false, false, true, true] },
+  { feature: "Quarterly reviews", tiers: [false, false, false, false, false, true] },
+  { feature: "Source access", tiers: [false, false, false, false, false, true] },
 ];
 
 /* ── Competitor comparison ───────────────────────────────────────────── */
@@ -250,7 +182,7 @@ const faqSchema = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Plans start at $9/month for a dedicated instance with all features. Solo is $29/month, Team is $79/month, Enterprise Cloud is $299/month with SLA, and Enterprise Self-Hosted is $499/month.",
+        text: "Plans start at $1/month (Free tier: 500 atoms, 100 bootstraps). Indie is $9/month (10,000 atoms), Pro is $29/month (100,000 atoms), Team is $79/month (500,000 atoms + unlimited bootstraps). Enterprise Cloud is $299/month with a 99.9% SLA, and Enterprise Self-Hosted is $499/month with full source access. All plans billed monthly, cancel anytime.",
       },
     },
     {
@@ -271,10 +203,10 @@ const faqSchema = {
     },
     {
       "@type": "Question",
-      name: "Is there a free trial?",
+      name: "Is there a free plan?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. All plans include a free trial with no credit card required. Spin up a dedicated instance in under 5 minutes from the pricing page.",
+        text: "Yes. The Free plan is $1/month — the lowest-cost entry point to get a real substrate with 500 atoms, 100 bootstraps/month, and 50 MB storage. All plans are billed monthly with no lock-in. Cancel anytime.",
       },
     },
     {
@@ -327,12 +259,11 @@ export default async function PricingPage() {
             Simple, Transparent Pricing
           </h1>
           <p className="text-surface-200/70 mx-auto max-w-2xl text-lg">
-            From $9/mo for prototypes to $499/mo for self-hosted enterprise. All plans include
-            cryptographic proofs, Markov prediction, and MCP native integration. No hidden fees. No
-            per-query charges.
+            From $1/month to $499/mo for self-hosted enterprise. All plans include cryptographic proofs,
+            Markov prediction, and MCP native integration. No hidden fees. No per-query charges.
           </p>
           <p className="text-surface-400 text-sm">
-            All plans include a free trial &mdash; no credit card required to start.
+            All plans billed monthly &mdash; cancel anytime.
           </p>
         </section>
 
@@ -347,15 +278,15 @@ export default async function PricingPage() {
                 key={tier.id}
                 id={tier.id}
                 className={`relative flex flex-col rounded-2xl border transition-all ${
-                  tier.highlightedBadge
+                  tier.badge
                     ? "border-brand-400/50 from-brand-500/10 to-surface-900/50 ring-brand-400/25 bg-gradient-to-b ring-1 md:scale-105"
                     : "border-surface-200/10 bg-surface-900/30"
                 } hover:border-surface-200/20 p-8 backdrop-blur-sm`}
               >
-                {tier.highlightedBadge && (
+                {tier.badge && (
                   <div className="absolute -top-3 left-1/2 -translate-x-1/2 transform">
                     <span className="bg-brand-500 rounded-full px-3 py-1 text-xs font-semibold text-white">
-                      {tier.highlightedBadge}
+                      {tier.badge}
                     </span>
                   </div>
                 )}
@@ -438,7 +369,7 @@ export default async function PricingPage() {
         <section className="mx-auto max-w-7xl px-6 pb-24" aria-label="Comparison with competitors">
           <h2 className="mb-3 text-3xl font-bold text-white">vs. Competitors</h2>
           <p className="text-surface-200/70 mb-8">
-            How Parametric Memory stacks up (Solo plan $29/mo vs. Mem0 Starter $19/mo vs. Zep Flex
+            How Parametric Memory stacks up (Pro plan $29/mo vs. Mem0 Starter $19/mo vs. Zep Flex
             $25/mo)
           </p>
           <div className="border-surface-200/10 bg-surface-900/30 overflow-x-auto rounded-xl border backdrop-blur-sm">
