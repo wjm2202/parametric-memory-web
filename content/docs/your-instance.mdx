@@ -1,0 +1,82 @@
+---
+title: Your Instance & API Key
+description: How to find your MCP endpoint URL, claim your API key, and get the config block for your AI client.
+section: Getting Started
+order: 3
+---
+
+# Your Instance & API Key
+
+Once your subscription is active (or your trial has started), your memory substrate is provisioned automatically. You do not need to do anything to start it — by the time you reach the Dashboard, it is running and ready.
+
+## Finding your instance details
+
+Go to **Dashboard → My Substrate**. You will see:
+
+| Field | Description |
+|---|---|
+| **Instance URL** | Your dedicated HTTPS endpoint, e.g. `https://abc123.parametric-memory.dev` |
+| **MCP Endpoint** | The MCP server URL — same domain, `/mcp` path |
+| **Status** | `running` (green), `provisioning` (yellow), or `read_only` (amber) |
+| **Tier** | Your current plan |
+| **Atoms used** | Live count of stored atoms vs. your tier limit |
+| **Bootstraps this month** | Usage against your monthly bootstrap limit |
+
+If you just signed up, provisioning takes up to 2 minutes for shared instances and up to 5 minutes for dedicated (Team) instances. Refresh the Dashboard — the status will update to `running` automatically.
+
+## Claiming your API key
+
+Your API key is generated at provision time and stored securely. To retrieve it:
+
+1. Go to **Dashboard → Settings → API Key**
+2. Click **Claim Key**
+3. Copy the key shown — it begins with `mmk_`
+
+> **Important:** The key is shown once in full at claim time. After you close the dialog, only the first 8 characters (the prefix) are displayed. If you lose your key, you must rotate it — see below.
+
+Your API key authenticates all requests to your instance, including both the REST API and the MCP server.
+
+## The MCP server block
+
+After claiming your key, the Dashboard shows a ready-to-paste config block for your AI client. It looks like this:
+
+```json
+{
+  "mcpServers": {
+    "parametric-memory": {
+      "type": "streamable-http",
+      "url": "https://abc123.parametric-memory.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer mmk_your_key_here"
+      }
+    }
+  }
+}
+```
+
+This block is what you paste into Claude Desktop, Claude Cowork, Cursor, or any other MCP-compatible client. See [Claude Desktop & Cowork](/docs/mcp/claude) or [Other AI Clients](/docs/mcp/other-clients) for client-specific instructions.
+
+## Rotating your API key
+
+Self-service key rotation is not yet available in the Dashboard. To rotate your key, contact support and we will issue a new one for you.
+
+When a key is rotated, your old key enters a **24-hour grace period** — it keeps working while you update your configs, then expires automatically. This means there is no forced downtime during a rotation.
+
+Once you receive your new key:
+
+1. Update the `Authorization` header in every AI client config where you use this key
+2. Clear any MCP auth cache on your machine (e.g. `~/.mcp-auth/` on macOS/Linux)
+3. Your old key will stop working after 24 hours
+
+> **If your key is actively compromised**, flag this when contacting support and we can revoke the old key immediately (0-hour grace).
+
+## Security notes
+
+- Your API key is stored as a SHA-256 hash in our database — we cannot recover the plaintext value
+- All traffic to your instance uses TLS (HTTPS/WSS). Plain HTTP is rejected
+- Your key scopes you only to your own instance — there is no cross-account access
+- The MCP server validates the key on every connection
+
+## Sharing access (Team plan)
+
+On the Team plan, your instance supports multiple users sharing the same substrate. Each user should use the same MCP endpoint URL and API key. If you need per-user key rotation, contact support — per-seat keys are on the roadmap.

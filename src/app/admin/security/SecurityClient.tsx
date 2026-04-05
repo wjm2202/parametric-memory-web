@@ -2,7 +2,6 @@
 
 import { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
 
 interface AccountInfo {
   id: string;
@@ -36,11 +35,7 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
       onClick={handleCopy}
       className="flex items-center gap-1.5 rounded-md border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-white/60 transition-colors hover:border-white/20 hover:bg-white/10 hover:text-white/90"
     >
-      {copied ? (
-        <span className="text-emerald-400">Copied</span>
-      ) : (
-        label
-      )}
+      {copied ? <span className="text-emerald-400">Copied</span> : label}
     </button>
   );
 }
@@ -49,7 +44,10 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
 // Main component
 // ─────────────────────────────────────────────────────────────────────────────
 
-export default function SecurityClient({ account, totpEnrolled: initialEnrolled }: SecurityClientProps) {
+export default function SecurityClient({
+  account,
+  totpEnrolled: initialEnrolled,
+}: SecurityClientProps) {
   const [enrolled, setEnrolled] = useState(initialEnrolled);
 
   // ── Enrolment state ──
@@ -79,7 +77,7 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
         method: "POST",
         headers: { "Content-Type": "application/json" },
       });
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         ok?: boolean;
         error?: string;
         secret?: string;
@@ -109,7 +107,7 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ secret: totpSecret, code: confirmCode }),
       });
-      const data = await res.json() as {
+      const data = (await res.json()) as {
         ok?: boolean;
         error?: string;
         backupCodes?: string[];
@@ -150,7 +148,7 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ code: disableCode }),
       });
-      const data = await res.json() as { ok?: boolean; error?: string };
+      const data = (await res.json()) as { ok?: boolean; error?: string };
       if (!res.ok) {
         setError(data.error ?? "Invalid code.");
         setDisableCode("");
@@ -175,7 +173,10 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
       {/* Nav */}
       <div className="border-b border-white/5 px-6 py-4">
         <div className="mx-auto flex max-w-3xl items-center gap-3">
-          <Link href="/admin" className="text-sm text-white/40 transition-colors hover:text-white/70">
+          <Link
+            href="/admin"
+            className="text-sm text-white/40 transition-colors hover:text-white/70"
+          >
             ← Dashboard
           </Link>
           <span className="text-white/20">/</span>
@@ -198,8 +199,12 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
                 Require a time-based one-time code (TOTP) after each sign-in link.
               </p>
             </div>
-            <div className={`mt-0.5 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${enrolled ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-white/40"}`}>
-              <span className={`h-1.5 w-1.5 rounded-full ${enrolled ? "bg-emerald-400" : "bg-white/30"}`} />
+            <div
+              className={`mt-0.5 flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium ${enrolled ? "bg-emerald-500/15 text-emerald-400" : "bg-white/5 text-white/40"}`}
+            >
+              <span
+                className={`h-1.5 w-1.5 rounded-full ${enrolled ? "bg-emerald-400" : "bg-white/30"}`}
+              />
               {enrolled ? "Enabled" : "Disabled"}
             </div>
           </div>
@@ -218,8 +223,13 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
               className="flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
             >
               {loading ? (
-                <><span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" /> Setting up…</>
-              ) : "Enable two-factor authentication"}
+                <>
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />{" "}
+                  Setting up…
+                </>
+              ) : (
+                "Enable two-factor authentication"
+              )}
             </button>
           )}
 
@@ -227,21 +237,30 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
           {enrolStep === "scan" && qrDataUrl && (
             <div className="space-y-4">
               <p className="text-sm text-white/70">
-                Scan this QR code with your authenticator app (Authy, Google Authenticator, 1Password, etc).
+                Scan this QR code with your authenticator app (Authy, Google Authenticator,
+                1Password, etc).
               </p>
               <div className="flex justify-center">
                 <div className="rounded-xl border border-white/10 bg-white p-3">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={qrDataUrl} alt="TOTP QR Code" width={200} height={200} className="block" />
+                  <img
+                    src={qrDataUrl}
+                    alt="TOTP QR Code"
+                    width={200}
+                    height={200}
+                    className="block"
+                  />
                 </div>
               </div>
               {totpSecret && (
                 <div className="rounded-lg border border-white/5 bg-white/[0.03] px-4 py-3">
                   <div className="mb-1.5 flex items-center justify-between">
-                    <span className="text-xs text-white/40 uppercase tracking-wide">Manual entry key</span>
+                    <span className="text-xs tracking-wide text-white/40 uppercase">
+                      Manual entry key
+                    </span>
                     <CopyButton text={totpSecret} />
                   </div>
-                  <code className="break-all font-mono text-sm text-white/70">{totpSecret}</code>
+                  <code className="font-mono text-sm break-all text-white/70">{totpSecret}</code>
                 </div>
               )}
               <button
@@ -293,19 +312,33 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
             <div className="space-y-4">
               <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
                 <div className="mb-3 flex items-center gap-2">
-                  <svg className="h-4 w-4 text-amber-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.924-.833-2.695 0L3.268 16.5c-.77.833.193 2.5 1.732 2.5z" />
+                  <svg
+                    className="h-4 w-4 text-amber-400"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={1.5}
+                      d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.924-.833-2.695 0L3.268 16.5c-.77.833.193 2.5 1.732 2.5z"
+                    />
                   </svg>
-                  <span className="text-xs font-semibold uppercase tracking-wide text-amber-400">
+                  <span className="text-xs font-semibold tracking-wide text-amber-400 uppercase">
                     Recovery codes — shown once
                   </span>
                 </div>
                 <p className="mb-3 text-xs text-amber-400/70">
-                  Save these 8 codes somewhere safe. Each can be used once to sign in if you lose access to your authenticator.
+                  Save these 8 codes somewhere safe. Each can be used once to sign in if you lose
+                  access to your authenticator.
                 </p>
                 <div className="grid grid-cols-2 gap-2">
                   {backupCodes.map((code) => (
-                    <code key={code} className="rounded bg-black/30 px-2 py-1.5 text-center font-mono text-xs text-amber-200/90">
+                    <code
+                      key={code}
+                      className="rounded bg-black/30 px-2 py-1.5 text-center font-mono text-xs text-amber-200/90"
+                    >
                       {code}
                     </code>
                   ))}
@@ -326,8 +359,18 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
           {/* ── Done ── */}
           {enrolStep === "done" && (
             <div className="flex items-center gap-3 rounded-lg border border-emerald-500/20 bg-emerald-500/5 px-4 py-3 text-sm text-emerald-400">
-              <svg className="h-4 w-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+              <svg
+                className="h-4 w-4 flex-shrink-0"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M5 13l4 4L19 7"
+                />
               </svg>
               Two-factor authentication is now active.
             </div>
@@ -338,7 +381,10 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
             <div className="mt-4 border-t border-white/5 pt-4">
               {!disableMode ? (
                 <button
-                  onClick={() => { setDisableMode(true); setError(null); }}
+                  onClick={() => {
+                    setDisableMode(true);
+                    setError(null);
+                  }}
                   className="text-sm text-red-400/70 transition-colors hover:text-red-400"
                 >
                   Disable two-factor authentication
@@ -355,13 +401,19 @@ export default function SecurityClient({ account, totpEnrolled: initialEnrolled 
                     autoFocus
                     autoComplete="one-time-code"
                     value={disableCode}
-                    onChange={(e) => setDisableCode(e.target.value.replace(/\D/g, "").substring(0, 6))}
+                    onChange={(e) =>
+                      setDisableCode(e.target.value.replace(/\D/g, "").substring(0, 6))
+                    }
                     placeholder="000000"
                     className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2.5 text-center font-mono text-xl tracking-[0.4em] text-white placeholder-white/20 focus:border-red-500/40 focus:ring-1 focus:ring-red-500/20 focus:outline-none"
                   />
                   <div className="flex gap-3">
                     <button
-                      onClick={() => { setDisableMode(false); setDisableCode(""); setError(null); }}
+                      onClick={() => {
+                        setDisableMode(false);
+                        setDisableCode("");
+                        setError(null);
+                      }}
                       className="flex-1 rounded-lg border border-white/10 px-4 py-2 text-sm text-white/60 transition-colors hover:text-white"
                     >
                       Cancel

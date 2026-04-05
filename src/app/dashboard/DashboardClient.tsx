@@ -1,9 +1,255 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { TIER_ORDER, getTierLabel, getTierPrice } from "@/config/tiers";
+import { RotationStepper, type RotationStatus } from "@/components/ui/RotationStepper";
+import { UpdateInstructions } from "@/components/ui/UpdateInstructions";
+
+// ── Billing Status Types ────────────────────────────────────────────────────
+
+interface BillingStatus {
+  tier: string;
+  status: "active" | "trialing" | "past_due" | "suspended" | "cancelled";
+  renewsAt: string | null;
+  trialEndsAt: string | null;
+  lastPaymentFailed: boolean;
+  hasStripeCustomer: boolean;
+  tierDisplay: {
+    name: string;
+    atomsUsed: number;
+    atomsLimit: number;
+    bootstrapsUsed: number;
+    bootstrapsLimit: number;
+  };
+}
+
+function formatDate(iso: string | null): string {
+  if (!iso) return "—";
+  return new Date(iso).toLocaleDateString("en-NZ", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+function daysUntil(iso: string | null): number {
+  if (!iso) return Infinity;
+  const diff = new Date(iso).getTime() - Date.now();
+  return Math.ceil(diff / (1000 * 60 * 60 * 24));
+}
+
+// ── Manage Billing helper ─────────────────────────────────────────────────────
+
+async function openBillingPortal() {
+  const res = await fetch("/api/billing/portal");
+  if (res.status === 422) {
+    // No Stripe customer yet — shouldn't happen on a paid plan but be safe
+    alert("No billing account found. Please subscribe first.");
+    return;
+  }
+  if (!res.ok) {
+    alert("Could not open billing portal. Please try again.");
+    return;
+  }
+  const data = await res.json();
+  if (data.portalUrl) {
+    window.location.href = data.portalUrl;
+  }
+}
+
+// ── Billing Widget ────────────────────────────────────────────────────────────
+
+function BillingWidget({ billing }: { billing: BillingStatus }) {
+  const { status, tier, renewsAt, trialEndsAt, lastPaymentFailed, tierDisplay } = billing;
+
+  // Payment warning takes priority over normal active display
+  if (lastPaymentFailed && status !== "suspended") {
+    return (
+      <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold text-amber-300">
+              <span>⚠</span> Payment issue — we&apos;ll retry
+            </p>
+            <p className="text-surface-400 mt-1 text-sm">
+              Your last payment didn&apos;t go through. Stripe will automatically retry. Your
+              account remains fully active.
+            </p>
+          </div>
+          <button
+            onClick={openBillingPortal}
+            className="shrink-0 rounded-md border border-amber-500/40 px-3 py-1.5 text-xs font-medium text-amber-300 transition hover:bg-amber-500/10"
+          >
+            Update payment →
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "suspended") {
+    return (
+      <div className="rounded-xl border border-red-900/40 bg-red-950/20 px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="flex items-center gap-2 text-sm font-semibold text-red-400">
+              <span>✕</span> Account suspended
+            </p>
+            <p className="text-surface-400 mt-1 text-sm">
+              Your subscription was cancelled after multiple failed payment attempts.
+            </p>
+          </div>
+          <div className="flex shrink-0 flex-col gap-2 sm:flex-row">
+            <Link
+              href="/pricing"
+              className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-red-500"
+            >
+              Reactivate →
+            </Link>
+            <a
+              href="mailto:entityone22@gmail.com?subject=Account%20help"
+              className="border-surface-700 text-surface-400 rounded-md border px-3 py-1.5 text-xs font-medium transition hover:text-white"
+            >
+              Contact support
+            </a>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === "cancelled") {
+    return (
+      <div className="rounded-xl border border-zinc-700/50 bg-zinc-900/30 px-5 py-4">
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <p className="text-surface-400 flex items-center gap-2 text-sm font-semibold">
+              <span className="text-surface-600">○</span> No active subscription
+            </p>
+            <p className="text-surface-500 mt-1 text-sm">
+              Your plan was cancelled. Memory is preserved for 90 days.
+            </p>
+          </div>
+          <Link
+            href="/pricing"
+            className="bg-brand-500 hover:bg-brand-400 shrink-0 rounded-md px-3 py-1.5 text-xs font-medium text-white transition"
+          >
+            Choose a plan →
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // Active or trialing
+  const dotColor = status === "trialing" ? "bg-blue-400" : "bg-emerald-400";
+  const statusLabel =
+    status === "trialing"
+      ? `Trial ends ${formatDate(trialEndsAt)}`
+      : `Renews ${formatDate(renewsAt)}`;
+  const priceLabel =
+    tier === "indie"
+      ? "$9/month"
+      : tier === "pro"
+        ? "$29/month"
+        : tier === "team"
+          ? "$79/month"
+          : null;
+
+  const atomPct =
+    tierDisplay.atomsLimit > 0
+      ? Math.min((tierDisplay.atomsUsed / tierDisplay.atomsLimit) * 100, 100)
+      : 0;
+
+  return (
+    <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
+      <div className="flex items-start justify-between gap-4">
+        <div className="flex-1 space-y-2">
+          <div className="flex items-center gap-2">
+            <span className={`h-2 w-2 rounded-full ${dotColor}`} />
+            <span className="text-sm font-semibold text-white capitalize">
+              {tierDisplay.name} plan &middot;{" "}
+              <span className="font-normal text-zinc-400">
+                {status === "trialing" ? "Trial" : "Active"}
+              </span>
+            </span>
+          </div>
+          <p className="text-surface-400 text-xs">
+            {statusLabel}
+            {priceLabel && status !== "trialing" && ` · ${priceLabel}`}
+            {status === "trialing" && priceLabel && `, then ${priceLabel}`}
+          </p>
+          {tierDisplay.atomsLimit > 0 && (
+            <div className="space-y-1 pt-1">
+              <div className="flex justify-between text-xs text-zinc-500">
+                <span>
+                  {tierDisplay.atomsUsed.toLocaleString()} /{" "}
+                  {tierDisplay.atomsLimit.toLocaleString()} memories
+                </span>
+                <span>{atomPct.toFixed(0)}%</span>
+              </div>
+              <div className="h-1 overflow-hidden rounded-full bg-zinc-800">
+                <div
+                  className={`h-full rounded-full transition-all ${atomPct > 80 ? "bg-amber-500" : "bg-indigo-500"}`}
+                  style={{ width: `${atomPct}%` }}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+        <button
+          onClick={openBillingPortal}
+          className="border-surface-700 text-surface-400 shrink-0 rounded-md border px-3 py-1.5 text-xs font-medium transition hover:border-zinc-500 hover:text-white"
+        >
+          Manage billing →
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// ── Renewal Banner ────────────────────────────────────────────────────────────
+
+function RenewalBanner({ renewsAt }: { renewsAt: string }) {
+  const DISMISS_KEY = `renewal_banner_dismissed_${renewsAt.slice(0, 10)}`;
+  const [visible, setVisible] = useState(() => {
+    if (typeof window === "undefined") return false;
+    return !localStorage.getItem(DISMISS_KEY);
+  });
+
+  function dismiss() {
+    localStorage.setItem(DISMISS_KEY, "1");
+    setVisible(false);
+  }
+
+  if (!visible) return null;
+
+  const days = daysUntil(renewsAt);
+  if (days > 7 || days < 0) return null;
+
+  return (
+    <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-300">
+      <span>
+        ℹ Your plan renews on <strong className="text-white">{formatDate(renewsAt)}</strong>.{" "}
+        <button
+          onClick={openBillingPortal}
+          className="underline underline-offset-2 hover:text-white"
+        >
+          Manage billing
+        </button>
+      </span>
+      <button
+        onClick={dismiss}
+        aria-label="Dismiss"
+        className="shrink-0 text-blue-400 hover:text-white"
+      >
+        ×
+      </button>
+    </div>
+  );
+}
 
 // ── Types ───────────────────────────────────────────────────────────────────
 
@@ -31,6 +277,17 @@ interface HealthInfo {
   https: { configured: boolean; endpoint: string | null };
 }
 
+interface SubstrateHistoryItem {
+  id: string;
+  slug: string;
+  tier: string;
+  status: string;
+  hostingModel: string;
+  mcpEndpoint: string | null;
+  provisionedAt: string | null;
+  createdAt: string;
+}
+
 interface SubstrateInfo {
   id: string | null;
   slug: string | null;
@@ -49,6 +306,8 @@ interface SubstrateInfo {
   provisionedAt: string | null;
   gracePeriodEndsAt: string | null;
   cancelAt: string | null;
+  keyUnclaimed: boolean;
+  history?: SubstrateHistoryItem[];
 }
 
 // ── Constants (imported from @/config/tiers — canonical registry) ────────────
@@ -62,6 +321,8 @@ function StatusBadge({ status }: { status: string }) {
     read_only: "bg-amber-500/20 text-amber-400 border-amber-500/30",
     suspended: "bg-red-500/20 text-red-400 border-red-500/30",
     deprovisioned: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+    destroyed: "bg-zinc-500/20 text-zinc-400 border-zinc-500/30",
+    provision_failed: "bg-red-500/20 text-red-400 border-red-500/30",
   };
   const labels: Record<string, string> = {
     running: "Running",
@@ -69,6 +330,8 @@ function StatusBadge({ status }: { status: string }) {
     read_only: "Read Only",
     suspended: "Suspended",
     deprovisioned: "Deprovisioned",
+    destroyed: "Destroyed",
+    provision_failed: "Failed",
   };
   return (
     <span
@@ -93,11 +356,7 @@ function UsageBar({
   const isUnlimited = max === -1;
   const percent = isUnlimited ? 0 : Math.min((current / max) * 100, 100);
   const isOverage = !isUnlimited && current > max;
-  const barColor = isOverage
-    ? "bg-red-500"
-    : percent > 80
-      ? "bg-amber-500"
-      : "bg-indigo-500";
+  const barColor = isOverage ? "bg-red-500" : percent > 80 ? "bg-amber-500" : "bg-indigo-500";
 
   return (
     <div className="space-y-1">
@@ -121,9 +380,7 @@ function UsageBar({
           />
         </div>
       )}
-      {isUnlimited && (
-        <div className="text-xs text-zinc-500">Unlimited</div>
-      )}
+      {isUnlimited && <div className="text-xs text-zinc-500">Unlimited</div>}
     </div>
   );
 }
@@ -144,7 +401,12 @@ function CopyButton({ text, label }: { text: string; label: string }) {
     >
       {copied ? (
         <>
-          <svg className="h-3.5 w-3.5 text-emerald-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <svg
+            className="h-3.5 w-3.5 text-emerald-400"
+            fill="none"
+            viewBox="0 0 24 24"
+            stroke="currentColor"
+          >
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
           </svg>
           Copied
@@ -152,7 +414,12 @@ function CopyButton({ text, label }: { text: string; label: string }) {
       ) : (
         <>
           <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z" />
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              strokeWidth={2}
+              d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h8a2 2 0 012 2v2m-6 12h8a2 2 0 002-2v-8a2 2 0 00-2-2h-8a2 2 0 00-2 2v8a2 2 0 002 2z"
+            />
           </svg>
           {label}
         </>
@@ -192,8 +459,7 @@ function getProvisioningSteps(
 
   return allPhases.map((p, i) => ({
     label: labels[p],
-    state:
-      i < currentIndex ? "done" : i === currentIndex ? "active" : "pending",
+    state: i < currentIndex ? "done" : i === currentIndex ? "active" : "pending",
   }));
 }
 
@@ -206,11 +472,7 @@ function ProvisioningSteps({
   provisioning: ProvisioningProgress | null;
   status: string;
 }) {
-  const steps = getProvisioningSteps(
-    hostingModel,
-    provisioning?.phase ?? null,
-    status,
-  );
+  const steps = getProvisioningSteps(hostingModel, provisioning?.phase ?? null, status);
 
   return (
     <div className="space-y-3">
@@ -259,9 +521,7 @@ function ProvisioningSteps({
           {step.label === "Creating droplet" &&
             step.state === "done" &&
             provisioning?.dropletIp && (
-              <span className="font-mono text-xs text-zinc-500">
-                {provisioning.dropletIp}
-              </span>
+              <span className="font-mono text-xs text-zinc-500">{provisioning.dropletIp}</span>
             )}
         </div>
       ))}
@@ -271,13 +531,7 @@ function ProvisioningSteps({
 
 // ── Health Indicators ───────────────────────────────────────────────────────
 
-function HealthBadge({
-  ok,
-  label,
-}: {
-  ok: boolean | null;
-  label: string;
-}) {
+function HealthBadge({ ok, label }: { ok: boolean | null; label: string }) {
   const styles =
     ok === true
       ? "bg-emerald-500/20 text-emerald-400 border-emerald-500/30"
@@ -291,11 +545,7 @@ function HealthBadge({
     >
       <span
         className={`h-1.5 w-1.5 rounded-full ${
-          ok === true
-            ? "bg-emerald-400"
-            : ok === false
-              ? "bg-red-400"
-              : "bg-zinc-500"
+          ok === true ? "bg-emerald-400" : ok === false ? "bg-red-400" : "bg-zinc-500"
         }`}
       />
       {label}
@@ -306,9 +556,7 @@ function HealthBadge({
 function HealthBadges({ health }: { health: HealthInfo }) {
   return (
     <>
-      {health.droplet && (
-        <HealthBadge ok={health.droplet.sshReady} label="Droplet" />
-      )}
+      {health.droplet && <HealthBadge ok={health.droplet.sshReady} label="Droplet" />}
       <HealthBadge ok={health.substrate.reachable} label="Substrate" />
       <HealthBadge ok={health.https.configured} label="HTTPS" />
     </>
@@ -328,8 +576,69 @@ export default function DashboardClient({
   const searchParams = useSearchParams();
   const [loggingOut, setLoggingOut] = useState(false);
   const [newApiKey, setNewApiKey] = useState<string | null>(null);
+  const [revealingKey, setRevealingKey] = useState(false);
   const [cancelConfirm, setCancelConfirm] = useState(false);
+
+  // ── Key rotation state ───────────────────────────────────────────────────
+  const [rotationStatus, setRotationStatus] = useState<RotationStatus>("none");
+  const [rotationError, setRotationError] = useState<string | null>(null);
+  const [rotationJobId, setRotationJobId] = useState<string | null>(null);
+  const [rotationConfirmOpen, setRotationConfirmOpen] = useState(false);
+  const [rotationStarting, setRotationStarting] = useState(false);
+  const [rotationRateLimitMsg, setRotationRateLimitMsg] = useState<string | null>(null);
+  const [claimKeyOpen, setClaimKeyOpen] = useState(false);
+  const rotationPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const unloadRef = useRef<((e: BeforeUnloadEvent) => string) | null>(null);
+
+  const rotationActive =
+    rotationStatus !== "none" && rotationStatus !== "complete" && rotationStatus !== "failed";
+
+  async function startRotation() {
+    setRotationStarting(true);
+    setRotationRateLimitMsg(null);
+    try {
+      const res = await fetch("/api/v1/my-substrate/rotate-key", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) {
+        if (res.status === 429) {
+          setRotationRateLimitMsg(data.error ?? "Rate limit reached.");
+          setRotationConfirmOpen(false);
+        } else {
+          setRotationError(data.error ?? "Failed to start rotation.");
+          setRotationStatus("failed");
+          setRotationConfirmOpen(false);
+        }
+        return;
+      }
+      setRotationJobId(data.jobId);
+      setRotationStatus("pending");
+      setRotationError(null);
+      setRotationConfirmOpen(false);
+    } finally {
+      setRotationStarting(false);
+    }
+  }
+
+  function resetRotation() {
+    setRotationStatus("none");
+    setRotationError(null);
+    setRotationJobId(null);
+    setRotationRateLimitMsg(null);
+  }
   const [cancelling, setCancelling] = useState(false);
+  const [destroyConfirmText, setDestroyConfirmText] = useState("");
+  const [destroying, setDestroying] = useState(false);
+
+  // Billing status — drives the billing widget and renewal banner
+  const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
+  useEffect(() => {
+    fetch("/api/billing/status")
+      .then((r) => r.json())
+      .then((d) => {
+        if (!d.error) setBillingStatus(d);
+      })
+      .catch(() => {});
+  }, []);
 
   // Check for checkout success/cancel query param
   const checkoutStatus = searchParams.get("checkout");
@@ -341,11 +650,24 @@ export default function DashboardClient({
   // True when user just came back from Stripe checkout and the webhook may not have fired yet
   const [awaitingWebhook, setAwaitingWebhook] = useState(checkoutStatus === "success");
 
+  // Upgrade consent modal — shown before redirecting to Stripe for a tier change
+  const [upgradeConsentTier, setUpgradeConsentTier] = useState<string | null>(null);
+  const [upgradeConsentChecked, setUpgradeConsentChecked] = useState(false);
+
   const pollSubstrate = useCallback(async () => {
     try {
       const res = await fetch("/api/my-substrate");
       if (res.ok) {
         const data = await res.json();
+        if (data.error === "no_substrate") {
+          // No active substrate — but keep history visible if returned
+          setLiveSubstrate((prev) =>
+            data.history?.length
+              ? ({ ...(prev ?? {}), history: data.history } as SubstrateInfo)
+              : null,
+          );
+          return null;
+        }
         setLiveSubstrate(data);
         return data;
       }
@@ -361,6 +683,57 @@ export default function DashboardClient({
     const interval = setInterval(pollSubstrate, 5000);
     return () => clearInterval(interval);
   }, [isProvisioning, pollSubstrate]);
+
+  // ── Key rotation effects (must follow pollSubstrate declaration) ─────────
+
+  // Register / clear beforeunload guard during active rotation
+  useEffect(() => {
+    if (rotationActive) {
+      const handler = (e: BeforeUnloadEvent) => {
+        e.preventDefault();
+        return "Key rotation is in progress. Navigating away will not stop the rotation, but you may miss the new key prompt.";
+      };
+      unloadRef.current = handler;
+      window.addEventListener("beforeunload", handler);
+      return () => window.removeEventListener("beforeunload", handler);
+    } else if (unloadRef.current) {
+      window.removeEventListener("beforeunload", unloadRef.current);
+      unloadRef.current = null;
+    }
+  }, [rotationActive]);
+
+  // Poll rotation status every 2s while active
+  useEffect(() => {
+    if (!rotationActive) {
+      if (rotationPollRef.current) {
+        clearInterval(rotationPollRef.current);
+        rotationPollRef.current = null;
+      }
+      return;
+    }
+    const poll = async () => {
+      try {
+        const res = await fetch("/api/v1/my-substrate/key-rotation/status");
+        if (!res.ok) return;
+        const data = await res.json();
+        const newStatus: RotationStatus = data.status ?? "none";
+        setRotationStatus(newStatus);
+        if (newStatus === "failed") {
+          setRotationError(data.errorMessage ?? "Rotation failed.");
+        }
+        if (newStatus === "complete") {
+          setClaimKeyOpen(true);
+          pollSubstrate();
+        }
+      } catch {
+        // Ignore transient poll errors
+      }
+    };
+    rotationPollRef.current = setInterval(poll, 2000);
+    return () => {
+      if (rotationPollRef.current) clearInterval(rotationPollRef.current);
+    };
+  }, [rotationActive, pollSubstrate]);
 
   // Post-checkout aggressive poll: every 1.5s until substrate is running, max 60s
   useEffect(() => {
@@ -420,7 +793,28 @@ export default function DashboardClient({
     }
   }
 
-  async function handleUpgrade(tier: string) {
+  async function handleDestroy() {
+    setDestroying(true);
+    try {
+      const res = await fetch("/api/my-substrate/deprovision", { method: "POST" });
+      if (res.ok) await pollSubstrate();
+    } finally {
+      setDestroying(false);
+      setDestroyConfirmText("");
+    }
+  }
+
+  // Step 1: Show the consent modal before opening Stripe
+  function handleUpgrade(tier: string) {
+    setUpgradeConsentTier(tier);
+    setUpgradeConsentChecked(false);
+  }
+
+  // Step 2: User confirmed consent — now redirect to Stripe
+  async function confirmUpgradeCheckout() {
+    if (!upgradeConsentTier || !upgradeConsentChecked) return;
+    const tier = upgradeConsentTier;
+    setUpgradeConsentTier(null);
     const res = await fetch("/api/checkout", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -434,7 +828,9 @@ export default function DashboardClient({
     }
   }
 
-  const currentTier = liveSubstrate?.tier ?? account.tier ?? "free";
+  const currentTier = (liveSubstrate?.tier ??
+    account.tier ??
+    "free") as import("@/config/tiers").TierId;
   const currentTierIndex = TIER_ORDER.indexOf(currentTier);
   const sub = liveSubstrate;
 
@@ -468,13 +864,51 @@ export default function DashboardClient({
         <div className="absolute top-0 right-1/4 h-[500px] w-[800px] rounded-full bg-indigo-600/5 blur-[160px]" />
       </div>
 
+      {/* Rotation in-progress banner — fixed below site nav, above content */}
+      {rotationActive && (
+        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-amber-700/40 bg-amber-950/80 px-6 py-2.5 backdrop-blur-sm">
+          <svg
+            className="h-4 w-4 flex-shrink-0 animate-spin text-amber-400"
+            xmlns="http://www.w3.org/2000/svg"
+            fill="none"
+            viewBox="0 0 24 24"
+          >
+            <circle
+              className="opacity-25"
+              cx="12"
+              cy="12"
+              r="10"
+              stroke="currentColor"
+              strokeWidth="4"
+            />
+            <path
+              className="opacity-75"
+              fill="currentColor"
+              d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+            />
+          </svg>
+          <p className="text-sm text-amber-300">
+            <span className="font-medium">Key rotation in progress</span> — do not navigate away.
+            Your containers will restart automatically. This takes ~15 seconds.
+          </p>
+        </div>
+      )}
+      {rotationStatus === "complete" && !claimKeyOpen && (
+        <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-emerald-700/40 bg-emerald-950/80 px-6 py-2.5 backdrop-blur-sm">
+          <span className="text-sm text-emerald-300">
+            Rotation complete —{" "}
+            <button onClick={() => setClaimKeyOpen(true)} className="underline hover:no-underline">
+              claim your new key
+            </button>
+          </span>
+        </div>
+      )}
+
       <div className="relative mx-auto max-w-5xl px-6 py-8">
         {/* Header */}
         <div className="mb-6 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Memory Substrate
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Memory Substrate</h1>
             <p className="mt-1 text-sm text-zinc-400">{account.email}</p>
           </div>
           <div className="flex items-center gap-3">
@@ -484,6 +918,21 @@ export default function DashboardClient({
             >
               Docs
             </Link>
+            <Link
+              href="/admin"
+              className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              title="Dedicated droplet instances"
+            >
+              Instances
+            </Link>
+            {billingStatus?.hasStripeCustomer && (
+              <button
+                onClick={openBillingPortal}
+                className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
+              >
+                Billing
+              </button>
+            )}
             <button
               onClick={handleLogout}
               disabled={loggingOut}
@@ -494,6 +943,11 @@ export default function DashboardClient({
           </div>
         </div>
 
+        {/* Renewal banner — shown 7 days before renewal, dismissable */}
+        {billingStatus?.renewsAt && billingStatus.status === "active" && (
+          <RenewalBanner renewsAt={billingStatus.renewsAt} />
+        )}
+
         {/* Post-checkout provisioning banner — shown while waiting for Stripe webhook */}
         {awaitingWebhook && (
           <div className="mb-3 flex items-center gap-3 rounded-lg border border-indigo-500/30 bg-indigo-500/10 px-4 py-3 text-sm text-indigo-300">
@@ -502,8 +956,8 @@ export default function DashboardClient({
           </div>
         )}
 
-        {/* No substrate yet — show provisioning progress or empty state */}
-        {!sub && (
+        {/* No active substrate — show empty state */}
+        {(!sub || !sub.id) && (
           <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 p-12 text-center">
             <h2 className="text-lg font-medium">No substrate provisioned</h2>
             <p className="mt-2 text-sm text-zinc-400">
@@ -516,22 +970,30 @@ export default function DashboardClient({
           </div>
         )}
 
-        {sub && (
+        {/* Billing widget — always shown when billing status is loaded */}
+        {billingStatus && !awaitingWebhook && (
+          <div className="mb-3">
+            <BillingWidget billing={billingStatus} />
+          </div>
+        )}
+
+        {sub && sub.id && (
           <div className="space-y-3">
             {/* Tier + Status row */}
             <div className="flex items-center gap-4 rounded-xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
               <div className="flex-1">
-                <div className="flex items-center gap-3 flex-wrap">
-                  <span className="text-lg font-semibold">
-                    {getTierLabel(currentTier)} Plan
-                  </span>
+                <div className="flex flex-wrap items-center gap-3">
+                  <span className="text-lg font-semibold">{getTierLabel(currentTier)} Plan</span>
                   <StatusBadge status={sub.status} />
-                  {sub.status === "running" && sub.health && (
-                    <HealthBadges health={sub.health} />
-                  )}
+                  {sub.status === "running" && sub.health && <HealthBadges health={sub.health} />}
                   {sub.cancelAt && (
                     <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2.5 py-0.5 text-xs font-medium text-amber-400">
-                      Cancels {new Date(sub.cancelAt).toLocaleDateString([], { month: "short", day: "numeric", year: "numeric" })}
+                      Cancels{" "}
+                      {new Date(sub.cancelAt).toLocaleDateString("en-NZ", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </span>
                   )}
                 </div>
@@ -542,7 +1004,11 @@ export default function DashboardClient({
                   {sub.gracePeriodEndsAt && (
                     <span className="ml-2 text-amber-400">
                       — Grace period ends{" "}
-                      {new Date(sub.gracePeriodEndsAt).toLocaleDateString()}
+                      {new Date(sub.gracePeriodEndsAt).toLocaleDateString("en-NZ", {
+                        month: "short",
+                        day: "numeric",
+                        year: "numeric",
+                      })}
                     </span>
                   )}
                 </p>
@@ -550,13 +1016,10 @@ export default function DashboardClient({
               <div className="flex gap-2">
                 {!sub.cancelAt && currentTier !== "team" && (
                   <button
-                    onClick={() =>
-                      handleUpgrade(TIER_ORDER[currentTierIndex + 1])
-                    }
+                    onClick={() => handleUpgrade(TIER_ORDER[currentTierIndex + 1])}
                     className="rounded-md bg-indigo-600 px-4 py-2 text-sm font-medium transition hover:bg-indigo-500"
                   >
-                    Upgrade to{" "}
-                    {getTierLabel(TIER_ORDER[currentTierIndex + 1]) ?? "Next"}
+                    Upgrade to {getTierLabel(TIER_ORDER[currentTierIndex + 1]) ?? "Next"}
                   </button>
                 )}
                 {sub.cancelAt && (
@@ -572,7 +1035,7 @@ export default function DashboardClient({
 
             {/* Connection */}
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
-              <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-zinc-500">
+              <h2 className="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">
                 Connection
               </h2>
 
@@ -580,9 +1043,7 @@ export default function DashboardClient({
                 <div className="space-y-3">
                   {/* MCP Endpoint */}
                   <div>
-                    <label className="mb-1 block text-xs text-zinc-500">
-                      MCP Endpoint
-                    </label>
+                    <label className="mb-1 block text-xs text-zinc-500">MCP Endpoint</label>
                     <div className="flex items-center gap-2">
                       <code className="flex-1 rounded-md border border-zinc-700 bg-zinc-800/50 px-3 py-1.5 font-mono text-sm text-indigo-400">
                         {mcpEndpoint}
@@ -593,15 +1054,20 @@ export default function DashboardClient({
 
                   {/* Claude Desktop Config */}
                   {mcpConfig && (
-                    <div>
+                    <div
+                      className={rotationActive ? "pointer-events-none opacity-40 select-none" : ""}
+                    >
                       <label className="mb-1 block text-xs text-zinc-500">
                         Claude Desktop / Cowork Config
+                        {rotationActive && (
+                          <span className="ml-2 text-amber-500/70">🔒 updating after rotation</span>
+                        )}
                       </label>
                       <div className="relative">
                         <pre className="overflow-x-auto rounded-md border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-300">
                           {mcpConfig}
                         </pre>
-                        <div className="absolute right-2 top-2">
+                        <div className="absolute top-2 right-2">
                           <CopyButton text={mcpConfig} label="Copy" />
                         </div>
                       </div>
@@ -630,7 +1096,7 @@ export default function DashboardClient({
 
             {/* Usage */}
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
-              <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-zinc-500">
+              <h2 className="mb-3 text-sm font-medium tracking-wider text-zinc-500 uppercase">
                 Usage
               </h2>
               <div className="space-y-3">
@@ -657,14 +1123,114 @@ export default function DashboardClient({
 
             {/* API Key */}
             <div className="rounded-xl border border-zinc-800 bg-zinc-900/50 px-5 py-4">
-              <h2 className="mb-3 text-sm font-medium uppercase tracking-wider text-zinc-500">
-                API Key
-              </h2>
+              <div className="mb-3 flex items-center justify-between">
+                <h2 className="text-sm font-medium tracking-wider text-zinc-500 uppercase">
+                  API Key
+                </h2>
+                {/* Rotate Key button — only when running and rotation is idle */}
+                {sub.status === "running" &&
+                  rotationStatus === "none" &&
+                  !newApiKey &&
+                  !liveSubstrate?.keyUnclaimed && (
+                    <button
+                      onClick={() => setRotationConfirmOpen(true)}
+                      className="rounded-md border border-amber-700/40 px-3 py-1 text-xs text-amber-400 transition hover:border-amber-600 hover:bg-amber-900/20"
+                    >
+                      Rotate Key ↻
+                    </button>
+                  )}
+                {/* Spinner button while active */}
+                {rotationActive && (
+                  <div className="flex items-center gap-1.5 rounded-md border border-amber-700/30 bg-amber-950/30 px-3 py-1 text-xs text-amber-400">
+                    <svg
+                      className="h-3 w-3 animate-spin"
+                      xmlns="http://www.w3.org/2000/svg"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                    >
+                      <circle
+                        className="opacity-25"
+                        cx="12"
+                        cy="12"
+                        r="10"
+                        stroke="currentColor"
+                        strokeWidth="4"
+                      />
+                      <path
+                        className="opacity-75"
+                        fill="currentColor"
+                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                      />
+                    </svg>
+                    Rotating…
+                  </div>
+                )}
+              </div>
 
+              {/* Rotation confirm dialog */}
+              {rotationConfirmOpen && (
+                <div className="mb-4 space-y-3 rounded-lg border border-amber-700/40 bg-amber-950/30 p-4">
+                  <h3 className="text-sm font-medium text-amber-300">Rotate API Key?</h3>
+                  <p className="text-xs leading-relaxed text-zinc-400">
+                    This will restart your containers (~15 seconds). Your MCP clients will
+                    disconnect and reconnect automatically. Your current key will be invalidated
+                    once the new key is confirmed healthy.
+                  </p>
+                  <p className="text-xs text-amber-400/80">
+                    You will be shown the new key once — save it before closing.
+                  </p>
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={() => setRotationConfirmOpen(false)}
+                      className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs text-zinc-400 transition hover:border-zinc-500"
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      onClick={startRotation}
+                      disabled={rotationStarting}
+                      className="rounded-md border border-amber-600/50 bg-amber-900/30 px-3 py-1.5 text-xs text-amber-300 transition hover:border-amber-500 hover:bg-amber-900/50 disabled:opacity-50"
+                    >
+                      {rotationStarting ? "Starting…" : "Rotate Key ↻"}
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Rate limit message */}
+              {rotationRateLimitMsg && (
+                <div className="mb-3 rounded-md border border-amber-800/40 bg-amber-950/20 px-3 py-2 text-xs text-amber-400">
+                  {rotationRateLimitMsg}
+                </div>
+              )}
+
+              {/* Active rotation stepper */}
+              {rotationStatus !== "none" && rotationStatus !== "complete" && (
+                <div className="mb-3">
+                  <RotationStepper
+                    status={rotationStatus}
+                    errorMessage={rotationError}
+                    onRetry={rotationStatus === "failed" ? startRotation : undefined}
+                    retryDisabled={!!rotationRateLimitMsg}
+                    retryDisabledMessage={rotationRateLimitMsg ?? undefined}
+                  />
+                  {rotationStatus === "failed" && (
+                    <button
+                      onClick={resetRotation}
+                      className="mt-2 text-xs text-zinc-500 underline hover:text-zinc-400"
+                    >
+                      Dismiss
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* Key reveal section (first provision or post-rotation claim) */}
               {newApiKey ? (
-                <div className="space-y-2">
+                <div className="space-y-3">
                   <div className="rounded-md border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-sm text-amber-300">
-                    Save this key and the config block above now — they won&apos;t be shown again.
+                    ⚠ <strong>Save this key now.</strong> It will not be shown again. If you lose
+                    it, use <em>Rotate Key</em> to generate a new one.
                   </div>
                   <div className="flex items-center gap-2">
                     <code className="flex-1 rounded-md border border-zinc-700 bg-zinc-800/50 px-3 py-1.5 font-mono text-sm text-emerald-400">
@@ -672,27 +1238,140 @@ export default function DashboardClient({
                     </code>
                     <CopyButton text={newApiKey} label="Copy" />
                   </div>
+                  {/* Pre-filled MCP config with new key */}
+                  {mcpEndpoint && (
+                    <div>
+                      <div className="mb-1 flex items-center justify-between">
+                        <label className="text-xs text-zinc-500">Updated MCP Config</label>
+                        <CopyButton
+                          text={JSON.stringify(
+                            {
+                              mcpServers: {
+                                "parametric-memory": {
+                                  command: "npx",
+                                  args: [
+                                    "-y",
+                                    "mcp-remote",
+                                    mcpEndpoint,
+                                    "--header",
+                                    `Authorization: Bearer ${newApiKey}`,
+                                  ],
+                                },
+                              },
+                            },
+                            null,
+                            2,
+                          )}
+                          label="Copy config"
+                        />
+                      </div>
+                      <pre className="overflow-x-auto rounded-md border border-zinc-700 bg-zinc-800/50 px-3 py-2 font-mono text-xs leading-relaxed text-zinc-300">
+                        {JSON.stringify(
+                          {
+                            mcpServers: {
+                              "parametric-memory": {
+                                command: "npx",
+                                args: [
+                                  "-y",
+                                  "mcp-remote",
+                                  mcpEndpoint,
+                                  "--header",
+                                  `Authorization: Bearer ${newApiKey}`,
+                                ],
+                              },
+                            },
+                          },
+                          null,
+                          2,
+                        )}
+                      </pre>
+                    </div>
+                  )}
+                  {/* Update instructions accordion */}
+                  <UpdateInstructions />
                 </div>
-              ) : (
+              ) : liveSubstrate?.keyUnclaimed || claimKeyOpen ? (
+                <div className="space-y-2">
+                  <p className="text-sm text-zinc-400">
+                    {claimKeyOpen
+                      ? "Your new key is ready. This is a one-time action — save it immediately."
+                      : "Your API key is ready to be revealed. This is a one-time action — save it immediately."}
+                  </p>
+                  <button
+                    onClick={async () => {
+                      setRevealingKey(true);
+                      try {
+                        const res = await fetch("/api/my-substrate/claim-key", { method: "POST" });
+                        if (res.ok) {
+                          const data = await res.json();
+                          setNewApiKey(data.apiKey);
+                          setClaimKeyOpen(false);
+                          // Refresh substrate so config block shows new key prefix
+                          pollSubstrate();
+                        }
+                      } finally {
+                        setRevealingKey(false);
+                      }
+                    }}
+                    disabled={revealingKey}
+                    className="rounded-md border border-emerald-700/50 bg-emerald-900/20 px-4 py-2 text-sm text-emerald-400 transition hover:border-emerald-600 hover:bg-emerald-900/40 disabled:opacity-50"
+                  >
+                    {revealingKey ? "Revealing…" : "Reveal API Key"}
+                  </button>
+                </div>
+              ) : rotationStatus === "none" ? (
                 <p className="text-sm text-zinc-400">
-                  Your API key was shown when you first claimed your substrate.
-                  It is included in the config block above when visible.
-                  Contact support if you need to rotate your key.
+                  Your API key was shown when you first claimed your substrate. It is included in
+                  the config block above.{" "}
+                  {sub.status === "running" ? (
+                    <>
+                      Use <span className="text-amber-400">Rotate Key ↻</span> above to generate a
+                      new one.
+                    </>
+                  ) : (
+                    <>Contact support if you need to rotate your key.</>
+                  )}
                 </p>
-              )}
+              ) : null}
             </div>
 
             {/* Cancel / Danger zone */}
-            {currentTier !== "free" && !sub.cancelAt && (
+            {!sub.cancelAt && (
               <div className="rounded-xl border border-red-900/30 bg-red-950/20 px-5 py-4">
-                <h2 className="mb-2 text-sm font-medium uppercase tracking-wider text-red-400/80">
+                <h2 className="mb-2 text-sm font-medium tracking-wider text-red-400/80 uppercase">
                   Danger Zone
                 </h2>
-                {!cancelConfirm ? (
+
+                {currentTier === "free" ? (
+                  /* Free tier — deprovision (no Stripe subscription to cancel) */
+                  <div className="space-y-3">
+                    <p className="text-sm text-zinc-400">
+                      Permanently destroy this substrate. All memory data and keys will be deleted
+                      immediately. This cannot be undone.
+                    </p>
+                    <div className="flex items-center gap-3">
+                      <input
+                        type="text"
+                        placeholder='Type "destroy" to confirm'
+                        value={destroyConfirmText}
+                        onChange={(e) => setDestroyConfirmText(e.target.value)}
+                        className="w-52 rounded-md border border-zinc-700 bg-zinc-900 px-3 py-1.5 text-sm text-white placeholder-zinc-600 focus:border-red-800 focus:outline-none"
+                      />
+                      <button
+                        onClick={handleDestroy}
+                        disabled={destroyConfirmText !== "destroy" || destroying}
+                        className="shrink-0 rounded-md bg-red-700 px-4 py-1.5 text-sm font-medium text-white transition hover:bg-red-600 disabled:cursor-not-allowed disabled:opacity-40"
+                      >
+                        {destroying ? "Destroying…" : "Destroy Substrate"}
+                      </button>
+                    </div>
+                  </div>
+                ) : !cancelConfirm ? (
+                  /* Paid tier — cancel subscription */
                   <div className="flex items-center justify-between">
                     <p className="text-sm text-zinc-400">
-                      Cancel your subscription. You keep access until the end of your billing period.
-                      Data is preserved for 30 days in read-only mode after that.
+                      Cancel your subscription. You keep access until the end of your billing
+                      period. Data is preserved for 30 days in read-only mode after that.
                     </p>
                     <button
                       onClick={() => setCancelConfirm(true)}
@@ -729,7 +1408,93 @@ export default function DashboardClient({
             )}
           </div>
         )}
+
+        {/* Past substrates — always shown when history is available */}
+        {(liveSubstrate?.history ?? []).length > 0 && (
+          <div className="mt-6 space-y-2">
+            <h2 className="text-sm font-medium tracking-wide text-zinc-500 uppercase">
+              Past instances
+            </h2>
+            {(liveSubstrate?.history ?? []).map((h) => (
+              <div
+                key={h.id}
+                className="flex items-center justify-between rounded-lg border border-zinc-800 bg-zinc-900/30 px-4 py-3"
+              >
+                <div className="flex items-center gap-3">
+                  <span className="font-mono text-sm text-zinc-300">{h.slug}</span>
+                  <StatusBadge status={h.status} />
+                  <span className="text-xs text-zinc-500 capitalize">{h.tier}</span>
+                </div>
+                <span className="text-xs text-zinc-600">
+                  {h.provisionedAt
+                    ? `Provisioned ${new Date(h.provisionedAt).toLocaleDateString("en-NZ", { month: "short", day: "numeric", year: "numeric" })}`
+                    : `Created ${new Date(h.createdAt).toLocaleDateString("en-NZ", { month: "short", day: "numeric", year: "numeric" })}`}
+                </span>
+              </div>
+            ))}
+          </div>
+        )}
       </div>
+
+      {/* ── Upgrade consent modal ─────────────────────────────────────────────── */}
+      {upgradeConsentTier && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0d1117] p-6 shadow-2xl">
+            <h2 className="mb-1 font-semibold text-white">
+              Upgrade to {getTierLabel(upgradeConsentTier as import("@/config/tiers").TierId) ?? upgradeConsentTier}
+            </h2>
+            <p className="mb-5 text-sm text-white/50">
+              You&apos;ll be redirected to Stripe to complete your subscription.
+            </p>
+
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-white/10 bg-white/[0.03] p-3.5 transition-colors hover:border-white/20">
+              <input
+                type="checkbox"
+                checked={upgradeConsentChecked}
+                onChange={(e) => setUpgradeConsentChecked(e.target.checked)}
+                className="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded border-white/20 bg-white/5 accent-indigo-500"
+              />
+              <span className="text-xs leading-relaxed text-white/50">
+                I agree to the{" "}
+                <a
+                  href="/terms"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/70 underline underline-offset-2 hover:text-white"
+                >
+                  Terms of Service
+                </a>{" "}
+                and{" "}
+                <a
+                  href="/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-white/70 underline underline-offset-2 hover:text-white"
+                >
+                  Privacy Policy
+                </a>
+                , including recurring billing terms.
+              </span>
+            </label>
+
+            <div className="mt-4 flex gap-3">
+              <button
+                onClick={() => setUpgradeConsentTier(null)}
+                className="flex-1 rounded-lg border border-white/10 px-4 py-2.5 text-sm text-white/60 transition-colors hover:border-white/20 hover:text-white/80"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={confirmUpgradeCheckout}
+                disabled={!upgradeConsentChecked}
+                className="flex-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+              >
+                Continue to payment
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

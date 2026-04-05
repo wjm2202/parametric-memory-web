@@ -27,10 +27,7 @@ export default function DegreeSizeSlider() {
         <span className="font-mono text-[10px] tracking-widest text-slate-400 uppercase">
           Node Weight
         </span>
-        <span
-          className="font-mono text-[10px] tabular-nums text-violet-300"
-          aria-live="polite"
-        >
+        <span className="font-mono text-[10px] text-violet-300 tabular-nums" aria-live="polite">
           {pct}%
         </span>
       </div>
@@ -44,23 +41,7 @@ export default function DegreeSizeSlider() {
         value={degreeInfluence}
         onChange={(e) => setDegreeInfluence(parseFloat(e.target.value))}
         aria-label="Node weight by connection count"
-        className="
-          h-1 w-40 cursor-pointer appearance-none rounded-full
-          bg-white/10
-          accent-violet-400
-          focus:outline-none
-          [&::-webkit-slider-thumb]:h-3
-          [&::-webkit-slider-thumb]:w-3
-          [&::-webkit-slider-thumb]:rounded-full
-          [&::-webkit-slider-thumb]:bg-violet-400
-          [&::-webkit-slider-thumb]:appearance-none
-          [&::-webkit-slider-thumb]:shadow-[0_0_6px_2px_rgba(167,139,250,0.45)]
-          [&::-moz-range-thumb]:h-3
-          [&::-moz-range-thumb]:w-3
-          [&::-moz-range-thumb]:rounded-full
-          [&::-moz-range-thumb]:border-0
-          [&::-moz-range-thumb]:bg-violet-400
-        "
+        className="h-1 w-40 cursor-pointer appearance-none rounded-full bg-white/10 accent-violet-400 focus:outline-none [&::-moz-range-thumb]:h-3 [&::-moz-range-thumb]:w-3 [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-violet-400 [&::-webkit-slider-thumb]:h-3 [&::-webkit-slider-thumb]:w-3 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-violet-400 [&::-webkit-slider-thumb]:shadow-[0_0_6px_2px_rgba(167,139,250,0.45)]"
       />
     </div>
   );

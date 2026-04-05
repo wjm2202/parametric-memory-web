@@ -162,7 +162,10 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
         let bestKey: string | null = null;
         let bestCount = 0;
         for (const [key, count] of connectionCount) {
-          if (count > bestCount) { bestCount = count; bestKey = key; }
+          if (count > bestCount) {
+            bestCount = count;
+            bestKey = key;
+          }
         }
         if (bestKey !== lastBridgeAtomRef.current) {
           lastBridgeAtomRef.current = bestKey;
@@ -259,8 +262,12 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
           // while still showing where edges start and end.
           if (edgeCount + 3 > MAX_EDGES) break;
 
-          const sx = src.x ?? 0, sy = src.y ?? 0, sz = src.z ?? 0;
-          const tx = tgt.x ?? 0, ty = tgt.y ?? 0, tz = tgt.z ?? 0;
+          const sx = src.x ?? 0,
+            sy = src.y ?? 0,
+            sz = src.z ?? 0;
+          const tx = tgt.x ?? 0,
+            ty = tgt.y ?? 0,
+            tz = tgt.z ?? 0;
 
           // Interpolated 1/3 and 2/3 positions along the edge
           const m1x = sx + (tx - sx) / 3;
@@ -284,7 +291,9 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
           const srcIsHub = ((src as KGNode).key ?? "").includes("hub_");
 
           // Root colours (hub end) — full brightness
-          const rRoot = rFull, gRoot = gFull, bRoot = bFull;
+          const rRoot = rFull,
+            gRoot = gFull,
+            bRoot = bFull;
           // Leaf colours (atom end) — dim, still slightly visible
           const rLeaf = rFull * MEMBER_OF_LEAF_DIM;
           const gLeaf = gFull * MEMBER_OF_LEAF_DIM;
@@ -295,31 +304,55 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
           const [srC, sgC, sbC, trC, tgC, tbC] = tgtIsHub
             ? [rLeaf, gLeaf, bLeaf, rRoot, gRoot, bRoot] // atom→hub: leaf→root
             : srcIsHub
-            ? [rRoot, gRoot, bRoot, rLeaf, gLeaf, bLeaf] // hub→atom: root→leaf
-            : [rFull, gFull, bFull, rFull, gFull, bFull]; // symmetric fallback
+              ? [rRoot, gRoot, bRoot, rLeaf, gLeaf, bLeaf] // hub→atom: root→leaf
+              : [rFull, gFull, bFull, rFull, gFull, bFull]; // symmetric fallback
 
           // Segment A: src endpoint → 1/3 (fades to invisible centre)
           let mBase = edgeCount * 6;
-          positions[mBase + 0] = sx;  positions[mBase + 1] = sy;  positions[mBase + 2] = sz;
-          positions[mBase + 3] = m1x; positions[mBase + 4] = m1y; positions[mBase + 5] = m1z;
-          colors[mBase + 0] = srC; colors[mBase + 1] = sgC; colors[mBase + 2] = sbC;
-          colors[mBase + 3] = rDim; colors[mBase + 4] = gDim; colors[mBase + 5] = bDim;
+          positions[mBase + 0] = sx;
+          positions[mBase + 1] = sy;
+          positions[mBase + 2] = sz;
+          positions[mBase + 3] = m1x;
+          positions[mBase + 4] = m1y;
+          positions[mBase + 5] = m1z;
+          colors[mBase + 0] = srC;
+          colors[mBase + 1] = sgC;
+          colors[mBase + 2] = sbC;
+          colors[mBase + 3] = rDim;
+          colors[mBase + 4] = gDim;
+          colors[mBase + 5] = bDim;
           edgeCount++;
 
           // Segment B: 1/3 → 2/3 — transparent void at centre
           mBase = edgeCount * 6;
-          positions[mBase + 0] = m1x; positions[mBase + 1] = m1y; positions[mBase + 2] = m1z;
-          positions[mBase + 3] = m2x; positions[mBase + 4] = m2y; positions[mBase + 5] = m2z;
-          colors[mBase + 0] = rDim; colors[mBase + 1] = gDim; colors[mBase + 2] = bDim;
-          colors[mBase + 3] = rDim; colors[mBase + 4] = gDim; colors[mBase + 5] = bDim;
+          positions[mBase + 0] = m1x;
+          positions[mBase + 1] = m1y;
+          positions[mBase + 2] = m1z;
+          positions[mBase + 3] = m2x;
+          positions[mBase + 4] = m2y;
+          positions[mBase + 5] = m2z;
+          colors[mBase + 0] = rDim;
+          colors[mBase + 1] = gDim;
+          colors[mBase + 2] = bDim;
+          colors[mBase + 3] = rDim;
+          colors[mBase + 4] = gDim;
+          colors[mBase + 5] = bDim;
           edgeCount++;
 
           // Segment C: 2/3 → tgt endpoint (fades in from invisible centre)
           mBase = edgeCount * 6;
-          positions[mBase + 0] = m2x; positions[mBase + 1] = m2y; positions[mBase + 2] = m2z;
-          positions[mBase + 3] = tx;  positions[mBase + 4] = ty;  positions[mBase + 5] = tz;
-          colors[mBase + 0] = rDim; colors[mBase + 1] = gDim; colors[mBase + 2] = bDim;
-          colors[mBase + 3] = trC; colors[mBase + 4] = tgC; colors[mBase + 5] = tbC;
+          positions[mBase + 0] = m2x;
+          positions[mBase + 1] = m2y;
+          positions[mBase + 2] = m2z;
+          positions[mBase + 3] = tx;
+          positions[mBase + 4] = ty;
+          positions[mBase + 5] = tz;
+          colors[mBase + 0] = rDim;
+          colors[mBase + 1] = gDim;
+          colors[mBase + 2] = bDim;
+          colors[mBase + 3] = trC;
+          colors[mBase + 4] = tgC;
+          colors[mBase + 5] = tbC;
           edgeCount++;
 
           // Skip the shared vertex-write block below — already committed
@@ -330,8 +363,12 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
         // Endpoints are visible; centre third is almost transparent.
         if (edgeCount + 3 > MAX_EDGES) break;
 
-        const sx2 = src.x ?? 0, sy2 = src.y ?? 0, sz2 = src.z ?? 0;
-        const tx2 = tgt.x ?? 0, ty2 = tgt.y ?? 0, tz2 = tgt.z ?? 0;
+        const sx2 = src.x ?? 0,
+          sy2 = src.y ?? 0,
+          sz2 = src.z ?? 0;
+        const tx2 = tgt.x ?? 0,
+          ty2 = tgt.y ?? 0,
+          tz2 = tgt.z ?? 0;
 
         const n1x = sx2 + (tx2 - sx2) / 3;
         const n1y = sy2 + (ty2 - sy2) / 3;
@@ -349,26 +386,50 @@ export default function GraphEdges({ handle }: GraphEdgesProps) {
 
         // Segment A: src (bright) → 1/3 (dim)
         let sBase = edgeCount * 6;
-        positions[sBase + 0] = sx2;  positions[sBase + 1] = sy2;  positions[sBase + 2] = sz2;
-        positions[sBase + 3] = n1x;  positions[sBase + 4] = n1y;  positions[sBase + 5] = n1z;
-        colors[sBase + 0] = sRFull;  colors[sBase + 1] = sGFull;  colors[sBase + 2] = sBFull;
-        colors[sBase + 3] = sRDim;   colors[sBase + 4] = sGDim;   colors[sBase + 5] = sBDim;
+        positions[sBase + 0] = sx2;
+        positions[sBase + 1] = sy2;
+        positions[sBase + 2] = sz2;
+        positions[sBase + 3] = n1x;
+        positions[sBase + 4] = n1y;
+        positions[sBase + 5] = n1z;
+        colors[sBase + 0] = sRFull;
+        colors[sBase + 1] = sGFull;
+        colors[sBase + 2] = sBFull;
+        colors[sBase + 3] = sRDim;
+        colors[sBase + 4] = sGDim;
+        colors[sBase + 5] = sBDim;
         edgeCount++;
 
         // Segment B: 1/3 (dim) → 2/3 (dim) — invisible centre
         sBase = edgeCount * 6;
-        positions[sBase + 0] = n1x;  positions[sBase + 1] = n1y;  positions[sBase + 2] = n1z;
-        positions[sBase + 3] = n2x;  positions[sBase + 4] = n2y;  positions[sBase + 5] = n2z;
-        colors[sBase + 0] = sRDim;   colors[sBase + 1] = sGDim;   colors[sBase + 2] = sBDim;
-        colors[sBase + 3] = sRDim;   colors[sBase + 4] = sGDim;   colors[sBase + 5] = sBDim;
+        positions[sBase + 0] = n1x;
+        positions[sBase + 1] = n1y;
+        positions[sBase + 2] = n1z;
+        positions[sBase + 3] = n2x;
+        positions[sBase + 4] = n2y;
+        positions[sBase + 5] = n2z;
+        colors[sBase + 0] = sRDim;
+        colors[sBase + 1] = sGDim;
+        colors[sBase + 2] = sBDim;
+        colors[sBase + 3] = sRDim;
+        colors[sBase + 4] = sGDim;
+        colors[sBase + 5] = sBDim;
         edgeCount++;
 
         // Segment C: 2/3 (dim) → tgt (bright)
         sBase = edgeCount * 6;
-        positions[sBase + 0] = n2x;  positions[sBase + 1] = n2y;  positions[sBase + 2] = n2z;
-        positions[sBase + 3] = tx2;  positions[sBase + 4] = ty2;  positions[sBase + 5] = tz2;
-        colors[sBase + 0] = sRDim;   colors[sBase + 1] = sGDim;   colors[sBase + 2] = sBDim;
-        colors[sBase + 3] = sRFull;  colors[sBase + 4] = sGFull;  colors[sBase + 5] = sBFull;
+        positions[sBase + 0] = n2x;
+        positions[sBase + 1] = n2y;
+        positions[sBase + 2] = n2z;
+        positions[sBase + 3] = tx2;
+        positions[sBase + 4] = ty2;
+        positions[sBase + 5] = tz2;
+        colors[sBase + 0] = sRDim;
+        colors[sBase + 1] = sGDim;
+        colors[sBase + 2] = sBDim;
+        colors[sBase + 3] = sRFull;
+        colors[sBase + 4] = sGFull;
+        colors[sBase + 5] = sBFull;
         edgeCount++;
 
         continue; // skip shared single-vertex write below

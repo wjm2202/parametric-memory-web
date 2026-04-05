@@ -1,0 +1,64 @@
+---
+title: Markov Prediction
+description: How the PPM Markov model learns your recall patterns and pre-fetches atoms you're likely to need next.
+section: Concepts
+order: 3
+---
+
+# Markov Prediction
+
+Parametric Memory includes a **Prediction by Partial Matching (PPM)** Markov model
+trained on your own recall sequences. It observes which atoms you access and in what
+order, then pre-fetches atoms it predicts you'll need next — before you ask for them.
+
+## How it works
+
+When you recall atoms, the sequence is recorded as a training sample:
+
+```
+session: recall(A) → recall(B) → recall(C) → recall(A)
+```
+
+After `session_checkpoint`, the model trains on this sequence. Future recalls of `A`
+will prime a prediction that `B` is likely next.
+
+## Prediction in practice
+
+```ts title="predict-example.ts"
+// After recalling one atom, ask for predictions
+const recall = await memory.recall("v1.user.Glen.preference.theme");
+
+// Prefetch predicted-next atoms
+const predictions = await memory.predict({ after: recall.atom.key, limit: 3 });
+// → ['v1.user.Glen.preference.language', 'v1.user.Glen.tools.editor', ...]
+```
+
+You can request predictions proactively at session start to warm your local cache.
+
+## Performance numbers
+
+| Metric            | Value                                                 |
+| ----------------- | ----------------------------------------------------- |
+| Average hit rate  | **64%** (predicted atom accessed within same session) |
+| Model order       | PPM order-4 (looks back 4 symbols)                    |
+| Retrain time      | ~200ms for 10k training sequences                     |
+| Pre-fetch latency | &lt;1ms (model is in-memory)                          |
+
+## Controlling the model
+
+> **session_checkpoint** triggers a retrain. Call it at natural session boundaries —
+> not on every store, as retraining is synchronous and briefly pauses writes.
+
+```ts
+// At end of a work session
+await memory.sessionCheckpoint();
+// → flushes log → trains → commits → updates Markov weights
+```
+
+## When prediction helps most
+
+Prediction is most effective when:
+
+- Keys use consistent namespaces (co-occurrence patterns are learnable)
+- Sessions are long enough to generate training sequences (>5 recalls)
+- You call `session_checkpoint` regularly so the model stays current

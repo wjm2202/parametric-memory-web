@@ -39,9 +39,7 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const computePath =
-    action === "challenge"
-      ? "/api/auth/totp/challenge"
-      : "/api/auth/totp/recover";
+    action === "challenge" ? "/api/auth/totp/challenge" : "/api/auth/totp/recover";
 
   let computeRes: Response;
   try {
@@ -74,7 +72,8 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
 
   // Set the httpOnly session cookie — session token never reaches the browser
   // SEC: secure must be false on localhost (HTTP) or the browser silently drops the cookie.
-  const isLocalhost = request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
+  const isLocalhost =
+    request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, data.sessionToken, {
     httpOnly: true,

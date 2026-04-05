@@ -54,10 +54,10 @@ export async function POST(req: NextRequest) {
             <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:32px;">
               <!-- Logomark SVG (inline, email-safe) -->
               <img
-                src="https://parametric-memory.dev/logo.svg"
+                src="https://parametric-memory.dev/brand/favicon-192.png"
                 alt="Parametric Memory"
                 width="32" height="32"
-                style="display:block"
+                style="display:block;border-radius:50%"
               />
               <span style="font-size:16px;font-weight:600;color:#ffffff;letter-spacing:-0.02em;">
                 Parametric Memory

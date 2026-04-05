@@ -1,0 +1,76 @@
+---
+title: "Introducing Parametric Memory: Verifiable AI Memory with Merkle Proofs"
+date: "2026-04-03"
+excerpt: "Today we're launching Parametric Memory — persistent, cryptographically verifiable memory for AI agents. Here's what we built and why."
+author: "Glen Osborne"
+tags: ["launch", "engineering", "merkle-proofs"]
+---
+
+# Introducing Parametric Memory
+
+Today we're launching **Parametric Memory** — a dedicated memory system for AI agents
+that makes every recalled fact cryptographically verifiable.
+
+## The problem with AI memory today
+
+Most AI agents are stateless. Each conversation starts from scratch. Those that aren't
+stateless typically rely on vector databases — which are probabilistic by nature and
+offer no way to verify that a retrieved fact wasn't corrupted or hallucinated.
+
+We think memory should be more like a database than a dream.
+
+## What we built
+
+Parametric Memory combines three primitives that don't usually appear together:
+
+### 1. Merkle-hashed atoms
+
+Every piece of information stored is an _atom_ — a named, versioned string with a SHA-256
+hash. Atoms are inserted into an RFC 6962 Merkle tree. When you recall an atom, you
+receive a _proof_ alongside the value:
+
+```ts
+const { atom, proof } = await memory.recall("user preferences");
+const valid = await memory.verify(atom, proof);
+// → true (or throw if tampered)
+```
+
+No trust required. You can verify the recall yourself, client-side.
+
+### 2. PPM Markov prediction
+
+We trained a **Prediction by Partial Matching (PPM)** model on recall sequences. By
+observing which atoms you access in which order, the model pre-fetches what you're likely
+to need next — before you ask.
+
+In internal testing against real agent sessions, we're seeing a **64% hit rate** on
+predicted-next atoms. That means 64% of the time, the atom you need is already in your
+cache when you ask for it.
+
+### 3. MCP-native transport
+
+Parametric Memory ships with a **Model Context Protocol (MCP)** HTTP server alongside
+its REST API. Connect any MCP-compatible agent — Claude, Cursor, Cline — and it gains
+persistent memory immediately, with no SDK required.
+
+## Performance numbers
+
+We obsess over latency. Here are real numbers from our production deployment:
+
+| Metric                     | Value   |
+| -------------------------- | ------- |
+| Recall p50                 | 0.045ms |
+| Recall p99                 | 1.2ms   |
+| Batch recall (50 atoms)    | 0.8ms   |
+| Markov prediction hit rate | 64%     |
+
+## What's next
+
+We're launching with **Free, Indie, Pro, and Team** tiers. Dedicated instances start
+at **$9/month** (Indie).
+
+> [Start your free instance](/pricing) — no credit card required.
+
+The roadmap includes consistency proof auditing, multi-tenant isolation, and a
+hosted knowledge graph explorer. If you have requirements we haven't covered,
+[reach out](/contact) — we're building this in the open.

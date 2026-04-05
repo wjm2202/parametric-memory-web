@@ -42,8 +42,8 @@ const TAGLINES = [
   },
 ];
 
-const TAGLINE_HOLD_MS = 2000;  // how long each tagline is fully visible
-const FADE_MS = 380;           // CSS transition duration
+const TAGLINE_HOLD_MS = 2000; // how long each tagline is fully visible
+const FADE_MS = 380; // CSS transition duration
 
 // ── Gradient text style ────────────────────────────────────────────────────
 
@@ -98,9 +98,7 @@ export function HeroAnimatedSequence() {
         }
 
         // Tiny tick to let React re-render with new content before fading in
-        requestAnimationFrame(() =>
-          requestAnimationFrame(() => setShown(true))
-        );
+        requestAnimationFrame(() => requestAnimationFrame(() => setShown(true)));
       }, FADE_MS);
 
       return () => clearTimeout(switchTimer);
@@ -125,87 +123,34 @@ export function HeroAnimatedSequence() {
   if (phase === "taglines") {
     const t = TAGLINES[taglineIdx];
     return (
-      <div className="relative z-10 mx-auto max-w-4xl px-6" style={transStyle}>
-
-        {/* Progress dots */}
-        <div className="mb-10 flex items-center justify-center gap-2" aria-hidden="true">
-          {TAGLINES.map((_, i) => (
-            <span
-              key={i}
-              className="inline-block rounded-full transition-all duration-500"
-              style={{
-                width: i === taglineIdx ? 24 : 7,
-                height: 7,
-                background:
-                  i < taglineIdx
-                    ? "rgba(54,170,245,0.4)"
-                    : i === taglineIdx
-                    ? "#36aaf5"
-                    : "rgba(54,170,245,0.15)",
-              }}
-            />
-          ))}
-        </div>
-
+      <div className="relative z-10 mx-auto max-w-6xl px-6" style={transStyle}>
         {/* Tagline */}
-        <p
-          className="font-mono mb-6 text-[11px] tracking-widest uppercase"
-          style={{ color: "rgba(54,170,245,0.5)" }}
-        >
-          Parametric Memory — the principle
-        </p>
 
         <h1
           className="font-display mb-6 font-extrabold tracking-tight text-white"
-          style={{ fontSize: "clamp(42px, 6vw, 76px)", letterSpacing: "-0.035em", lineHeight: 1.1 }}
+          style={{
+            fontSize: "clamp(32px, 4.5vw, 64px)",
+            letterSpacing: "-0.035em",
+            lineHeight: 1.1,
+          }}
         >
           {t.line1}
           <br />
           <span style={gradStyle}>{t.line2}</span>
         </h1>
-
-        {/* Subtle hint — no CTA during taglines, just brand */}
-        <p
-          className="font-body text-sm"
-          style={{ color: "rgba(148,163,184,0.4)", letterSpacing: "0.04em" }}
-        >
-          parametric-memory.dev
-        </p>
       </div>
     );
   }
 
   // ── Render close phase (stays here permanently) ─────────────────────────
   return (
-    <div className="relative z-10 mx-auto max-w-3xl px-6" style={transStyle}>
-
-      {/* Live badge */}
-      <div
-        className="mb-8 inline-flex items-center gap-2 rounded-full border px-4 py-1.5 backdrop-blur-sm"
-        style={{
-          borderColor: "rgba(16,185,129,0.2)",
-          background: "rgba(16,185,129,0.06)",
-        }}
-      >
-        <span
-          className="h-1.5 w-1.5 animate-pulse rounded-full"
-          style={{ background: "#10b981" }}
-          aria-hidden="true"
-        />
-        <span
-          className="font-mono text-[11px] tracking-widest uppercase"
-          style={{ color: "#10b981" }}
-        >
-          Live · Dedicated instances from $9/mo
-        </span>
-      </div>
-
+    <div className="relative z-10 mx-auto max-w-5xl px-6" style={transStyle}>
       {/* Main heading */}
       <h1
         className="font-display mb-5 font-extrabold tracking-tight text-white"
-        style={{ fontSize: "clamp(44px, 6.5vw, 80px)", letterSpacing: "-0.04em", lineHeight: 1.05 }}
+        style={{ fontSize: "clamp(32px, 4.5vw, 64px)", letterSpacing: "-0.04em", lineHeight: 1.05 }}
       >
-        Your AI's second brain.
+        Your AI&apos;s second brain.
         <br />
         <span style={gradStyle}>Ready in 60 seconds.</span>
       </h1>
@@ -227,7 +172,6 @@ export function HeroAnimatedSequence() {
 
       {/* CTAs */}
       <div className="flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-
         {/* Primary */}
         <Link
           href="/pricing"
@@ -246,14 +190,24 @@ export function HeroAnimatedSequence() {
           }}
         >
           Get Your Instance
-          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+          <svg
+            className="h-4 w-4"
+            fill="none"
+            viewBox="0 0 24 24"
+            strokeWidth={2}
+            stroke="currentColor"
+          >
+            <path
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+            />
           </svg>
         </Link>
 
         {/* Secondary */}
         <a
-          href="/visualise"
+          href="/knowledge"
           className="inline-flex items-center gap-2 rounded-xl border px-7 py-3.5 text-sm font-semibold backdrop-blur-sm transition-all"
           style={{
             borderColor: "rgba(30,41,59,1)",
@@ -285,14 +239,6 @@ export function HeroAnimatedSequence() {
           See It Live
         </a>
       </div>
-
-      {/* Microcopy */}
-      <p
-        className="mt-5 font-mono text-[11px]"
-        style={{ color: "rgba(71,85,105,0.8)" }}
-      >
-        14-day free trial · No credit card required to start
-      </p>
     </div>
   );
 }

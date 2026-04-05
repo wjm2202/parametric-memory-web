@@ -20,14 +20,14 @@ import { useKnowledgeStore } from "@/stores/knowledge-store";
 /* ─── Data ───────────────────────────────────────────────────────────────── */
 
 const EDGE_TYPES = [
-  { color: "#22d3ee", label: "Markov arc",    desc: "Predictive link — arc weight = recall strength" },
-  { color: "#4ade80", label: "Member of",     desc: "Atom belongs to a semantic cluster hub" },
-  { color: "#38bdf8", label: "References",    desc: "Cites or mentions another atom" },
-  { color: "#f97316", label: "Depends on",    desc: "Requires another fact to hold true" },
-  { color: "#a855f7", label: "Supersedes",    desc: "Replaces an older version of a fact" },
-  { color: "#ef4444", label: "Constrains",    desc: "Limits or corrects another atom" },
-  { color: "#2dd4bf", label: "Derived from",  desc: "Finding came from investigating another atom" },
-  { color: "#94a3b8", label: "Structural",    desc: "Cross-domain backbone edge" },
+  { color: "#22d3ee", label: "Markov arc", desc: "Predictive link — arc weight = recall strength" },
+  { color: "#4ade80", label: "Member of", desc: "Atom belongs to a semantic cluster hub" },
+  { color: "#38bdf8", label: "References", desc: "Cites or mentions another atom" },
+  { color: "#f97316", label: "Depends on", desc: "Requires another fact to hold true" },
+  { color: "#a855f7", label: "Supersedes", desc: "Replaces an older version of a fact" },
+  { color: "#ef4444", label: "Constrains", desc: "Limits or corrects another atom" },
+  { color: "#2dd4bf", label: "Derived from", desc: "Finding came from investigating another atom" },
+  { color: "#94a3b8", label: "Structural", desc: "Cross-domain backbone edge" },
 ] as const;
 
 const NEBULA_CLUSTERS = [
@@ -44,7 +44,7 @@ const NEBULA_CLUSTERS = [
 
 function SectionHeader({ children }: { children: React.ReactNode }) {
   return (
-    <div className="font-mono text-[9px] tracking-widest text-slate-500 uppercase mb-1.5 mt-3 first:mt-0">
+    <div className="mt-3 mb-1.5 font-mono text-[9px] tracking-widest text-slate-500 uppercase first:mt-0">
       {children}
     </div>
   );
@@ -63,7 +63,7 @@ function EdgeRow({ color, label, desc }: { color: string; label: string; desc: s
   return (
     <div className="flex items-start gap-2 py-0.5">
       {/* Swatch + line fragment */}
-      <div className="flex shrink-0 items-center gap-1 mt-[3px]">
+      <div className="mt-[3px] flex shrink-0 items-center gap-1">
         <Swatch color={color} size={6} />
         <span
           className="inline-block h-px w-5 rounded"
@@ -71,8 +71,8 @@ function EdgeRow({ color, label, desc }: { color: string; label: string; desc: s
         />
       </div>
       <div className="flex flex-col">
-        <span className="text-[10px] font-medium text-slate-200 leading-tight">{label}</span>
-        <span className="text-[9px] text-slate-500 leading-tight">{desc}</span>
+        <span className="text-[10px] leading-tight font-medium text-slate-200">{label}</span>
+        <span className="text-[9px] leading-tight text-slate-500">{desc}</span>
       </div>
     </div>
   );
@@ -87,37 +87,40 @@ export default function KnowledgeLegend() {
 
   return (
     <div className="flex flex-col items-end gap-2">
-
       {/* Expanded panel */}
       {open && (
         <div
-          className="w-60 rounded-xl border border-white/8 bg-black/60 px-3.5 py-3 backdrop-blur-md shadow-xl"
+          className="w-60 rounded-xl border border-white/8 bg-black/60 px-3.5 py-3 shadow-xl backdrop-blur-md"
           style={{ maxHeight: "calc(100vh - 14rem)", overflowY: "auto" }}
         >
           {/* ── Atoms ──────────────────────────────────────────────────── */}
           <SectionHeader>Atoms</SectionHeader>
           <div className="flex items-start gap-2 py-0.5">
-            <div className="flex shrink-0 items-center gap-0.5 mt-0.5">
+            <div className="mt-0.5 flex shrink-0 items-center gap-0.5">
               {[4, 6, 9].map((s, i) => (
                 <Swatch key={i} color="#8b5cf6" size={s} />
               ))}
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-slate-200 leading-tight">Node size</span>
-              <span className="text-[9px] text-slate-500 leading-tight">
+              <span className="text-[10px] leading-tight font-medium text-slate-200">
+                Node size
+              </span>
+              <span className="text-[9px] leading-tight text-slate-500">
                 Scales with connection count. Adjust with the Node Weight slider.
               </span>
             </div>
           </div>
           <div className="flex items-start gap-2 py-0.5">
-            <div className="flex shrink-0 items-center gap-0.5 mt-0.5">
+            <div className="mt-0.5 flex shrink-0 items-center gap-0.5">
               {["#3b82f6", "#22d3ee", "#a855f7", "#f97316", "#ef4444"].map((c, i) => (
                 <Swatch key={i} color={c} size={6} />
               ))}
             </div>
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-slate-200 leading-tight">Node colour</span>
-              <span className="text-[9px] text-slate-500 leading-tight">
+              <span className="text-[10px] leading-tight font-medium text-slate-200">
+                Node colour
+              </span>
+              <span className="text-[9px] leading-tight text-slate-500">
                 Hue derived from semantic domain (Poincaré coordinates).
               </span>
             </div>
@@ -128,7 +131,7 @@ export default function KnowledgeLegend() {
           {EDGE_TYPES.map((e) => (
             <EdgeRow key={e.label} {...e} />
           ))}
-          <p className="mt-1 text-[9px] text-slate-600 leading-tight">
+          <p className="mt-1 text-[9px] leading-tight text-slate-600">
             Centre section of each edge fades to transparent — only endpoints are bright.
           </p>
 
@@ -148,7 +151,7 @@ export default function KnowledgeLegend() {
               </div>
             ))}
           </div>
-          <p className="mt-1 text-[9px] text-slate-600 leading-tight">
+          <p className="mt-1 text-[9px] leading-tight text-slate-600">
             Soft halos mark semantic cluster territory. Hub atoms sit at the densest point.
           </p>
 
@@ -157,8 +160,10 @@ export default function KnowledgeLegend() {
           <div className="flex items-start gap-2 py-0.5">
             <Swatch color="#fbbf24" size={8} />
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-slate-200 leading-tight">Gold — search hit</span>
-              <span className="text-[9px] text-slate-500 leading-tight">
+              <span className="text-[10px] leading-tight font-medium text-slate-200">
+                Gold — search hit
+              </span>
+              <span className="text-[9px] leading-tight text-slate-500">
                 Atoms that directly matched your query, pulsing with bloom.
               </span>
             </div>
@@ -166,14 +171,17 @@ export default function KnowledgeLegend() {
           <div className="flex items-start gap-2 py-0.5">
             <Swatch color="#f59e0b" size={8} />
             <div className="flex flex-col">
-              <span className="text-[10px] font-medium text-slate-200 leading-tight">Amber — bridge atom</span>
-              <span className="text-[9px] text-slate-500 leading-tight">
-                The external atom with most connections into the result set — the strongest contextual link.
+              <span className="text-[10px] leading-tight font-medium text-slate-200">
+                Amber — bridge atom
+              </span>
+              <span className="text-[9px] leading-tight text-slate-500">
+                The external atom with most connections into the result set — the strongest
+                contextual link.
               </span>
             </div>
           </div>
           {!isSearchActive && (
-            <p className="mt-1 text-[9px] text-slate-600 italic leading-tight">
+            <p className="mt-1 text-[9px] leading-tight text-slate-600 italic">
               Use the search bar above to activate these overlays.
             </p>
           )}
@@ -184,16 +192,11 @@ export default function KnowledgeLegend() {
       <button
         onClick={() => setOpen((v) => !v)}
         aria-label={open ? "Close legend" : "Open visualisation key"}
-        className={`
-          flex h-8 w-8 items-center justify-center rounded-xl
-          border border-white/8 bg-black/50 backdrop-blur-md
-          font-mono text-xs font-semibold tracking-widest
-          transition-colors duration-200
-          ${open
-            ? "text-violet-300 border-violet-400/30 bg-violet-900/20"
-            : "text-slate-400 hover:text-violet-300 hover:border-violet-400/20"
-          }
-        `}
+        className={`flex h-8 w-8 items-center justify-center rounded-xl border border-white/8 bg-black/50 font-mono text-xs font-semibold tracking-widest backdrop-blur-md transition-colors duration-200 ${
+          open
+            ? "border-violet-400/30 bg-violet-900/20 text-violet-300"
+            : "text-slate-400 hover:border-violet-400/20 hover:text-violet-300"
+        } `}
       >
         {open ? "×" : "?"}
       </button>

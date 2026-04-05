@@ -90,7 +90,8 @@ export async function POST(
 
     // If logging out, also clear the cookie on the website side
     if (subPath === "logout" && res.ok) {
-      const isLocalhost = request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
+      const isLocalhost =
+        request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
       const cookieStore = await cookies();
       cookieStore.set(SESSION_COOKIE, "", {
         httpOnly: true,

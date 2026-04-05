@@ -1,44 +1,101 @@
 # Parametric Memory
 
-> Persistent, verifiable memory for AI agents. Enterprise-grade memory substrate with cryptographic Merkle proofs, Markov-chain prediction, and MCP-native integration.
+> Your AI's second brain. Persistent, verifiable memory with cryptographic Merkle proofs, Markov-chain prediction, and MCP-native integration.
 
 ## Pages
 
-- [Home](https://parametric-memory.dev): Overview and product introduction
-- [Pricing](https://parametric-memory.dev/pricing): 5 tiers from $9/mo to $499/mo, comparison tables, FAQ
+- [Home](https://parametric-memory.dev): Product overview, hero, features, social proof, and CTA
+- [Pricing](https://parametric-memory.dev/pricing): 3 paid tiers (Indie/Pro/Team) + 2 enterprise tiers, comparison tables, FAQ. 14-day free trial on all plans — card required, no charge until day 15.
+- [Docs](https://parametric-memory.dev/docs): Full technical documentation — API reference, MCP tool catalogue, architecture, and integration guides
 - [Visualise](https://parametric-memory.dev/visualise): Live 3D Merkle tree visualization of the memory substrate
+- [Knowledge](https://parametric-memory.dev/knowledge): Interactive knowledge graph explorer
+- [Blog](https://parametric-memory.dev/blog): Technical articles on memory architecture, AI memory patterns, and MMPM updates
 - [GitHub](https://github.com/wjm2202/Parametric-Memory): Source repository
 
 ## Product
 
-Parametric Memory is a persistent memory substrate for AI agents. It stores knowledge as atoms in a SHA-256 Merkle tree with RFC 6962 consistency proofs, providing cryptographic proof of what was stored and when. A Markov-chain prediction layer anticipates what an agent will need next with 64% hit rate, reducing latency and token usage.
+Parametric Memory (MMPM — Markov-Merkle Predictive Memory) is a persistent memory substrate for AI agents. It stores knowledge as atoms in a SHA-256 Merkle tree with RFC 6962 consistency proofs, providing cryptographic proof of what was stored and when. A Markov-chain prediction layer anticipates what an agent will need next with 64% hit rate, reducing latency and token usage.
+
+This is not just for developers. It is used to manage web systems, billing operations, deployment state, onboarding flows, and any workflow where an AI agent needs durable memory across sessions.
 
 ## Key Specifications
 
-- Access latency: 0.045ms p50, 0.074ms p95
+- Access latency: 0.045ms p50, 0.074ms p95, 1.2ms p99
 - Throughput: 6,423 ops/sec
 - Proof verification: 0.032ms p95
 - Markov prediction hit rate: 64%
 - Compact proofs: 37% token savings (4,102 → 2,580 tokens)
-- Storage: LevelDB with JumpHash sharding (4 shards)
+- Storage: LevelDB with JumpHash sharding (4 independent Merkle shards)
 - Transport: MCP (25+ tools), HTTP REST API, OAuth2, Streamable HTTP
+
+## MCP Tool Catalogue
+
+Parametric Memory exposes 25+ MCP tools via Streamable HTTP transport, compatible with Claude, Claude Code, Cowork, and any MCP-compliant client.
+
+**Memory Operations**
+- `memory_session_bootstrap` — Single-call session bootstrap; returns relevant atoms, procedures, and conflicting facts by objective
+- `session_checkpoint` — Persist new atoms, tombstone stale ones, write knowledge graph edges
+- `memory_search` — Semantic + keyword search across the atom store
+- `memory_access` — Retrieve specific atoms by key
+- `memory_list_atoms` — List atoms by type, domain, or tag
+- `memory_associate` — Find cross-domain associations for a set of atoms
+- `memory_context` — Return full context for a domain or task
+- `memory_train` — Reinforce Markov arc weights for successful workflows
+- `memory_recluster` — Re-cluster knowledge graph nodes after bulk changes
+- `memory_weekly_eval_run` — Trigger weekly evaluation of memory quality
+- `memory_weekly_eval_status` — Check status of the weekly evaluation run
+
+**Session & Provenance**
+- `session_checkpoint` — Checkpoint current session state with atoms, edges, and tombstones
+- `memory_session_bootstrap` — Bootstrap a new session with prior context
+- `session_info` — Read session metadata and current task context
+
+**Knowledge Graph**
+- Knowledge graph edges (member_of, supersedes, depends_on, constrains, references, derived_from, produced_by)
+- Atom types: fact, state, event, relation, procedure, domain, task
+- Conflict detection via atom naming conventions (claim key prefix)
 
 ## Pricing
 
-- Starter: $9/mo — 512 MiB RAM, 10 GiB storage, dedicated instance, all features
-- Solo: $29/mo — 1 GiB RAM, 25 GiB storage, dedicated instance, email support
-- Team: $79/mo — 4 GiB RAM, 80 GiB storage, priority support, custom domain
-- Enterprise Cloud: $299/mo — 8 GiB RAM, 100+ GiB, 99.9% SLA, SSO/SAML, SOC 2
-- Enterprise Self-Hosted: $499/mo — commercial license, deploy on your own cloud, source access
+All paid plans include a 14-day free trial. Card is required at signup; no charge until day 15. Cancel before day 15, pay nothing.
+
+- **Indie** ($9/mo): 10,000 atoms, 1,000 bootstraps/month, 500 MB storage, 2 substrate instances, email support
+- **Pro** ($29/mo): 100,000 atoms, 10,000 bootstraps/month, 2 GB storage, 3 substrate instances, knowledge graph edges, priority support (most popular)
+- **Team** ($79/mo): 500,000 atoms, unlimited bootstraps, 10 GB storage, 5 substrate instances, dedicated support, custom domain
+- **Enterprise Cloud** ($299/mo): 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML, SOC 2 artifacts, dedicated support channel
+- **Enterprise Self-Hosted** ($499/mo): Commercial license, deploy on your own cloud (AWS/GCP/Azure), full source access, architecture review, quarterly health checks
 
 All plans include Merkle proofs, Markov prediction, MCP integration, and compact proofs. No feature gating. No per-query charges.
 
 ## Differentiators vs Competitors
 
-- vs Mem0 ($19-249/mo): Parametric Memory offers Merkle proofs (Mem0 doesn't), dedicated instances (Mem0 is shared), and Markov prediction. Mem0 paywalls graph features behind $249/mo.
-- vs Zep ($25/mo): Parametric Memory offers Merkle proofs (Zep doesn't), dedicated instances (Zep is shared), and Markov prediction. Zep uses credit-based pricing with overage charges.
-- vs Letta/MemGPT: Parametric Memory offers cryptographic verification, managed hosting, and commercial support.
+- **vs Mem0** ($19–249/mo): Parametric Memory offers Merkle proofs (Mem0 doesn't), dedicated instances (Mem0 is shared), and Markov prediction. Mem0 paywalls graph features behind $249/mo.
+- **vs Zep** ($25/mo): Parametric Memory offers Merkle proofs (Zep doesn't), dedicated instances (Zep is shared), and Markov prediction. Zep uses credit-based pricing with overage charges.
+- **vs Letta/MemGPT**: Parametric Memory offers cryptographic verification, managed hosting, and commercial support.
 
 ## Integration
 
 Works natively with Claude, Claude Code, Cowork, and any MCP-compatible client. Docker Compose deployment on DigitalOcean with nginx, Let's Encrypt SSL, and Prometheus monitoring.
+
+**Quick start (Claude Desktop):**
+Add to `claude_desktop_config.json`:
+```json
+{
+  "mcpServers": {
+    "mmpm": {
+      "command": "npx",
+      "args": ["-y", "@mmpm/mcp-client"],
+      "env": {
+        "MMPM_HOST": "https://your-instance.parametric-memory.dev",
+        "MMPM_TOKEN": "your-bearer-token"
+      }
+    }
+  }
+}
+```
+
+## Contact
+
+- Email: entityone22@gmail.com
+- GitHub: https://github.com/wjm2202/Parametric-Memory
+- Website: https://parametric-memory.dev

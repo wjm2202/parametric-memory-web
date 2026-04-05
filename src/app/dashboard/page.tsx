@@ -29,6 +29,17 @@ interface HealthInfo {
   https: { configured: boolean; endpoint: string | null };
 }
 
+interface SubstrateHistoryItem {
+  id: string;
+  slug: string;
+  tier: string;
+  status: string;
+  hostingModel: string;
+  mcpEndpoint: string | null;
+  provisionedAt: string | null;
+  createdAt: string;
+}
+
 interface SubstrateInfo {
   id: string | null;
   slug: string | null;
@@ -46,6 +57,9 @@ interface SubstrateInfo {
   storageUsedMB: number;
   provisionedAt: string | null;
   gracePeriodEndsAt: string | null;
+  cancelAt: string | null;
+  keyUnclaimed: boolean;
+  history?: SubstrateHistoryItem[];
 }
 
 async function getAccount(sessionToken: string): Promise<AccountInfo | null> {
@@ -61,19 +75,19 @@ async function getAccount(sessionToken: string): Promise<AccountInfo | null> {
   }
 }
 
-async function getSubstrate(
-  sessionToken: string,
-): Promise<SubstrateInfo | null> {
+async function getSubstrate(sessionToken: string): Promise<SubstrateInfo | null> {
   try {
-    const res = await fetch(
-      `${COMPUTE_URL}/api/v1/my-substrate`,
-      {
-        headers: { Authorization: `Bearer ${sessionToken}` },
-        cache: "no-store",
-      },
-    );
+    const res = await fetch(`${COMPUTE_URL}/api/v1/my-substrate`, {
+      headers: { Authorization: `Bearer ${sessionToken}` },
+      cache: "no-store",
+    });
     if (!res.ok) return null;
-    return res.json();
+    const data = await res.json();
+    // No active substrate but may have history — return a shell so history renders
+    if (data?.error === "no_substrate") {
+      return data.history?.length ? ({ history: data.history } as unknown as SubstrateInfo) : null;
+    }
+    return data;
   } catch {
     return null;
   }

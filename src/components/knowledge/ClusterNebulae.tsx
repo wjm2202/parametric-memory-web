@@ -29,13 +29,13 @@ import type { KGNode, KGEdge } from "@/stores/knowledge-store";
 // nebula blends with its own cluster's edges.
 
 const HUB_COLORS: Record<string, string> = {
-  hub_mmpm_core:         "#22d3ee", // cyan   — matches Markov strong arc
-  hub_mmpm_compute:      "#f97316", // amber  — matches depends_on edge
-  hub_mmpm_testing:      "#2dd4bf", // teal   — matches derived_from edge
+  hub_mmpm_core: "#22d3ee", // cyan   — matches Markov strong arc
+  hub_mmpm_compute: "#f97316", // amber  — matches depends_on edge
+  hub_mmpm_testing: "#2dd4bf", // teal   — matches derived_from edge
   hub_memory_procedures: "#a855f7", // purple — matches supersedes edge
-  hub_sprint_state:      "#fbbf24", // gold   — matches cross-domain bridge arc
-  hub_corrections:       "#ef4444", // red    — matches constrains edge
-  hub_visualization:     "#38bdf8", // sky blue — matches references edge
+  hub_sprint_state: "#fbbf24", // gold   — matches cross-domain bridge arc
+  hub_corrections: "#ef4444", // red    — matches constrains edge
+  hub_visualization: "#38bdf8", // sky blue — matches references edge
 };
 const DEFAULT_HUB_COLOR = "#94a3b8"; // slate — unknown hubs
 
@@ -69,11 +69,11 @@ function makeNebulaTex(hexColor: string): THREE.CanvasTexture {
   const half = SIZE / 2;
   const grad = ctx.createRadialGradient(half, half, 0, half, half, half);
   // Dense core → diffuse mid-cloud → invisible edge
-  grad.addColorStop(0.00, `rgba(${r},${g},${b},0.30)`);
+  grad.addColorStop(0.0, `rgba(${r},${g},${b},0.30)`);
   grad.addColorStop(0.25, `rgba(${r},${g},${b},0.16)`);
   grad.addColorStop(0.55, `rgba(${r},${g},${b},0.06)`);
-  grad.addColorStop(0.80, `rgba(${r},${g},${b},0.02)`);
-  grad.addColorStop(1.00, `rgba(${r},${g},${b},0.00)`);
+  grad.addColorStop(0.8, `rgba(${r},${g},${b},0.02)`);
+  grad.addColorStop(1.0, `rgba(${r},${g},${b},0.00)`);
 
   ctx.fillStyle = grad;
   ctx.fillRect(0, 0, SIZE, SIZE);
@@ -98,7 +98,7 @@ interface ClusterNebulaeProps {
 }
 
 export default function ClusterNebulae({ handle }: ClusterNebulaeProps) {
-  const { simNodes, simEdges, isSettled } = handle;
+  const { simNodes, simEdges } = handle;
 
   // Holds the THREE.Group that contains all sprite children
   const groupRef = useRef<THREE.Group>(null);
@@ -135,8 +135,7 @@ export default function ClusterNebulae({ handle }: ClusterNebulaeProps) {
 
     for (const e of edges) {
       // d3 resolves target from string → object after first tick
-      const tgtKey =
-        typeof e.target === "string" ? e.target : (e.target as KGNode).key;
+      const tgtKey = typeof e.target === "string" ? e.target : (e.target as KGNode).key;
       if (clusterSize.has(tgtKey)) {
         clusterSize.set(tgtKey, (clusterSize.get(tgtKey) ?? 0) + 1);
       }

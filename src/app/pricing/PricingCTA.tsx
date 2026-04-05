@@ -10,27 +10,39 @@ interface PricingCTAProps {
   label: string;
   isLoggedIn: boolean;
   ctaLink?: string;
+  /** @deprecated Trial period is not configured in Stripe — do not use. */
+  trial?: boolean;
 }
 
 /**
  * Pricing CTA button.
  *
  * Flow:
- *   - Logged in              → POST /api/checkout → redirect to Stripe (all tiers incl. free $1/mo)
+ *   - Logged in              → POST /api/checkout → redirect to Stripe Checkout
  *   - Not logged in          → Redirect to /login?redirect=/pricing
  *   - Enterprise self-hosted → Email contact link (manual sales)
  *   - Enterprise cloud       → Email contact link (custom pricing)
  */
-export function PricingCTA({ tierId, tierName, label, isLoggedIn, ctaLink }: PricingCTAProps) {
+export function PricingCTA({
+  tierId,
+  tierName,
+  label,
+  isLoggedIn,
+  ctaLink,
+  trial,
+}: PricingCTAProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [agreedToTerms, setAgreedToTerms] = useState(false);
 
   // Enterprise self-hosted: manual sales process
   if (tierId === "enterprise-self-hosted") {
     return (
       <div className="mb-8">
         <a
-          href={ctaLink ?? "mailto:entityone22@gmail.com?subject=Enterprise%20Self-Hosted%20Inquiry"}
+          href={
+            ctaLink ?? "mailto:entityone22@gmail.com?subject=Enterprise%20Self-Hosted%20Inquiry"
+          }
           className="bg-surface-800 text-surface-200 hover:bg-surface-700 ring-surface-200/10 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold ring-1 transition-all"
         >
           Contact Sales
@@ -53,7 +65,7 @@ export function PricingCTA({ tierId, tierName, label, isLoggedIn, ctaLink }: Pri
     );
   }
 
-  // ── Billing tiers: free ($1), indie ($9), pro ($29), team ($79) ────────────────
+  // ── Billing tiers: solo ($9/indie), professional ($29/pro), team ($79) ─────────
 
   // Not logged in → send to login with redirect back to pricing
   if (!isLoggedIn) {
@@ -71,6 +83,10 @@ export function PricingCTA({ tierId, tierName, label, isLoggedIn, ctaLink }: Pri
 
   // Logged in → call /api/checkout → redirect to Stripe Checkout
   async function handleCheckout() {
+    if (!agreedToTerms) {
+      setError("Please agree to the Terms of Service before continuing.");
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -84,7 +100,7 @@ export function PricingCTA({ tierId, tierName, label, isLoggedIn, ctaLink }: Pri
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: tierId }),
+        body: JSON.stringify({ tier: tierId, ...(trial ? { trial: true } : {}) }),
       });
 
       if (res.status === 401) {
@@ -115,11 +131,42 @@ export function PricingCTA({ tierId, tierName, label, isLoggedIn, ctaLink }: Pri
   }
 
   return (
-    <div className="mb-8">
+    <div className="mb-8 space-y-3">
+      {/* Legal clickwrap — must be checked before Stripe opens */}
+      <label className="flex cursor-pointer items-start gap-2.5 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2.5 transition-colors hover:border-white/20">
+        <input
+          type="checkbox"
+          checked={agreedToTerms}
+          onChange={(e) => {
+            setAgreedToTerms(e.target.checked);
+            if (error) setError(null);
+          }}
+          className="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded border-white/20 bg-white/5 accent-indigo-500"
+        />
+        <span className="text-xs leading-relaxed text-white/50">
+          I agree to the{" "}
+          <Link
+            href="/terms"
+            target="_blank"
+            className="text-white/70 underline underline-offset-2 hover:text-white"
+          >
+            Terms of Service
+          </Link>{" "}
+          and{" "}
+          <Link
+            href="/privacy"
+            target="_blank"
+            className="text-white/70 underline underline-offset-2 hover:text-white"
+          >
+            Privacy Policy
+          </Link>
+        </span>
+      </label>
+
       <button
         onClick={handleCheckout}
-        disabled={loading}
-        className="bg-brand-500 hover:bg-brand-400 ring-brand-400/30 hover:ring-brand-400/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white ring-1 transition-all disabled:opacity-50 disabled:cursor-wait"
+        disabled={loading || !agreedToTerms}
+        className="bg-brand-500 hover:bg-brand-400 ring-brand-400/30 hover:ring-brand-400/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white ring-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
       >
         {loading ? (
           <>
@@ -130,9 +177,7 @@ export function PricingCTA({ tierId, tierName, label, isLoggedIn, ctaLink }: Pri
           label || `Get ${tierName}`
         )}
       </button>
-      {error && (
-        <p className="mt-2 text-center text-xs text-red-400">{error}</p>
-      )}
+      {error && <p className="mt-2 text-center text-xs text-red-400">{error}</p>}
     </div>
   );
 }

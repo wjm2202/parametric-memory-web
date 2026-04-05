@@ -1,0 +1,56 @@
+---
+title: What is Parametric Memory?
+description: Persistent, verifiable, predictive memory for AI agents. Understand what Parametric Memory does and how it works.
+section: Getting Started
+order: 1
+---
+
+# What is Parametric Memory?
+
+**Parametric Memory** is a dedicated memory service for AI agents. It gives Claude — and any other MCP-compatible AI — a persistent memory that survives between sessions, can be verified with cryptographic proofs, and gets smarter the more you use it.
+
+> This is not a vector store. It is not a notes file. It is structured, tamper-evident memory with a Markov prediction layer that learns your patterns and pre-fetches what you're about to need.
+
+## The three guarantees
+
+| Guarantee | How it works |
+|---|---|
+| **Persistent** | Atoms (named facts) survive indefinitely across sessions. Your AI picks up exactly where it left off. |
+| **Verifiable** | Every stored atom is hashed into an RFC 6962 Merkle tree. You can verify any recalled fact was actually stored — no hallucinated memory. |
+| **Predictive** | A PPM Markov model learns from your recall patterns. It achieves a 64% average hit rate pre-fetching atoms you're about to need, reducing latency to near zero. |
+
+## How memory actually works
+
+Everything stored in Parametric Memory is an **atom** — a key/value pair with a namespaced key like `v1.fact.my_database_url`.
+
+When you store an atom:
+1. The value is hashed (SHA-256) and inserted into a Merkle tree for your shard
+2. The Markov model records which atoms were accessed before and after this one
+3. Future sessions that touch nearby keys will have this atom pre-fetched automatically
+
+When you recall atoms:
+1. The system returns matching atoms plus a **Merkle proof** for each one
+2. You (or your AI) can verify the proof against the tree root — confirming the fact was not altered
+3. The Markov model notes this recall and strengthens the arc weights for related atoms
+
+## Your dedicated instance
+
+Every paid subscriber gets their own isolated memory substrate — a containerised instance running on our infrastructure. Your atoms never share compute or storage with another customer.
+
+- **Indie / Pro plans** — shared host, isolated container per customer
+- **Team plan** — dedicated DigitalOcean droplet, isolated at the machine level
+
+Your instance has its own domain, SSL certificate, and MCP endpoint.
+
+## What it's not
+
+- **Not a file store** — atoms are small named facts, not binary blobs
+- **Not a chat history** — it stores structured knowledge, not conversation logs
+- **Not a RAG pipeline** — there are no embeddings or cosine similarity; recall is exact key lookup or semantic search over structured fields
+- **Not a database** — it is an append-only memory layer optimised for AI agent patterns
+
+## Next steps
+
+- [Plans & Trial](/docs/plans-and-trial) — see what each tier includes and how the 14-day trial works
+- [Your Instance & API Key](/docs/your-instance) — how to find your MCP endpoint and claim your API key
+- [Claude Desktop & Cowork](/docs/mcp/claude) — connect your instance to Claude in under 5 minutes

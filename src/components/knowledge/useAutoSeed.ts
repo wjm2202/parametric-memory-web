@@ -103,9 +103,7 @@ export function useAutoSeed() {
       // endpoint if the per-atom field is missing (cold embedding cache).
       const nodeItems = activeAtoms.map((a) => {
         const key = extractAtomKey(a.atom);
-        const poincare =
-          a.poincare ??
-          (poincareMap.has(key) ? poincareMap.get(key)! : null);
+        const poincare = a.poincare ?? (poincareMap.has(key) ? poincareMap.get(key)! : null);
         return { key, poincare };
       });
       addNodesLoadedWithPoincare(nodeItems);
@@ -169,8 +167,8 @@ export function useAutoSeed() {
       const poincareCount = nodeItems.filter((n) => n.poincare != null).length;
       console.log(
         `[useAutoSeed] Graph loaded: ${atomKeys.length} nodes, ` +
-        `${markovCount} Markov arcs, ${structCount} structural edges, ` +
-        `${poincareCount} poincaré coords (single parallel request)`,
+          `${markovCount} Markov arcs, ${structCount} structural edges, ` +
+          `${poincareCount} poincaré coords (single parallel request)`,
       );
     } catch (err) {
       if ((err as Error).name !== "AbortError") {

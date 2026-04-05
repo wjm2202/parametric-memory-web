@@ -20,29 +20,71 @@ const landingJsonLd = {
   url: "https://parametric-memory.dev",
   description:
     "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances from $9/mo.",
+  datePublished: "2025-01-01",
+  dateModified: new Date().toISOString().split("T")[0],
+  inLanguage: "en-US",
+  isPartOf: {
+    "@type": "WebSite",
+    name: "Parametric Memory",
+    url: "https://parametric-memory.dev",
+  },
   mainEntity: {
     "@type": "SoftwareApplication",
     name: "Parametric Memory",
+    alternateName: "MMPM",
     applicationCategory: "DeveloperApplication",
-    offers: { "@type": "AggregateOffer", lowPrice: "9", priceCurrency: "USD" },
+    applicationSubCategory: "AI Memory Infrastructure",
+    softwareVersion: "1.0",
+    description:
+      "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs, Markov-chain prediction, and MCP-native integration.",
+    featureList: [
+      "Cryptographic Merkle proofs (RFC 6962)",
+      "Markov-chain predictive recall (64% hit rate)",
+      "Sub-millisecond access latency (0.045ms p50)",
+      "MCP-native integration (25+ tools)",
+      "Compact proofs (37% token savings)",
+      "Dedicated instances — no shared infrastructure",
+    ],
+    publisher: {
+      "@type": "Organization",
+      name: "Parametric Memory",
+      url: "https://parametric-memory.dev",
+    },
+    offers: {
+      "@type": "AggregateOffer",
+      lowPrice: "9",
+      highPrice: "499",
+      priceCurrency: "USD",
+      offerCount: "5",
+    },
   },
 };
 
-// ── Logomark SVG (inline, footer only) ────────────────────────────────────
+// ── BreadcrumbList for this page ───────────────────────────────────────────
+const homeBreadcrumbJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "BreadcrumbList",
+  itemListElement: [
+    {
+      "@type": "ListItem",
+      position: 1,
+      name: "Home",
+      item: "https://parametric-memory.dev",
+    },
+  ],
+};
+
+// ── Logomark (inline, footer only) ────────────────────────────────────────
 function Logomark({ size = 24 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 72 72" fill="none" aria-hidden="true">
-      <circle cx="36" cy="36" r="32" stroke="#36aaf5" strokeWidth="1.5" opacity="0.3" />
-      <line x1="36" y1="36" x2="36" y2="4" stroke="#36aaf5" strokeWidth="1" opacity="0.4" />
-      <line x1="36" y1="36" x2="68" y2="36" stroke="#36aaf5" strokeWidth="1" opacity="0.4" />
-      <line x1="36" y1="36" x2="36" y2="68" stroke="#36aaf5" strokeWidth="1" opacity="0.4" />
-      <line x1="36" y1="36" x2="4" y2="36" stroke="#36aaf5" strokeWidth="1" opacity="0.4" />
-      <circle cx="36" cy="36" r="4" fill="#f59e0b" />
-      <circle cx="36" cy="4" r="3.5" fill="#36aaf5" />
-      <circle cx="68" cy="36" r="3.5" fill="#36aaf5" />
-      <circle cx="36" cy="68" r="3.5" fill="#36aaf5" />
-      <circle cx="4" cy="36" r="3.5" fill="#36aaf5" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/favicon-192.png"
+      width={size}
+      height={size}
+      alt="Parametric Memory"
+      style={{ borderRadius: "50%" }}
+    />
   );
 }
 
@@ -50,7 +92,14 @@ function Logomark({ size = 24 }: { size?: number }) {
 const features = [
   {
     icon: (
-      <svg width="20" height="20" fill="none" stroke="#36aaf5" strokeWidth="1.5" viewBox="0 0 24 24">
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="#36aaf5"
+        strokeWidth="1.5"
+        viewBox="0 0 24 24"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -66,7 +115,14 @@ const features = [
   },
   {
     icon: (
-      <svg width="20" height="20" fill="none" stroke="#f59e0b" strokeWidth="1.5" viewBox="0 0 24 24">
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="#f59e0b"
+        strokeWidth="1.5"
+        viewBox="0 0 24 24"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -82,7 +138,14 @@ const features = [
   },
   {
     icon: (
-      <svg width="20" height="20" fill="none" stroke="#22d3ee" strokeWidth="1.5" viewBox="0 0 24 24">
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="#22d3ee"
+        strokeWidth="1.5"
+        viewBox="0 0 24 24"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -98,7 +161,14 @@ const features = [
   },
   {
     icon: (
-      <svg width="20" height="20" fill="none" stroke="#36aaf5" strokeWidth="1.5" viewBox="0 0 24 24">
+      <svg
+        width="20"
+        height="20"
+        fill="none"
+        stroke="#36aaf5"
+        strokeWidth="1.5"
+        viewBox="0 0 24 24"
+      >
         <path
           strokeLinecap="round"
           strokeLinejoin="round"
@@ -157,6 +227,10 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(landingJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeBreadcrumbJsonLd) }}
       />
 
       {/* ── NAV ─────────────────────────────────────────────────────────── */}
@@ -347,8 +421,18 @@ export default async function HomePage() {
                 className="font-body text-brand-400 hover:text-brand-300 inline-flex items-center gap-2 text-sm transition-colors"
               >
                 Full architecture documentation
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                  />
                 </svg>
               </Link>
 
@@ -358,8 +442,18 @@ export default async function HomePage() {
                 className="bg-brand-500 hover:bg-brand-400 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(12,142,230,0.25)] transition-all hover:shadow-[0_0_32px_rgba(54,170,245,0.4)]"
               >
                 Get Your Instance
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+                <svg
+                  className="h-4 w-4"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  strokeWidth={2}
+                  stroke="currentColor"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                  />
                 </svg>
               </Link>
             </div>
@@ -367,10 +461,7 @@ export default async function HomePage() {
         </section>
 
         {/* ── SOCIAL PROOF — We trust it with ours ──────────────────────── */}
-        <section
-          className="mx-auto max-w-6xl px-6 py-24"
-          aria-labelledby="trust-heading"
-        >
+        <section className="mx-auto max-w-6xl px-6 py-24" aria-labelledby="trust-heading">
           <div
             className="relative overflow-hidden rounded-3xl border p-10 lg:p-16"
             style={{
@@ -396,7 +487,7 @@ export default async function HomePage() {
                   className="font-display mb-6 text-3xl font-bold text-white lg:text-4xl"
                   style={{ letterSpacing: "-0.025em", lineHeight: 1.15 }}
                 >
-                  We don't just sell you a second brain.
+                  We don&apos;t just sell you a second brain.
                   <br />
                   <span
                     style={{
@@ -414,7 +505,7 @@ export default async function HomePage() {
                   proofs that protect your data protect our audit trail.
                 </p>
                 <p className="font-body text-surface-400 text-base leading-relaxed">
-                  If we trust it to run our company, you can trust it with your AI's memory.
+                  If we trust it to run our company, you can trust it with your AI&apos;s memory.
                 </p>
               </div>
 
@@ -429,12 +520,18 @@ export default async function HomePage() {
                   }}
                 >
                   <div className="mb-3 flex items-center gap-2">
-                    <span className="h-2 w-2 animate-pulse rounded-full bg-emerald-400" aria-hidden="true" />
+                    <span
+                      className="h-2 w-2 animate-pulse rounded-full bg-emerald-400"
+                      aria-hidden="true"
+                    />
                     <span className="font-mono text-[11px] tracking-widest text-emerald-500 uppercase">
                       Our live substrate
                     </span>
                   </div>
-                  <p className="font-display text-4xl font-bold text-white" style={{ letterSpacing: "-0.03em" }}>
+                  <p
+                    className="font-display text-4xl font-bold text-white"
+                    style={{ letterSpacing: "-0.03em" }}
+                  >
                     821+
                   </p>
                   <p className="text-surface-500 mt-1 font-mono text-xs">
@@ -454,7 +551,10 @@ export default async function HomePage() {
                       key={item.label}
                       className="border-surface-800 bg-surface-900/50 rounded-xl border p-4"
                     >
-                      <p className="font-display text-lg font-bold text-white" style={{ color: item.color }}>
+                      <p
+                        className="font-display text-lg font-bold text-white"
+                        style={{ color: item.color }}
+                      >
                         {item.value}
                       </p>
                       <p className="text-surface-500 mt-0.5 font-mono text-[11px] tracking-wide">
@@ -501,13 +601,23 @@ export default async function HomePage() {
               live MMPM instance and watch memory form in real time.
             </p>
             <a
-              href="/visualise"
-              className="border-surface-700 bg-surface-800/60 text-surface-200 hover:border-brand-500/40 hover:text-white inline-flex items-center gap-2.5 rounded-xl border px-8 py-4 text-sm font-semibold backdrop-blur-sm transition-all"
+              href="/knowledge"
+              className="border-surface-700 bg-surface-800/60 text-surface-200 hover:border-brand-500/40 inline-flex items-center gap-2.5 rounded-xl border px-8 py-4 text-sm font-semibold backdrop-blur-sm transition-all hover:text-white"
             >
-              <svg className="text-brand-400 h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z" />
+              <svg
+                className="text-brand-400 h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={1.5}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"
+                />
               </svg>
-              Open Live Visualiser
+              See It Live
             </a>
           </div>
         </section>
@@ -527,7 +637,7 @@ export default async function HomePage() {
               className="font-display mb-5 text-4xl font-extrabold text-white lg:text-5xl"
               style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
             >
-              Your AI's second brain.
+              Your AI&apos;s second brain.
               <br />
               <span
                 style={{
@@ -542,7 +652,7 @@ export default async function HomePage() {
             <p className="font-body text-surface-400 mb-10 text-lg leading-relaxed">
               Dedicated substrate. Cryptographic proofs. Markov prediction.
               <br />
-              Your own Merkle tree — not a row in someone else's database.
+              Your own Merkle tree — not a row in someone else&apos;s database.
             </p>
 
             {/* Primary CTA — full and prominent */}
@@ -551,19 +661,29 @@ export default async function HomePage() {
               className="bg-brand-500 hover:bg-brand-400 mb-4 inline-flex items-center gap-2.5 rounded-xl px-10 py-4 text-base font-semibold text-white shadow-[0_0_40px_rgba(12,142,230,0.4)] transition-all hover:shadow-[0_0_56px_rgba(54,170,245,0.5)]"
             >
               Get Your Instance
-              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+              <svg
+                className="h-5 w-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                strokeWidth={2}
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
+                />
               </svg>
             </Link>
 
             {/* Microcopy — removes friction */}
             <p className="text-surface-600 font-mono text-[12px]">
-              Starting at $9/month · 14-day free trial · No credit card required to start
+              Starting at $9/month · 14-day free trial · Cancel before day 15, pay nothing
             </p>
 
             {/* Tier hint */}
             <p className="text-surface-600 mt-3 font-mono text-[11px]">
-              Indie $9 · Solo $29 · Team $79 · Enterprise Cloud $299 · Self-Hosted $499
+              Indie $9 · Pro $29 · Team $79 · Enterprise Cloud $299 · Self-Hosted $499
             </p>
           </div>
         </section>
@@ -580,19 +700,34 @@ export default async function HomePage() {
               </span>
             </div>
             <nav className="flex items-center gap-6" aria-label="Footer navigation">
-              <Link href="/docs" className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors">
+              <Link
+                href="/docs"
+                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+              >
                 Docs
               </Link>
-              <Link href="/blog" className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors">
+              <Link
+                href="/blog"
+                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+              >
                 Blog
               </Link>
-              <a href="/pricing" className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors">
+              <a
+                href="/pricing"
+                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+              >
                 Pricing
               </a>
-              <a href="/visualise" className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors">
+              <a
+                href="/visualise"
+                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+              >
                 Visualise
               </a>
-              <a href="/knowledge" className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors">
+              <a
+                href="/knowledge"
+                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+              >
                 Knowledge
               </a>
             </nav>

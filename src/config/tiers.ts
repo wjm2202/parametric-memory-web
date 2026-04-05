@@ -14,9 +14,13 @@
 export type TierId = "free" | "indie" | "pro" | "team";
 
 export interface TierLimits {
-  maxAtoms: number;              // -1 = unlimited
+  maxAtoms: number; // -1 = unlimited
   maxBootstrapsPerMonth: number; // -1 = unlimited
-  maxStorageMB: number;          // -1 = unlimited
+  maxStorageMB: number; // -1 = unlimited
+  /** Maximum monthly spend in cents (platform ceiling). Users cannot exceed this. */
+  maxMonthlyCents: number;
+  /** Maximum number of substrates per account. */
+  maxSubstrates: number;
 }
 
 export interface TierFeature {
@@ -60,19 +64,25 @@ export const TIERS: Tier[] = [
     description: "Get started with Parametric Memory. $1/month, cancel anytime.",
     badge: null,
     cta: "Get Started",
-    limits: { maxAtoms: 500, maxBootstrapsPerMonth: 100, maxStorageMB: 50 },
+    limits: {
+      maxAtoms: 500,
+      maxBootstrapsPerMonth: 100,
+      maxStorageMB: 50,
+      maxMonthlyCents: 200,
+      maxSubstrates: 1,
+    },
     stripePriceEnvKey: "STRIPE_PRICE_FREE_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_FREE",
     features: [
       { name: "500 atoms", included: true },
       { name: "100 bootstraps / month", included: true },
       { name: "50 MB storage", included: true },
+      { name: "1 substrate instance", included: true },
+      { name: "$2/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
       { name: "MCP native", included: true },
       { name: "Community support", included: true },
-      { name: "Email support", included: false },
-      { name: "Priority support", included: false },
     ],
   },
   {
@@ -82,19 +92,25 @@ export const TIERS: Tier[] = [
     description: "For individual developers building with persistent memory.",
     badge: null,
     cta: "Get Indie",
-    limits: { maxAtoms: 10_000, maxBootstrapsPerMonth: 1_000, maxStorageMB: 500 },
+    limits: {
+      maxAtoms: 10_000,
+      maxBootstrapsPerMonth: 1_000,
+      maxStorageMB: 500,
+      maxMonthlyCents: 1500,
+      maxSubstrates: 2,
+    },
     stripePriceEnvKey: "STRIPE_PRICE_INDIE_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_INDIE",
     features: [
       { name: "10,000 atoms", included: true },
       { name: "1,000 bootstraps / month", included: true },
       { name: "500 MB storage", included: true },
+      { name: "2 substrate instances", included: true },
+      { name: "$15/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
       { name: "MCP native", included: true },
       { name: "Email support (48 hr SLA)", included: true },
-      { name: "Priority support", included: false },
-      { name: "Knowledge graph edges", included: false },
     ],
   },
   {
@@ -104,19 +120,26 @@ export const TIERS: Tier[] = [
     description: "For power users with large knowledge bases.",
     badge: "Most Popular",
     cta: "Get Pro",
-    limits: { maxAtoms: 100_000, maxBootstrapsPerMonth: 10_000, maxStorageMB: 2_048 },
+    limits: {
+      maxAtoms: 100_000,
+      maxBootstrapsPerMonth: 10_000,
+      maxStorageMB: 2_048,
+      maxMonthlyCents: 5000,
+      maxSubstrates: 3,
+    },
     stripePriceEnvKey: "STRIPE_PRICE_PRO_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_PRO",
     features: [
       { name: "100,000 atoms", included: true },
       { name: "10,000 bootstraps / month", included: true },
       { name: "2 GB storage", included: true },
+      { name: "3 substrate instances", included: true },
+      { name: "$50/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
       { name: "MCP native", included: true },
       { name: "Knowledge graph edges", included: true },
       { name: "Priority support (24 hr SLA)", included: true },
-      { name: "Custom domain", included: false },
     ],
   },
   {
@@ -126,13 +149,21 @@ export const TIERS: Tier[] = [
     description: "For teams that need shared memory across agents.",
     badge: null,
     cta: "Get Team",
-    limits: { maxAtoms: 500_000, maxBootstrapsPerMonth: -1, maxStorageMB: 10_240 },
+    limits: {
+      maxAtoms: 500_000,
+      maxBootstrapsPerMonth: -1,
+      maxStorageMB: 10_240,
+      maxMonthlyCents: 12000,
+      maxSubstrates: 5,
+    },
     stripePriceEnvKey: "STRIPE_PRICE_TEAM_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_TEAM",
     features: [
       { name: "500,000 atoms", included: true },
       { name: "Unlimited bootstraps", included: true },
       { name: "10 GB storage", included: true },
+      { name: "5 substrate instances", included: true },
+      { name: "$120/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
       { name: "MCP native", included: true },
@@ -144,9 +175,7 @@ export const TIERS: Tier[] = [
 ];
 
 /** Lookup by canonical ID. */
-export const TIERS_BY_ID = Object.fromEntries(
-  TIERS.map((t) => [t.id, t]),
-) as Record<TierId, Tier>;
+export const TIERS_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t])) as Record<TierId, Tier>;
 
 /** All canonical billing tier IDs in upgrade order (cheapest → most expensive). */
 export const TIER_ORDER: TierId[] = ["free", "indie", "pro", "team"];
@@ -171,9 +200,7 @@ export const TIER_PRICES: Record<TierId, number> = Object.fromEntries(
 export function getTier(id: string): Tier {
   const tier = TIERS_BY_ID[id as TierId];
   if (!tier) {
-    throw new Error(
-      `Unknown tier: "${id}". Must be one of: ${TIER_ORDER.join(", ")}`,
-    );
+    throw new Error(`Unknown tier: "${id}". Must be one of: ${TIER_ORDER.join(", ")}`);
   }
   return tier;
 }
@@ -225,8 +252,7 @@ export const ENTERPRISE_TIERS: EnterpriseTier[] = [
     description: "For mission-critical AI systems.",
     badge: null,
     cta: "Contact Sales",
-    ctaLink:
-      "mailto:entityone22@gmail.com?subject=Enterprise%20Cloud%20Inquiry",
+    ctaLink: "mailto:entityone22@gmail.com?subject=Enterprise%20Cloud%20Inquiry",
     features: [
       { name: "Unlimited atoms", included: true },
       { name: "Unlimited bootstraps", included: true },
@@ -248,8 +274,7 @@ export const ENTERPRISE_TIERS: EnterpriseTier[] = [
     description: "Complete control and sovereignty.",
     badge: null,
     cta: "Contact Sales",
-    ctaLink:
-      "mailto:entityone22@gmail.com?subject=Enterprise%20Self-Hosted%20Inquiry",
+    ctaLink: "mailto:entityone22@gmail.com?subject=Enterprise%20Self-Hosted%20Inquiry",
     features: [
       { name: "Full source code + commercial license", included: true },
       { name: "Deploy on your own cloud", included: true },

@@ -1,0 +1,80 @@
+---
+title: Spend Caps
+description: How platform spend caps work — what they protect against, the 15-minute grace period, and how to adjust your cap.
+section: Limits & Behaviour
+order: 2
+---
+
+# Spend Caps
+
+Spend caps protect you from unexpected overage charges. Every account has a platform-enforced monthly spend cap based on their tier. You can set an additional custom cap below the platform ceiling.
+
+## How spend caps work
+
+A spend cap is a maximum monthly spend limit in dollars. When your month-to-date spend (subscription + overages) approaches or exceeds the cap, the system:
+
+1. **Issues a warning** — a `cap_hit` billing event is created and you receive a notification
+2. **Waits 15 minutes** — the grace period gives you time to raise your cap if needed
+3. **Pauses your instance** — if still at cap after 15 minutes, your substrate is paused and API access is suspended until your cap is raised or the month resets
+
+The 15-minute grace period means your AI's current session is not immediately interrupted when you hit the cap — it has time to finish critical operations before the pause takes effect.
+
+## Platform ceilings
+
+Each tier has a maximum monthly cap that cannot be exceeded:
+
+| Tier | Platform ceiling |
+|---|---|
+| **Indie** | $15 / month |
+| **Pro** | $45 / month |
+| **Team** | $120 / month |
+
+These ceilings exist to prevent runaway automation from producing unbounded charges. They cannot be removed.
+
+## Viewing your current cap
+
+Go to **Dashboard → Billing → Spend Caps**. You will see:
+
+- Your current monthly cap and the platform ceiling for your tier
+- Whether you are currently at cap
+- How much you have spent this month
+
+## Setting a custom cap
+
+You can set a cap below the platform ceiling if you want tighter control:
+
+1. Go to **Dashboard → Billing → Spend Caps → Set Cap**
+2. Enter a limit in dollars — must be between $0 and the platform ceiling
+3. Save
+
+Your custom cap takes effect immediately. If your current spend is already above your new cap, the system will start the 15-minute grace period immediately.
+
+## Adjusting a cap
+
+**Raising your cap:** You can raise your cap up to the platform ceiling at any time. Changes take effect immediately — if your instance was paused due to cap, it resumes within 30 seconds of raising the cap.
+
+**Lowering your cap:** You can lower your cap at any time. If your current spend is already above the new lower cap, the grace period begins immediately.
+
+**Removing your cap:** You cannot remove the platform-enforced cap. However, you can set it to the ceiling (the maximum allowed value) to maximise your effective limit. If you set an optional custom cap, you can delete it — custom caps are deletable, platform caps are not.
+
+## What counts toward the cap
+
+The spend cap covers:
+
+- Your monthly subscription fee (Indie: $9, Pro: $29, Team: $79)
+- Atom overage charges ($0.001 per atom above tier limit per month)
+
+The subscription fee alone may constitute most of your cap on lower tiers. For example, on Indie the subscription is $9 and the ceiling is $15 — you have $6 of headroom for overages before hitting the ceiling.
+
+## During a cap pause
+
+When your instance is paused due to a spend cap:
+
+- All API requests return `503 Service Unavailable`
+- MCP tool calls fail with a `cap_paused` error
+- Your atoms are safe — nothing is deleted during a pause
+- Raise your cap (or wait for the monthly reset) to resume
+
+## Monthly reset
+
+Spend caps reset at the start of your billing cycle (the same date each month as your subscription renewal). If your instance is paused due to cap, it automatically resumes at the start of the new billing cycle.

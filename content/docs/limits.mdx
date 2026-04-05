@@ -1,0 +1,85 @@
+---
+title: Tier Limits & Caps
+description: Exact limits for every tier — atoms, bootstraps, storage, compute — and what happens when you hit them.
+section: Limits & Behaviour
+order: 1
+---
+
+# Tier Limits & Caps
+
+Every tier has hard limits on atoms, bootstraps, storage, and compute resources. This page explains exactly what each limit means, where it is enforced, and what your AI experiences when a limit is reached.
+
+## Limits per tier
+
+| Limit | Indie | Pro | Team |
+|---|---|---|---|
+| **Max atoms** | 10,000 | 100,000 | 500,000 |
+| **Bootstraps / month** | 1,000 | 10,000 | 20,000 |
+| **Storage** | 500 MB | 2 GB | 10 GB |
+| **Container memory** | 512 MB | 1 GB | 2 GB |
+| **Container CPU** | 1 vCPU | 1 vCPU | 2 vCPU |
+| **Hosting model** | Shared host | Shared host | Dedicated droplet |
+
+## What each limit means
+
+### Atoms (max stored)
+
+The maximum number of atoms your substrate will hold simultaneously. This is a hard cap — once reached, `session_checkpoint` calls that would exceed the limit return a `cap_hit` error.
+
+The limit applies to **live (non-tombstoned) atoms**. When you tombstone an atom via `session_checkpoint`, it is removed from the count. If you are near the limit, tombstone obsolete atoms to reclaim capacity.
+
+**What your AI sees when the cap is hit:**
+```
+MCP tool error: cap_hit — maximum atoms reached (10000/10000).
+Tombstone unused atoms or upgrade your plan.
+```
+
+**Overage pricing:** If you exceed your atom limit, excess atoms are billed at **$0.001 per atom per month** above your tier limit. This only applies if you deliberately work above the cap via the API. The MCP tools enforce the limit by default.
+
+### Bootstraps per month
+
+The maximum number of `memory_session_bootstrap` calls per calendar month (resets on your billing cycle date). This is enforced at the API level — once exhausted, bootstrap calls return `429 Too Many Requests` until the next cycle.
+
+**How to plan your bootstrap usage:**
+- Each Claude session uses 1 bootstrap call
+- Indie: 1,000/month ≈ 33 sessions/day
+- Pro: 10,000/month ≈ 333 sessions/day
+- Team: 20,000/month ≈ 667 sessions/day
+
+If you are hitting the bootstrap limit regularly, consider upgrading your plan. You can check your remaining bootstraps on the Dashboard under **My Substrate → Usage**.
+
+### Storage
+
+Total disk storage for your atom values and Merkle tree data. In practice this limit is rarely hit before the atom cap — average atom values are small (under 200 bytes each). Storage is monitored but soft-capped: you receive a warning when you approach the limit, and the system starts rejecting new atom writes once the limit is exceeded.
+
+### Container memory and CPU
+
+These are the compute resources allocated to your MMPM container. They affect how quickly your instance can process parallel requests and how large your in-memory Markov model can grow. You do not configure these directly — they are set automatically by your tier and adjusted during tier changes.
+
+## What happens when limits are hit
+
+| Limit hit | Behaviour |
+|---|---|
+| Atom cap | New writes rejected with `cap_hit`. Existing atoms unaffected. |
+| Bootstrap cap | Bootstrap calls return `429`. Other API operations (read, write atoms) still work. |
+| Storage cap | New writes rejected with `storage_full`. Read operations unaffected. |
+| Spend cap | Instance paused after 15-minute grace period (see [Spend Caps](/docs/spend-caps)). |
+
+## Checking your current usage
+
+Go to **Dashboard → My Substrate**. You will see live counters for:
+- Atoms used vs. limit
+- Bootstraps used this month vs. limit
+- Storage used vs. limit
+
+The Dashboard refreshes every 60 seconds during active use.
+
+## How to reduce atom count
+
+If you are approaching the atom limit:
+
+1. **Tombstone obsolete atoms** — in your AI config, have Claude call `session_checkpoint` with a `tombstone` array containing keys that are no longer relevant
+2. **Review your atom naming** — atoms with similar conflict keys replace each other automatically; if you name atoms correctly, redundant atoms overwrite stale ones
+3. **Audit your atoms** — call `memory_list_atoms` with a prefix filter to review what is stored and identify candidates for removal
+
+Tombstoned atoms are removed from the live count within seconds of being recorded.

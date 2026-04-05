@@ -1,0 +1,21 @@
+{
+  "name": "Parametric Memory",
+  "short_name": "Param Memory",
+  "description": "Persistent, verifiable memory for AI agents.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#020617",
+  "theme_color": "#36aaf5",
+  "icons": [
+    {
+      "src": "/brand/favicon-192.png",
+      "sizes": "192x192",
+      "type": "image/png"
+    },
+    {
+      "src": "/brand/favicon-512.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

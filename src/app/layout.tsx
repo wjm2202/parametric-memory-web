@@ -30,6 +30,16 @@ export const metadata: Metadata = {
     default: "Parametric Memory — Persistent, Verifiable Memory for AI",
     template: "%s | Parametric Memory",
   },
+  icons: {
+    icon: [
+      { url: "/favicon.ico", sizes: "any" },
+      { url: "/brand/favicon-32x32.png", type: "image/png", sizes: "32x32" },
+      { url: "/brand/favicon-192.png", type: "image/png", sizes: "192x192" },
+    ],
+    apple: [{ url: "/brand/apple-touch-icon.png", sizes: "180x180" }],
+    other: [{ rel: "mask-icon", url: "/brand/favicon-32x32.png" }],
+  },
+  manifest: "/site.webmanifest",
   description:
     "Persistent, verifiable memory for AI agents. Dedicated instances from $9/mo with cryptographic Merkle proofs, Markov prediction, and MCP-native integration.",
   metadataBase: new URL("https://parametric-memory.dev"),
@@ -41,12 +51,21 @@ export const metadata: Metadata = {
     siteName: "Parametric Memory",
     locale: "en_US",
     type: "website",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory — Persistent, verifiable AI memory. 0.045ms recall · 64% Markov hit rate · From $9/mo.",
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
     description:
       "Enterprise-grade AI memory with cryptographic Merkle proofs. Dedicated instances from $9/mo.",
+    images: ["https://parametric-memory.dev/brand/og.png"],
   },
   robots: {
     index: true,
@@ -76,11 +95,27 @@ const organizationJsonLd = {
   description:
     "Enterprise-grade persistent memory for AI with cryptographic Merkle proofs, Markov prediction, and MCP-native integration.",
   foundingDate: "2025",
-  contactPoint: {
-    "@type": "ContactPoint",
-    email: "entityone22@gmail.com",
-    contactType: "sales",
+  sameAs: ["https://github.com/wjm2202/Parametric-Memory"],
+  image: {
+    "@type": "ImageObject",
+    url: "https://parametric-memory.dev/brand/og.png",
+    width: "1200",
+    height: "630",
   },
+  contactPoint: [
+    {
+      "@type": "ContactPoint",
+      email: "entityone22@gmail.com",
+      contactType: "sales",
+      availableLanguage: "English",
+    },
+    {
+      "@type": "ContactPoint",
+      email: "entityone22@gmail.com",
+      contactType: "technical support",
+      availableLanguage: "English",
+    },
+  ],
 };
 
 const webApplicationJsonLd = {
@@ -113,6 +148,130 @@ const webApplicationJsonLd = {
   ],
 };
 
+/* ── SoftwareApplication — richer schema for AI search engines ──────────────
+ * Separate from WebApplication. Google AI Mode, Perplexity, and ChatGPT use
+ * SoftwareApplication + Offer arrays to surface pricing and feature data in
+ * AI-generated answers. Includes all 5 pricing tiers.
+ */
+const softwareApplicationJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  name: "Parametric Memory",
+  alternateName: "MMPM",
+  url: "https://parametric-memory.dev",
+  applicationCategory: "DeveloperApplication",
+  applicationSubCategory: "AI Memory Infrastructure",
+  softwareVersion: "1.0",
+  operatingSystem: "Linux, Docker, Any (SaaS)",
+  inLanguage: "en",
+  description:
+    "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances, MCP-native, no shared infrastructure.",
+  featureList: [
+    "Cryptographic Merkle proofs (RFC 6962 SHA-256)",
+    "Markov-chain predictive recall (64% hit rate)",
+    "Sub-millisecond access latency (0.045ms p50, 1.2ms p99)",
+    "6,423 ops/sec throughput",
+    "MCP-native integration (25+ tools, Streamable HTTP)",
+    "Compact proofs (37% token savings — 4,102 → 2,580 tokens)",
+    "LevelDB with JumpHash sharding (4 independent Merkle shards)",
+    "Dedicated instances — zero shared infrastructure",
+    "OAuth2 and Bearer token authentication",
+    "Knowledge graph edges with semantic relationships",
+    "14-day free trial on all paid plans",
+    "Docker Compose deployment (DigitalOcean + nginx + Let's Encrypt)",
+  ],
+  publisher: {
+    "@type": "Organization",
+    name: "Parametric Memory",
+    url: "https://parametric-memory.dev",
+  },
+  offers: [
+    {
+      "@type": "Offer",
+      name: "Indie",
+      description: "Your personal AI memory. 10,000 atoms, up to 33 Claude sessions/day.",
+      price: "9",
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "9",
+        priceCurrency: "USD",
+        billingDuration: "P1M",
+        unitCode: "MON",
+      },
+      availability: "https://schema.org/InStock",
+      url: "https://parametric-memory.dev/pricing#indie",
+    },
+    {
+      "@type": "Offer",
+      name: "Pro",
+      description:
+        "For serious daily AI development. 100,000 atoms, up to 333 Claude sessions/day.",
+      price: "29",
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "29",
+        priceCurrency: "USD",
+        billingDuration: "P1M",
+        unitCode: "MON",
+      },
+      availability: "https://schema.org/InStock",
+      url: "https://parametric-memory.dev/pricing#pro",
+    },
+    {
+      "@type": "Offer",
+      name: "Team",
+      description: "Your team's shared institutional memory. 500,000 atoms, unlimited bootstraps.",
+      price: "79",
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "79",
+        priceCurrency: "USD",
+        billingDuration: "P1M",
+        unitCode: "MON",
+      },
+      availability: "https://schema.org/InStock",
+      url: "https://parametric-memory.dev/pricing#team",
+    },
+    {
+      "@type": "Offer",
+      name: "Enterprise Cloud",
+      description:
+        "Managed enterprise tier. 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML, SOC 2 artifacts.",
+      price: "299",
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "299",
+        priceCurrency: "USD",
+        billingDuration: "P1M",
+        unitCode: "MON",
+      },
+      availability: "https://schema.org/InStock",
+      url: "https://parametric-memory.dev/pricing",
+    },
+    {
+      "@type": "Offer",
+      name: "Enterprise Self-Hosted",
+      description:
+        "Commercial license. Deploy on your own cloud (AWS/GCP/Azure). Full source access, architecture review.",
+      price: "499",
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "499",
+        priceCurrency: "USD",
+        billingDuration: "P1M",
+        unitCode: "MON",
+      },
+      availability: "https://schema.org/InStock",
+      url: "https://parametric-memory.dev/pricing",
+    },
+  ],
+};
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
     <html
@@ -125,11 +284,21 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(organizationJsonLd) }}
         />
-        {/* AI-first: WebApplication structured data */}
+        {/* AI-first: WebApplication structured data (Google rich results) */}
         <script
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(webApplicationJsonLd) }}
         />
+        {/* AI-first: SoftwareApplication with full pricing offers
+            Used by Google AI Mode, Perplexity, ChatGPT for product + pricing answers */}
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{ __html: JSON.stringify(softwareApplicationJsonLd) }}
+        />
+        {/* AI crawler discoverability — llms.txt standard (llmstxt.org) */}
+        <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM-readable site index" />
+        {/* Signal content is human-authored and AI-indexable */}
+        <meta name="ai-content-declaration" content="human-authored" />
       </head>
       <body className="min-h-screen">
         <BetaBanner />

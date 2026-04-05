@@ -1,0 +1,64 @@
+---
+title: Upgrade Plan
+description: How to upgrade from Indie to Pro or Team — what happens to your instance, your billing, and your data.
+section: Subscription Management
+order: 1
+---
+
+# Upgrade Plan
+
+You can upgrade your plan at any time from the Dashboard. Upgrades are processed immediately and billed on a prorated basis.
+
+## How to upgrade
+
+1. Go to **Dashboard → Billing → Manage Subscription**
+2. You will be redirected to the Stripe Billing Portal
+3. Select **Upgrade Plan** and choose your new tier
+4. Confirm the change — Stripe shows you the prorated amount due immediately
+5. Click **Confirm** — your card is charged for the prorated difference
+
+You are redirected back to your Dashboard. The tier change is queued and processed within 30–60 seconds for shared-tier upgrades, or up to 5 minutes when upgrading to Team.
+
+## What happens to your instance
+
+### Indie → Pro (shared to shared)
+
+This is the fastest path. The tier-change worker:
+1. Updates your container's resource limits (CPU, memory, atom cap, bootstrap cap)
+2. Restarts your container to apply the new limits — this takes under 30 seconds
+3. Updates your subscription record
+
+Your MCP endpoint stays the same. No reconnection needed. Your atoms are not touched.
+
+### Any tier → Team (shared to dedicated)
+
+Upgrading to Team provisions a dedicated DigitalOcean droplet for your account. This is a heavier operation:
+
+1. Your existing shared container is set to `read_only` while the new droplet provisions
+2. A new dedicated droplet (2 vCPU, 4 GB RAM) is created and configured
+3. Your MMPM service is deployed on the dedicated droplet with Team-tier limits
+4. Once the new instance passes its health check, it becomes your active endpoint
+5. The old shared container is decommissioned
+
+This process takes approximately 3–5 minutes. During this window you have read-only access to your existing atoms. There is no data migration — the dedicated instance starts fresh. Your atoms are preserved via MMPM's own persistence layer (they exist in the new instance because they were never deleted; the instance just got a new host).
+
+> **Note on MCP endpoint:** When upgrading to Team, your MCP URL will change to reflect your new dedicated instance. Check your Dashboard for the updated URL and update your AI client config accordingly.
+
+## Billing for upgrades
+
+Stripe prorates upgrades immediately. If you are on Indie ($9/month) and upgrade to Pro ($29/month) halfway through your billing cycle, you pay:
+- A credit for unused Indie days (~$4.50)
+- A charge for remaining Pro days (~$14.50)
+- Net charge: ~$10 immediately
+
+From the next billing cycle, you are charged the full Pro price.
+
+## After upgrading
+
+- Your new limits take effect immediately (higher atom cap, more bootstraps, more storage)
+- If you upgraded to Team, update your MCP endpoint URL in your Claude config
+- Check **Dashboard → My Substrate** to confirm the new tier and limits are shown correctly
+
+## Upgrading during a trial
+
+You can upgrade during your 14-day trial at any time. The trial clock continues on your new tier — if you are on day 3 of a Pro trial and upgrade to Team, you have 11 days remaining on your Team trial before billing starts.

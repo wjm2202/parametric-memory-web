@@ -1,0 +1,70 @@
+---
+title: Merkle Proofs
+description: How Parametric Memory uses RFC 6962 Merkle trees to make every recalled atom cryptographically verifiable.
+section: Concepts
+order: 2
+---
+
+# Merkle Proofs
+
+Every atom stored in Parametric Memory is inserted into a **Merkle tree** (RFC 6962
+Certificate Transparency spec). When you recall an atom, you receive not just its value
+but a **Merkle proof** — enough data to independently verify that the atom is part of the
+committed tree, without trusting the server.
+
+## Why this matters
+
+Standard databases require you to trust the server. If a memory system returns a fact,
+you have no way to know if it was tampered with since it was stored. Merkle proofs
+change this:
+
+```
+Store:  hash(atom) → inserted into tree → new rootHash published
+Recall: atom + sibling_hashes → client recomputes root → compare to known root
+```
+
+If the computed root matches the published root, the atom is authentic.
+
+## Proof structure
+
+```ts
+interface MerkleProof {
+  leafHash: string; // hash(key + value + version)
+  siblings: string[]; // sibling hashes from leaf to root
+  rootHash: string; // tree root at time of proof generation
+  leafIndex: number; // position of this atom in the tree
+  treeSize: number; // number of leaves at proof generation time
+}
+```
+
+## Verifying a proof
+
+The SDK exposes a `verify` helper that runs the proof locally:
+
+```ts title="verify-example.ts" {4}
+import { memory } from "./lib/memory";
+
+const { atom, proof } = await memory.recall("v1.user.Glen.preference.theme");
+const valid = await memory.verify(atom, proof);
+
+if (!valid) {
+  throw new Error("Memory tampered — proof invalid");
+}
+```
+
+You can also verify raw proofs without the SDK using the `verify-merkle-proof`
+utility included in this repository at `src/lib/verify-merkle-proof.ts`.
+
+## Consistency proofs
+
+For auditing, you can request a **consistency proof** that proves the current tree
+is a superset of a previous tree — nothing was deleted:
+
+```ts
+const proof = await memory.consistencyProof({
+  fromSize: 500, // tree size at an earlier checkpoint
+  toSize: 1200, // current tree size
+});
+```
+
+> Consistency proofs are only available on **Pro** and **Team** tiers.

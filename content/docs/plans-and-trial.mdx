@@ -1,0 +1,72 @@
+---
+title: Plans & Trial
+description: The three paid tiers, what each one includes, and exactly how the 14-day free trial works.
+section: Getting Started
+order: 2
+---
+
+# Plans & Trial
+
+Parametric Memory offers three paid tiers and a 14-day free trial on all of them. There is no free tier — the trial is a fully functional instance at your chosen plan level, with no credit card charge until day 15.
+
+## The tiers
+
+| | **Indie** | **Pro** | **Team** |
+|---|---|---|---|
+| **Price** | $9 / month | $29 / month | $79 / month |
+| **Atoms** | 10,000 | 100,000 | 500,000 |
+| **Bootstraps / month** | 1,000 (~33/day) | 10,000 (~333/day) | 20,000 (~667/day) |
+| **Storage** | 500 MB | 2 GB | 10 GB |
+| **Hosting** | Shared host | Shared host | Dedicated droplet |
+| **Container memory** | 512 MB | 1 GB | 2 GB |
+| **Container CPU** | 1 vCPU | 1 vCPU | 2 vCPU |
+
+### What "bootstraps" means
+
+A bootstrap is one call to `memory_session_bootstrap` — the call your AI makes at the start of each session to load relevant context. Each session typically uses one bootstrap. 1,000/month covers roughly 33 Claude sessions per day; 10,000/month covers roughly 333.
+
+### What "atoms" means
+
+An atom is one named piece of memory — one key/value pair. 10,000 atoms covers approximately 18 months of daily professional use for a solo developer. You can check your current usage on the Dashboard at any time.
+
+### Overage pricing
+
+If you exceed your atom limit, atoms are charged at **$0.001 per atom** above your tier limit. Overages are reported to Stripe via metered billing and appear on your next invoice. You can set a [spend cap](/docs/spend-caps) to prevent unexpected overage charges.
+
+### Indie vs Pro — which should I choose?
+
+- **Indie** if you use Claude for personal projects, solo development, or moderate daily AI use
+- **Pro** if you run multiple agents, have intensive daily use, or frequently hit the bootstrap limit on Indie
+
+### When to choose Team
+
+Team gives you a dedicated DigitalOcean droplet (2 vCPU, 4 GB RAM) rather than a shared container. Choose Team when:
+- You need guaranteed compute isolation from other customers
+- You want 500,000+ atoms for large-scale institutional memory
+- Multiple people on your team will share the same memory instance
+
+## The 14-day trial
+
+Every new account starts with a 14-day free trial at the tier you select at signup.
+
+**How it works:**
+- You choose your tier on the pricing page and enter your card at checkout
+- Stripe records your card but does **not charge it** until the trial ends
+- You get a fully provisioned instance immediately — same limits as a paying subscriber
+- On day 15, Stripe charges your card and your subscription becomes active
+- You receive an email reminder before day 15
+
+**If you cancel before day 15:**
+- No charge is made
+- Your instance is moved to read-only status and deprovisioned after a short window
+- You can resubscribe at any time
+
+**What happens at the end of the trial if you do nothing:**
+- Stripe charges your card automatically
+- Your subscription becomes active — nothing changes on your instance
+
+> **There is no free tier after the trial.** If your payment fails at day 15 or you cancel, your instance enters read-only mode. See [Payment Failures](/docs/payment-failures) for what happens next.
+
+## Changing plans
+
+You can upgrade or downgrade at any time from the Dashboard. See [Upgrade Plan](/docs/subscription/upgrade) and [Downgrade Plan](/docs/subscription/downgrade) for the full details of what happens to your instance during each transition.

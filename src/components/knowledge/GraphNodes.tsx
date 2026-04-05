@@ -182,8 +182,15 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
     // KG-06: Read reactive state directly from store inside useFrame.
     // Removes the loadingAtoms/selectedAtom/hoveredAtom selectors from the
     // component — no more re-renders on every loading state change during seed.
-    const { loadingAtoms, hoveredAtom, selectedAtom, searchHits, visibleAtoms, degreeInfluence, bridgeAtom } =
-      useKnowledgeStore.getState();
+    const {
+      loadingAtoms,
+      hoveredAtom,
+      selectedAtom,
+      searchHits,
+      visibleAtoms,
+      degreeInfluence,
+      bridgeAtom,
+    } = useKnowledgeStore.getState();
 
     // Detect slider change — force one flush frame so sizes update when settled
     const degreeChanged = degreeInfluence !== prevDegreeInfluenceRef.current;

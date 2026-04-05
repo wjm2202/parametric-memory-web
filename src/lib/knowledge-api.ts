@@ -227,8 +227,10 @@ export async function fetchAllStructuralEdges(): Promise<
       signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
     });
     if (!res.ok) return [];
-    const data: { edges: Array<{ source: string; target: string; type: string; confidence?: number }>; total: number } =
-      await res.json();
+    const data: {
+      edges: Array<{ source: string; target: string; type: string; confidence?: number }>;
+      total: number;
+    } = await res.json();
     return data.edges ?? [];
   } catch {
     return [];

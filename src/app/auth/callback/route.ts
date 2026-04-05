@@ -85,7 +85,8 @@ export async function GET(request: NextRequest): Promise<Response> {
 
   // Set the session cookie — httpOnly so JS can't read it.
   // SEC: secure must be false on localhost (HTTP) or the browser silently drops the cookie.
-  const isLocalhost = request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
+  const isLocalhost =
+    request.nextUrl.hostname === "localhost" || request.nextUrl.hostname === "127.0.0.1";
   const cookieStore = await cookies();
   cookieStore.set(SESSION_COOKIE, sessionToken!, {
     httpOnly: true,
@@ -103,7 +104,11 @@ export async function GET(request: NextRequest): Promise<Response> {
   const postLoginRedirect = rawRedirect ? decodeURIComponent(rawRedirect) : null;
   let destination = "/admin";
 
-  if (postLoginRedirect && postLoginRedirect.startsWith("/") && !postLoginRedirect.startsWith("//")) {
+  if (
+    postLoginRedirect &&
+    postLoginRedirect.startsWith("/") &&
+    !postLoginRedirect.startsWith("//")
+  ) {
     destination = postLoginRedirect;
     // Clear the redirect cookie — it's single-use
     cookieStore.delete("mmpm_redirect");

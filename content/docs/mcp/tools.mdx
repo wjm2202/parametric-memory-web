@@ -1,0 +1,202 @@
+---
+title: MCP Tool Reference
+description: Complete reference for every MCP tool exposed by Parametric Memory — parameters, return values, and when to use each one.
+section: MCP Integration
+order: 3
+---
+
+# MCP Tool Reference
+
+These are the tools your AI has access to once connected via MCP. Each tool maps directly to an API operation on your instance.
+
+## Core tools
+
+### `memory_session_bootstrap`
+
+Load relevant context at the start of a session. This is the first call your AI should make in any new conversation that needs prior context.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `objective` | string | Short description of this session's goal. Used to surface relevant atoms. |
+| `maxTokens` | number | Maximum tokens to include in the response. Default: 1200. |
+| `highImpact` | boolean | If true, raises the evidence threshold — more conservative but higher quality. Use for deploy/architecture decisions. |
+| `domain` | string | Atom key of the current domain (e.g. `v1.domain.myproject`). Boosts atoms linked to this domain. |
+
+**Returns:** A structured payload with:
+- `atoms` — array of relevant stored atoms with their values and metadata
+- `conflictingFacts` — pairs of atoms that contradict each other (need resolution)
+- `goals`, `constraints`, `preferences` — any atoms tagged as such
+
+**When to call:** Once per conversation, on the first user message. Do not call on every prompt — it is expensive.
+
+---
+
+### `session_checkpoint`
+
+Persist atoms (facts, states, procedures, tasks) and the relationships between them. Call this as knowledge forms — do not wait until the end of the session.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `atoms` | string[] | Array of atoms in `"key = value"` format, e.g. `"v1.fact.db_url = postgres://..."` |
+| `edges` | object[] | Relationships between atoms: `{ source, target, type, confidence? }` |
+| `tombstone` | string[] | Keys of atoms to mark as superseded/deleted |
+| `taskContext` | string | Atom key of the current task. Auto-attaches `produced_by` edges. |
+
+**Edge types:**
+
+| Type | When to use |
+|---|---|
+| `supersedes` | New atom replaces an older one |
+| `member_of` | Atom belongs to a hub cluster |
+| `depends_on` | Atom requires another to be true first |
+| `constrains` | Atom limits what another can do |
+| `references` | Atom mentions or uses another |
+| `derived_from` | Finding came from investigating another atom |
+| `produced_by` | Atom was created during a task (use `taskContext` instead) |
+
+**Example:**
+
+```json
+{
+  "atoms": [
+    "v1.fact.payment_provider = Stripe",
+    "v1.state.current_sprint = Sprint 12 — subscription billing"
+  ],
+  "edges": [
+    {
+      "source": "v1.state.current_sprint",
+      "target": "v1.fact.payment_provider",
+      "type": "depends_on"
+    }
+  ]
+}
+```
+
+---
+
+### `memory_search`
+
+Search for atoms by keyword or semantic query. Use when you need to find atoms whose keys you don't know exactly.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `query` | string | Search query — keyword or phrase |
+| `limit` | number | Max results to return (default: 10) |
+| `domain` | string | Restrict search to atoms linked to this domain |
+
+**Returns:** Array of matching atoms ordered by relevance score.
+
+---
+
+### `memory_access`
+
+Retrieve a specific atom by its exact key.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `key` | string | Exact atom key, e.g. `v1.fact.database_url` |
+| `includeProof` | boolean | If true, includes a Merkle proof for verification |
+
+**Returns:** The atom value, metadata, and optionally a Merkle proof.
+
+---
+
+### `memory_train`
+
+Reinforce memory arcs — increases the weight of transitions between atoms so the Markov model pre-fetches them more reliably in future sessions.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `atoms` | string[] | Keys of atoms to reinforce |
+| `passes` | number | Number of training passes (1–3 recommended) |
+
+**When to use:**
+- After user corrections: 3 passes
+- After proven successful workflows: 2 passes
+- General reinforcement: 1 pass
+
+> **Important:** Always call `session_checkpoint` before `memory_train`. Training skips atoms that haven't been persisted yet.
+
+---
+
+### `memory_context`
+
+Get all relationships (edges) for one or more atoms — see what connects to what.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `keys` | string[] | Atom keys to look up |
+| `depth` | number | How many hops to follow (default: 1, max: 3) |
+
+---
+
+### `memory_associate`
+
+Find cross-domain connections between recently stored atoms. Used internally by the live association agent — you can also call it directly to discover unexpected relationships.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `atoms` | string[] | Recently stored atom keys to find associations for |
+| `domain` | string | Current domain atom key |
+| `allDomains` | string[] | All known domain keys (for cross-domain detection) |
+
+---
+
+### `memory_list_atoms`
+
+List all atoms stored in your substrate, optionally filtered.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `prefix` | string | Filter to atoms whose keys start with this string |
+| `limit` | number | Max results (default: 100) |
+| `offset` | number | Pagination offset |
+
+---
+
+## Usage patterns
+
+### Minimal session pattern
+
+```
+Session start   → memory_session_bootstrap(objective, maxTokens: 1200)
+During session  → session_checkpoint(new atoms and edges as they form)
+Session end     → session_checkpoint(updated state atoms, tombstone stale ones)
+                → memory_train(key arcs, passes: 2)
+```
+
+### Correction pattern
+
+When a user corrects Claude's behaviour, this is the highest-priority memory event:
+
+```
+1. session_checkpoint({ atoms: ["v1.procedure.always_X = ..."], edges: [constrains, member_of hub_corrections] })
+2. memory_train({ atoms: ["v1.procedure.always_X"], passes: 3 })
+3. Apply the correction for the rest of this session and all future sessions
+```
+
+### High-stakes session pattern
+
+For deployments, architecture decisions, or production changes:
+
+```
+memory_session_bootstrap({ objective, highImpact: true, evidenceThreshold: 0.75 })
+```
+
+This is more conservative — it only returns atoms with strong evidence, avoiding speculative or low-confidence context.

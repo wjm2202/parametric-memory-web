@@ -1,0 +1,61 @@
+---
+title: Customer Lifecycle
+description: Visual overview of every state your account and instance can be in — from signup to cancellation.
+section: Getting Started
+order: 4
+---
+
+# Customer Lifecycle
+
+The diagram below shows every state your account and memory instance can be in, and every transition between them. Use it as a reference when planning how to manage your subscription.
+
+## Full lifecycle diagram
+
+<img
+  src="/docs/customer-lifecycle.svg"
+  alt="Parametric Memory customer lifecycle flowchart"
+  style={{ width: "100%", borderRadius: "8px", border: "1px solid #2d3150", marginBottom: "2rem" }}
+/>
+
+## State descriptions
+
+### Account states
+
+| State | Meaning |
+|---|---|
+| `pending_payment` | Checkout started but not yet completed. Instance not yet provisioned. |
+| `active` | Subscription active (paying or in trial). Instance is `running`. |
+| `past_due` | Payment failed. Stripe is retrying. Instance stays running during retries. |
+| `suspended` | Payment failed after all retries exhausted. Instance paused. |
+| `cancelled` | Subscription cancelled. Instance enters 30-day grace period (read-only). |
+
+### Instance (substrate) states
+
+| State | Meaning |
+|---|---|
+| `provisioning` | Being set up. Usually takes under 2 minutes (shared) or 5 minutes (dedicated). |
+| `running` | Fully operational. All read and write operations available. |
+| `read_only` | Cancelled or downgraded during transition. You can read existing atoms and verify proofs. You cannot write new atoms or call bootstraps. |
+| `suspended` | Paused due to billing issue. No API access until payment is resolved. |
+| `deprovisioned` | Instance destroyed. Data permanently deleted. Occurs 30 days after cancellation if no resubscription. |
+
+## Key transitions explained
+
+### Signup → Running (~2 min)
+You complete the Stripe Checkout. Stripe fires `customer.subscription.created`. Our system creates your substrate record and queues provisioning. A container (or dedicated droplet for Team) is started and registered with our routing layer. Once the health check passes, status becomes `running`.
+
+### Upgrade (e.g. Indie → Pro)
+Stripe processes the upgrade immediately with proration. Our webhook handler queues a tier-change job. For shared-to-shared upgrades (Indie↔Pro), the container is restarted with higher resource limits — this takes under 30 seconds with no data loss. For a shared-to-dedicated upgrade (any tier → Team), a new dedicated droplet is provisioned while your old container remains in `read_only` — once the new instance is live, it becomes your active endpoint.
+
+### Downgrade (e.g. Team → Pro)
+Stripe schedules the downgrade for the next billing cycle. When the new cycle starts, our webhook handler queues a tier-change job. For dedicated-to-shared (Team → lower), your droplet is snapshotted and queued for destruction while a new shared container is provisioned. For shared-to-shared, limits are reduced and the container restarted.
+
+### Cancellation → 30-day grace period
+When you cancel, Stripe fires `customer.subscription.deleted` at the end of your billing period. Your instance immediately moves to `read_only`. You retain read access — you can still retrieve and verify your atoms for 30 days. On day 30, a data purge warning is sent, followed by deprovisioning 24 hours later.
+
+### Resubscription during grace period
+If you resubscribe before the 30-day window closes, your instance is re-provisioned from scratch. Your atoms are not migrated from the read-only instance — you start fresh. If you need to preserve your atoms, export them via the API before the grace period expires (see the Atoms API reference).
+
+## Billing cycle
+
+Your billing cycle starts on the day you first subscribe. For example, if you subscribe on the 10th of a month, you are billed on the 10th of each subsequent month. Upgrades are prorated immediately. Downgrades take effect at the start of your next billing cycle.

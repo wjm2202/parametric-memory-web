@@ -1,0 +1,85 @@
+---
+title: Cancel Subscription
+description: What happens when you cancel — the 30-day grace period, what you can and cannot do, and how to recover your data before it's deleted.
+section: Subscription Management
+order: 3
+---
+
+# Cancel Subscription
+
+Cancelling your subscription starts a 30-day grace period. Your instance does not disappear immediately — you have 30 days of read-only access to retrieve your data.
+
+## How to cancel
+
+1. Go to **Dashboard → Billing → Manage Subscription**
+2. You will be redirected to the Stripe Billing Portal
+3. Select **Cancel Subscription**
+4. Choose whether to cancel immediately or at the end of the current period
+5. Confirm the cancellation
+
+If you cancel at the end of the current period, your instance stays fully active (read and write) until that date. When the period ends, the subscription is terminated and the grace period begins.
+
+## The 30-day grace period
+
+When your subscription ends, your instance enters `read_only` mode for 30 days.
+
+### What you can do during the grace period
+
+- **Read** existing atoms — all your stored knowledge is still accessible
+- **Verify** Merkle proofs — cryptographic verification still works
+- **Export** your atoms via the API — use `GET /api/v1/atoms` to retrieve all stored atoms
+- **Resubscribe** — start a new subscription at any time and your full access is restored
+
+### What you cannot do during the grace period
+
+- **Write** new atoms — `session_checkpoint` and all write operations return `403 read_only`
+- **Call bootstraps** — `memory_session_bootstrap` returns `403 read_only`
+- **Use the MCP server** for writes — tool calls that write will fail
+
+### Your account tier during grace period
+
+Your account is moved to the expired free tier state during the grace period. This is an internal tier — it is not publicly sold and it does not reflect a billable state. It exists purely to retain your atom limits at a read-only level until the 30 days expire.
+
+## Timeline after cancellation
+
+| Day | Event |
+|---|---|
+| Day 0 | Subscription ends. Instance moves to `read_only`. |
+| Day 29 | **Data purge warning email** sent to your account address. |
+| Day 30 | **24-hour notice** — final warning before deprovisioning. |
+| Day 31 | Instance deprovisioned. All atoms and data permanently deleted. |
+
+> **There is no recovery after deprovisioning.** Once your instance is destroyed, your atoms cannot be retrieved. Export your data during the grace period if you may want it later.
+
+## Exporting your atoms before cancellation
+
+To export all atoms from your instance:
+
+```bash
+curl https://abc123.parametric-memory.dev/api/v1/atoms \
+  -H "Authorization: Bearer mmk_your_key_here" \
+  -H "Accept: application/json" \
+  > my-atoms-backup.json
+```
+
+This returns a paginated list of all atoms in your substrate. For large exports, use the `offset` and `limit` query parameters.
+
+## Resubscribing
+
+You can resubscribe at any time — during the grace period or before your instance is deprovisioned.
+
+1. Go to **Dashboard** and click **Resubscribe**
+2. Complete the Stripe Checkout for your chosen plan
+3. A new instance is provisioned from scratch
+
+> **Important:** Resubscription provisions a brand new instance. Your atoms from the previous subscription are not automatically migrated. If you exported your atoms before cancelling, you can re-import them via the API after your new instance is running.
+
+If you resubscribe while still in the grace period (before deprovisioning), your old instance data is still available for read during the gap — but your new instance starts empty. There is no automatic carry-over.
+
+## Refund policy
+
+Payments are non-refundable. Cancellation stops future billing but does not refund the current period. If you believe you were charged in error, contact support.
+
+## Cancelling a trial
+
+If you cancel during the 14-day trial before day 15, no charge is made. Your instance is deprovisioned immediately (no 30-day grace period — you were not paying for anything). You can resubscribe at any time.

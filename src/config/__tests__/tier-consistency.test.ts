@@ -71,8 +71,8 @@ describe("tiers.ts — registry internal consistency", () => {
     }
   });
 
-  it("free tier has price 0", () => {
-    expect(TIER_PRICES.free).toBe(0);
+  it("free tier has price 1", () => {
+    expect(TIER_PRICES.free).toBe(1);
   });
 
   it("atom limits increase with tier order", () => {
@@ -154,7 +154,7 @@ describe("tiers.ts — helper functions", () => {
   });
 
   it("getTierPrice returns correct price for canonical IDs", () => {
-    expect(getTierPrice("free")).toBe(0);
+    expect(getTierPrice("free")).toBe(1);
     expect(getTierPrice("indie")).toBe(9);
     expect(getTierPrice("pro")).toBe(29);
     expect(getTierPrice("team")).toBe(79);
