@@ -46,7 +46,16 @@ export function verifyCsrfOrigin(request: NextRequest): NextResponse | null {
   }
 
   const requestUrl = new URL(request.url);
-  const expectedOrigin = `${requestUrl.protocol}//${requestUrl.host}`;
+
+  // Behind a reverse proxy (nginx), request.url is the internal address
+  // (http://127.0.0.1:3000). Use X-Forwarded-Host / X-Forwarded-Proto to
+  // reconstruct the real public origin that the browser sees.
+  const forwardedHost = request.headers.get("x-forwarded-host");
+  const forwardedProto = request.headers.get("x-forwarded-proto");
+  const expectedOrigin =
+    forwardedHost && forwardedProto
+      ? `${forwardedProto.split(",")[0].trim()}://${forwardedHost.split(",")[0].trim()}`
+      : `${requestUrl.protocol}//${requestUrl.host}`;
 
   // Check Origin header first
   const originHeader = request.headers.get("origin");
