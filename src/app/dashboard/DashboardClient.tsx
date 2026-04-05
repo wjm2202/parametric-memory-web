@@ -1438,10 +1438,12 @@ export default function DashboardClient({
 
       {/* ── Upgrade consent modal ─────────────────────────────────────────────── */}
       {upgradeConsentTier && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm px-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
           <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0d1117] p-6 shadow-2xl">
             <h2 className="mb-1 font-semibold text-white">
-              Upgrade to {getTierLabel(upgradeConsentTier as import("@/config/tiers").TierId) ?? upgradeConsentTier}
+              Upgrade to{" "}
+              {getTierLabel(upgradeConsentTier as import("@/config/tiers").TierId) ??
+                upgradeConsentTier}
             </h2>
             <p className="mb-5 text-sm text-white/50">
               You&apos;ll be redirected to Stripe to complete your subscription.

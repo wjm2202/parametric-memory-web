@@ -214,7 +214,8 @@ export default async function PricingPage() {
             Persistent AI memory for developers who use Claude every day.
           </p>
           <p className="text-surface-400 text-sm">
-            Flat monthly subscription &mdash; no per-query costs, no credits, no surprises. Cancel anytime.
+            Flat monthly subscription &mdash; no per-query costs, no credits, no surprises. Cancel
+            anytime.
           </p>
         </section>
 
@@ -247,11 +248,7 @@ export default async function PricingPage() {
                   {/* Tier name + tagline */}
                   <div className="mb-6">
                     <h3 className="text-xl font-bold tracking-wide text-white uppercase">
-                      {tier.id === "indie"
-                        ? "SOLO"
-                        : tier.id === "pro"
-                          ? "PROFESSIONAL"
-                          : "TEAM"}
+                      {tier.id === "indie" ? "SOLO" : tier.id === "pro" ? "PROFESSIONAL" : "TEAM"}
                     </h3>
                     <p className="text-surface-200/60 mt-1 text-sm">{copy?.tagline}</p>
                   </div>
@@ -341,10 +338,14 @@ export default async function PricingPage() {
                     <div className="mt-1 text-xs font-normal text-white">Professional · $29/mo</div>
                   </th>
                   <th className="text-surface-300 px-6 py-4 text-center font-semibold">
-                    Mem0<div className="text-surface-400 mt-1 text-xs font-normal">Starter · $19/mo</div>
+                    Mem0
+                    <div className="text-surface-400 mt-1 text-xs font-normal">
+                      Starter · $19/mo
+                    </div>
                   </th>
                   <th className="text-surface-300 px-6 py-4 text-center font-semibold">
-                    Zep<div className="text-surface-400 mt-1 text-xs font-normal">Flex · $25/mo</div>
+                    Zep
+                    <div className="text-surface-400 mt-1 text-xs font-normal">Flex · $25/mo</div>
                   </th>
                 </tr>
               </thead>

@@ -36,8 +36,7 @@ const faqs = [
   },
   {
     question: "I have a team larger than 5. Can you support us?",
-    answer:
-      "Yes — contact us and we can put together a custom arrangement for larger teams.",
+    answer: "Yes — contact us and we can put together a custom arrangement for larger teams.",
   },
 ];
 

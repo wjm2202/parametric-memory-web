@@ -190,7 +190,6 @@ export default function SiteNavbar({
          * The auth button is pinned to the right column and grows inward only.
          */}
         <div className="relative mx-auto flex max-w-6xl items-center px-6 py-4">
-
           {/* ── Left: Logo (static anchor) ─────────────────────────────── */}
           <Link
             href="/"
@@ -202,7 +201,7 @@ export default function SiteNavbar({
           </Link>
 
           {/* ── Centre: Nav links (absolutely centred — never shifts) ───── */}
-          <div className="absolute left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2">
+          <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 sm:gap-2">
             <Link
               href="/docs"
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
@@ -254,7 +253,9 @@ export default function SiteNavbar({
             <Link
               href="/privacy"
               className={`hidden rounded-md px-3 py-1.5 text-sm transition-colors lg:block ${
-                isActive("/privacy") ? "font-medium text-white" : "text-surface-400 hover:text-white"
+                isActive("/privacy")
+                  ? "font-medium text-white"
+                  : "text-surface-400 hover:text-white"
               }`}
             >
               Privacy
@@ -275,10 +276,7 @@ export default function SiteNavbar({
           </div>
 
           {/* ── Right: Auth button (pinned, grows inward only) ──────────── */}
-          <div className="ml-auto shrink-0">
-            {authButton}
-          </div>
-
+          <div className="ml-auto shrink-0">{authButton}</div>
         </div>
       </nav>
     );
@@ -307,7 +305,6 @@ export default function SiteNavbar({
 
       {/* Right — page tools + auth */}
       <div className="flex items-center gap-2 md:gap-3">
-
         {/* Auth */}
         {verified ? (
           <Link

@@ -55,7 +55,6 @@ export default function KnowledgeClient({ isLoggedIn }: KnowledgeClientProps) {
 
       {/* Canvas area — fills remaining space below the fixed navbar */}
       <div className="relative flex-1 overflow-hidden" style={{ marginTop: "65px" }}>
-
         {/* SearchBar — absolute overlay, centred at top of canvas */}
         <div className="absolute inset-x-0 top-3 z-10 flex justify-center">
           <SearchBar />
@@ -79,7 +78,6 @@ export default function KnowledgeClient({ isLoggedIn }: KnowledgeClientProps) {
         <div className="absolute inset-y-0 right-0 z-20">
           <SidePanel />
         </div>
-
       </div>
     </div>
   );

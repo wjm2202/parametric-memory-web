@@ -231,8 +231,8 @@ function SignupForm({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           email: trimmedEmail,
-          agreedToTerms: true,               // validated by checkbox (required=true)
-          termsVersion: "2026-04-05",        // current ToS version date
+          agreedToTerms: true, // validated by checkbox (required=true)
+          termsVersion: "2026-04-05", // current ToS version date
         }),
       });
 
@@ -325,8 +325,8 @@ function SignupForm({
               className="text-white/70 underline underline-offset-2 transition-colors hover:text-white"
             >
               Terms of Service
-            </Link>
-            {" "}and{" "}
+            </Link>{" "}
+            and{" "}
             <Link
               href="/privacy"
               target="_blank"
