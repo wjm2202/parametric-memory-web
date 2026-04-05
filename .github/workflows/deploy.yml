@@ -73,7 +73,7 @@ jobs:
 
             echo "Deployment successful: $IMAGE_TAG"
         env:
-          IMAGE_TAG: ${{ secrets.DOCKERHUB_USERNAME }}/parametric-memory-web:${{ github.event.workflow_run.head_sha || github.sha }}
+          IMAGE_TAG: parametricmemory/parametric-memory-web:${{ github.event.workflow_run.head_sha || github.sha }}
 
       - name: Verify deployment
         run: |
