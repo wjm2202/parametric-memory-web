@@ -73,9 +73,9 @@ jobs:
           context: .
           push: ${{ github.ref == 'refs/heads/main' }}
           tags: |
-            ${{ secrets.DOCKERHUB_USERNAME }}/parametric-memory-web:latest
-            ${{ secrets.DOCKERHUB_USERNAME }}/parametric-memory-web:${{ github.sha }}
+            parametricmemory/parametric-memory-web:latest
+            parametricmemory/parametric-memory-web:${{ github.sha }}
           build-args: |
             GIT_COMMIT_SHA=${{ github.sha }}
-          cache-from: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/parametric-memory-web:buildcache
-          cache-to: type=registry,ref=${{ secrets.DOCKERHUB_USERNAME }}/parametric-memory-web:buildcache,mode=max
+          cache-from: type=registry,ref=parametricmemory/parametric-memory-web:buildcache
+          cache-to: type=registry,ref=parametricmemory/parametric-memory-web:buildcache,mode=max
