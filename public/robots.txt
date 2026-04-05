@@ -1,7 +1,60 @@
 User-agent: *
 Allow: /
+Disallow: /admin
+Disallow: /dashboard
+Disallow: /api/
 Sitemap: https://parametric-memory.dev/sitemap.xml
 
 # AI agent discovery — see https://llmstxt.org
 # Provides structured context for LLMs, AI coding assistants, and agents
 # llms.txt: https://parametric-memory.dev/llms.txt
+
+# ── AI answer engines — full access ───────────────────────────────────────
+# These crawlers power AI search/answer products and cite sources.
+# Your users are AI users — being indexed here is marketing.
+
+User-agent: anthropic-ai
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: PerplexityBot
+Allow: /
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: cohere-ai
+Allow: /
+
+User-agent: YouBot
+Allow: /
+
+# ── OpenAI / Google AI — product pages yes, content no ────────────────────
+# Allow discovery of product and marketing pages.
+# Protect blog and docs from bulk training data use.
+
+User-agent: GPTBot
+Allow: /
+Allow: /about
+Allow: /pricing
+Allow: /signup
+Disallow: /blog/
+Disallow: /docs/
+
+User-agent: Google-Extended
+Allow: /
+Allow: /about
+Allow: /pricing
+Disallow: /blog/
+Disallow: /docs/
+
+# ── Bulk training crawlers — block ────────────────────────────────────────
+# No referral value; scrape for training datasets only.
+
+User-agent: CCBot
+Disallow: /
+
+User-agent: CommonCrawlBot
+Disallow: /

@@ -18,6 +18,8 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 import SearchBar from "@/components/knowledge/SearchBar";
 import SidePanel from "@/components/knowledge/SidePanel";
 import ViewToggle from "@/components/knowledge/ViewToggle";
+import DegreeSizeSlider from "@/components/knowledge/DegreeSizeSlider";
+import KnowledgeLegend from "@/components/knowledge/KnowledgeLegend";
 
 const KnowledgeScene = dynamic(() => import("@/components/knowledge/KnowledgeScene"), {
   ssr: false,
@@ -47,30 +49,35 @@ interface KnowledgeClientProps {
 
 export default function KnowledgeClient({ isLoggedIn }: KnowledgeClientProps) {
   return (
-    <div className="relative h-screen w-full overflow-hidden bg-[#030712]">
-      <SiteNavbar
-        isLoggedIn={isLoggedIn}
-        variant="immersive"
-        pageLabel="KNOWLEDGE GRAPH"
-        accentColor="violet"
-      />
+    <div className="flex h-screen w-full flex-col overflow-hidden bg-[#030712]">
+      {/* Standard navbar — full nav links visible, no Substrate cross-link */}
+      <SiteNavbar isLoggedIn={isLoggedIn} variant="standard" />
 
-      {/* SearchBar — absolute overlay, centred below the navbar */}
-      <div className="absolute inset-x-0 top-14 z-10 flex justify-center md:top-16">
-        <SearchBar />
-      </div>
+      {/* Canvas area — fills remaining space below the fixed navbar */}
+      <div className="relative flex-1 overflow-hidden" style={{ marginTop: "65px" }}>
+        {/* SearchBar — absolute overlay, centred at top of canvas */}
+        <div className="absolute inset-x-0 top-3 z-10 flex justify-center">
+          <SearchBar />
+        </div>
 
-      {/* Full-screen 3D scene */}
-      <KnowledgeScene />
+        {/* Full-screen 3D scene */}
+        <KnowledgeScene />
 
-      {/* Sprint 5.5: ViewToggle — bottom-left overlay */}
-      <div className="absolute bottom-4 left-4 z-10">
-        <ViewToggle />
-      </div>
+        {/* Bottom-left controls — stacked vertically */}
+        <div className="absolute bottom-4 left-4 z-10 flex flex-col items-start gap-2">
+          <DegreeSizeSlider />
+          <ViewToggle />
+        </div>
 
-      {/* SidePanel — absolute overlay, slides in from the right edge */}
-      <div className="absolute inset-y-0 top-14 right-0 z-20 md:top-16">
-        <SidePanel />
+        {/* Bottom-right legend — "?" toggle opens the visual key */}
+        <div className="absolute right-4 bottom-4 z-10 flex flex-col items-end gap-2">
+          <KnowledgeLegend />
+        </div>
+
+        {/* SidePanel — absolute overlay, slides in from the right edge */}
+        <div className="absolute inset-y-0 right-0 z-20">
+          <SidePanel />
+        </div>
       </div>
     </div>
   );

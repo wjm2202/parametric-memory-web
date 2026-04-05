@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, FormEvent, Suspense } from "react";
+import { useState, useEffect, FormEvent, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
 
@@ -29,6 +29,21 @@ function ErrorBanner() {
   );
 }
 
+function RedirectCookieSetter() {
+  const searchParams = useSearchParams();
+  const redirectParam = searchParams.get("redirect");
+
+  useEffect(() => {
+    // Store the redirect destination in a cookie so the auth callback can use it.
+    // Only allow relative paths starting with / to prevent open redirect attacks.
+    if (redirectParam && redirectParam.startsWith("/") && !redirectParam.startsWith("//")) {
+      document.cookie = `mmpm_redirect=${encodeURIComponent(redirectParam)};path=/;max-age=900;samesite=lax`;
+    }
+  }, [redirectParam]);
+
+  return null;
+}
+
 function LoginForm() {
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
@@ -48,6 +63,28 @@ function LoginForm() {
       });
 
       if (!res.ok) {
+        if (res.status === 429) {
+          // Rate limit hit — show reset time if available
+          const resetHeader = res.headers.get("X-RateLimit-Reset");
+          if (resetHeader) {
+            const resetMs = parseInt(resetHeader, 10) * 1000;
+            const minutesUntil = Math.ceil((resetMs - Date.now()) / 60_000);
+            const resetTime = new Date(resetMs).toLocaleTimeString([], {
+              hour: "numeric",
+              minute: "2-digit",
+            });
+            setSubmitError(
+              minutesUntil > 1
+                ? `Too many sign-in links sent. You can request another at ${resetTime} (in ~${minutesUntil} minutes).`
+                : `Too many sign-in links sent. You can request another at ${resetTime}.`,
+            );
+          } else {
+            setSubmitError(
+              "Too many sign-in links sent to this address. Please wait an hour before trying again.",
+            );
+          }
+          return;
+        }
         const data = await res.json().catch(() => ({}));
         setSubmitError(data.error ?? "Failed to send sign-in link. Please try again.");
         return;
@@ -129,7 +166,11 @@ function LoginForm() {
           />
         </div>
 
-        {submitError && <p className="text-sm text-red-400">{submitError}</p>}
+        {submitError && (
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+            {submitError}
+          </div>
+        )}
 
         <button
           type="submit"
@@ -170,6 +211,11 @@ export default function LoginPage() {
             </span>
           </Link>
         </div>
+
+        {/* Persist ?redirect= param as a cookie so auth callback can redirect after login */}
+        <Suspense>
+          <RedirectCookieSetter />
+        </Suspense>
 
         <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-sm">
           <LoginForm />

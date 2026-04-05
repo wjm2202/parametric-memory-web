@@ -96,9 +96,26 @@ interface GraphNodesProps {
   handle: ForceGraphHandle;
 }
 
+/** Safe key extraction from d3-resolved edge endpoints (string or KGNode object) */
+function edgeEndKey(v: string | KGNode): string {
+  return typeof v === "string" ? v : (v as KGNode).key;
+}
+
+/** At degreeInfluence=1, the highest-degree node is this many times its base size */
+const MAX_DEGREE_MULTIPLIER = 7.5;
+
 export default function GraphNodes({ handle }: GraphNodesProps) {
-  const { simNodes, isSettled } = handle; // KG-09: destructure isSettled
+  const { simNodes, simEdges, isSettled } = handle; // KG-09: destructure isSettled
   const meshRef = useRef<THREE.InstancedMesh>(null);
+
+  // ── Degree map — rebuilt only when edge count changes ──────────────────
+  // Maps node key → total connection count (in + out degree).
+  const degreeMapRef = useRef<Map<string, number>>(new Map());
+  const maxDegreeRef = useRef(1);
+  const cachedEdgeCountRef = useRef(-1);
+
+  // Tracks the last degreeInfluence value seen — forces a flush frame when changed
+  const prevDegreeInfluenceRef = useRef(-1);
 
   /**
    * BUG-FIX: tracks whether the previous frame had an active filter
@@ -145,11 +162,39 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
       _simNodeIndexSize = nodes.length;
     }
 
+    // ── Degree map rebuild — O(E) only when edge array grows/shrinks ──────
+    const edges = simEdges.current;
+    if (edges.length !== cachedEdgeCountRef.current) {
+      cachedEdgeCountRef.current = edges.length;
+      const map = new Map<string, number>();
+      for (const e of edges) {
+        const sk = edgeEndKey(e.source as string | KGNode);
+        const tk = edgeEndKey(e.target as string | KGNode);
+        map.set(sk, (map.get(sk) ?? 0) + 1);
+        map.set(tk, (map.get(tk) ?? 0) + 1);
+      }
+      degreeMapRef.current = map;
+      let max = 1;
+      for (const v of map.values()) if (v > max) max = v;
+      maxDegreeRef.current = max;
+    }
+
     // KG-06: Read reactive state directly from store inside useFrame.
     // Removes the loadingAtoms/selectedAtom/hoveredAtom selectors from the
     // component — no more re-renders on every loading state change during seed.
-    const { loadingAtoms, hoveredAtom, selectedAtom, searchHits, visibleAtoms } =
-      useKnowledgeStore.getState();
+    const {
+      loadingAtoms,
+      hoveredAtom,
+      selectedAtom,
+      searchHits,
+      visibleAtoms,
+      degreeInfluence,
+      bridgeAtom,
+    } = useKnowledgeStore.getState();
+
+    // Detect slider change — force one flush frame so sizes update when settled
+    const degreeChanged = degreeInfluence !== prevDegreeInfluenceRef.current;
+    prevDegreeInfluenceRef.current = degreeInfluence;
 
     // KG-04: O(1) index lookups — integer compare in the hot loop below
     const hoveredIdx = hoveredAtom ? (_simNodeIndex.get(hoveredAtom) ?? -1) : -1;
@@ -171,6 +216,7 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
     if (
       isSettled.current &&
       !justCleared &&
+      !degreeChanged &&
       hoveredIdx < 0 &&
       selectedIdx < 0 &&
       loadingAtoms.size === 0 &&
@@ -194,9 +240,11 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
       const node = nodes[i];
 
       // visibleAtoms filter: when set, hide any atom not in the visible set.
+      // Exception: the bridge atom (most-connected external atom) is always shown.
       // scale=0 tells the GPU to discard the instance — essentially free.
       // The node stays in the force sim so the layout is preserved.
-      if (visibleAtoms !== null && !visibleAtoms.has(node.key)) {
+      const isBridgeAtom = node.key === bridgeAtom;
+      if (visibleAtoms !== null && !visibleAtoms.has(node.key) && !isBridgeAtom) {
         tmpObj.position.set(node.x ?? 0, node.y ?? 0, node.z ?? 0);
         tmpObj.scale.setScalar(0);
         tmpObj.updateMatrix();
@@ -207,6 +255,15 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
       // Sprint 5.3: Base scale from Poincaré depth encoding (or default)
       const poinc = node.poincare as [number, number] | null | undefined;
       let scale = poinc ? poincareScale(poinc[0], poinc[1], node.type) : BASE_SCALE;
+
+      // Degree-based size boost: highly-connected atoms grow relative to isolates.
+      // normalizedDegree ∈ [0, 1] where 1 = the most-connected node in the graph.
+      // At degreeInfluence=0 → no change. At 1 → max-degree node is MAX_DEGREE_MULTIPLIER× base.
+      if (degreeInfluence > 0) {
+        const degree = degreeMapRef.current.get(node.key) ?? 0;
+        const normalizedDegree = degree / maxDegreeRef.current;
+        scale *= 1 + normalizedDegree * degreeInfluence * MAX_DEGREE_MULTIPLIER;
+      }
 
       const isLoading = loadingAtoms.has(node.key);
       const isSearchHit = searchHits.has(node.key);
@@ -226,11 +283,15 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
       tmpObj.updateMatrix();
       mesh.setMatrixAt(i, tmpObj.matrix);
 
-      // Colour priority: hover > select > loading > search hit > poincaré > type colour
+      // Colour priority: hover > select > bridge > loading > search hit > poincaré > type colour
       if (i === hoveredIdx) {
         tmpColor.copy(HOVER_COLOR);
       } else if (i === selectedIdx) {
         tmpColor.copy(SELECT_COLOR);
+      } else if (isBridgeAtom) {
+        // Bridge atom: amber/gold — visually distinct from search hits (gold) and
+        // type colours, signals "most entangled external node".
+        tmpColor.set("#f59e0b").multiplyScalar(BLOOM_BOOST * 1.2);
       } else if (isLoading) {
         tmpColor.copy(LOADING_COLOR);
       } else if (isSearchHit) {

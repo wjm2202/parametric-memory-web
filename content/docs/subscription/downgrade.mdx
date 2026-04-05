@@ -1,0 +1,72 @@
+---
+title: Downgrade Plan
+description: How to downgrade your plan — when the change takes effect, what happens to excess atoms, and what changes on your instance.
+section: Subscription Management
+order: 2
+---
+
+# Downgrade Plan
+
+You can downgrade your plan at any time. Unlike upgrades, downgrades do not take effect immediately — they are scheduled for your next billing cycle so you get the full value of what you have already paid for.
+
+## How to downgrade
+
+1. Go to **Dashboard → Billing → Manage Subscription**
+2. You will be redirected to the Stripe Billing Portal
+3. Select **Change Plan** and choose your lower tier
+4. Confirm — Stripe schedules the change for the start of your next billing cycle
+5. You are redirected back to your Dashboard
+
+The Dashboard will show your current tier with a note that a downgrade is scheduled. Your instance continues running at its current tier until the billing cycle rolls over.
+
+## When the change takes effect
+
+At the start of your next billing cycle, Stripe fires `customer.subscription.updated` with the new tier. Our system queues the tier-change job within seconds. The transition time is:
+
+- **Pro → Indie (shared to shared):** Under 30 seconds — container limits are updated in-place
+- **Team → Pro or Indie (dedicated to shared):** 3–5 minutes — dedicated droplet is decommissioned and a new shared container is provisioned
+
+## What happens to your instance
+
+### Pro → Indie (shared to shared)
+
+The tier-change worker:
+1. Reduces your container's resource limits (CPU, memory, atom cap, bootstrap cap)
+2. Restarts your container to apply the new limits
+3. Updates your subscription record
+
+Your MCP endpoint stays the same. No reconnection needed.
+
+### Team → Pro or Indie (dedicated to shared)
+
+This is the reverse of upgrading to Team:
+
+1. Your dedicated droplet is snapshotted (for disaster recovery) then queued for destruction
+2. A new shared container is provisioned at your new tier
+3. Once the new container passes its health check, it becomes your active endpoint
+4. The dedicated droplet is destroyed
+
+Your MCP URL will change when moving off Team — update your AI client config with the new URL shown on your Dashboard.
+
+## What happens to excess atoms
+
+If you downgrade from Pro (100,000 atoms) to Indie (10,000 atoms) and you have 50,000 stored atoms, the atoms are **not automatically deleted**. Instead:
+
+- The new limit is enforced on **new writes only** — you cannot store new atoms once you are at the cap
+- Existing atoms above the cap remain readable until you delete them
+- You can delete atoms via the API or by tombstoning them via `session_checkpoint`
+- Overage fees apply to the atoms above your tier limit until you reduce your atom count
+
+If you are significantly over the new tier limit, reduce your atom count before the downgrade takes effect to avoid overage charges.
+
+## What happens to bootstraps
+
+Bootstrap limits reset at the start of each billing cycle. If you downgrade from Pro (10,000/month) to Indie (1,000/month), your bootstrap allowance resets to 1,000 on the new billing cycle start date.
+
+## Cancelling a scheduled downgrade
+
+If you change your mind after scheduling a downgrade, go back to **Dashboard → Billing → Manage Subscription** and select your current tier to cancel the pending change. Stripe will cancel the scheduled downgrade and you will continue on your current tier.
+
+## Downgrading during a trial
+
+If you are in your 14-day trial, you can downgrade by selecting a lower tier in the Billing Portal. The change takes effect immediately (because no billing has occurred yet) and your trial continues on the new tier.

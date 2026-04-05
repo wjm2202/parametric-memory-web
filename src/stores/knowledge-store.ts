@@ -145,6 +145,18 @@ interface KnowledgeState {
    * "provenance" — Tree layout with strong member_of/produced_by edge attraction.
    */
   layoutMode: LayoutMode;
+  /**
+   * 0–1 slider controlling how much node degree (connection count) scales atom size.
+   * 0 = size unaffected by connections. 1 = highly-connected atoms are much larger.
+   */
+  degreeInfluence: number;
+  /**
+   * When a search is active, the single external atom with the most edges
+   * connecting into the visible result set. Shown alongside search results
+   * so the user can see what the cluster is most entangled with.
+   * Null when no search is active or no bridge was found.
+   */
+  bridgeAtom: string | null;
 
   // ── Actions ──────────────────────────────────────────────────────────────
 
@@ -228,6 +240,12 @@ interface KnowledgeState {
   /** Sprint 5.5: Switch between semantic and provenance layout modes */
   setLayoutMode: (mode: LayoutMode) => void;
 
+  /** Set how strongly node degree influences atom size (0 = none, 1 = maximum) */
+  setDegreeInfluence: (v: number) => void;
+
+  /** Set the bridge atom (most-connected external atom for the current search) */
+  setBridgeAtom: (key: string | null) => void;
+
   /** Hard reset — clears all nodes, edges, and state */
   reset: () => void;
 }
@@ -245,6 +263,8 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
   searchHits: new Set(),
   visibleAtoms: null,
   layoutMode: "semantic",
+  degreeInfluence: 1.0,
+  bridgeAtom: null,
 
   addNode: (key, anchor) => {
     const { nodes } = get();
@@ -422,6 +442,10 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
   setVisibleAtoms: (keys) => set({ visibleAtoms: keys === null ? null : new Set(keys) }),
 
   setLayoutMode: (mode) => set({ layoutMode: mode }),
+
+  setDegreeInfluence: (v) => set({ degreeInfluence: Math.max(0, Math.min(1, v)) }),
+
+  setBridgeAtom: (key) => set({ bridgeAtom: key }),
 
   /**
    * KG-16: LRU cap at 50 entries — evicts oldest on overflow.

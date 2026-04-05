@@ -85,12 +85,16 @@ const ROUTE_MAP: Record<string, string> = {
   health: "/health",
   events: "/events", // S16-3: SSE real-time updates endpoint
   "events/clients": "/events/clients", // S16-5: SSE subscriber count
+  // Knowledge Graph visualization layers
+  edges: "/edges", // GET /edges — bulk structural KG edges (member_of, supersedes, etc.)
+  poincare: "/poincare", // GET /poincare — Poincaré disk layout coordinates
 };
 
-/** Dynamic routes: /api/memory/atoms/<atom> and /api/memory/weights/<atom> */
+/** Dynamic routes: /api/memory/atoms/<atom>, /api/memory/weights/<atom>, /api/memory/edges/<atom> */
 const DYNAMIC_PREFIXES: Record<string, string> = {
   atoms: "/atoms",
   weights: "/weights",
+  edges: "/edges", // GET /edges/:atom — per-atom structural edge expand
 };
 
 interface ProxyResult {

@@ -1,0 +1,68 @@
+---
+title: Payment Failures
+description: What happens when a payment fails — Stripe's retry schedule, how your instance behaves during retries, and what to do if retries are exhausted.
+section: Limits & Behaviour
+order: 3
+---
+
+# Payment Failures
+
+Payment failures are handled by Stripe's Smart Retry logic. Your instance stays running during retries — you do not lose access immediately if a single payment fails.
+
+## What triggers a payment failure
+
+- Card declined (insufficient funds, expired card, fraud block)
+- Bank-side rejection
+- Payment method removed before billing date
+- 3D Secure authentication timeout
+
+## Stripe's retry schedule
+
+When a payment fails, Stripe automatically retries according to your account's Smart Retry configuration:
+
+| Attempt | Timing |
+|---|---|
+| **1st attempt** | Billing date |
+| **2nd attempt** | ~3 days later |
+| **3rd attempt** | ~5 days later |
+| **4th attempt** | ~8 days later |
+| **Final failure** | After last retry — subscription cancelled |
+
+You receive an email from Stripe after each failed attempt with a link to update your payment method.
+
+## What happens to your instance during retries
+
+Your instance continues running normally during the retry window. The billing status on your Dashboard will show `past_due` but all API operations remain available. This is intentional — a single failed payment should not interrupt your work.
+
+If the final retry fails, Stripe cancels your subscription and our system begins the cancellation flow:
+1. Your instance moves to `read_only` (30-day grace period begins)
+2. You receive a notification that your subscription has ended
+3. From this point, the [cancellation flow](/docs/subscription/cancel) applies
+
+## Resolving a payment failure
+
+The fastest way to resolve a payment failure is to update your payment method:
+
+1. Go to **Dashboard → Billing → Manage Subscription**
+2. In the Stripe Billing Portal, select **Payment Methods → Add**
+3. Add a new card or update the existing one
+4. Stripe will retry the payment immediately
+
+If the payment succeeds, your subscription returns to `active` status and the `past_due` flag clears.
+
+## Suspension (if all retries fail)
+
+If all Stripe retries are exhausted and the subscription is cancelled:
+
+- Your instance moves to `read_only` within seconds
+- The 30-day grace period starts (see [Cancel Subscription](/docs/subscription/cancel))
+- You have 30 days to resubscribe and start a new instance
+
+To resubscribe, go to the Dashboard and complete a new Stripe Checkout. Note that resubscription creates a new instance — your previous atoms are in the read-only instance but are not automatically migrated. Export them during the grace period if needed.
+
+## Preventing payment failures
+
+- Keep your card details up to date in the Billing Portal before the expiry date
+- If you use a virtual card, ensure the limit covers your subscription amount
+- Enable email notifications in your Stripe billing settings to get advance notice of upcoming charges
+- Check your Dashboard regularly — the `past_due` status banner appears before your instance is affected

@@ -1,0 +1,134 @@
+---
+title: Other AI Clients
+description: Connect Parametric Memory to Cursor, Cline, Windsurf, Continue, and any other MCP-compatible AI tool.
+section: MCP Integration
+order: 2
+---
+
+# Other AI Clients
+
+Parametric Memory uses the MCP 2025-03-26 Streamable HTTP transport, which is compatible with any client that supports MCP. Below are setup instructions for the most popular clients.
+
+## Connection details
+
+Regardless of client, you need two things from your [Dashboard](/docs/your-instance):
+
+| Field | Where to find it |
+|---|---|
+| **MCP URL** | `https://abc123.parametric-memory.dev/mcp` |
+| **API Key** | Dashboard → Settings → API Key (starts with `mmk_`) |
+
+---
+
+## Cursor
+
+In Cursor, go to **Settings → MCP → Add Server** and enter:
+
+```json
+{
+  "name": "Parametric Memory",
+  "type": "streamable-http",
+  "url": "https://abc123.parametric-memory.dev/mcp",
+  "headers": {
+    "Authorization": "Bearer mmk_your_key_here"
+  }
+}
+```
+
+Once saved, Cursor's Agent mode will have access to all Parametric Memory tools automatically.
+
+---
+
+## Cline (VS Code extension)
+
+In the Cline extension settings, find **MCP Servers** and add:
+
+```json
+{
+  "parametric-memory": {
+    "type": "streamable-http",
+    "url": "https://abc123.parametric-memory.dev/mcp",
+    "headers": {
+      "Authorization": "Bearer mmk_your_key_here"
+    }
+  }
+}
+```
+
+---
+
+## Windsurf
+
+Go to **Settings → Cascade → MCP Servers** and add a new HTTP server entry with the URL and Bearer token header. Windsurf uses the same Streamable HTTP format as Claude Desktop.
+
+---
+
+## Continue.dev
+
+In your `.continue/config.json`, add under `mcpServers`:
+
+```json
+{
+  "mcpServers": [
+    {
+      "name": "parametric-memory",
+      "transport": {
+        "type": "streamable-http",
+        "url": "https://abc123.parametric-memory.dev/mcp",
+        "requestOptions": {
+          "headers": {
+            "Authorization": "Bearer mmk_your_key_here"
+          }
+        }
+      }
+    }
+  ]
+}
+```
+
+---
+
+## Any custom MCP host
+
+If you are building your own MCP host or agent framework, connect using the standard Streamable HTTP transport:
+
+```
+Transport:  Streamable HTTP (MCP 2025-03-26)
+URL:        https://abc123.parametric-memory.dev/mcp
+Auth:       Authorization: Bearer mmk_your_key_here
+```
+
+### OAuth2 (optional)
+
+Parametric Memory also supports OAuth2 for environments that prefer token exchange over static keys:
+
+```
+POST https://abc123.parametric-memory.dev/oauth/authorize
+Body: { "apiKey": "mmk_your_key_here" }
+Response: { "access_token": "...", "expires_in": 3600 }
+```
+
+Use the returned `access_token` as the Bearer token in subsequent requests. Tokens expire after 1 hour; re-request as needed.
+
+---
+
+## Available tools
+
+All clients get the same set of tools once connected. See the [MCP Tool Reference](/docs/mcp/tools) for the complete list with parameters and examples.
+
+The core tools your AI will use most often are:
+
+- `memory_session_bootstrap` — load relevant context at session start
+- `session_checkpoint` — save atoms and relationships during a session
+- `memory_search` — semantic search across stored atoms
+- `memory_train` — reinforce important memory arcs
+
+---
+
+## Testing the connection
+
+Once configured, you can verify the connection by asking your AI:
+
+> "Call memory_session_bootstrap with objective: 'test connection' and tell me what it returns."
+
+If the connection is working, you will see a response with the bootstrap payload (likely empty on first use). If you see an error, check the [troubleshooting section in the Claude docs](/docs/mcp/claude#troubleshooting) — the same steps apply to all clients.

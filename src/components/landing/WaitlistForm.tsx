@@ -60,7 +60,7 @@ export function WaitlistForm() {
         <div>
           <p className="text-sm font-medium text-emerald-300">You&apos;re on the list.</p>
           <p className="text-xs text-emerald-500/70">
-            We&apos;ll reach out when early access opens.
+            We&apos;ll keep you posted on new features and updates.
           </p>
         </div>
       </div>
@@ -104,7 +104,7 @@ export function WaitlistForm() {
           </>
         ) : (
           <>
-            Join Early Access
+            Subscribe
             <svg
               className="h-4 w-4"
               fill="none"

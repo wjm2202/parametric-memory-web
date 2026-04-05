@@ -16,7 +16,7 @@
  *     optimistically keeps the server-determined state.
  *
  * Nav items (all variants):
- *   Docs · Pricing · Substrate Viewer · Knowledge Graph · [Dashboard | Sign In]
+ *   Docs · About · Blog · Pricing · Legal · Privacy · Knowledge Graph · [Dashboard | Sign In]
  */
 
 import { useEffect, useState } from "react";
@@ -27,41 +27,18 @@ import { usePathname } from "next/navigation";
 
 function Logomark({ size = 24 }: { size?: number }) {
   return (
-    <svg width={size} height={size} viewBox="0 0 72 72" fill="none" aria-hidden="true">
-      <circle cx="36" cy="36" r="32" stroke="#36aaf5" strokeWidth="1.5" opacity="0.3" />
-      <line x1="36" y1="36" x2="36" y2="4" stroke="#36aaf5" strokeWidth="1" opacity="0.4" />
-      <line x1="36" y1="36" x2="68" y2="36" stroke="#36aaf5" strokeWidth="1" opacity="0.4" />
-      <line x1="36" y1="36" x2="36" y2="68" stroke="#36aaf5" strokeWidth="1" opacity="0.4" />
-      <line x1="36" y1="36" x2="4" y2="36" stroke="#36aaf5" strokeWidth="1" opacity="0.4" />
-      <circle cx="36" cy="36" r="4" fill="#f59e0b" />
-      <circle cx="36" cy="4" r="3.5" fill="#36aaf5" />
-      <circle cx="68" cy="36" r="3.5" fill="#36aaf5" />
-      <circle cx="36" cy="68" r="3.5" fill="#36aaf5" />
-      <circle cx="4" cy="36" r="3.5" fill="#36aaf5" />
-    </svg>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/brand/favicon-192.png"
+      width={size}
+      height={size}
+      alt="Parametric Memory"
+      style={{ borderRadius: "50%" }}
+    />
   );
 }
 
 /* ─── Icons ──────────────────────────────────────────────────────────────── */
-
-function SubstrateIcon() {
-  return (
-    <svg
-      className="h-3.5 w-3.5"
-      fill="none"
-      viewBox="0 0 24 24"
-      strokeWidth={1.5}
-      stroke="currentColor"
-    >
-      <path
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z"
-      />
-      <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-    </svg>
-  );
-}
 
 function KnowledgeIcon() {
   return (
@@ -177,18 +154,20 @@ export default function SiteNavbar({
 
   const authButton = verified ? (
     <Link
-      href="/admin"
+      href="/dashboard"
       className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-all"
     >
       <UserIcon />
-      <span className="hidden sm:inline">
+      <span className="hidden truncate sm:inline" style={{ maxWidth: "160px" }}>
         {email ? (
           <span title={email}>{email.length > 22 ? email.slice(0, 20) + "…" : email}</span>
         ) : (
-          "Dashboard"
+          "My Substrate"
         )}
       </span>
-      <span className="sm:hidden">{email ? email.split("@")[0] : "Admin"}</span>
+      <span className="truncate sm:hidden" style={{ maxWidth: "80px" }}>
+        {email ? email.split("@")[0] : "My Substrate"}
+      </span>
     </Link>
   ) : (
     <Link
@@ -204,28 +183,50 @@ export default function SiteNavbar({
   if (variant === "standard") {
     return (
       <nav className="border-surface-800/60 bg-surface-950/70 fixed top-0 right-0 left-0 z-50 border-b backdrop-blur-xl">
-        <div className="mx-auto flex max-w-6xl items-center justify-between px-6 py-4">
-          {/* Logo */}
+        {/*
+         * Three-column layout: logo | nav links | auth button
+         * The nav links sit in the centre column (absolutely positioned so
+         * they never move regardless of how wide the auth button grows).
+         * The auth button is pinned to the right column and grows inward only.
+         */}
+        <div className="relative mx-auto flex max-w-6xl items-center px-6 py-4">
+          {/* ── Left: Logo (static anchor) ─────────────────────────────── */}
           <Link
             href="/"
-            className="font-display flex items-center gap-2.5 text-[15px] font-semibold tracking-tight text-white"
+            className="font-display flex shrink-0 items-center gap-2.5 text-[15px] font-semibold tracking-tight text-white"
           >
             <Logomark size={26} />
             <span className="hidden sm:inline">Parametric Memory</span>
             <span className="sm:hidden">PMEM</span>
           </Link>
 
-          {/* Links */}
-          <div className="flex items-center gap-1 sm:gap-2">
-            <a
+          {/* ── Centre: Nav links (absolutely centred — never shifts) ───── */}
+          <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 sm:gap-2">
+            <Link
               href="/docs"
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                isActive("/docs") ? "text-white" : "text-surface-400 hover:text-white"
+                isActive("/docs") ? "font-medium text-white" : "text-surface-400 hover:text-white"
               }`}
             >
               Docs
-            </a>
-            <a
+            </Link>
+            <Link
+              href="/about"
+              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
+                isActive("/about") ? "font-medium text-white" : "text-surface-400 hover:text-white"
+              }`}
+            >
+              About
+            </Link>
+            <Link
+              href="/blog"
+              className={`hidden rounded-md px-3 py-1.5 text-sm transition-colors md:block ${
+                isActive("/blog") ? "font-medium text-white" : "text-surface-400 hover:text-white"
+              }`}
+            >
+              Blog
+            </Link>
+            <Link
               href="/pricing"
               className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                 isActive("/pricing")
@@ -234,19 +235,30 @@ export default function SiteNavbar({
               }`}
             >
               Pricing
-            </a>
+            </Link>
 
-            {/* Substrate Viewer */}
+            {/* Legal */}
             <Link
-              href="/visualise"
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-all ${
-                isActive("/visualise")
-                  ? "bg-cyan-500/20 text-cyan-300 ring-cyan-500/50"
-                  : "bg-brand-500/12 text-brand-300 ring-brand-500/30 hover:bg-brand-500/20 hover:ring-brand-500/50"
+              href="/terms"
+              className={`hidden rounded-md px-3 py-1.5 text-sm transition-colors lg:block ${
+                isActive("/terms") || isActive("/privacy") || isActive("/aup") || isActive("/dpa")
+                  ? "font-medium text-white"
+                  : "text-surface-400 hover:text-white"
               }`}
             >
-              <SubstrateIcon />
-              <span className="hidden md:inline">Substrate</span>
+              Legal
+            </Link>
+
+            {/* Privacy */}
+            <Link
+              href="/privacy"
+              className={`hidden rounded-md px-3 py-1.5 text-sm transition-colors lg:block ${
+                isActive("/privacy")
+                  ? "font-medium text-white"
+                  : "text-surface-400 hover:text-white"
+              }`}
+            >
+              Privacy
             </Link>
 
             {/* Knowledge Graph */}
@@ -261,9 +273,10 @@ export default function SiteNavbar({
               <KnowledgeIcon />
               <span className="hidden md:inline">Knowledge</span>
             </Link>
-
-            {authButton}
           </div>
+
+          {/* ── Right: Auth button (pinned, grows inward only) ──────────── */}
+          <div className="ml-auto shrink-0">{authButton}</div>
         </div>
       </nav>
     );
@@ -292,29 +305,12 @@ export default function SiteNavbar({
 
       {/* Right — page tools + auth */}
       <div className="flex items-center gap-2 md:gap-3">
-        {/* Cross-links between immersive pages */}
-        {isActive("/visualise") ? (
-          <Link
-            href="/knowledge"
-            className="font-mono text-xs text-slate-500 transition-colors hover:text-violet-300"
-          >
-            Knowledge →
-          </Link>
-        ) : (
-          <Link
-            href="/visualise"
-            className="font-mono text-xs text-slate-500 transition-colors hover:text-cyan-300"
-          >
-            Substrate →
-          </Link>
-        )}
-
         {/* Auth */}
         {verified ? (
           <Link
-            href="/admin"
+            href="/dashboard"
             className="font-mono text-xs text-slate-500 transition-colors hover:text-white"
-            title={email ?? "Admin"}
+            title={email ?? "My Substrate"}
           >
             {email ? <span>{email.split("@")[0]}</span> : <UserIcon />}
           </Link>

@@ -210,6 +210,54 @@ export async function fetchAtomDetail(atom: string): Promise<AtomDetailResponse>
 /* ─── Structural edges ─────────────────────────────────────────────────── */
 
 /**
+ * Fetch ALL structural edges in a single request — used by useAutoSeed to
+ * load the full KG edge graph (member_of, supersedes, depends_on, etc.)
+ * alongside the atom load, giving the visualization its structural layers.
+ *
+ * Uses GET /api/memory/edges?limit=5000 (backend cap).
+ * Non-fatal — returns empty array on failure so Markov-only graph still loads.
+ */
+export async function fetchAllStructuralEdges(): Promise<
+  Array<{ source: string; target: string; type: string; confidence?: number }>
+> {
+  try {
+    const res = await fetch("/api/memory/edges?limit=5000", {
+      method: "GET",
+      cache: "no-store",
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (!res.ok) return [];
+    const data: {
+      edges: Array<{ source: string; target: string; type: string; confidence?: number }>;
+      total: number;
+    } = await res.json();
+    return data.edges ?? [];
+  } catch {
+    return [];
+  }
+}
+
+/**
+ * Fetch Poincaré disk coordinates for all atoms.
+ * Returns a map of atomKey → [x, y] in the unit disk.
+ * Non-fatal — returns empty map if the projection isn't available yet.
+ */
+export async function fetchPoincareCoords(): Promise<Map<string, [number, number]>> {
+  try {
+    const res = await fetch("/api/memory/poincare", {
+      method: "GET",
+      next: { revalidate: 60 }, // projection changes rarely
+      signal: AbortSignal.timeout(REQUEST_TIMEOUT_MS),
+    });
+    if (!res.ok) return new Map();
+    const data: { coordinates: Record<string, [number, number]> } = await res.json();
+    return new Map(Object.entries(data.coordinates ?? {}));
+  } catch {
+    return new Map();
+  }
+}
+
+/**
  * S-EDGE-VIZ: Fetch structural (knowledge-graph) edges for a single atom.
  * Returns both outgoing and incoming edges via GET /edges/:atom.
  * Non-fatal — returns empty arrays on failure so Markov expand still succeeds.

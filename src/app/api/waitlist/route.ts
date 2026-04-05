@@ -54,10 +54,10 @@ export async function POST(req: NextRequest) {
             <div style="display:inline-flex;align-items:center;gap:12px;margin-bottom:32px;">
               <!-- Logomark SVG (inline, email-safe) -->
               <img
-                src="https://parametric-memory.dev/logo.svg"
+                src="https://parametric-memory.dev/brand/favicon-192.png"
                 alt="Parametric Memory"
                 width="32" height="32"
-                style="display:block"
+                style="display:block;border-radius:50%"
               />
               <span style="font-size:16px;font-weight:600;color:#ffffff;letter-spacing:-0.02em;">
                 Parametric Memory
@@ -78,9 +78,9 @@ export async function POST(req: NextRequest) {
         <tr>
           <td style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:32px;margin-bottom:24px;">
             <p style="margin:0 0 16px;font-size:15px;color:#94a3b8;line-height:1.7;">
-              We received your signup for <strong style="color:#e2e8f0;">${email}</strong>.
-              Early access to Parametric Memory is being rolled out in batches — you&rsquo;ll
-              hear from us when your instance is ready.
+              Thanks for signing up with <strong style="color:#e2e8f0;">${email}</strong>.
+              You&rsquo;re now on the list for product updates, new features, and integration guides
+              from Parametric Memory.
             </p>
             <p style="margin:0;font-size:15px;color:#94a3b8;line-height:1.7;">
               In the meantime, you can explore the live demo and review the docs:

@@ -7,32 +7,36 @@ const faqs = [
   {
     question: "What makes Parametric Memory different from Mem0 or Zep?",
     answer:
-      "Parametric Memory is built on cryptographic foundations. Every memory operation is verifiable via RFC 6962 Merkle proofs, making memory auditable and tamper-evident—critical for regulated AI systems. We include Markov-chain prediction (64% hit rate) to anticipate what your AI will need next. MCP support is native, not bolted on. We run on dedicated instances you control, not shared infrastructure. And pricing is flat-rate: no per-query fees that explode as your system scales.",
+      "Parametric Memory is built on cryptographic foundations. Every memory operation is verifiable via RFC 6962 Merkle proofs, making memory auditable and tamper-evident — critical for regulated AI systems. We include Markov-chain prediction (64% hit rate) to anticipate what your AI will need next. MCP support is native, not bolted on. Your substrate runs in isolated containers — not shared infrastructure. And pricing is flat-rate: no per-query fees that explode as your system scales.",
   },
   {
     question: "How much does Parametric Memory cost?",
     answer:
-      "Plans range from $9/mo (Starter, 512 MiB, 10 GiB) to $499/mo (Enterprise Self-Hosted, unlimited everything). Solo at $29/mo is most popular—it gives you 1 GiB RAM, 25 GiB storage, email support, and all features for the price of a coffee per day. Team ($79/mo) adds priority support and Grafana dashboards. Enterprise Cloud ($299/mo) includes 99.9% SLA and SSO. Enterprise Self-Hosted ($499/mo) gives you full source code and deployment flexibility. All plans include cryptographic proofs, Markov prediction, and MCP.",
+      "Four plans, all billed monthly: Free at $1/month (500 atoms, 100 bootstraps/month), Indie at $9/month (10,000 atoms, 1,000 bootstraps/month, email support), Pro at $29/month (100,000 atoms, 10,000 bootstraps/month, knowledge graph edges, priority support), and Team at $79/month (500,000 atoms, unlimited bootstraps, dedicated support). No contracts, cancel anytime from your dashboard.",
   },
   {
     question: "Does Parametric Memory work with Claude and MCP?",
     answer:
-      "Yes. Parametric Memory is MCP-native—it ships with a complete MCP server that exposes memory operations as tools. Claude and any MCP-compatible client (Cowork, Zed, etc.) can call store(), recall(), and predict() directly. No wrapper layer, no API glue—it speaks MCP natively. See docs at /docs for the full tool reference.",
+      "Yes. Parametric Memory is MCP-native — it ships with a complete MCP server that exposes memory operations as tools. Claude and any MCP-compatible client (Cowork, Zed, etc.) can call store(), recall(), and predict() directly. No wrapper layer, no API glue — it speaks MCP natively. See docs at /docs for the full tool reference.",
   },
   {
-    question: "Can I self-host Parametric Memory?",
+    question: "What happens when I hit my memory limit?",
     answer:
-      "Yes. Enterprise Self-Hosted ($499/mo) gives you the full source code, commercial license, and deployment guide. Deploy on AWS, Azure, GCP, or your own Kubernetes cluster. You own the data, the proofs, the ML. No cloud lock-in. We provide a 2-hour architecture review, deployment guide, and quarterly health reviews to help you scale.",
+      "Claude keeps working. Older, less-relevant memories are gently summarised to make room. You won't lose anything important, and you'll never get a hard stop mid-session. You can also upgrade your plan instantly from the dashboard — same data, zero downtime.",
   },
   {
-    question: "Is there a free trial?",
+    question: "Can I switch plans?",
     answer:
-      "Not yet — Parametric Memory is currently in Public Beta (pre-v1.0.0). Paid plans are not available during the Beta. We're accepting early access requests from developers who want to test the service or contribute to the memory substrate. Use the early access form on this page to join. Once v1.0.0 launches, all plans will include a free trial with no credit card required.",
+      "Yes. Upgrade or downgrade anytime from your dashboard. Upgrades apply immediately. Downgrades take effect at the end of your billing period.",
   },
   {
-    question: "What happens if I outgrow my plan?",
+    question: "Can I cancel?",
     answer:
-      "Upgrade instantly via the console—same data, zero downtime. RAM and storage scale elastically. If you hit capacity on a dedicated plan, we auto-provision the next tier. For Enterprise Cloud or Self-Hosted, your dedicated team helps you right-size. No surprise bills—pricing is transparent and per-month.",
+      "Yes. Cancel anytime from the Billing section in your dashboard. Takes 30 seconds — no calls, no emails. Your memories are preserved for 90 days after cancellation.",
+  },
+  {
+    question: "I have a team larger than 5. Can you support us?",
+    answer: "Yes — contact us and we can put together a custom arrangement for larger teams.",
   },
 ];
 

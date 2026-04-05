@@ -1,0 +1,161 @@
+---
+title: Claude Desktop & Cowork
+description: Connect Parametric Memory to Claude Desktop, Claude Code, and Claude Cowork — with a real working example of how to use persistent memory across sessions.
+section: MCP Integration
+order: 1
+---
+
+# Claude Desktop & Cowork
+
+Parametric Memory connects to Claude via the Model Context Protocol (MCP). Once connected, Claude can store facts, recall context, and build up knowledge across every session automatically.
+
+## Prerequisites
+
+- A running Parametric Memory instance (see [Your Instance & API Key](/docs/your-instance))
+- Your MCP endpoint URL (e.g. `https://abc123.parametric-memory.dev/mcp`)
+- Your API key (starts with `mmk_`)
+
+## Claude Desktop
+
+Find your config file:
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+- **Linux:** `~/.config/Claude/claude_desktop_config.json`
+
+Add the `parametric-memory` server to your `mcpServers` block:
+
+```json title="claude_desktop_config.json"
+{
+  "mcpServers": {
+    "parametric-memory": {
+      "type": "streamable-http",
+      "url": "https://abc123.parametric-memory.dev/mcp",
+      "headers": {
+        "Authorization": "Bearer mmk_your_key_here"
+      }
+    }
+  }
+}
+```
+
+Restart Claude Desktop. You should see "parametric-memory" appear in the MCP tools panel (the plug icon in the toolbar). If it doesn't appear, check that the URL and key are correct and that your instance is in `running` state on the Dashboard.
+
+## Claude Code (CLI)
+
+Claude Code reads the same `claude_desktop_config.json` file. If you've already set it up for Claude Desktop, Claude Code will pick it up automatically.
+
+You can verify the connection is working:
+
+```bash
+claude mcp list
+# Should show: parametric-memory (connected)
+```
+
+## Claude Cowork
+
+Claude Cowork reads MCP config from the same location as Claude Desktop. After editing `claude_desktop_config.json` and restarting Cowork, your memory server will be available in every Cowork session.
+
+## How to use memory in your Claude sessions
+
+Once connected, Claude has access to the full set of [MCP tools](/docs/mcp/tools). The most important pattern is the **session bootstrap**: ask Claude to load your memory context at the start of each session.
+
+You do this by putting instructions in a `CLAUDE.md` file that Claude reads automatically. Here is a real working example — this is the exact setup used by the Parametric Memory team to give Claude persistent memory across all sessions:
+
+```markdown title="CLAUDE.md"
+# Persistent Memory (MMPM)
+
+You have persistent memory via MMPM MCP tools. Memory survives across sessions. Use it.
+
+## Session Start
+
+Run bootstrap **once per conversation**, on the very first user message.
+
+1. Call `memory_session_bootstrap` with:
+   - `objective`: a short description of what this session is about
+   - `maxTokens: 1200`
+   
+   This returns relevant atoms, procedures, and conflicting facts from previous sessions.
+
+2. Review `conflictingFacts` in the response. If two atoms contradict each other,
+   surface the conflict to the user and tombstone the stale one.
+
+3. For high-stakes work (deploy, architecture, production), re-bootstrap with
+   `highImpact: true` and `evidenceThreshold: 0.75`.
+
+## What to store
+
+Call `session_checkpoint` to save important knowledge as it forms — do not wait
+until the end of the session. If the session dies mid-work, unsaved knowledge is gone.
+
+Store immediately:
+- User corrections to Claude's behaviour (highest priority)
+- Architecture decisions and their rationale
+- Bug root causes
+- Config that took effort to find
+- Sprint state changes
+
+## Atom format
+
+Use namespaced keys: `v1.<type>.<concise_name>`
+
+Types: `fact` (stable truths), `state` (mutable context), `event` (dated milestones),
+`procedure` (rules), `task` (work objective).
+
+## Session end
+
+Always call `session_checkpoint` at the end of the session with updated state atoms.
+Then call `memory_train` 2–3 times on the most important arcs (reinforcement).
+
+## Example checkpoint call
+
+\`\`\`
+session_checkpoint({
+  atoms: [
+    "v1.fact.database_url = postgres://prod.example.com:5432/myapp",
+    "v1.state.current_task = Implementing payment webhook handler"
+  ],
+  edges: [
+    { source: "v1.state.current_task", target: "v1.fact.database_url", type: "depends_on" }
+  ]
+})
+\`\`\`
+```
+
+## What this looks like in practice
+
+With the above CLAUDE.md in place, here is what happens at the start of a new session:
+
+**You:** "Let's continue working on the payment webhook."
+
+**Claude:** *(calls `memory_session_bootstrap` with objective: "continue payment webhook work")*
+
+Bootstrap returns atoms like:
+- `v1.state.current_task = Implementing payment webhook handler`
+- `v1.fact.stripe_webhook_secret = whsec_... (claimed from env)`
+- `v1.procedure.always_verify_stripe_sig = Verify Stripe-Signature header before processing any event`
+- `v1.event.webhook_deployed_2024_03_15 = Deployed webhook to production, all events firing correctly`
+
+**Claude:** "Welcome back. I can see we were working on the payment webhook. Last session we deployed it successfully. The Stripe signature is configured and I have the webhook secret stored. Where would you like to pick up?"
+
+No copy-pasting context. No re-explaining the project. The AI knows what it knew last time.
+
+## Using memory with Claude Cowork
+
+Claude Cowork sessions benefit from the same CLAUDE.md pattern. Place your CLAUDE.md in the root of any folder you select in Cowork, and Claude will load it automatically at the start of each session.
+
+The memory works across all Claude interfaces — something stored during a Claude Desktop session is available in the next Claude Code session, and vice versa. The substrate is shared across all clients using the same API key.
+
+## Troubleshooting
+
+**"parametric-memory" doesn't appear in the tools panel:**
+- Check that the `type` field is `"streamable-http"` — older configs used `"url"` only
+- Verify your instance is `running` on the Dashboard
+- Confirm the URL includes `/mcp` at the end
+
+**Memory bootstrap returns empty results:**
+- This is normal on the first session — there are no stored atoms yet
+- After you run `session_checkpoint` in your first session, bootstrap will return context in subsequent sessions
+
+**401 errors in the Claude tool panel:**
+- Your API key may have been rotated — reclaim it from Dashboard → Settings → API Key
+- Make sure there is no extra whitespace around the key value in your config file
