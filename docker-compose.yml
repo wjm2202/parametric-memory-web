@@ -1,10 +1,6 @@
 services:
   web:
-    build:
-      context: .
-      dockerfile: Dockerfile
-      args:
-        GIT_COMMIT_SHA: ${GIT_COMMIT_SHA:-unknown}
+    image: parametricmemory/parametric-memory-web:${GIT_COMMIT_SHA:-latest}
     container_name: pm-web
     restart: unless-stopped
     ports:
