@@ -582,7 +582,7 @@ export default function DashboardClient({
   // ── Key rotation state ───────────────────────────────────────────────────
   const [rotationStatus, setRotationStatus] = useState<RotationStatus>("none");
   const [rotationError, setRotationError] = useState<string | null>(null);
-  const [rotationJobId, setRotationJobId] = useState<string | null>(null);
+  const [_rotationJobId, setRotationJobId] = useState<string | null>(null);
   const [rotationConfirmOpen, setRotationConfirmOpen] = useState(false);
   const [rotationStarting, setRotationStarting] = useState(false);
   const [rotationRateLimitMsg, setRotationRateLimitMsg] = useState<string | null>(null);

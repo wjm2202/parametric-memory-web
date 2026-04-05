@@ -12,7 +12,7 @@ const faqs = [
   {
     question: "How much does Parametric Memory cost?",
     answer:
-      "Three plans, all billed monthly: Solo at $9/month (10,000 memories, up to 33 Claude sessions per day), Professional at $29/month (100,000 memories, knowledge graph edges, priority support, up to 333 Claude sessions per day), and Team at $79/month (500,000 memories, unlimited sessions, dedicated support). No contracts, cancel anytime from your dashboard.",
+      "Four plans, all billed monthly: Free at $1/month (500 atoms, 100 bootstraps/month), Indie at $9/month (10,000 atoms, 1,000 bootstraps/month, email support), Pro at $29/month (100,000 atoms, 10,000 bootstraps/month, knowledge graph edges, priority support), and Team at $79/month (500,000 atoms, unlimited bootstraps, dedicated support). No contracts, cancel anytime from your dashboard.",
   },
   {
     question: "Does Parametric Memory work with Claude and MCP?",
