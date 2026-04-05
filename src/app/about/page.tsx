@@ -107,12 +107,18 @@ export default async function AboutPage() {
               {/* Glow filter for the logo */}
               <filter id="logoGlow" x="-40%" y="-40%" width="180%" height="180%">
                 <feGaussianBlur stdDeviation="6" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
               </filter>
               {/* Soft glow for particles */}
               <filter id="dot-glow" x="-100%" y="-100%" width="300%" height="300%">
                 <feGaussianBlur stdDeviation="2" result="blur" />
-                <feMerge><feMergeNode in="blur" /><feMergeNode in="SourceGraphic" /></feMerge>
+                <feMerge>
+                  <feMergeNode in="blur" />
+                  <feMergeNode in="SourceGraphic" />
+                </feMerge>
               </filter>
               <linearGradient id="chatGrad" x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#1a1a2e" />
@@ -136,8 +142,16 @@ export default async function AboutPage() {
             </defs>
 
             {/* ── Left chat window ── */}
-            <rect x="8" y="24" width="168" height="152" rx="10"
-              fill="url(#chatGrad)" stroke="#2a2a3d" strokeWidth="1" />
+            <rect
+              x="8"
+              y="24"
+              width="168"
+              height="152"
+              rx="10"
+              fill="url(#chatGrad)"
+              stroke="#2a2a3d"
+              strokeWidth="1"
+            />
             {/* Titlebar dots */}
             <circle cx="24" cy="38" r="4" fill="#f87171" fillOpacity="0.6" />
             <circle cx="38" cy="38" r="4" fill="#fbbf24" fillOpacity="0.6" />
@@ -152,84 +166,215 @@ export default async function AboutPage() {
             <rect x="20" y="140" width="130" height="10" rx="5" fill="#7c5cfc" fillOpacity="0.25" />
             <rect x="20" y="155" width="90" height="10" rx="5" fill="#7c5cfc" fillOpacity="0.12" />
             {/* Label */}
-            <text x="92" y="190" fontSize="9.5" fill="#555570" textAnchor="middle"
-              fontFamily="ui-monospace,monospace">Session ending</text>
+            <text
+              x="92"
+              y="190"
+              fontSize="9.5"
+              fill="#555570"
+              textAnchor="middle"
+              fontFamily="ui-monospace,monospace"
+            >
+              Session ending
+            </text>
 
             {/* ── Flow left → centre: context particles ── */}
             {/* Flow line */}
-            <line x1="178" y1="100" x2="276" y2="100"
-              stroke="url(#flowLeft)" strokeWidth="1.5" strokeDasharray="4 3" />
+            <line
+              x1="178"
+              y1="100"
+              x2="276"
+              y2="100"
+              stroke="url(#flowLeft)"
+              strokeWidth="1.5"
+              strokeDasharray="4 3"
+            />
             {/* Particles: fragments of context moving right */}
             {[
-              { cx: 200, cy: 86,  label: "correction",  color: "#7c5cfc" },
-              { cx: 224, cy: 100, label: "decision",     color: "#a78bfa" },
-              { cx: 210, cy: 114, label: "preference",   color: "#7c5cfc" },
+              { cx: 200, cy: 86, label: "correction", color: "#7c5cfc" },
+              { cx: 224, cy: 100, label: "decision", color: "#a78bfa" },
+              { cx: 210, cy: 114, label: "preference", color: "#7c5cfc" },
             ].map(({ cx, cy, label, color }) => (
               <g key={label} filter="url(#dot-glow)">
                 <circle cx={cx} cy={cy} r="5" fill={color} fillOpacity="0.9" />
-                <text x={cx} y={cy - 9} fontSize="7.5" fill={color} fillOpacity="0.75"
-                  textAnchor="middle" fontFamily="ui-monospace,monospace">{label}</text>
+                <text
+                  x={cx}
+                  y={cy - 9}
+                  fontSize="7.5"
+                  fill={color}
+                  fillOpacity="0.75"
+                  textAnchor="middle"
+                  fontFamily="ui-monospace,monospace"
+                >
+                  {label}
+                </text>
               </g>
             ))}
 
             {/* ── Centre: Parametric logo / substrate ── */}
             {/* Outer glow ring */}
-            <circle cx="340" cy="100" r="46" fill="none"
-              stroke="url(#logoGrad)" strokeWidth="0.75" strokeOpacity="0.4"
-              strokeDasharray="3 4" />
+            <circle
+              cx="340"
+              cy="100"
+              r="46"
+              fill="none"
+              stroke="url(#logoGrad)"
+              strokeWidth="0.75"
+              strokeOpacity="0.4"
+              strokeDasharray="3 4"
+            />
             {/* Logo circle */}
-            <circle cx="340" cy="100" r="36" fill="#0a0a0f"
-              stroke="url(#logoGrad)" strokeWidth="1.5" filter="url(#logoGlow)" />
+            <circle
+              cx="340"
+              cy="100"
+              r="36"
+              fill="#0a0a0f"
+              stroke="url(#logoGrad)"
+              strokeWidth="1.5"
+              filter="url(#logoGlow)"
+            />
             {/* Logo image */}
-            <image href="/brand/favicon-192.png" x="313" y="73" width="54" height="54"
-              style={{ borderRadius: "50%" }} />
+            <image
+              href="/brand/favicon-192.png"
+              x="313"
+              y="73"
+              width="54"
+              height="54"
+              style={{ borderRadius: "50%" }}
+            />
             {/* Atom labels inside */}
-            <text x="340" y="148" fontSize="8.5" fill="#7c5cfc" fillOpacity="0.8"
-              textAnchor="middle" fontFamily="ui-monospace,monospace">v1.procedure.*</text>
-            <text x="340" y="159" fontSize="8.5" fill="#22d3ee" fillOpacity="0.6"
-              textAnchor="middle" fontFamily="ui-monospace,monospace">v1.fact.*  ·  v1.state.*</text>
-            <text x="340" y="190" fontSize="9.5" fill="#555570" textAnchor="middle"
-              fontFamily="ui-monospace,monospace">Merkle-sealed · persistent</text>
+            <text
+              x="340"
+              y="148"
+              fontSize="8.5"
+              fill="#7c5cfc"
+              fillOpacity="0.8"
+              textAnchor="middle"
+              fontFamily="ui-monospace,monospace"
+            >
+              v1.procedure.*
+            </text>
+            <text
+              x="340"
+              y="159"
+              fontSize="8.5"
+              fill="#22d3ee"
+              fillOpacity="0.6"
+              textAnchor="middle"
+              fontFamily="ui-monospace,monospace"
+            >
+              v1.fact.* · v1.state.*
+            </text>
+            <text
+              x="340"
+              y="190"
+              fontSize="9.5"
+              fill="#555570"
+              textAnchor="middle"
+              fontFamily="ui-monospace,monospace"
+            >
+              Merkle-sealed · persistent
+            </text>
 
             {/* ── Flow centre → right: loaded context ── */}
-            <line x1="404" y1="100" x2="500" y2="100"
-              stroke="url(#flowRight)" strokeWidth="1.5" markerEnd="url(#arr-r)" />
+            <line
+              x1="404"
+              y1="100"
+              x2="500"
+              y2="100"
+              stroke="url(#flowRight)"
+              strokeWidth="1.5"
+              markerEnd="url(#arr-r)"
+            />
             {/* Particles: atoms flowing into new session */}
             {[
-              { cx: 422, cy: 86,  label: "correction",  color: "#22d3ee" },
-              { cx: 446, cy: 100, label: "decision",     color: "#67e8f9" },
-              { cx: 432, cy: 114, label: "preference",   color: "#22d3ee" },
+              { cx: 422, cy: 86, label: "correction", color: "#22d3ee" },
+              { cx: 446, cy: 100, label: "decision", color: "#67e8f9" },
+              { cx: 432, cy: 114, label: "preference", color: "#22d3ee" },
             ].map(({ cx, cy, label, color }) => (
               <g key={label} filter="url(#dot-glow)">
                 <circle cx={cx} cy={cy} r="5" fill={color} fillOpacity="0.9" />
-                <text x={cx} y={cy - 9} fontSize="7.5" fill={color} fillOpacity="0.75"
-                  textAnchor="middle" fontFamily="ui-monospace,monospace">{label}</text>
+                <text
+                  x={cx}
+                  y={cy - 9}
+                  fontSize="7.5"
+                  fill={color}
+                  fillOpacity="0.75"
+                  textAnchor="middle"
+                  fontFamily="ui-monospace,monospace"
+                >
+                  {label}
+                </text>
               </g>
             ))}
 
             {/* ── Right chat window (new session) ── */}
-            <rect x="504" y="24" width="168" height="152" rx="10"
-              fill="url(#chatGrad)" stroke="#22d3ee" strokeWidth="1" strokeOpacity="0.3" />
+            <rect
+              x="504"
+              y="24"
+              width="168"
+              height="152"
+              rx="10"
+              fill="url(#chatGrad)"
+              stroke="#22d3ee"
+              strokeWidth="1"
+              strokeOpacity="0.3"
+            />
             {/* Titlebar dots */}
             <circle cx="520" cy="38" r="4" fill="#f87171" fillOpacity="0.6" />
             <circle cx="534" cy="38" r="4" fill="#fbbf24" fillOpacity="0.6" />
             <circle cx="548" cy="38" r="4" fill="#34d399" fillOpacity="0.6" />
             <line x1="504" y1="50" x2="672" y2="50" stroke="#2a2a3d" strokeWidth="0.75" />
             {/* Bootstrap pill at top of new session */}
-            <rect x="516" y="58" width="144" height="18" rx="9"
-              fill="#22d3ee" fillOpacity="0.08" stroke="#22d3ee" strokeWidth="0.75" strokeOpacity="0.4" />
-            <text x="588" y="71" fontSize="8.5" fill="#22d3ee" fillOpacity="0.8"
-              textAnchor="middle" fontFamily="ui-monospace,monospace">↻ context bootstrapped</text>
+            <rect
+              x="516"
+              y="58"
+              width="144"
+              height="18"
+              rx="9"
+              fill="#22d3ee"
+              fillOpacity="0.08"
+              stroke="#22d3ee"
+              strokeWidth="0.75"
+              strokeOpacity="0.4"
+            />
+            <text
+              x="588"
+              y="71"
+              fontSize="8.5"
+              fill="#22d3ee"
+              fillOpacity="0.8"
+              textAnchor="middle"
+              fontFamily="ui-monospace,monospace"
+            >
+              ↻ context bootstrapped
+            </text>
             {/* Richer chat bubbles — AI already knows */}
             <rect x="516" y="84" width="96" height="12" rx="6" fill="#2a2a3d" />
             <rect x="516" y="103" width="120" height="12" rx="6" fill="#2a2a3d" />
             {/* Assistant reply — confident, full */}
             <rect x="516" y="123" width="136" height="10" rx="5" fill="#22d3ee" fillOpacity="0.2" />
-            <rect x="516" y="138" width="110" height="10" rx="5" fill="#22d3ee" fillOpacity="0.14" />
+            <rect
+              x="516"
+              y="138"
+              width="110"
+              height="10"
+              rx="5"
+              fill="#22d3ee"
+              fillOpacity="0.14"
+            />
             <rect x="516" y="153" width="80" height="10" rx="5" fill="#22d3ee" fillOpacity="0.08" />
             {/* Label */}
-            <text x="588" y="190" fontSize="9.5" fill="#22d3ee" fillOpacity="0.5"
-              textAnchor="middle" fontFamily="ui-monospace,monospace">New session · already knows you</text>
+            <text
+              x="588"
+              y="190"
+              fontSize="9.5"
+              fill="#22d3ee"
+              fillOpacity="0.5"
+              textAnchor="middle"
+              fontFamily="ui-monospace,monospace"
+            >
+              New session · already knows you
+            </text>
           </svg>
         </section>
 
@@ -272,7 +417,9 @@ export default async function AboutPage() {
 
         {/* ── How it's different ────────────────────────────────────────── */}
         <section className="mx-auto max-w-3xl px-6 py-16">
-          <h2 className="font-syne mb-4 text-2xl font-bold text-[#e8e8f0]">How it&apos;s different</h2>
+          <h2 className="font-syne mb-4 text-2xl font-bold text-[#e8e8f0]">
+            How it&apos;s different
+          </h2>
 
           <p className="mb-10 leading-relaxed text-[#b0b0c8]">
             Most competitors give you a vector database and call it memory. Similarity search finds
@@ -338,8 +485,8 @@ export default async function AboutPage() {
                 <p className="mt-2 text-sm text-[#8888aa]">
                   Their own PostgreSQL instance. Their own Merkle tree with its own root hash. Their
                   own container pair with its own API key. Isolation by architecture, not by policy.
-                  It costs more to operate. We think it&apos;s the only defensible choice for a product
-                  selling <em>memory</em>.
+                  It costs more to operate. We think it&apos;s the only defensible choice for a
+                  product selling <em>memory</em>.
                 </p>
               </div>
             </div>
@@ -359,8 +506,8 @@ export default async function AboutPage() {
               execution.
             </p>
             <p>
-              We don&apos;t think this is a party trick. We think it&apos;s the future of software. And we
-              operate the same way we sell.
+              We don&apos;t think this is a party trick. We think it&apos;s the future of software.
+              And we operate the same way we sell.
             </p>
             <blockquote className="border-l-2 border-[#7c5cfc] pl-5 text-[#8888aa] italic">
               &ldquo;We don&apos;t just sell you a second brain — we trust it with ours.&rdquo;
@@ -368,9 +515,9 @@ export default async function AboutPage() {
             <p>
               Our internal operations — every health check, every billing event, every customer
               signup — is a Merkle-sealed atom in our own MMPM substrate. The morning briefing agent
-              reads last night&apos;s ops atoms and surfaces anything that needs attention. The security
-              review agent runs weekly. We built a second brain for our AI, then built a company on
-              top of it.
+              reads last night&apos;s ops atoms and surfaces anything that needs attention. The
+              security review agent runs weekly. We built a second brain for our AI, then built a
+              company on top of it.
             </p>
           </div>
         </section>
@@ -378,7 +525,7 @@ export default async function AboutPage() {
         {/* ── Ops substrate diagram ─────────────────────────────────────── */}
         <section className="border-t border-[#1a1a26] bg-[#0d0d14] px-6 py-16">
           <div className="mx-auto max-w-3xl">
-            <p className="mb-2 text-xs font-medium uppercase tracking-widest text-[#7c5cfc]">
+            <p className="mb-2 text-xs font-medium tracking-widest text-[#7c5cfc] uppercase">
               How it works for us
             </p>
             <h2 className="font-syne mb-3 text-2xl font-bold text-[#e8e8f0]">
@@ -396,17 +543,38 @@ export default async function AboutPage() {
               <svg
                 viewBox="0 0 720 340"
                 xmlns="http://www.w3.org/2000/svg"
-                className="w-full max-w-2xl mx-auto"
+                className="mx-auto w-full max-w-2xl"
                 aria-label="Ops substrate flow diagram"
               >
                 <defs>
-                  <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <marker
+                    id="arrow"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="6"
+                    refY="3"
+                    orient="auto"
+                  >
                     <path d="M0,0 L0,6 L8,3 z" fill="#2a2a3d" />
                   </marker>
-                  <marker id="arrow-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <marker
+                    id="arrow-purple"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="6"
+                    refY="3"
+                    orient="auto"
+                  >
                     <path d="M0,0 L0,6 L8,3 z" fill="#7c5cfc" />
                   </marker>
-                  <marker id="arrow-cyan" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+                  <marker
+                    id="arrow-cyan"
+                    markerWidth="8"
+                    markerHeight="8"
+                    refX="6"
+                    refY="3"
+                    orient="auto"
+                  >
                     <path d="M0,0 L0,6 L8,3 z" fill="#22d3ee" />
                   </marker>
                   <linearGradient id="substrateFill" x1="0" y1="0" x2="1" y2="1">
@@ -421,90 +589,255 @@ export default async function AboutPage() {
 
                 {/* ── Left column: event sources ── */}
                 {[
-                  { y: 60,  label: "Customer signup",  icon: "👤" },
-                  { y: 130, label: "Billing event",     icon: "💳" },
-                  { y: 200, label: "Health check",      icon: "♡" },
-                  { y: 270, label: "Security alert",    icon: "⚑" },
+                  { y: 60, label: "Customer signup", icon: "👤" },
+                  { y: 130, label: "Billing event", icon: "💳" },
+                  { y: 200, label: "Health check", icon: "♡" },
+                  { y: 270, label: "Security alert", icon: "⚑" },
                 ].map(({ y, label, icon }) => (
                   <g key={label}>
-                    <rect x="12" y={y - 18} width="148" height="36" rx="8"
-                      fill="#12121a" stroke="#2a2a3d" strokeWidth="1" />
-                    <text x="26" y={y + 5} fontSize="13" fill="#555570">{icon}</text>
-                    <text x="46" y={y + 5} fontSize="11.5" fill="#8888aa" fontFamily="ui-monospace,monospace">{label}</text>
+                    <rect
+                      x="12"
+                      y={y - 18}
+                      width="148"
+                      height="36"
+                      rx="8"
+                      fill="#12121a"
+                      stroke="#2a2a3d"
+                      strokeWidth="1"
+                    />
+                    <text x="26" y={y + 5} fontSize="13" fill="#555570">
+                      {icon}
+                    </text>
+                    <text
+                      x="46"
+                      y={y + 5}
+                      fontSize="11.5"
+                      fill="#8888aa"
+                      fontFamily="ui-monospace,monospace"
+                    >
+                      {label}
+                    </text>
                     {/* Arrow to substrate */}
-                    <line x1="160" y1={y} x2="238" y2={y}
-                      stroke="#2a2a3d" strokeWidth="1.5" markerEnd="url(#arrow)" strokeDasharray="4 3" />
+                    <line
+                      x1="160"
+                      y1={y}
+                      x2="238"
+                      y2={y}
+                      stroke="#2a2a3d"
+                      strokeWidth="1.5"
+                      markerEnd="url(#arrow)"
+                      strokeDasharray="4 3"
+                    />
                   </g>
                 ))}
 
                 {/* ── Centre: MMPM ops substrate ── */}
-                <rect x="242" y="28" width="156" height="284" rx="14"
-                  fill="url(#substrateFill)" stroke="url(#substrateStroke)" strokeWidth="1.5" />
-                <text x="320" y="58" fontSize="10" fill="#7c5cfc" textAnchor="middle"
-                  fontFamily="ui-monospace,monospace" letterSpacing="1">OPS SUBSTRATE</text>
+                <rect
+                  x="242"
+                  y="28"
+                  width="156"
+                  height="284"
+                  rx="14"
+                  fill="url(#substrateFill)"
+                  stroke="url(#substrateStroke)"
+                  strokeWidth="1.5"
+                />
+                <text
+                  x="320"
+                  y="58"
+                  fontSize="10"
+                  fill="#7c5cfc"
+                  textAnchor="middle"
+                  fontFamily="ui-monospace,monospace"
+                  letterSpacing="1"
+                >
+                  OPS SUBSTRATE
+                </text>
 
                 {/* Atom rows */}
                 {[
-                  { y: 82,  label: "v1.event.signup_…",   color: "#22d3ee" },
-                  { y: 122, label: "v1.event.billing_…",  color: "#7c5cfc" },
-                  { y: 162, label: "v1.state.health_…",   color: "#34d399" },
-                  { y: 202, label: "v1.event.alert_…",    color: "#fbbf24" },
+                  { y: 82, label: "v1.event.signup_…", color: "#22d3ee" },
+                  { y: 122, label: "v1.event.billing_…", color: "#7c5cfc" },
+                  { y: 162, label: "v1.state.health_…", color: "#34d399" },
+                  { y: 202, label: "v1.event.alert_…", color: "#fbbf24" },
                 ].map(({ y, label, color }) => (
                   <g key={label}>
-                    <rect x="258" y={y - 14} width="124" height="26" rx="6"
-                      fill="#12121a" stroke={color} strokeWidth="0.75" strokeOpacity="0.5" />
+                    <rect
+                      x="258"
+                      y={y - 14}
+                      width="124"
+                      height="26"
+                      rx="6"
+                      fill="#12121a"
+                      stroke={color}
+                      strokeWidth="0.75"
+                      strokeOpacity="0.5"
+                    />
                     {/* Merkle dot */}
                     <circle cx="272" cy={y} r="3.5" fill={color} fillOpacity="0.8" />
-                    <text x="283" y={y + 4.5} fontSize="9.5" fill="#8888aa"
-                      fontFamily="ui-monospace,monospace">{label}</text>
+                    <text
+                      x="283"
+                      y={y + 4.5}
+                      fontSize="9.5"
+                      fill="#8888aa"
+                      fontFamily="ui-monospace,monospace"
+                    >
+                      {label}
+                    </text>
                   </g>
                 ))}
 
                 {/* "Merkle sealed" label */}
-                <text x="320" y="245" fontSize="9" fill="#555570" textAnchor="middle"
-                  fontFamily="ui-monospace,monospace">● Merkle-sealed atoms</text>
-                <text x="320" y="260" fontSize="9" fill="#555570" textAnchor="middle"
-                  fontFamily="ui-monospace,monospace">● Cryptographic proofs</text>
-                <text x="320" y="275" fontSize="9" fill="#555570" textAnchor="middle"
-                  fontFamily="ui-monospace,monospace">● Markov prediction</text>
-                <text x="320" y="295" fontSize="9" fill="#2a2a3d" textAnchor="middle"
-                  fontFamily="ui-monospace,monospace">via MCP</text>
+                <text
+                  x="320"
+                  y="245"
+                  fontSize="9"
+                  fill="#555570"
+                  textAnchor="middle"
+                  fontFamily="ui-monospace,monospace"
+                >
+                  ● Merkle-sealed atoms
+                </text>
+                <text
+                  x="320"
+                  y="260"
+                  fontSize="9"
+                  fill="#555570"
+                  textAnchor="middle"
+                  fontFamily="ui-monospace,monospace"
+                >
+                  ● Cryptographic proofs
+                </text>
+                <text
+                  x="320"
+                  y="275"
+                  fontSize="9"
+                  fill="#555570"
+                  textAnchor="middle"
+                  fontFamily="ui-monospace,monospace"
+                >
+                  ● Markov prediction
+                </text>
+                <text
+                  x="320"
+                  y="295"
+                  fontSize="9"
+                  fill="#2a2a3d"
+                  textAnchor="middle"
+                  fontFamily="ui-monospace,monospace"
+                >
+                  via MCP
+                </text>
 
                 {/* ── Right column: AI agents reading ── */}
                 {/* Arrows out */}
-                <line x1="398" y1="100" x2="468" y2="100"
-                  stroke="#7c5cfc" strokeWidth="1.5" markerEnd="url(#arrow-purple)" />
-                <line x1="398" y1="170" x2="468" y2="170"
-                  stroke="#7c5cfc" strokeWidth="1.5" markerEnd="url(#arrow-purple)" />
-                <line x1="398" y1="240" x2="468" y2="240"
-                  stroke="#22d3ee" strokeWidth="1.5" markerEnd="url(#arrow-cyan)" />
+                <line
+                  x1="398"
+                  y1="100"
+                  x2="468"
+                  y2="100"
+                  stroke="#7c5cfc"
+                  strokeWidth="1.5"
+                  markerEnd="url(#arrow-purple)"
+                />
+                <line
+                  x1="398"
+                  y1="170"
+                  x2="468"
+                  y2="170"
+                  stroke="#7c5cfc"
+                  strokeWidth="1.5"
+                  markerEnd="url(#arrow-purple)"
+                />
+                <line
+                  x1="398"
+                  y1="240"
+                  x2="468"
+                  y2="240"
+                  stroke="#22d3ee"
+                  strokeWidth="1.5"
+                  markerEnd="url(#arrow-cyan)"
+                />
 
                 {/* Agent boxes */}
                 {[
-                  { y: 100, label: "Morning briefing agent", sub: "Daily digest → founder",    accent: "#7c5cfc" },
-                  { y: 170, label: "Security review agent",  sub: "Weekly audit → alert",       accent: "#7c5cfc" },
-                  { y: 240, label: "Business intelligence",  sub: "Trends, anomalies, insights", accent: "#22d3ee" },
+                  {
+                    y: 100,
+                    label: "Morning briefing agent",
+                    sub: "Daily digest → founder",
+                    accent: "#7c5cfc",
+                  },
+                  {
+                    y: 170,
+                    label: "Security review agent",
+                    sub: "Weekly audit → alert",
+                    accent: "#7c5cfc",
+                  },
+                  {
+                    y: 240,
+                    label: "Business intelligence",
+                    sub: "Trends, anomalies, insights",
+                    accent: "#22d3ee",
+                  },
                 ].map(({ y, label, sub, accent }) => (
                   <g key={label}>
-                    <rect x="470" y={y - 28} width="238" height="56" rx="10"
-                      fill="#12121a" stroke={accent} strokeWidth="1" strokeOpacity="0.4" />
-                    <text x="486" y={y - 8} fontSize="11.5" fill="#e8e8f0" fontWeight="500">{label}</text>
-                    <text x="486" y={y + 10} fontSize="10" fill="#555570"
-                      fontFamily="ui-monospace,monospace">{sub}</text>
+                    <rect
+                      x="470"
+                      y={y - 28}
+                      width="238"
+                      height="56"
+                      rx="10"
+                      fill="#12121a"
+                      stroke={accent}
+                      strokeWidth="1"
+                      strokeOpacity="0.4"
+                    />
+                    <text x="486" y={y - 8} fontSize="11.5" fill="#e8e8f0" fontWeight="500">
+                      {label}
+                    </text>
+                    <text
+                      x="486"
+                      y={y + 10}
+                      fontSize="10"
+                      fill="#555570"
+                      fontFamily="ui-monospace,monospace"
+                    >
+                      {sub}
+                    </text>
                     {/* Small agent icon */}
-                    <circle cx="690" cy={y - 10} r="5" fill={accent} fillOpacity="0.2" stroke={accent} strokeWidth="1" strokeOpacity="0.4" />
-                    <text x="690" y={y - 6} fontSize="8" fill={accent} textAnchor="middle">AI</text>
+                    <circle
+                      cx="690"
+                      cy={y - 10}
+                      r="5"
+                      fill={accent}
+                      fillOpacity="0.2"
+                      stroke={accent}
+                      strokeWidth="1"
+                      strokeOpacity="0.4"
+                    />
+                    <text x="690" y={y - 6} fontSize="8" fill={accent} textAnchor="middle">
+                      AI
+                    </text>
                   </g>
                 ))}
 
                 {/* Bootstrap label on substrate top */}
-                <text x="320" y="16" fontSize="9" fill="#555570" textAnchor="middle"
-                  fontFamily="ui-monospace,monospace">bootstrap → read → act</text>
+                <text
+                  x="320"
+                  y="16"
+                  fontSize="9"
+                  fill="#555570"
+                  textAnchor="middle"
+                  fontFamily="ui-monospace,monospace"
+                >
+                  bootstrap → read → act
+                </text>
               </svg>
             </div>
 
             <p className="mt-5 text-center text-xs text-[#555570]">
-              The same architecture available to every customer — we just happen to use it on ourselves.
+              The same architecture available to every customer — we just happen to use it on
+              ourselves.
             </p>
           </div>
         </section>
