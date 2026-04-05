@@ -1,0 +1,1165 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Parametric Memory — Video Preview</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  * { margin:0; padding:0; box-sizing:border-box; }
+
+  :root {
+    --brand: #36aaf5;
+    --brand-dim: #0c8ee6;
+    --cyan: #22d3ee;
+    --amber: #f59e0b;
+    --green: #10b981;
+    --red: #ef4444;
+    --bg: #020617;
+    --surface: #0f172a;
+  }
+
+  html, body { width:100%; height:100%; background:#000; overflow:hidden; }
+
+  /* ── Video Frame ── */
+  #stage {
+    position:relative;
+    width:1920px;
+    height:1080px;
+    background: var(--bg);
+    overflow:hidden;
+    transform-origin: top left;
+  }
+
+  /* ── Substrate Canvas ── */
+  #substrate-canvas {
+    position:absolute;
+    inset:0;
+    width:100%;
+    height:100%;
+  }
+
+  /* ── Noise overlay ── */
+  #stage::before {
+    content:'';
+    position:absolute;
+    inset:0;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.03'/%3E%3C/svg%3E");
+    opacity:0.4;
+    pointer-events:none;
+    z-index:1;
+  }
+
+  /* ── Scene Container ── */
+  #scenes { position:absolute; inset:0; z-index:10; }
+
+  .scene {
+    position:absolute;
+    inset:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    opacity:0;
+    transition: opacity 0.8s ease;
+    pointer-events:none;
+  }
+  .scene.active { opacity:1; }
+
+  /* ── PROGRESS BAR ── */
+  #progress-bar {
+    position:absolute;
+    bottom:0; left:0;
+    height:3px;
+    background: linear-gradient(90deg, var(--brand), var(--cyan), var(--amber));
+    z-index:100;
+    transition: width 0.1s linear;
+  }
+
+  /* ── SCENE LABEL ── */
+  .scene-label {
+    position:absolute;
+    top:48px; left:60px;
+    font-family:'JetBrains Mono', monospace;
+    font-size:13px;
+    letter-spacing:0.12em;
+    text-transform:uppercase;
+    color: rgba(54,170,245,0.6);
+  }
+
+  /* ── LOGO (always visible, top-left) ── */
+  #logo {
+    position:absolute;
+    top:44px; left:60px;
+    display:flex;
+    align-items:center;
+    gap:12px;
+    z-index:50;
+    font-family:'Syne', sans-serif;
+    font-size:18px;
+    font-weight:700;
+    color: rgba(255,255,255,0.6);
+    letter-spacing:-0.01em;
+  }
+
+  /* ── SCENE 1 — PAIN ── */
+  .chat-window {
+    width:680px;
+    background: rgba(15,23,42,0.95);
+    border:1px solid rgba(255,255,255,0.08);
+    border-radius:20px;
+    overflow:hidden;
+    box-shadow: 0 40px 120px rgba(0,0,0,0.6);
+  }
+  .chat-header {
+    background: rgba(30,41,59,0.9);
+    padding:16px 24px;
+    display:flex;
+    align-items:center;
+    gap:10px;
+    border-bottom:1px solid rgba(255,255,255,0.06);
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color: rgba(148,163,184,0.8);
+  }
+  .chat-dot { width:10px; height:10px; border-radius:50%; }
+  .chat-body { padding:28px 28px 36px; display:flex; flex-direction:column; gap:16px; }
+  .msg { display:flex; gap:12px; align-items:flex-start; }
+  .msg-avatar {
+    width:36px; height:36px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px; font-weight:600;
+    flex-shrink:0;
+  }
+  .msg-avatar.user { background: rgba(54,170,245,0.2); color: var(--brand); }
+  .msg-avatar.ai { background: rgba(16,185,129,0.15); color: var(--green); }
+  .msg-bubble {
+    background: rgba(30,41,59,0.7);
+    border-radius:12px;
+    padding:12px 16px;
+    font-family:'Outfit',sans-serif;
+    font-size:15px;
+    line-height:1.5;
+    color: rgba(203,213,225,0.9);
+    border:1px solid rgba(255,255,255,0.06);
+    max-width:520px;
+  }
+  .msg-bubble.forgotten {
+    border-color: rgba(239,68,68,0.2);
+    background: rgba(239,68,68,0.05);
+    color: rgba(252,165,165,0.9);
+  }
+  .session-break {
+    display:flex; align-items:center; gap:12px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color: rgba(100,116,139,0.6);
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+    margin:4px 0;
+  }
+  .session-break::before, .session-break::after {
+    content:''; flex:1; height:1px; background:rgba(100,116,139,0.2);
+  }
+
+  .pain-title {
+    position:absolute;
+    right:100px;
+    top:50%;
+    transform:translateY(-50%);
+    text-align:right;
+    max-width:500px;
+  }
+  .pain-title h2 {
+    font-family:'Syne',sans-serif;
+    font-size:52px;
+    font-weight:800;
+    color:white;
+    letter-spacing:-0.03em;
+    line-height:1.1;
+    margin-bottom:16px;
+  }
+  .pain-title p {
+    font-family:'Outfit',sans-serif;
+    font-size:20px;
+    color: rgba(148,163,184,0.7);
+    line-height:1.5;
+  }
+  .pain-badge {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background: rgba(239,68,68,0.08);
+    border:1px solid rgba(239,68,68,0.2);
+    border-radius:99px;
+    padding:6px 16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color: rgba(252,165,165,0.8);
+    margin-bottom:24px;
+    letter-spacing:0.06em;
+    text-transform:uppercase;
+  }
+
+  /* ── SCENE 2 — SUBSTRATE ── */
+  .substrate-scene {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    z-index:2;
+  }
+  .substrate-badge {
+    display:inline-flex;
+    align-items:center;
+    gap:8px;
+    background: rgba(16,185,129,0.1);
+    border:1px solid rgba(16,185,129,0.25);
+    border-radius:99px;
+    padding:8px 20px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color: var(--green);
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+    margin-bottom:28px;
+  }
+  .substrate-badge .dot {
+    width:7px; height:7px; border-radius:50%;
+    background: var(--green);
+    animation: pulse-green 1.5s ease-in-out infinite;
+  }
+  @keyframes pulse-green {
+    0%,100% { opacity:1; transform:scale(1); }
+    50% { opacity:0.5; transform:scale(0.7); }
+  }
+  .substrate-heading {
+    font-family:'Syne',sans-serif;
+    font-size:72px;
+    font-weight:800;
+    color:white;
+    letter-spacing:-0.04em;
+    line-height:1.0;
+    margin-bottom:16px;
+  }
+  .substrate-heading .grad {
+    background: linear-gradient(135deg, #36aaf5 0%, #22d3ee 50%, #f59e0b 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .substrate-sub {
+    font-family:'Outfit',sans-serif;
+    font-size:22px;
+    color:rgba(148,163,184,0.7);
+    max-width:700px;
+    line-height:1.5;
+    margin-bottom:48px;
+  }
+  .atom-stats {
+    display:flex;
+    gap:48px;
+    justify-content:center;
+  }
+  .atom-stat { text-align:center; }
+  .atom-stat .val {
+    font-family:'Syne',sans-serif;
+    font-size:48px;
+    font-weight:800;
+    color:white;
+    letter-spacing:-0.04em;
+    line-height:1;
+    margin-bottom:6px;
+  }
+  .atom-stat .lbl {
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:rgba(100,116,139,0.8);
+    letter-spacing:0.08em;
+    text-transform:uppercase;
+  }
+
+  /* ── SCENE 3 — USE CASES ── */
+  .use-cases {
+    display:grid;
+    grid-template-columns:1fr 1fr 1fr;
+    gap:32px;
+    padding:0 80px;
+    width:100%;
+    max-width:1600px;
+  }
+  .use-card {
+    background: rgba(15,23,42,0.8);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:20px;
+    padding:40px 36px;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+    position:relative;
+    overflow:hidden;
+  }
+  .use-card::before {
+    content:'';
+    position:absolute;
+    inset-x:0; top:0;
+    height:2px;
+  }
+  .use-card.dev::before { background: linear-gradient(90deg, var(--brand), var(--cyan)); }
+  .use-card.ops::before { background: linear-gradient(90deg, var(--amber), #f97316); }
+  .use-card.biz::before { background: linear-gradient(90deg, var(--green), #34d399); }
+  .use-icon {
+    width:56px; height:56px; border-radius:16px;
+    display:flex; align-items:center; justify-content:center;
+    font-size:28px;
+  }
+  .use-icon.dev { background: rgba(54,170,245,0.1); }
+  .use-icon.ops { background: rgba(245,158,11,0.1); }
+  .use-icon.biz { background: rgba(16,185,129,0.1); }
+  .use-tag {
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    letter-spacing:0.1em;
+    text-transform:uppercase;
+  }
+  .use-tag.dev { color:var(--brand); }
+  .use-tag.ops { color:var(--amber); }
+  .use-tag.biz { color:var(--green); }
+  .use-title {
+    font-family:'Syne',sans-serif;
+    font-size:26px;
+    font-weight:700;
+    color:white;
+    letter-spacing:-0.02em;
+    line-height:1.2;
+  }
+  .use-body {
+    font-family:'Outfit',sans-serif;
+    font-size:16px;
+    color:rgba(148,163,184,0.75);
+    line-height:1.6;
+    flex:1;
+  }
+  .use-example {
+    background: rgba(30,41,59,0.6);
+    border-radius:10px;
+    padding:14px 16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    line-height:1.5;
+    border:1px solid rgba(255,255,255,0.05);
+  }
+  .use-example .q { color:rgba(148,163,184,0.6); margin-bottom:4px; }
+  .use-example .a { color:rgba(203,213,225,0.9); }
+  .scene3-header {
+    position:absolute;
+    top:60px;
+    left:0; right:0;
+    text-align:center;
+  }
+  .scene3-header h2 {
+    font-family:'Syne',sans-serif;
+    font-size:38px;
+    font-weight:800;
+    color:white;
+    letter-spacing:-0.025em;
+  }
+  .scene3-header p {
+    font-family:'Outfit',sans-serif;
+    font-size:18px;
+    color:rgba(148,163,184,0.6);
+    margin-top:8px;
+  }
+
+  /* ── SCENE 4 — PROOF ── */
+  .proof-layout {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:80px;
+    padding:0 100px;
+    align-items:center;
+    width:100%;
+  }
+  .proof-left h2 {
+    font-family:'Syne',sans-serif;
+    font-size:58px;
+    font-weight:800;
+    color:white;
+    letter-spacing:-0.035em;
+    line-height:1.1;
+    margin-bottom:20px;
+  }
+  .proof-left h2 em {
+    font-style:normal;
+    background: linear-gradient(135deg,#36aaf5,#22d3ee);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .proof-left p {
+    font-family:'Outfit',sans-serif;
+    font-size:20px;
+    color:rgba(148,163,184,0.7);
+    line-height:1.6;
+    margin-bottom:36px;
+  }
+  .proof-stats {
+    display:grid;
+    grid-template-columns:1fr 1fr;
+    gap:16px;
+  }
+  .proof-stat {
+    background: rgba(15,23,42,0.8);
+    border:1px solid rgba(255,255,255,0.07);
+    border-radius:14px;
+    padding:20px;
+  }
+  .proof-stat .v {
+    font-family:'Syne',sans-serif;
+    font-size:36px;
+    font-weight:800;
+    letter-spacing:-0.03em;
+    line-height:1;
+    margin-bottom:6px;
+  }
+  .proof-stat .l {
+    font-family:'JetBrains Mono',monospace;
+    font-size:11px;
+    color:rgba(100,116,139,0.8);
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+  }
+  .merkle-viz {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:0;
+  }
+  .merkle-row {
+    display:flex;
+    justify-content:center;
+    gap:16px;
+    margin-bottom:12px;
+  }
+  .hash-block {
+    background: rgba(30,41,59,0.8);
+    border:1px solid rgba(54,170,245,0.15);
+    border-radius:10px;
+    padding:10px 14px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:rgba(148,163,184,0.7);
+    position:relative;
+    transition: all 0.3s;
+  }
+  .hash-block.active {
+    border-color: var(--brand);
+    color: white;
+    background: rgba(54,170,245,0.08);
+    box-shadow: 0 0 20px rgba(54,170,245,0.15);
+  }
+  .hash-block.root {
+    border-color: var(--amber);
+    color: var(--amber);
+    background: rgba(245,158,11,0.08);
+    box-shadow: 0 0 24px rgba(245,158,11,0.2);
+    font-size:14px;
+    padding:12px 18px;
+  }
+  .merkle-line {
+    width:1px;
+    height:20px;
+    background: rgba(54,170,245,0.2);
+    margin:0 auto;
+  }
+  .merkle-label {
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:rgba(100,116,139,0.6);
+    text-transform:uppercase;
+    letter-spacing:0.1em;
+    margin-bottom:16px;
+    text-align:center;
+  }
+
+  /* ── SCENE 5 — TAGLINES ── */
+  .tagline-scene {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+    max-width:1200px;
+  }
+  .tagline-label {
+    font-family:'JetBrains Mono',monospace;
+    font-size:12px;
+    color:rgba(54,170,245,0.5);
+    text-transform:uppercase;
+    letter-spacing:0.14em;
+    margin-bottom:48px;
+  }
+  .tagline-display {
+    position:relative;
+    height:180px;
+    width:1000px;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    margin-bottom:60px;
+  }
+  .tagline-text {
+    position:absolute;
+    font-family:'Syne',sans-serif;
+    font-size:56px;
+    font-weight:800;
+    color:white;
+    letter-spacing:-0.035em;
+    line-height:1.1;
+    text-align:center;
+    opacity:0;
+    transform:translateY(20px);
+    transition: opacity 0.6s ease, transform 0.6s ease;
+    width:100%;
+  }
+  .tagline-text.visible {
+    opacity:1;
+    transform:translateY(0);
+  }
+  .tagline-text .grad {
+    background: linear-gradient(135deg, #36aaf5 0%, #22d3ee 60%, #f59e0b 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .tagline-dots {
+    display:flex;
+    gap:10px;
+    justify-content:center;
+  }
+  .tagline-dot {
+    width:8px; height:8px; border-radius:50%;
+    background: rgba(54,170,245,0.2);
+    transition: background 0.3s;
+  }
+  .tagline-dot.active { background: var(--brand); }
+
+  /* ── SCENE 6 — CLOSE ── */
+  .close-scene {
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    text-align:center;
+  }
+  .close-logo {
+    margin-bottom:40px;
+    display:flex;
+    align-items:center;
+    gap:16px;
+  }
+  .close-logo-text {
+    font-family:'Syne',sans-serif;
+    font-size:28px;
+    font-weight:700;
+    color:rgba(255,255,255,0.8);
+    letter-spacing:-0.02em;
+  }
+  .close-heading {
+    font-family:'Syne',sans-serif;
+    font-size:80px;
+    font-weight:800;
+    color:white;
+    letter-spacing:-0.04em;
+    line-height:1.0;
+    margin-bottom:20px;
+  }
+  .close-heading .grad {
+    background: linear-gradient(135deg, #36aaf5 0%, #22d3ee 50%, #f59e0b 100%);
+    -webkit-background-clip:text;
+    -webkit-text-fill-color:transparent;
+  }
+  .close-sub {
+    font-family:'Outfit',sans-serif;
+    font-size:24px;
+    color:rgba(148,163,184,0.6);
+    margin-bottom:56px;
+    line-height:1.5;
+  }
+  .close-cta {
+    display:inline-flex;
+    align-items:center;
+    gap:12px;
+    background: #0c8ee6;
+    color:white;
+    font-family:'Syne',sans-serif;
+    font-size:20px;
+    font-weight:700;
+    padding:18px 44px;
+    border-radius:16px;
+    letter-spacing:-0.01em;
+    box-shadow: 0 0 60px rgba(12,142,230,0.5);
+    margin-bottom:24px;
+  }
+  .close-url {
+    font-family:'JetBrains Mono',monospace;
+    font-size:16px;
+    color:rgba(100,116,139,0.6);
+    letter-spacing:0.06em;
+  }
+
+  /* ── VIGNETTE ── */
+  .vignette {
+    position:absolute;
+    inset:0;
+    background: radial-gradient(ellipse 80% 70% at 50% 50%, transparent 40%, rgba(2,6,23,0.7) 100%);
+    pointer-events:none;
+    z-index:5;
+  }
+
+  /* ── CONTROLS ── */
+  #controls {
+    position:fixed;
+    bottom:20px;
+    left:50%;
+    transform:translateX(-50%);
+    display:flex;
+    gap:12px;
+    z-index:200;
+    background:rgba(15,23,42,0.9);
+    backdrop-filter:blur(10px);
+    border:1px solid rgba(255,255,255,0.1);
+    border-radius:99px;
+    padding:8px 16px;
+    font-family:'JetBrains Mono',monospace;
+    font-size:13px;
+    color:rgba(148,163,184,0.8);
+    align-items:center;
+  }
+  #controls button {
+    background:none;
+    border:none;
+    color:rgba(148,163,184,0.8);
+    cursor:pointer;
+    padding:4px 10px;
+    border-radius:6px;
+    transition:all 0.2s;
+    font-family:inherit;
+    font-size:13px;
+  }
+  #controls button:hover { background:rgba(54,170,245,0.15); color:var(--brand); }
+  #controls button.active { background:rgba(54,170,245,0.2); color:var(--brand); }
+  #scene-name { min-width:180px; text-align:center; }
+</style>
+</head>
+<body>
+
+<div id="stage">
+  <!-- Substrate particle canvas -->
+  <canvas id="substrate-canvas"></canvas>
+
+  <!-- Vignette -->
+  <div class="vignette"></div>
+
+  <!-- Persistent logo -->
+  <div id="logo">
+    <svg width="32" height="32" viewBox="0 0 72 72" fill="none">
+      <circle cx="36" cy="36" r="32" stroke="#36aaf5" stroke-width="1.5" opacity="0.3"/>
+      <line x1="36" y1="36" x2="36" y2="4" stroke="#36aaf5" stroke-width="1" opacity="0.5"/>
+      <line x1="36" y1="36" x2="68" y2="36" stroke="#36aaf5" stroke-width="1" opacity="0.5"/>
+      <line x1="36" y1="36" x2="36" y2="68" stroke="#36aaf5" stroke-width="1" opacity="0.5"/>
+      <line x1="36" y1="36" x2="4" y2="36" stroke="#36aaf5" stroke-width="1" opacity="0.5"/>
+      <circle cx="36" cy="36" r="4" fill="#f59e0b"/>
+      <circle cx="36" cy="4" r="3.5" fill="#36aaf5"/>
+      <circle cx="68" cy="36" r="3.5" fill="#36aaf5"/>
+      <circle cx="36" cy="68" r="3.5" fill="#36aaf5"/>
+      <circle cx="4" cy="36" r="3.5" fill="#36aaf5"/>
+    </svg>
+    Parametric Memory
+  </div>
+
+  <!-- Progress bar -->
+  <div id="progress-bar"></div>
+
+  <!-- SCENES -->
+  <div id="scenes">
+
+    <!-- ── SCENE 1: THE PAIN ── -->
+    <div class="scene" id="s1">
+      <div style="display:flex; align-items:center; gap:80px; padding:0 100px; width:100%;">
+        <div style="flex:1;">
+          <div class="chat-window">
+            <div class="chat-header">
+              <div class="chat-dot" style="background:#ef4444;"></div>
+              <div class="chat-dot" style="background:#f59e0b;"></div>
+              <div class="chat-dot" style="background:#10b981;"></div>
+              <span style="margin-left:8px;">Claude — New Conversation</span>
+            </div>
+            <div class="chat-body">
+              <div class="session-break">Yesterday's session</div>
+              <div class="msg">
+                <div class="msg-avatar user">You</div>
+                <div class="msg-bubble">Remember: I prefer TypeScript, strict mode. My API uses JWT auth with a 24h expiry. Don't suggest class components — we use hooks only.</div>
+              </div>
+              <div class="msg">
+                <div class="msg-avatar ai">AI</div>
+                <div class="msg-bubble">Got it! I'll keep those preferences in mind throughout our session.</div>
+              </div>
+              <div class="session-break">New session — today</div>
+              <div class="msg">
+                <div class="msg-avatar user">You</div>
+                <div class="msg-bubble">Help me add auth to the API endpoint we discussed.</div>
+              </div>
+              <div class="msg">
+                <div class="msg-avatar ai">AI</div>
+                <div class="msg-bubble forgotten">I'd be happy to help! Could you remind me about your tech stack and auth requirements? I don't have context from previous conversations.</div>
+              </div>
+            </div>
+          </div>
+        </div>
+        <div class="pain-title">
+          <div class="pain-badge">
+            <span>⚠</span> The AI amnesia problem
+          </div>
+          <h2>Every session<br/>starts from<br/>zero.</h2>
+          <p>You re-explain. You repaste.<br/>Your AI forgets everything it<br/>learned about you. Every. Time.</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCENE 2: THE SUBSTRATE ── -->
+    <div class="scene" id="s2">
+      <div class="substrate-scene">
+        <div class="substrate-badge">
+          <div class="dot"></div>
+          Live substrate — in production since March 2026
+        </div>
+        <h1 class="substrate-heading">
+          Memory that<br/><span class="grad">proves itself.</span>
+        </h1>
+        <p class="substrate-sub">
+          Every thought your AI has — stored, hashed, and cryptographically sealed.<br/>
+          Recalled in 0.045ms. Predicted before you ask.
+        </p>
+        <div class="atom-stats">
+          <div class="atom-stat">
+            <div class="val" style="color:var(--brand);">821+</div>
+            <div class="lbl">atoms sealed</div>
+          </div>
+          <div class="atom-stat">
+            <div class="val" style="color:var(--cyan);">0.045ms</div>
+            <div class="lbl">recall latency</div>
+          </div>
+          <div class="atom-stat">
+            <div class="val" style="color:var(--amber);">64%</div>
+            <div class="lbl">Markov hit rate</div>
+          </div>
+          <div class="atom-stat">
+            <div class="val" style="color:var(--green);">&lt;60s</div>
+            <div class="lbl">instance setup</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCENE 3: USE CASES ── -->
+    <div class="scene" id="s3">
+      <div style="position:relative; width:100%; padding-top:140px;">
+        <div class="scene3-header">
+          <h2>Not just for code. For everything your AI manages.</h2>
+          <p>One memory substrate. Every team. Every use case.</p>
+        </div>
+        <div class="use-cases">
+          <div class="use-card dev">
+            <div class="use-icon dev">💻</div>
+            <div class="use-tag dev">Developer</div>
+            <div class="use-title">Architecture decisions remembered</div>
+            <div class="use-body">Every preference, decision, and correction persists. Your AI knows your stack, your patterns, and your rules — without you repeating them.</div>
+            <div class="use-example">
+              <div class="q">→ "What auth method did we decide on?"</div>
+              <div class="a">✓ JWT with 24h expiry — your preference, set March 15th.</div>
+            </div>
+          </div>
+          <div class="use-card ops">
+            <div class="use-icon ops">⚙️</div>
+            <div class="use-tag ops">Operations</div>
+            <div class="use-title">System state, always current</div>
+            <div class="use-body">Every billing event, deployment, and health check is a Merkle-sealed atom. Your AI manages your infrastructure with full historical awareness.</div>
+            <div class="use-example">
+              <div class="q">→ "When did the last deployment happen?"</div>
+              <div class="a">✓ 2026-04-03 14:22 UTC — 847 atoms committed.</div>
+            </div>
+          </div>
+          <div class="use-card biz">
+            <div class="use-icon biz">🧠</div>
+            <div class="use-tag biz">Business Intelligence</div>
+            <div class="use-title">Compound learning over time</div>
+            <div class="use-body">Every customer interaction, business decision, and market signal compounds. Your AI gets smarter about your business with every session.</div>
+            <div class="use-example">
+              <div class="q">→ "What do we know about enterprise pricing?"</div>
+              <div class="a">✓ 12 atoms found. Team tier performs best at $79. Last updated today.</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCENE 4: THE PROOF ── -->
+    <div class="scene" id="s4">
+      <div class="proof-layout">
+        <div class="proof-left">
+          <h2>Verified by math.<br/><em>Not trusted on faith.</em></h2>
+          <p>Every competitor asks you to trust their infrastructure. We give you a Merkle proof — cryptographic evidence your memories are intact, untampered, and yours alone.</p>
+          <div class="proof-stats">
+            <div class="proof-stat">
+              <div class="v" style="color:var(--brand);">RFC 6962</div>
+              <div class="l">Merkle proof standard</div>
+            </div>
+            <div class="proof-stat">
+              <div class="v" style="color:var(--cyan);">SHA-256</div>
+              <div class="l">Hash algorithm</div>
+            </div>
+            <div class="proof-stat">
+              <div class="v" style="color:var(--amber);">37%</div>
+              <div class="l">token savings</div>
+            </div>
+            <div class="proof-stat">
+              <div class="v" style="color:var(--green);">Zero</div>
+              <div class="l">shared infrastructure</div>
+            </div>
+          </div>
+        </div>
+        <div class="merkle-viz">
+          <div class="merkle-label">Your Merkle audit trail</div>
+          <div class="merkle-row">
+            <div class="hash-block root">⬡ Root Hash · f3a2b9c1</div>
+          </div>
+          <div class="merkle-line"></div>
+          <div class="merkle-row">
+            <div class="hash-block active">Shard A · 8d4f</div>
+            <div class="hash-block active">Shard B · 2c91</div>
+          </div>
+          <div style="display:flex; gap:16px;">
+            <div class="merkle-line" style="flex:1;"></div>
+            <div class="merkle-line" style="flex:1;"></div>
+          </div>
+          <div class="merkle-row">
+            <div class="hash-block">atom.001</div>
+            <div class="hash-block active">atom.002</div>
+            <div class="hash-block">atom.003</div>
+            <div class="hash-block active">atom.004</div>
+          </div>
+          <div style="margin-top:24px; padding:16px 20px; background:rgba(16,185,129,0.07); border:1px solid rgba(16,185,129,0.2); border-radius:12px; text-align:center;">
+            <div style="font-family:'JetBrains Mono',monospace; font-size:12px; color:var(--green); margin-bottom:4px; text-transform:uppercase; letter-spacing:0.08em;">✓ Proof verified</div>
+            <div style="font-family:'JetBrains Mono',monospace; font-size:11px; color:rgba(100,116,139,0.7);">All atoms intact · Root hash matches · 0.045ms</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── SCENE 5: TAGLINES ── -->
+    <div class="scene" id="s5">
+      <div class="tagline-scene">
+        <div class="tagline-label">Parametric Memory — the principle</div>
+        <div class="tagline-display" id="tagline-display"></div>
+        <div class="tagline-dots" id="tagline-dots"></div>
+      </div>
+    </div>
+
+    <!-- ── SCENE 6: CLOSE ── -->
+    <div class="scene" id="s6">
+      <div class="close-scene">
+        <div class="close-logo">
+          <svg width="48" height="48" viewBox="0 0 72 72" fill="none">
+            <circle cx="36" cy="36" r="32" stroke="#36aaf5" stroke-width="1.5" opacity="0.3"/>
+            <line x1="36" y1="36" x2="36" y2="4" stroke="#36aaf5" stroke-width="1" opacity="0.5"/>
+            <line x1="36" y1="36" x2="68" y2="36" stroke="#36aaf5" stroke-width="1" opacity="0.5"/>
+            <line x1="36" y1="36" x2="36" y2="68" stroke="#36aaf5" stroke-width="1" opacity="0.5"/>
+            <line x1="36" y1="36" x2="4" y2="36" stroke="#36aaf5" stroke-width="1" opacity="0.5"/>
+            <circle cx="36" cy="36" r="4" fill="#f59e0b"/>
+            <circle cx="36" cy="4" r="3.5" fill="#36aaf5"/>
+            <circle cx="68" cy="36" r="3.5" fill="#36aaf5"/>
+            <circle cx="36" cy="68" r="3.5" fill="#36aaf5"/>
+            <circle cx="4" cy="36" r="3.5" fill="#36aaf5"/>
+          </svg>
+          <div class="close-logo-text">Parametric Memory</div>
+        </div>
+        <div class="close-heading">
+          Your AI's second brain.<br/>
+          <span class="grad">Ready in 60 seconds.</span>
+        </div>
+        <div class="close-sub">
+          Dedicated substrate · Cryptographic proofs · Markov prediction<br/>
+          Your own Merkle tree — not a row in someone else's database.
+        </div>
+        <div class="close-cta">
+          Get Your Instance
+          <svg width="22" height="22" fill="none" viewBox="0 0 24 24" stroke-width="2.5" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"/>
+          </svg>
+        </div>
+        <div class="close-url">parametric-memory.dev · Starting at $9/month</div>
+      </div>
+    </div>
+
+  </div><!-- /scenes -->
+</div><!-- /stage -->
+
+<!-- Controls -->
+<div id="controls">
+  <button id="btn-prev">‹ Prev</button>
+  <span id="scene-name">Scene 1 / 6</span>
+  <button id="btn-next">Next ›</button>
+  <span style="opacity:0.3; margin:0 4px;">|</span>
+  <button id="btn-play" class="active">⏸ Pause</button>
+</div>
+
+<script>
+// ── Stage scaling ──────────────────────────────────────────────────────────
+function scaleStage() {
+  const stage = document.getElementById('stage');
+  const scaleX = window.innerWidth / 1920;
+  const scaleY = window.innerHeight / 1080;
+  const scale = Math.min(scaleX, scaleY);
+  const offsetX = (window.innerWidth - 1920 * scale) / 2;
+  const offsetY = (window.innerHeight - 1080 * scale) / 2;
+  stage.style.transform = `translate(${offsetX}px, ${offsetY}px) scale(${scale})`;
+}
+scaleStage();
+window.addEventListener('resize', scaleStage);
+
+// ── Particle Substrate Network ─────────────────────────────────────────────
+const canvas = document.getElementById('substrate-canvas');
+const ctx = canvas.getContext('2d');
+canvas.width = 1920;
+canvas.height = 1080;
+
+const COLORS = {
+  brand: [54, 170, 245],
+  cyan:  [34, 211, 238],
+  amber: [245, 158, 11],
+  green: [16, 185, 129],
+  white: [255, 255, 255],
+};
+
+const colorTypes = ['brand','brand','brand','brand','cyan','cyan','amber','green','white'];
+
+const particles = [];
+const PARTICLE_COUNT = 280;
+
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  const colorType = colorTypes[Math.floor(Math.random() * colorTypes.length)];
+  const [r,g,b] = COLORS[colorType];
+  particles.push({
+    x: Math.random() * 1920,
+    y: Math.random() * 1080,
+    vx: (Math.random() - 0.5) * 0.35,
+    vy: (Math.random() - 0.5) * 0.35,
+    size: Math.random() * 2.5 + 0.8,
+    color: `${r},${g},${b}`,
+    opacity: Math.random() * 0.6 + 0.3,
+    pulseOffset: Math.random() * Math.PI * 2,
+    pulseSpeed: 0.01 + Math.random() * 0.02,
+  });
+}
+
+let substrateBrightness = 0.4; // 0 = dim (pain scene), 1 = full (substrate scene)
+let targetBrightness = 0.4;
+let frame = 0;
+
+function drawSubstrate() {
+  ctx.clearRect(0, 0, 1920, 1080);
+
+  // Lerp brightness
+  substrateBrightness += (targetBrightness - substrateBrightness) * 0.02;
+
+  // Update particles
+  for (const p of particles) {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = 1920;
+    if (p.x > 1920) p.x = 0;
+    if (p.y < 0) p.y = 1080;
+    if (p.y > 1080) p.y = 0;
+  }
+
+  const MAX_DIST = 130;
+
+  // Draw edges
+  for (let i = 0; i < particles.length; i++) {
+    for (let j = i + 1; j < particles.length; j++) {
+      const dx = particles[i].x - particles[j].x;
+      const dy = particles[i].y - particles[j].y;
+      const dist = Math.sqrt(dx * dx + dy * dy);
+      if (dist < MAX_DIST) {
+        const alpha = (1 - dist / MAX_DIST) * 0.35 * substrateBrightness;
+        ctx.beginPath();
+        ctx.moveTo(particles[i].x, particles[i].y);
+        ctx.lineTo(particles[j].x, particles[j].y);
+        ctx.strokeStyle = `rgba(16,185,129,${alpha})`;
+        ctx.lineWidth = 0.7;
+        ctx.stroke();
+      }
+    }
+  }
+
+  // Draw particles
+  for (const p of particles) {
+    const pulse = Math.sin(frame * p.pulseSpeed + p.pulseOffset) * 0.3 + 0.7;
+    const alpha = p.opacity * pulse * substrateBrightness;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+    ctx.fillStyle = `rgba(${p.color},${alpha})`;
+    ctx.fill();
+
+    // Glow for brighter particles
+    if (alpha > 0.5 && p.size > 2) {
+      ctx.beginPath();
+      ctx.arc(p.x, p.y, p.size * 3, 0, Math.PI * 2);
+      ctx.fillStyle = `rgba(${p.color},${alpha * 0.08})`;
+      ctx.fill();
+    }
+  }
+
+  frame++;
+  requestAnimationFrame(drawSubstrate);
+}
+drawSubstrate();
+
+// ── Taglines ───────────────────────────────────────────────────────────────
+const taglines = [
+  { text: 'AI with a perfect memory.<br/><span class="grad">And the receipts to prove it.</span>' },
+  { text: "Don't just trust your AI.<br/><span class='grad'>Verify it.</span>" },
+  { text: "Stop predicting the next word.<br/><span class='grad'>Start predicting the next thought.</span>" },
+  { text: "Memory that learns.<br/><span class='grad'>Proof that it's real.</span>" },
+  { text: "The end of AI hallucinations<br/><span class='grad'>starts at the memory layer.</span>" },
+];
+
+let currentTagline = 0;
+const taglineDisplay = document.getElementById('tagline-display');
+const taglineDots = document.getElementById('tagline-dots');
+
+// Build tagline elements
+taglines.forEach((t, i) => {
+  const el = document.createElement('div');
+  el.className = 'tagline-text';
+  el.innerHTML = t.text;
+  taglineDisplay.appendChild(el);
+
+  const dot = document.createElement('div');
+  dot.className = 'tagline-dot' + (i === 0 ? ' active' : '');
+  taglineDots.appendChild(dot);
+});
+
+function showTagline(idx) {
+  const texts = taglineDisplay.querySelectorAll('.tagline-text');
+  const dots = taglineDots.querySelectorAll('.tagline-dot');
+  texts.forEach((t, i) => {
+    t.classList.toggle('visible', i === idx);
+  });
+  dots.forEach((d, i) => {
+    d.classList.toggle('active', i === idx);
+  });
+}
+showTagline(0);
+
+// ── Scene Manager ──────────────────────────────────────────────────────────
+const SCENES = [
+  { id: 's1', duration: 8000, name: 'The Pain', brightness: 0.3 },
+  { id: 's2', duration: 8000, name: 'The Substrate', brightness: 1.0 },
+  { id: 's3', duration: 9000, name: 'Use Cases', brightness: 0.5 },
+  { id: 's4', duration: 8000, name: 'The Proof', brightness: 0.35 },
+  { id: 's5', duration: 10000, name: 'Taglines', brightness: 0.6 },
+  { id: 's6', duration: 7000, name: 'The Close', brightness: 0.7 },
+];
+
+let currentScene = 0;
+let isPlaying = true;
+let sceneTimer = null;
+let progressInterval = null;
+let sceneStartTime = null;
+
+function showScene(idx) {
+  // Clamp
+  idx = ((idx % SCENES.length) + SCENES.length) % SCENES.length;
+  currentScene = idx;
+
+  // Update visibility
+  SCENES.forEach((s, i) => {
+    document.getElementById(s.id).classList.toggle('active', i === idx);
+  });
+
+  // Update substrate brightness
+  targetBrightness = SCENES[idx].brightness;
+
+  // Update controls
+  document.getElementById('scene-name').textContent = `${SCENES[idx].name} (${idx+1}/${SCENES.length})`;
+
+  // Progress bar
+  sceneStartTime = Date.now();
+  if (progressInterval) clearInterval(progressInterval);
+  const bar = document.getElementById('progress-bar');
+  progressInterval = setInterval(() => {
+    if (!isPlaying) return;
+    const elapsed = Date.now() - sceneStartTime;
+    const pct = Math.min(elapsed / SCENES[idx].duration * 100, 100);
+    bar.style.width = pct + '%';
+  }, 50);
+
+  // Auto-advance
+  if (sceneTimer) clearTimeout(sceneTimer);
+  if (isPlaying) {
+    sceneTimer = setTimeout(() => {
+      // Advance tagline on scene 5
+      if (currentScene === 4) {
+        const interval = SCENES[4].duration / taglines.length;
+        for (let t = 0; t < taglines.length - 1; t++) {
+          setTimeout(() => {
+            currentTagline = t + 1;
+            showTagline(currentTagline);
+          }, interval * (t + 1));
+        }
+      }
+      showScene(currentScene + 1);
+    }, SCENES[idx].duration);
+  }
+}
+
+// Tagline rotation within scene 5
+function startTaglineRotation() {
+  currentTagline = 0;
+  showTagline(0);
+  const interval = SCENES[4].duration / taglines.length;
+  for (let t = 0; t < taglines.length - 1; t++) {
+    setTimeout(() => {
+      if (currentScene === 4 && isPlaying) {
+        currentTagline = t + 1;
+        showTagline(currentTagline);
+      }
+    }, interval * (t + 1));
+  }
+}
+
+// Hook into scene 5 start
+const origShow = showScene;
+showScene = function(idx) {
+  origShow(idx);
+  if (idx === 4) startTaglineRotation();
+};
+
+// Controls
+document.getElementById('btn-prev').onclick = () => showScene(currentScene - 1);
+document.getElementById('btn-next').onclick = () => showScene(currentScene + 1);
+document.getElementById('btn-play').onclick = function() {
+  isPlaying = !isPlaying;
+  this.textContent = isPlaying ? '⏸ Pause' : '▶ Play';
+  this.classList.toggle('active', isPlaying);
+  if (isPlaying) {
+    sceneStartTime = Date.now();
+    showScene(currentScene);
+  } else {
+    if (sceneTimer) clearTimeout(sceneTimer);
+  }
+};
+
+// Start
+showScene(0);
+</script>
+</body>
+</html>

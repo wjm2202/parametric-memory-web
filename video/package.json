@@ -1,0 +1,24 @@
+{
+  "name": "mmpm-video",
+  "version": "1.0.0",
+  "description": "Parametric Memory — Product explainer video",
+  "scripts": {
+    "studio": "npx remotion studio",
+    "render": "npx remotion render MMPMVideo out/mmpm-explainer.mp4 --codec=h264",
+    "render:short": "npx remotion render MMPMVideo out/mmpm-short.mp4 --codec=h264 --frames=0-299",
+    "render:gif": "npx remotion render MMPMVideo out/mmpm-preview.gif --codec=gif --scale=0.5"
+  },
+  "dependencies": {
+    "remotion": "^4.0.0",
+    "@remotion/cli": "^4.0.0",
+    "@remotion/transitions": "^4.0.0",
+    "@remotion/google-fonts": "^4.0.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "typescript": "^5.0.0"
+  }
+}
