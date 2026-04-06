@@ -2,16 +2,20 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { FAQAccordion } from "./PricingClient";
 import { PricingCTA } from "./PricingCTA";
+import { CapacityBadge } from "./CapacityBadge";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { TIERS } from "@/config/tiers";
 import { TeamInquiryForm } from "./TeamInquiryForm";
 
 export const metadata: Metadata = {
-  title: "Pricing — Parametric Memory",
+  title: "Pricing — Plans from $9/mo",
   description:
-    "Claude remembers everything. Persistent AI memory for developers — flat monthly subscription, no per-query costs. Solo $9/mo, Professional $29/mo, Team $79/mo.",
+    "Claude remembers everything. Persistent AI memory for developers — flat monthly subscription, no per-query costs. Indie $9/mo, Pro $29/mo, Team $79/mo.",
+  alternates: {
+    canonical: "https://parametric-memory.dev/pricing",
+  },
   openGraph: {
-    title: "Pricing | Parametric Memory",
+    title: "Parametric Memory Pricing — Plans from $9/mo",
     description:
       "Persistent AI memory from $9/month. Flat rate subscription — no per-query costs, no credits. Merkle proofs, Markov prediction, MCP native.",
   },
@@ -187,6 +191,27 @@ export default async function PricingPage() {
   const cookieStore = await cookies();
   const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
 
+  // Fetch capacity data at render time — Next.js ISR caches for 60s
+  // Fail open: if capacity check fails, all tiers show as available
+  type TierCapacityData = {
+    status: "open" | "waitlist" | "paused";
+    message: string | null;
+    slotsRemaining: number | null;
+  };
+  let capacityData: Record<string, TierCapacityData> = {};
+  try {
+    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+    const capacityRes = await fetch(`${appUrl}/api/capacity`, {
+      next: { revalidate: 60 },
+    });
+    if (capacityRes.ok) {
+      const json = await capacityRes.json();
+      capacityData = json.tiers ?? {};
+    }
+  } catch {
+    // Fail open — no capacity data means all tiers show as available
+  }
+
   return (
     <>
       <script
@@ -253,6 +278,11 @@ export default async function PricingPage() {
                     <p className="text-surface-200/60 mt-1 text-sm">{copy?.tagline}</p>
                   </div>
 
+                  <CapacityBadge
+                    status={capacityData[tier.id]?.status ?? "open"}
+                    slotsRemaining={capacityData[tier.id]?.slotsRemaining ?? null}
+                  />
+
                   {/* Price */}
                   <div className="mb-6">
                     <div className="flex items-baseline gap-1">
@@ -275,6 +305,8 @@ export default async function PricingPage() {
                       tierName={tier.name}
                       label={tier.id === "indie" ? "Get Solo" : "Get Professional"}
                       isLoggedIn={isLoggedIn}
+                      capacityStatus={capacityData[tier.id]?.status ?? "open"}
+                      capacityMessage={capacityData[tier.id]?.message ?? null}
                     />
                   )}
 
