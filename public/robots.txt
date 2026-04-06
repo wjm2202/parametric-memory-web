@@ -8,6 +8,13 @@ Sitemap: https://parametric-memory.dev/sitemap.xml
 # AI agent discovery — see https://llmstxt.org
 # Provides structured context for LLMs, AI coding assistants, and agents
 # llms.txt: https://parametric-memory.dev/llms.txt
+#
+# ── High-value pages for AI answer engines (AEO) ──────────────────────────
+# faq: https://parametric-memory.dev/faq
+#   FAQPage JSON-LD schema. Covers competitor comparisons (vs Mem0, Zep),
+#   Merkle proof verification, Markov prediction, agent benefits, and pricing.
+#   Optimised for citation by AI answer engines (Google AI Mode, Perplexity,
+#   ChatGPT). Full sitemap: https://parametric-memory.dev/sitemap.xml
 
 # ── AI answer engines — full access ───────────────────────────────────────
 # These crawlers power AI search/answer products and cite sources.
@@ -37,18 +44,9 @@ Allow: /
 
 User-agent: GPTBot
 Allow: /
-Allow: /about
-Allow: /pricing
-Allow: /signup
-Disallow: /blog/
-Disallow: /docs/
 
 User-agent: Google-Extended
 Allow: /
-Allow: /about
-Allow: /pricing
-Disallow: /blog/
-Disallow: /docs/
 
 # ── Bulk training crawlers — block ────────────────────────────────────────
 # No referral value; scrape for training datasets only.

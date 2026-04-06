@@ -1,6 +1,25 @@
 import type { MetadataRoute } from "next";
+import { getAllPostSlugs, getPostBySlug } from "@/lib/blog";
 
 export default function sitemap(): MetadataRoute.Sitemap {
+  // Generate individual blog post entries from the content directory
+  const blogSlugs = getAllPostSlugs();
+  const blogEntries: MetadataRoute.Sitemap = blogSlugs.map((slug) => {
+    let lastModified: Date = new Date();
+    try {
+      const { frontmatter } = getPostBySlug(slug);
+      if (frontmatter.date) lastModified = new Date(frontmatter.date);
+    } catch {
+      // fall back to current date if frontmatter parse fails
+    }
+    return {
+      url: `https://parametric-memory.dev/blog/${slug}`,
+      lastModified,
+      changeFrequency: "monthly",
+      priority: 0.7,
+    };
+  });
+
   return [
     {
       url: "https://parametric-memory.dev",
@@ -19,6 +38,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
+    },
+    {
+      // FAQ page — high priority for AEO (FAQPage JSON-LD, AI answer engine citations)
+      url: "https://parametric-memory.dev/faq",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.9,
     },
     {
       url: "https://parametric-memory.dev/docs",
@@ -44,5 +70,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.6,
     },
+    ...blogEntries,
   ];
 }

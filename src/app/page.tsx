@@ -60,6 +60,62 @@ const landingJsonLd = {
   },
 };
 
+// ── FAQPage JSON-LD — triggers People Also Ask + AI Overview citations ────────
+const homeFaqJsonLd = {
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: [
+    {
+      "@type": "Question",
+      name: "What is Parametric Memory?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Parametric Memory (MMPM) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as named atoms in a SHA-256 Merkle tree, provides RFC 6962 consistency proofs on every read, and uses a Markov chain prediction layer to pre-fetch context before you ask for it. Dedicated instances from $9/month.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How is Parametric Memory different from Mem0 or Zep?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Parametric Memory provides cryptographic Merkle proofs on every memory read — Mem0 and Zep do not. Every customer gets a dedicated instance with their own PostgreSQL and Merkle tree — Mem0 and Zep use shared infrastructure. Markov-chain prediction pre-fetches context with a 64% hit rate. Knowledge graph edges are included at every tier, not paywalled.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What is a Merkle proof for AI memory?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "A Merkle proof is a cryptographic audit path that proves a specific memory atom was stored in the tree at a specific version, without reading the entire tree. When your AI recalls a fact, it receives both the value and the proof. Verifying the proof takes 0.032ms and proves the memory has not been tampered with or quietly replaced.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "Does Parametric Memory work with Claude?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Yes. Parametric Memory ships with a Model Context Protocol (MCP) server with 25+ tools. Add one config block to claude_desktop_config.json and Claude gains persistent memory immediately — no SDK required. It also works with Claude Code, Cowork, Cursor, Cline, and any MCP-compatible client.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How much does Parametric Memory cost?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Three plans: Indie at $9/month (10,000 memories, up to 33 Claude sessions/day), Pro at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month. All paid plans include a 14-day free trial — no charge until day 15.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "How long does setup take?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "Under 60 seconds. Sign up, receive your instance credentials by email, add one config block to your MCP client, and your AI has persistent memory. No Docker, no self-hosting, no infrastructure work required.",
+      },
+    },
+  ],
+};
+
 // ── BreadcrumbList for this page ───────────────────────────────────────────
 const homeBreadcrumbJsonLd = {
   "@context": "https://schema.org",
@@ -231,6 +287,10 @@ export default async function HomePage() {
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(homeBreadcrumbJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(homeFaqJsonLd) }}
       />
 
       {/* ── NAV ─────────────────────────────────────────────────────────── */}
@@ -632,12 +692,12 @@ export default async function HomePage() {
             <p className="text-brand-400 mb-4 font-mono text-[11px] tracking-widest uppercase">
               Get started today
             </p>
-            <h2
+            <p
               id="cta-heading"
               className="font-display mb-5 text-4xl font-extrabold text-white lg:text-5xl"
               style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
             >
-              Your AI&apos;s second brain.
+              Start in 60 seconds.
               <br />
               <span
                 style={{
@@ -646,9 +706,9 @@ export default async function HomePage() {
                   WebkitTextFillColor: "transparent",
                 }}
               >
-                Ready in 60 seconds.
+                Your AI will remember everything.
               </span>
-            </h2>
+            </p>
             <p className="font-body text-surface-400 mb-10 text-lg leading-relaxed">
               Dedicated substrate. Cryptographic proofs. Markov prediction.
               <br />

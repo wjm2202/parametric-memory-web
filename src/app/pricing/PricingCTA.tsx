@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { isValidTierId } from "@/config/tiers";
+import { WaitlistForm } from "./WaitlistForm";
 
 interface PricingCTAProps {
   tierId: string;
@@ -12,6 +13,8 @@ interface PricingCTAProps {
   ctaLink?: string;
   /** @deprecated Trial period is not configured in Stripe — do not use. */
   trial?: boolean;
+  capacityStatus?: "open" | "waitlist" | "paused";
+  capacityMessage?: string | null;
 }
 
 /**
@@ -30,10 +33,27 @@ export function PricingCTA({
   isLoggedIn,
   ctaLink,
   trial,
+  capacityStatus,
+  capacityMessage,
 }: PricingCTAProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+
+  // Capacity gate — replace checkout with waitlist form when tier is full
+  if (capacityStatus === "waitlist" || capacityStatus === "paused") {
+    const displayName = tierName.includes("indie") || tierId === "indie" ? "Solo" : "Pro";
+    return (
+      <WaitlistForm
+        tier={tierId}
+        tierDisplayName={displayName}
+        message={
+          capacityMessage ??
+          `${displayName} slots are temporarily full. Join the waitlist and we'll notify you when space opens.`
+        }
+      />
+    );
+  }
 
   // Enterprise self-hosted: manual sales process
   if (tierId === "enterprise-self-hosted") {
@@ -100,7 +120,12 @@ export function PricingCTA({
       const res = await fetch("/api/checkout", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ tier: tierId, ...(trial ? { trial: true } : {}) }),
+        body: JSON.stringify({
+          tier: tierId,
+          agreedToTerms: true,
+          termsVersion: "2026-04-05",
+          ...(trial ? { trial: true } : {}),
+        }),
       });
 
       if (res.status === 401) {

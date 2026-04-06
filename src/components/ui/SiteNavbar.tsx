@@ -16,7 +16,7 @@
  *     optimistically keeps the server-determined state.
  *
  * Nav items (all variants):
- *   Docs · About · Blog · Pricing · Legal · Privacy · Knowledge Graph · [Dashboard | Sign In]
+ *   Docs · About · Blog · Pricing · FAQ · Legal · Privacy · Knowledge Graph · [Dashboard | Sign In]
  */
 
 import { useEffect, useState } from "react";
@@ -235,6 +235,14 @@ export default function SiteNavbar({
               }`}
             >
               Pricing
+            </Link>
+            <Link
+              href="/faq"
+              className={`hidden rounded-md px-3 py-1.5 text-sm transition-colors md:block ${
+                isActive("/faq") ? "font-medium text-white" : "text-surface-400 hover:text-white"
+              }`}
+            >
+              FAQ
             </Link>
 
             {/* Legal */}
