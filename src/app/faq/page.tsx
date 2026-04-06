@@ -315,7 +315,7 @@ export default async function FAQPage() {
 
       <SiteNavbar isLoggedIn={isLoggedIn} />
 
-      <main className="min-h-screen pt-16" itemScope itemType="https://schema.org/FAQPage">
+      <main className="min-h-screen pt-16">
         {/* ── Hero ──────────────────────────────────────────────────────────── */}
         <section className="relative overflow-hidden py-20 sm:py-28">
           {/* Background gradients */}
