@@ -3,7 +3,10 @@
  * POST /api/capacity
  *
  * GET: Proxies to compute's /api/v1/capacity endpoint.
- * Returns tier availability and capacity status. Fails open on any error.
+ * Returns tier availability and capacity status.
+ * No longer ISR-cached — capacity is now event-driven. The pricing page
+ * fetches on mount (hydrate badge) and again on CTA click (gate checkout).
+ * Compute's own 60 s in-memory cache deduplicates rapid requests.
  *
  * POST: Proxies to compute's /api/v1/capacity/waitlist endpoint.
  * Forwards request body and passes through 4xx errors. Returns 500 on upstream errors.
@@ -13,7 +16,9 @@ import { NextResponse, NextRequest } from "next/server";
 
 const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
 
-export const revalidate = 60;
+// Removed: export const revalidate = 60;
+// Capacity is now event-driven, not ISR-polled.
+export const dynamic = "force-dynamic";
 
 const FAIL_OPEN_RESPONSE = {
   tiers: {
@@ -45,17 +50,23 @@ const FAIL_OPEN_RESPONSE = {
 export async function GET(): Promise<NextResponse> {
   try {
     const res = await fetch(`${COMPUTE_URL}/api/v1/capacity`, {
-      next: { revalidate: 60 },
+      cache: "no-store",
     });
 
     const data = await res.text();
     return new NextResponse(data, {
       status: res.status,
-      headers: { "Content-Type": res.headers.get("Content-Type") ?? "application/json" },
+      headers: {
+        "Content-Type": res.headers.get("Content-Type") ?? "application/json",
+        "Cache-Control": "no-store",
+      },
     });
   } catch (error) {
     console.error("Capacity endpoint error:", error);
-    return NextResponse.json(FAIL_OPEN_RESPONSE, { status: 200 });
+    return NextResponse.json(FAIL_OPEN_RESPONSE, {
+      status: 200,
+      headers: { "Cache-Control": "no-store" },
+    });
   }
 }
 

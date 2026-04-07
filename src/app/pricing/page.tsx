@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { FAQAccordion } from "./PricingClient";
-import { PricingCTA } from "./PricingCTA";
-import { CapacityBadge } from "./CapacityBadge";
+import { PricingCardClient } from "./PricingCardClient";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { TIERS } from "@/config/tiers";
 import { TeamInquiryForm } from "./TeamInquiryForm";
@@ -191,26 +190,8 @@ export default async function PricingPage() {
   const cookieStore = await cookies();
   const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
 
-  // Fetch capacity data at render time — Next.js ISR caches for 60s
-  // Fail open: if capacity check fails, all tiers show as available
-  type TierCapacityData = {
-    status: "open" | "waitlist" | "paused";
-    message: string | null;
-    slotsRemaining: number | null;
-  };
-  let capacityData: Record<string, TierCapacityData> = {};
-  try {
-    const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
-    const capacityRes = await fetch(`${appUrl}/api/capacity`, {
-      next: { revalidate: 60 },
-    });
-    if (capacityRes.ok) {
-      const json = await capacityRes.json();
-      capacityData = json.tiers ?? {};
-    }
-  } catch {
-    // Fail open — no capacity data means all tiers show as available
-  }
+  // Capacity is now event-driven: checked on user click, not on page render.
+  // See PricingCardClient.tsx for the on-click capacity check flow.
 
   return (
     <>
@@ -278,36 +259,36 @@ export default async function PricingPage() {
                     <p className="text-surface-200/60 mt-1 text-sm">{copy?.tagline}</p>
                   </div>
 
-                  <CapacityBadge
-                    status={capacityData[tier.id]?.status ?? "open"}
-                    slotsRemaining={capacityData[tier.id]?.slotsRemaining ?? null}
-                  />
-
-                  {/* Price */}
-                  <div className="mb-6">
-                    <div className="flex items-baseline gap-1">
-                      <span className="text-4xl font-bold text-white">${tier.price}</span>
-                      <span className="text-surface-200/60 text-sm">/month</span>
-                    </div>
-                    {!isTeam && (
-                      <p className="text-surface-400 mt-1.5 text-xs">
-                        Billed monthly · cancel anytime from your dashboard
-                      </p>
-                    )}
-                  </div>
-
-                  {/* CTA */}
+                  {/* Capacity badge + CTA — event-driven, checks on click */}
                   {isTeam ? (
-                    <TeamInquiryForm />
+                    <>
+                      {/* Price */}
+                      <div className="mb-6">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-bold text-white">${tier.price}</span>
+                          <span className="text-surface-200/60 text-sm">/month</span>
+                        </div>
+                      </div>
+                      <TeamInquiryForm />
+                    </>
                   ) : (
-                    <PricingCTA
+                    <PricingCardClient
                       tierId={tier.id}
                       tierName={tier.name}
-                      label={tier.id === "indie" ? "Get Solo" : "Get Professional"}
+                      ctaLabel={tier.id === "indie" ? "Get Solo" : "Get Professional"}
                       isLoggedIn={isLoggedIn}
-                      capacityStatus={capacityData[tier.id]?.status ?? "open"}
-                      capacityMessage={capacityData[tier.id]?.message ?? null}
-                    />
+                    >
+                      {/* Price — rendered as children inside the client wrapper */}
+                      <div className="mb-6">
+                        <div className="flex items-baseline gap-1">
+                          <span className="text-4xl font-bold text-white">${tier.price}</span>
+                          <span className="text-surface-200/60 text-sm">/month</span>
+                        </div>
+                        <p className="text-surface-400 mt-1.5 text-xs">
+                          Billed monthly · cancel anytime from your dashboard
+                        </p>
+                      </div>
+                    </PricingCardClient>
                   )}
 
                   {/* Features */}
