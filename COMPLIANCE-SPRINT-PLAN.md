@@ -91,7 +91,7 @@ A self-service portal showing users what data Parametric Memory holds about them
 **Must include:**
 - [ ] Account info section: email, account creation date, plan, substrate slug
 - [ ] Memory atom count and storage usage (link to visualiser)
-- [ ] Sub-processor list with links: Stripe, DigitalOcean, Resend, PostHog
+- [ ] Sub-processor list with links: Stripe, DigitalOcean, Resend
 - [ ] Data export button: generates and downloads JSON of all account data + atom metadata
 - [ ] Data deletion button: initiates deletion flow with 30-day confirmation window
 - [ ] Link to `/privacy` for full policy
@@ -114,23 +114,11 @@ A self-service portal showing users what data Parametric Memory holds about them
 
 ---
 
-## Sprint 3 — COOKIE CONSENT (Priority: MEDIUM, ~2 days)
+## Sprint 3 — COOKIE CONSENT (Priority: LOW — RESOLVED)
 
-Required under GDPR/ePrivacy Directive for EU users; best practice globally.
-
-### 3.1 Cookie Consent Banner
-- [ ] Implement cookie consent banner (first visit only)
-- [ ] Two options: "Accept Analytics" and "Essential Only"
-- [ ] Store consent preference in `localStorage` (or a first-party cookie)
-- [ ] Conditionally load PostHog only if analytics consent is given:
-  ```ts
-  if (consent === 'analytics') { posthog.init(...) }
-  ```
-- [ ] Respect `Do Not Track` browser header
-
-### 3.2 Cookie Preference Centre
-- [ ] Add "Cookie Preferences" link in footer
-- [ ] Allow users to update their consent at any time
+PostHog has been removed. The site now uses only essential cookies (`mmpm_session`, `mmpm_redirect`).
+No analytics or tracking cookies are set, so no cookie consent banner is required under GDPR/ePrivacy.
+This sprint is effectively complete.
 
 ---
 
