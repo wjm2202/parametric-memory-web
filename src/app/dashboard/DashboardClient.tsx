@@ -6,6 +6,7 @@ import Link from "next/link";
 import { TIER_ORDER, getTierLabel, getTierPrice } from "@/config/tiers";
 import { RotationStepper, type RotationStatus } from "@/components/ui/RotationStepper";
 import { UpdateInstructions } from "@/components/ui/UpdateInstructions";
+import { SudoChallenge } from "@/components/ui/SudoChallenge";
 
 // ── Billing Status Types ────────────────────────────────────────────────────
 
@@ -42,8 +43,12 @@ function daysUntil(iso: string | null): number {
 
 // ── Manage Billing helper ─────────────────────────────────────────────────────
 
-async function openBillingPortal() {
-  const res = await fetch("/api/billing/portal");
+async function openBillingPortal(sudoToken: string) {
+  const res = await fetch("/api/billing/portal", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ sudoToken }),
+  });
   if (res.status === 422) {
     // No Stripe customer yet — shouldn't happen on a paid plan but be safe
     alert("No billing account found. Please subscribe first.");
@@ -61,7 +66,13 @@ async function openBillingPortal() {
 
 // ── Billing Widget ────────────────────────────────────────────────────────────
 
-function BillingWidget({ billing }: { billing: BillingStatus }) {
+function BillingWidget({
+  billing,
+  onBillingPortal,
+}: {
+  billing: BillingStatus;
+  onBillingPortal: () => void;
+}) {
   const { status, tier, renewsAt, trialEndsAt, lastPaymentFailed, tierDisplay } = billing;
 
   // Payment warning takes priority over normal active display
@@ -79,7 +90,7 @@ function BillingWidget({ billing }: { billing: BillingStatus }) {
             </p>
           </div>
           <button
-            onClick={openBillingPortal}
+            onClick={onBillingPortal}
             className="shrink-0 rounded-md border border-amber-500/40 px-3 py-1.5 text-xs font-medium text-amber-300 transition hover:bg-amber-500/10"
           >
             Update payment →
@@ -200,7 +211,7 @@ function BillingWidget({ billing }: { billing: BillingStatus }) {
           )}
         </div>
         <button
-          onClick={openBillingPortal}
+          onClick={onBillingPortal}
           className="border-surface-700 text-surface-400 shrink-0 rounded-md border px-3 py-1.5 text-xs font-medium transition hover:border-zinc-500 hover:text-white"
         >
           Manage billing →
@@ -212,7 +223,13 @@ function BillingWidget({ billing }: { billing: BillingStatus }) {
 
 // ── Renewal Banner ────────────────────────────────────────────────────────────
 
-function RenewalBanner({ renewsAt }: { renewsAt: string }) {
+function RenewalBanner({
+  renewsAt,
+  onBillingPortal,
+}: {
+  renewsAt: string;
+  onBillingPortal: () => void;
+}) {
   const DISMISS_KEY = `renewal_banner_dismissed_${renewsAt.slice(0, 10)}`;
   const [visible, setVisible] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -233,10 +250,7 @@ function RenewalBanner({ renewsAt }: { renewsAt: string }) {
     <div className="mb-3 flex items-center justify-between gap-3 rounded-lg border border-blue-500/30 bg-blue-500/10 px-4 py-3 text-sm text-blue-300">
       <span>
         ℹ Your plan renews on <strong className="text-white">{formatDate(renewsAt)}</strong>.{" "}
-        <button
-          onClick={openBillingPortal}
-          className="underline underline-offset-2 hover:text-white"
-        >
+        <button onClick={onBillingPortal} className="underline underline-offset-2 hover:text-white">
           Manage billing
         </button>
       </span>
@@ -584,6 +598,7 @@ export default function DashboardClient({
   const [rotationError, setRotationError] = useState<string | null>(null);
   const [_rotationJobId, setRotationJobId] = useState<string | null>(null);
   const [rotationConfirmOpen, setRotationConfirmOpen] = useState(false);
+  const [rotationSudoOpen, setRotationSudoOpen] = useState(false);
   const [rotationStarting, setRotationStarting] = useState(false);
   const [rotationRateLimitMsg, setRotationRateLimitMsg] = useState<string | null>(null);
   const [claimKeyOpen, setClaimKeyOpen] = useState(false);
@@ -593,27 +608,36 @@ export default function DashboardClient({
   const rotationActive =
     rotationStatus !== "none" && rotationStatus !== "complete" && rotationStatus !== "failed";
 
-  async function startRotation() {
+  // Called after user confirms rotation intent — opens TOTP challenge
+  function confirmRotation() {
+    setRotationConfirmOpen(false);
+    setRotationSudoOpen(true);
+  }
+
+  // Called after TOTP verification succeeds — starts actual rotation with sudoToken
+  async function startRotation(sudoToken: string) {
+    setRotationSudoOpen(false);
     setRotationStarting(true);
     setRotationRateLimitMsg(null);
     try {
-      const res = await fetch("/api/my-substrate/rotate-key", { method: "POST" });
+      const res = await fetch("/api/my-substrate/rotate-key", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ sudoToken }),
+      });
       const data = await res.json();
       if (!res.ok) {
         if (res.status === 429) {
           setRotationRateLimitMsg(data.error ?? "Rate limit reached.");
-          setRotationConfirmOpen(false);
         } else {
           setRotationError(data.error ?? "Failed to start rotation.");
           setRotationStatus("failed");
-          setRotationConfirmOpen(false);
         }
         return;
       }
       setRotationJobId(data.jobId);
       setRotationStatus("pending");
       setRotationError(null);
-      setRotationConfirmOpen(false);
     } finally {
       setRotationStarting(false);
     }
@@ -628,6 +652,18 @@ export default function DashboardClient({
   const [cancelling, setCancelling] = useState(false);
   const [destroyConfirmText, setDestroyConfirmText] = useState("");
   const [destroying, setDestroying] = useState(false);
+
+  // ── Billing portal sudo state ─────────────────────────────────────────
+  const [billingSudoOpen, setBillingSudoOpen] = useState(false);
+
+  function handleBillingPortalClick() {
+    setBillingSudoOpen(true);
+  }
+
+  async function handleBillingSudoSuccess({ sudoToken }: { sudoToken: string }) {
+    setBillingSudoOpen(false);
+    await openBillingPortal(sudoToken);
+  }
 
   // Billing status — drives the billing widget and renewal banner
   const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
@@ -931,7 +967,7 @@ export default function DashboardClient({
             </Link>
             {billingStatus?.hasStripeCustomer && (
               <button
-                onClick={openBillingPortal}
+                onClick={handleBillingPortalClick}
                 className="rounded-md border border-zinc-700 px-3 py-1.5 text-sm text-zinc-300 transition hover:border-zinc-500 hover:text-white"
               >
                 Billing
@@ -949,7 +985,10 @@ export default function DashboardClient({
 
         {/* Renewal banner — shown 7 days before renewal, dismissable */}
         {billingStatus?.renewsAt && billingStatus.status === "active" && (
-          <RenewalBanner renewsAt={billingStatus.renewsAt} />
+          <RenewalBanner
+            renewsAt={billingStatus.renewsAt}
+            onBillingPortal={handleBillingPortalClick}
+          />
         )}
 
         {/* Post-checkout provisioning banner — shown while waiting for Stripe webhook */}
@@ -977,7 +1016,7 @@ export default function DashboardClient({
         {/* Billing widget — always shown when billing status is loaded */}
         {billingStatus && !awaitingWebhook && (
           <div className="mb-3">
-            <BillingWidget billing={billingStatus} />
+            <BillingWidget billing={billingStatus} onBillingPortal={handleBillingPortalClick} />
           </div>
         )}
 
@@ -1191,13 +1230,25 @@ export default function DashboardClient({
                       Cancel
                     </button>
                     <button
-                      onClick={startRotation}
+                      onClick={confirmRotation}
                       disabled={rotationStarting}
                       className="rounded-md border border-amber-600/50 bg-amber-900/30 px-3 py-1.5 text-xs text-amber-300 transition hover:border-amber-500 hover:bg-amber-900/50 disabled:opacity-50"
                     >
                       {rotationStarting ? "Starting…" : "Rotate Key ↻"}
                     </button>
                   </div>
+                </div>
+              )}
+
+              {/* TOTP sudo challenge for key rotation */}
+              {rotationSudoOpen && (
+                <div className="mb-3">
+                  <SudoChallenge
+                    action="rotate_keys"
+                    title="Confirm Key Rotation"
+                    onSuccess={({ sudoToken }) => startRotation(sudoToken)}
+                    onCancel={() => setRotationSudoOpen(false)}
+                  />
                 </div>
               )}
 
@@ -1222,7 +1273,14 @@ export default function DashboardClient({
                   <RotationStepper
                     status={rotationStatus}
                     errorMessage={rotationError}
-                    onRetry={rotationStatus === "failed" ? startRotation : undefined}
+                    onRetry={
+                      rotationStatus === "failed"
+                        ? () => {
+                            resetRotation();
+                            setRotationSudoOpen(true);
+                          }
+                        : undefined
+                    }
                     retryDisabled={!!rotationRateLimitMsg}
                     retryDisabledMessage={rotationRateLimitMsg ?? undefined}
                   />
@@ -1447,6 +1505,20 @@ export default function DashboardClient({
           </div>
         )}
       </div>
+
+      {/* ── Billing sudo challenge modal ────────────────────────────────────── */}
+      {billingSudoOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
+          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0d1117] p-6 shadow-2xl">
+            <SudoChallenge
+              action="cancel_subscription"
+              title="Verify Identity for Billing"
+              onSuccess={handleBillingSudoSuccess}
+              onCancel={() => setBillingSudoOpen(false)}
+            />
+          </div>
+        </div>
+      )}
 
       {/* ── Upgrade consent modal ─────────────────────────────────────────────── */}
       {upgradeConsentTier && (
