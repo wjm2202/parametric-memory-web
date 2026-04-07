@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getTierLabel } from "@/config/tiers";
+import { SudoChallenge } from "@/components/ui/SudoChallenge";
 
 interface AccountInfo {
   id: string;
@@ -207,7 +208,11 @@ export default function AdminClient({
           </div>
         </div>
 
-        {hasTier ? <InstanceSection accountId={account.id} /> : <NoPlanBanner />}
+        {hasTier ? (
+          <InstanceSection accountId={account.id} totpEnrolled={totpEnrolled} />
+        ) : (
+          <NoPlanBanner />
+        )}
       </main>
     </div>
   );
@@ -249,7 +254,13 @@ function NoPlanBanner() {
 }
 
 /* ── Instance section ────────────────────────────────────────────────────── */
-function InstanceSection({ accountId }: { accountId: string }) {
+function InstanceSection({
+  accountId,
+  totpEnrolled,
+}: {
+  accountId: string;
+  totpEnrolled: boolean;
+}) {
   const [instances, setInstances] = useState<InstanceInfo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -326,14 +337,26 @@ function InstanceSection({ accountId }: { accountId: string }) {
         Your instance
       </h2>
       {instances.map((instance) => (
-        <InstanceCard key={instance.id} instance={instance} accountId={accountId} />
+        <InstanceCard
+          key={instance.id}
+          instance={instance}
+          accountId={accountId}
+          totpEnrolled={totpEnrolled}
+        />
       ))}
     </div>
   );
 }
 
 /* ── Individual instance card ────────────────────────────────────────────── */
-function InstanceCard({ instance }: { instance: InstanceInfo; accountId: string }) {
+function InstanceCard({
+  instance,
+  totpEnrolled,
+}: {
+  instance: InstanceInfo;
+  accountId: string;
+  totpEnrolled: boolean;
+}) {
   const [detail, setDetail] = useState<InstanceDetail | null>(null);
   const [keysCopied, setKeysCopied] = useState<Record<string, boolean>>({});
   const [showDestroy, setShowDestroy] = useState(false);
@@ -597,6 +620,7 @@ function InstanceCard({ instance }: { instance: InstanceInfo; accountId: string 
       {showDestroy && (
         <DestroyModal
           instanceId={instance.id}
+          totpEnrolled={totpEnrolled}
           onClose={() => setShowDestroy(false)}
           onDestroyed={() => {
             // Stay on /admin — close the modal and re-fetch so the card flips to
@@ -613,29 +637,38 @@ function InstanceCard({ instance }: { instance: InstanceInfo; accountId: string 
 /* ── Destroy modal ───────────────────────────────────────────────────────── */
 function DestroyModal({
   instanceId,
+  totpEnrolled,
   onClose,
   onDestroyed,
 }: {
   instanceId: string;
+  totpEnrolled: boolean;
   onClose: () => void;
   onDestroyed: () => void;
 }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Step 1: type "destroy". Step 2: TOTP sudo challenge (only if enrolled).
+  const [step, setStep] = useState<"confirm" | "sudo">("confirm");
   const confirmed = input === "destroy";
 
-  async function handleDestroy() {
-    if (!confirmed) return;
+  async function executeDestroy(sudoToken?: string) {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`/api/compute/instances/${instanceId}`, {
         method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(sudoToken ? { sudoToken } : {}),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error ?? "Failed to destroy instance. Please try again.");
+        // If sudo token is invalid/expired, go back to sudo step
+        if (data.error === "sudo_token_invalid" && totpEnrolled) {
+          setStep("sudo");
+        }
         return;
       }
       onDestroyed();
@@ -643,6 +676,16 @@ function DestroyModal({
       setError("Network error. Please try again.");
     } finally {
       setLoading(false);
+    }
+  }
+
+  function handleConfirmStep() {
+    if (!confirmed) return;
+    if (totpEnrolled) {
+      setStep("sudo");
+      setError(null);
+    } else {
+      executeDestroy();
     }
   }
 
@@ -679,46 +722,67 @@ function DestroyModal({
           </div>
         </div>
 
-        <div className="mb-4">
-          <label className="mb-1.5 block text-xs text-white/50">
-            Type <span className="font-mono text-red-400">destroy</span> to confirm
-          </label>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && confirmed && handleDestroy()}
-            placeholder="destroy"
-            autoFocus
-            className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-sm text-white placeholder-white/20 transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none"
-          />
-        </div>
+        {step === "confirm" && (
+          <>
+            <div className="mb-4">
+              <label className="mb-1.5 block text-xs text-white/50">
+                Type <span className="font-mono text-red-400">destroy</span> to confirm
+              </label>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && confirmed && handleConfirmStep()}
+                placeholder="destroy"
+                autoFocus
+                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-sm text-white placeholder-white/20 transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none"
+              />
+            </div>
 
-        {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+            {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
 
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleDestroy}
-            disabled={!confirmed || loading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            {loading ? (
-              <>
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                Destroying…
-              </>
-            ) : (
-              "Destroy instance"
-            )}
-          </button>
-        </div>
+            <div className="flex gap-3">
+              <button
+                onClick={onClose}
+                disabled={loading}
+                className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConfirmStep}
+                disabled={!confirmed || loading}
+                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-30"
+              >
+                {loading ? (
+                  <>
+                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                    Destroying…
+                  </>
+                ) : totpEnrolled ? (
+                  "Continue →"
+                ) : (
+                  "Destroy instance"
+                )}
+              </button>
+            </div>
+          </>
+        )}
+
+        {step === "sudo" && (
+          <>
+            {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+            <SudoChallenge
+              action="destroy_instance"
+              title="Verify identity to destroy instance"
+              onSuccess={({ sudoToken }) => executeDestroy(sudoToken)}
+              onCancel={() => {
+                setStep("confirm");
+                setError(null);
+              }}
+            />
+          </>
+        )}
       </div>
     </div>
   );

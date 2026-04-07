@@ -303,7 +303,7 @@ function TotpChallengePage() {
                       setBackupCode(e.target.value.toUpperCase().replace(/[^A-Z0-9]/g, ""))
                     }
                     placeholder="XXXXXXXXXX"
-                    maxLength={12}
+                    maxLength={10}
                     className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-4 py-3 text-center font-mono text-lg tracking-widest text-white uppercase placeholder-white/20 transition-colors focus:border-amber-500/60 focus:ring-1 focus:ring-amber-500/30 focus:outline-none disabled:cursor-not-allowed disabled:opacity-50"
                   />
                 </div>
