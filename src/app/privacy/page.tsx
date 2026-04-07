@@ -348,9 +348,7 @@ export default async function PrivacyPage() {
                   <td>
                     <code>mmpm_redirect</code>
                   </td>
-                  <td>
-                    Store post-login redirect destination. Cleared immediately after use.
-                  </td>
+                  <td>Store post-login redirect destination. Cleared immediately after use.</td>
                   <td>Essential</td>
                   <td>15 minutes</td>
                 </tr>
@@ -358,8 +356,8 @@ export default async function PrivacyPage() {
             </table>
           </div>
           <p>
-            Both cookies are essential for the Service to function and cannot be disabled. Because we
-            set no analytics or tracking cookies, no cookie consent banner is required.
+            Both cookies are essential for the Service to function and cannot be disabled. Because
+            we set no analytics or tracking cookies, no cookie consent banner is required.
           </p>
 
           <h2>9. Data Security</h2>

@@ -302,7 +302,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <BetaBanner />
         <div className="relative flex min-h-screen flex-col">{children}</div>
-
       </body>
     </html>
   );
