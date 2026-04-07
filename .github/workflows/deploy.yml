@@ -64,7 +64,8 @@ jobs:
     steps:
       - name: Log manual deploy reason
         if: github.event_name == 'workflow_dispatch' && inputs.reason != ''
-        run: echo "Manual deploy — reason: ${{ inputs.reason }}"
+        run: |
+          echo "Manual deploy - reason: ${{ inputs.reason }}"
 
       - name: Deploy to droplet
         uses: appleboy/ssh-action@v1
