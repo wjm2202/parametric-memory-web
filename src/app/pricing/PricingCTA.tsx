@@ -5,6 +5,14 @@ import Link from "next/link";
 import { isValidTierId } from "@/config/tiers";
 import { WaitlistForm } from "./WaitlistForm";
 
+type CapacityStatus = "open" | "waitlist" | "paused";
+
+interface TierCapacity {
+  status: CapacityStatus;
+  slotsRemaining: number | null;
+  message: string | null;
+}
+
 interface PricingCTAProps {
   tierId: string;
   tierName: string;
@@ -13,18 +21,28 @@ interface PricingCTAProps {
   ctaLink?: string;
   /** @deprecated Trial period is not configured in Stripe — do not use. */
   trial?: boolean;
-  capacityStatus?: "open" | "waitlist" | "paused";
+  capacityStatus?: CapacityStatus;
   capacityMessage?: string | null;
+  /**
+   * Event-driven capacity check — called on CTA click before proceeding to
+   * checkout. Returns fresh tier capacity so we can gate if the tier is full.
+   * When provided, the component checks capacity on click rather than relying
+   * on server-rendered static props.
+   */
+  onCheckCapacity?: () => Promise<TierCapacity>;
+  /** True while a capacity check is in flight (disables button). */
+  checkingCapacity?: boolean;
 }
 
 /**
  * Pricing CTA button.
  *
  * Flow:
- *   - Logged in              → POST /api/checkout → redirect to Stripe Checkout
- *   - Not logged in          → Redirect to /login?redirect=/pricing
- *   - Enterprise self-hosted → Email contact link (manual sales)
- *   - Enterprise cloud       → Email contact link (custom pricing)
+ *   - CTA click             → fresh capacity check (event-driven)
+ *   - If open + logged in   → POST /api/checkout → redirect to Stripe Checkout
+ *   - If open + not logged  → Redirect to /login?redirect=/pricing
+ *   - If waitlist/paused    → WaitlistForm replaces button
+ *   - Enterprise            → Email contact link (manual sales)
  */
 export function PricingCTA({
   tierId,
@@ -35,19 +53,26 @@ export function PricingCTA({
   trial,
   capacityStatus,
   capacityMessage,
+  onCheckCapacity,
+  checkingCapacity,
 }: PricingCTAProps) {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // Local state to track if capacity check returned waitlist/paused AFTER click
+  const [blockedByCapacity, setBlockedByCapacity] = useState(false);
+  const [blockMessage, setBlockMessage] = useState<string | null>(null);
 
-  // Capacity gate — replace checkout with waitlist form when tier is full
-  if (capacityStatus === "waitlist" || capacityStatus === "paused") {
+  // Capacity gate — show waitlist if status was already known to be full
+  // OR if we just checked on click and it came back full
+  if (capacityStatus === "waitlist" || capacityStatus === "paused" || blockedByCapacity) {
     const displayName = tierName.includes("indie") || tierId === "indie" ? "Solo" : "Pro";
     return (
       <WaitlistForm
         tier={tierId}
         tierDisplayName={displayName}
         message={
+          blockMessage ??
           capacityMessage ??
           `${displayName} slots are temporarily full. Join the waitlist and we'll notify you when space opens.`
         }
@@ -101,7 +126,7 @@ export function PricingCTA({
     );
   }
 
-  // Logged in → call /api/checkout → redirect to Stripe Checkout
+  // Logged in → check capacity on click → if available, redirect to Stripe Checkout
   async function handleCheckout() {
     if (!agreedToTerms) {
       setError("Please agree to the Terms of Service before continuing.");
@@ -116,6 +141,25 @@ export function PricingCTA({
       return;
     }
 
+    // ── Event-driven capacity check ─────────────────────────────────────
+    // Fire a fresh health check before proceeding to Stripe. This is the
+    // primary trigger for capacity updates — no more ISR background polling.
+    if (onCheckCapacity) {
+      try {
+        const fresh = await onCheckCapacity();
+        if (fresh.status === "waitlist" || fresh.status === "paused") {
+          setBlockedByCapacity(true);
+          setBlockMessage(fresh.message);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // Fail open — if capacity check errors, let them proceed to checkout.
+        // The compute server does its own capacity check before provisioning.
+      }
+    }
+
+    // ── Stripe checkout ─────────────────────────────────────────────────
     try {
       const res = await fetch("/api/checkout", {
         method: "POST",
@@ -155,6 +199,8 @@ export function PricingCTA({
     }
   }
 
+  const isDisabled = loading || !agreedToTerms || checkingCapacity;
+
   return (
     <div className="mb-8 space-y-3">
       {/* Legal clickwrap — must be checked before Stripe opens */}
@@ -190,10 +236,15 @@ export function PricingCTA({
 
       <button
         onClick={handleCheckout}
-        disabled={loading || !agreedToTerms}
+        disabled={isDisabled}
         className="bg-brand-500 hover:bg-brand-400 ring-brand-400/30 hover:ring-brand-400/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white ring-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
       >
-        {loading ? (
+        {checkingCapacity ? (
+          <>
+            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+            Checking availability…
+          </>
+        ) : loading ? (
           <>
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
             Redirecting to payment…
