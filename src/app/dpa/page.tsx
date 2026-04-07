@@ -194,11 +194,6 @@ export default async function DPAPage() {
                   <td>USA</td>
                   <td>Transactional email delivery</td>
                 </tr>
-                <tr>
-                  <td>PostHog, Inc.</td>
-                  <td>USA</td>
-                  <td>Product analytics (aggregated, non-PII)</td>
-                </tr>
               </tbody>
             </table>
           </div>

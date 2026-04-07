@@ -112,10 +112,9 @@ export default async function PrivacyPage() {
 
           <h3>2.3 Usage &amp; Analytics Data</h3>
           <p>
-            We collect non-identifying analytics via PostHog: API request metadata, feature usage,
-            error logs, device type, browser type, operating system, IP address, and approximate
-            geographic location (inferred from IP, not pinpointed). We anonymize this data where
-            possible and do not associate it with your identity unless troubleshooting an error.
+            We collect basic server-side analytics from access logs: API request metadata, error
+            logs, and request timing. We do not use any third-party analytics services or tracking
+            scripts. No client-side analytics cookies are set.
           </p>
 
           <h3>2.4 Payment Information</h3>
@@ -172,7 +171,7 @@ export default async function PrivacyPage() {
                 <tr>
                   <td>Improve the Service</td>
                   <td>Legitimate interest (Art. 6(1)(f))</td>
-                  <td>90 days (anonymized)</td>
+                  <td>14 days (server logs)</td>
                 </tr>
                 <tr>
                   <td>Detect fraud &amp; abuse</td>
@@ -205,11 +204,8 @@ export default async function PrivacyPage() {
               <strong>Memory atoms:</strong> Retained while your account is active
             </li>
             <li>
-              <strong>Analytics data:</strong> Anonymized after 90 days; identifiable analytics
-              deleted after 30 days
-            </li>
-            <li>
-              <strong>Server logs:</strong> Retained for 14 days for operational debugging
+              <strong>Server logs:</strong> Access and error logs retained for 14 days for
+              operational debugging
             </li>
           </ul>
 
@@ -251,13 +247,6 @@ export default async function PrivacyPage() {
             <a href="https://resend.com/legal/privacy">Resend Privacy Policy</a>
           </p>
 
-          <h3>5.4 PostHog, Inc. — Analytics</h3>
-          <p>
-            Understands feature usage and monitors errors. Data: anonymized usage patterns, error
-            logs, device/browser type. Location: United States.{" "}
-            <a href="https://posthog.com/privacy">PostHog Privacy Policy</a>
-          </p>
-
           <p>
             We do not sell, rent, or share your personal data with third parties except when
             required by law, to prevent fraud, or with your explicit written consent.
@@ -268,8 +257,8 @@ export default async function PrivacyPage() {
             <strong>For GDPR users (EU/UK):</strong> New Zealand holds an adequacy decision from the
             European Commission, meaning transfers to Parametric Memory (NZ entity) are lawful under
             GDPR Article 45 without additional safeguards. For transfers to US-based sub-processors
-            (DigitalOcean, Stripe, Resend, PostHog), we rely on Standard Contractual Clauses (SCCs)
-            under GDPR Article 46.
+            (DigitalOcean, Stripe, Resend), we rely on Standard Contractual Clauses (SCCs) under
+            GDPR Article 46.
           </p>
           <p>
             <strong>For Australian users:</strong> Data transfers comply with the Australian Privacy
@@ -329,7 +318,10 @@ export default async function PrivacyPage() {
           </p>
 
           <h2>8. Cookies &amp; Tracking</h2>
-          <p>We use the following cookies:</p>
+          <p>
+            We only use essential cookies required for the Service to function. We do not use any
+            analytics, advertising, or tracking cookies.
+          </p>
           <div className="overflow-x-auto">
             <table>
               <thead>
@@ -343,35 +335,31 @@ export default async function PrivacyPage() {
               <tbody>
                 <tr>
                   <td>
-                    <code>session_token</code>
+                    <code>mmpm_session</code>
                   </td>
-                  <td>Authenticate your session after login</td>
+                  <td>
+                    Authenticate your session after magic link or TOTP login. httpOnly, secure,
+                    sameSite=lax.
+                  </td>
                   <td>Essential</td>
-                  <td>Session / 30 days</td>
+                  <td>30 days</td>
                 </tr>
                 <tr>
                   <td>
-                    <code>csrf_token</code>
+                    <code>mmpm_redirect</code>
                   </td>
-                  <td>Prevent cross-site request forgery</td>
-                  <td>Essential</td>
-                  <td>Session</td>
-                </tr>
-                <tr>
                   <td>
-                    <code>_posthog_*</code>
+                    Store post-login redirect destination. Cleared immediately after use.
                   </td>
-                  <td>Product analytics</td>
-                  <td>Analytics</td>
-                  <td>12 months</td>
+                  <td>Essential</td>
+                  <td>15 minutes</td>
                 </tr>
               </tbody>
             </table>
           </div>
           <p>
-            You can block analytics cookies in your browser settings or opt out by contacting{" "}
-            <a href="mailto:privacy@parametric-memory.dev">privacy@parametric-memory.dev</a>.
-            Essential cookies are required for the Service to function.
+            Both cookies are essential for the Service to function and cannot be disabled. Because we
+            set no analytics or tracking cookies, no cookie consent banner is required.
           </p>
 
           <h2>9. Data Security</h2>

@@ -8,7 +8,6 @@ Commercial website, documentation, and developer portal for [Parametric Memory](
 - **Styling:** Tailwind CSS + Framer Motion
 - **Payments:** Stripe Checkout
 - **Docs:** MDX, auto-generated from MMPM source
-- **Analytics:** PostHog
 - **Hosting:** Docker + Nginx on DigitalOcean (SSH hardened, key-only access)
 
 ## Development
