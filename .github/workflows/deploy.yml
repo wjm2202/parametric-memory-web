@@ -1,27 +1,70 @@
 name: Deploy
 
-on:
-  workflow_run:
-    workflows: ["CI"]
-    branches: [main]
-    types: [completed]
-  workflow_dispatch:
+# Runs on push to main only — which only happens after a PR is merged.
+# Sequence: build image → push to Docker Hub → deploy to droplet → health check.
+# If any step fails the workflow goes red. Nothing is silently skipped.
 
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual deploy'
+        type: string
+        required: false
+
+# Queue deploys — never run two simultaneously, never cancel an in-progress deploy.
 concurrency:
   group: deploy-production
   cancel-in-progress: false
 
 jobs:
+  build-and-push:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    outputs:
+      image_tag: ${{ steps.tag.outputs.tag }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set image tag
+        id: tag
+        run: echo "tag=parametricmemory/parametric-memory-web:${{ github.sha }}" >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: true
+          tags: |
+            parametricmemory/parametric-memory-web:latest
+            ${{ steps.tag.outputs.tag }}
+          build-args: |
+            GIT_COMMIT_SHA=${{ github.sha }}
+          cache-from: type=registry,ref=parametricmemory/parametric-memory-web:buildcache
+          cache-to: type=registry,ref=parametricmemory/parametric-memory-web:buildcache,mode=max
+
   deploy:
     name: Deploy to Production
     runs-on: ubuntu-latest
-    # Only deploy if CI passed (or manual trigger)
-    if: ${{ github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success' }}
+    needs: build-and-push
     environment:
       name: production
       url: https://parametric-memory.dev
     steps:
-      - uses: actions/checkout@v4
+      - name: Log manual deploy reason
+        if: github.event_name == 'workflow_dispatch' && inputs.reason != ''
+        run: echo "Manual deploy — reason: ${{ inputs.reason }}"
 
       - name: Deploy to droplet
         uses: appleboy/ssh-action@v1
@@ -30,26 +73,22 @@ jobs:
           username: ${{ secrets.DROPLET_USER }}
           key: ${{ secrets.DROPLET_SSH_KEY }}
           command_timeout: 10m
-          envs: IMAGE_TAG
           script: |
             set -euo pipefail
 
             cd /home/deploy/parametric-memory-web
 
-            # Pull latest docker-compose.yml (no build needed on droplet)
             git fetch origin main
             git reset --hard origin/main
 
-            # Pull the pre-built image from Docker Hub
+            IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
             echo "Pulling image: $IMAGE_TAG"
             docker pull "$IMAGE_TAG"
 
-            # Swap to the new image — no build, no CPU spike
-            export GIT_COMMIT_SHA="${IMAGE_TAG##*:}"
+            export GIT_COMMIT_SHA="${{ github.sha }}"
             docker compose up -d --no-build --force-recreate --remove-orphans
 
-            # Wait for health check
-            echo "Waiting for health check..."
+            echo "Waiting for container to be healthy..."
             HEALTH_OK=false
             for i in $(seq 1 20); do
               if curl -sf http://localhost:3000/api/health > /dev/null 2>&1; then
@@ -63,25 +102,20 @@ jobs:
 
             if [ "$HEALTH_OK" != "true" ]; then
               echo "ERROR: Health check failed after 20 attempts"
-              echo "Container logs:"
               docker compose logs --tail=50
               exit 1
             fi
 
-            # Clean up old images to keep disk tidy
             docker image prune -f
+            echo "Deploy complete: $IMAGE_TAG"
 
-            echo "Deployment successful: $IMAGE_TAG"
-        env:
-          IMAGE_TAG: parametricmemory/parametric-memory-web:${{ github.event.workflow_run.head_sha || github.sha }}
-
-      - name: Verify deployment
+      - name: Verify external health
         run: |
           sleep 10
           STATUS=$(curl -sf https://parametric-memory.dev/api/health | jq -r '.status' 2>/dev/null || echo "unreachable")
           if [ "$STATUS" = "ok" ]; then
             echo "Production verified: status OK"
           else
-            echo "WARNING: External health check returned: $STATUS"
-            echo "This may be an nginx/SSL issue — the container itself is healthy."
+            echo "ERROR: External health check returned: $STATUS"
+            exit 1
           fi
