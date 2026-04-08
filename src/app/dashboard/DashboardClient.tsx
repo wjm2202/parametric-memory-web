@@ -669,9 +669,12 @@ export default function DashboardClient({
   const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
   useEffect(() => {
     fetch("/api/billing/status")
-      .then((r) => r.json())
+      .then((r) => {
+        if (!r.ok) return;
+        return r.json();
+      })
       .then((d) => {
-        if (!d.error) setBillingStatus(d);
+        if (d && !d.error) setBillingStatus(d);
       })
       .catch(() => {});
   }, []);
