@@ -41,7 +41,7 @@ async function proxyRequest(
   }
 
   const { response } = await computeProxy(`api/v1/substrate/${subPath}`, {
-    method: request.method,
+    method: request.method as "GET" | "POST" | "PUT" | "PATCH" | "DELETE",
     headers,
     body,
     label: `substrate/${subPath}`,

@@ -53,7 +53,7 @@ describe("GET /api/my-substrate/key-rotation/status", () => {
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/my-substrate/key-rotation/status"),
       expect.objectContaining({
-        headers: { Authorization: "Bearer sess_abc123" },
+        headers: expect.objectContaining({ Authorization: "Bearer sess_abc123" }),
         cache: "no-store",
       }),
     );

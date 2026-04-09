@@ -598,6 +598,7 @@ export default function DashboardClient({
   const [rotationConfirmOpen, setRotationConfirmOpen] = useState(false);
   const [rotationStarting, setRotationStarting] = useState(false);
   const [rotationRateLimitMsg, setRotationRateLimitMsg] = useState<string | null>(null);
+  const [_rotationSudoOpen, setRotationSudoOpen] = useState(false);
   const [claimKeyOpen, setClaimKeyOpen] = useState(false);
   const rotationPollRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const unloadRef = useRef<((e: BeforeUnloadEvent) => string) | null>(null);

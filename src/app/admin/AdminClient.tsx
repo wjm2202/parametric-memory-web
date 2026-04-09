@@ -623,50 +623,46 @@ function DestroyModal({
           </div>
         </div>
 
-        {step === "confirm" && (
-          <>
-            <div className="mb-4">
-              <label className="mb-1.5 block text-xs text-white/50">
-                Type <span className="font-mono text-red-400">destroy</span> to confirm
-              </label>
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && confirmed && handleConfirmStep()}
-                placeholder="destroy"
-                autoFocus
-                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-sm text-white placeholder-white/20 transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none"
-              />
-            </div>
+        <div className="mb-4">
+          <label className="mb-1.5 block text-xs text-white/50">
+            Type <span className="font-mono text-red-400">destroy</span> to confirm
+          </label>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && confirmed && handleConfirmStep()}
+            placeholder="destroy"
+            autoFocus
+            className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-sm text-white placeholder-white/20 transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none"
+          />
+        </div>
 
-            {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+        {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
 
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                disabled={loading}
-                className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmStep}
-                disabled={!confirmed || loading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                {loading ? (
-                  <>
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Destroying…
-                  </>
-                ) : (
-                  "Destroy instance"
-                )}
-              </button>
-            </div>
-          </>
-        )}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmStep}
+            disabled={!confirmed || loading}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {loading ? (
+              <>
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Destroying…
+              </>
+            ) : (
+              "Destroy instance"
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
