@@ -103,19 +103,19 @@ export default async function TermsPage() {
               </thead>
               <tbody>
                 <tr>
-                  <td>Free</td>
-                  <td>$1/mo</td>
-                  <td>500</td>
-                  <td>30 days</td>
+                  <td>Starter</td>
+                  <td>$3/mo</td>
+                  <td>1,000</td>
+                  <td>12 months</td>
                 </tr>
                 <tr>
-                  <td>Indie</td>
+                  <td>Solo</td>
                   <td>$9/mo</td>
                   <td>10,000</td>
                   <td>12 months</td>
                 </tr>
                 <tr>
-                  <td>Pro</td>
+                  <td>Professional</td>
                   <td>$29/mo</td>
                   <td>100,000</td>
                   <td>24 months</td>

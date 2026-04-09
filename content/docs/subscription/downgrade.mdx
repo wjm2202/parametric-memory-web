@@ -23,21 +23,21 @@ The Dashboard will show your current tier with a note that a downgrade is schedu
 
 At the start of your next billing cycle, Stripe fires `customer.subscription.updated` with the new tier. Our system queues the tier-change job within seconds. The transition time is:
 
-- **Pro → Indie (shared to shared):** Under 30 seconds — container limits are updated in-place
-- **Team → Pro or Indie (dedicated to shared):** 3–5 minutes — dedicated droplet is decommissioned and a new shared container is provisioned
+- **Shared-to-shared downgrades (e.g. Professional → Solo):** Under 30 seconds — container limits are updated in-place
+- **Team → any shared tier (dedicated to shared):** 3–5 minutes — dedicated droplet is decommissioned and a new shared container is provisioned
 
 ## What happens to your instance
 
-### Pro → Indie (shared to shared)
+### Shared-to-shared downgrades (e.g. Professional → Solo)
 
 The tier-change worker:
-1. Reduces your container's resource limits (CPU, memory, atom cap, bootstrap cap)
+1. Reduces your container's resource limits (atom cap, bootstrap cap, storage)
 2. Restarts your container to apply the new limits
 3. Updates your subscription record
 
 Your MCP endpoint stays the same. No reconnection needed.
 
-### Team → Pro or Indie (dedicated to shared)
+### Team → any shared tier (dedicated to shared)
 
 This is the reverse of upgrading to Team:
 
@@ -50,7 +50,7 @@ Your MCP URL will change when moving off Team — update your AI client config w
 
 ## What happens to excess atoms
 
-If you downgrade from Pro (100,000 atoms) to Indie (10,000 atoms) and you have 50,000 stored atoms, the atoms are **not automatically deleted**. Instead:
+If you downgrade from Professional (100,000 atoms) to Solo (10,000 atoms) and you have 50,000 stored atoms, the atoms are **not automatically deleted**. Instead:
 
 - The new limit is enforced on **new writes only** — you cannot store new atoms once you are at the cap
 - Existing atoms above the cap remain readable until you delete them
@@ -61,7 +61,7 @@ If you are significantly over the new tier limit, reduce your atom count before 
 
 ## What happens to bootstraps
 
-Bootstrap limits reset at the start of each billing cycle. If you downgrade from Pro (10,000/month) to Indie (1,000/month), your bootstrap allowance resets to 1,000 on the new billing cycle start date.
+Bootstrap limits reset at the start of each billing cycle. If you downgrade from Professional (10,000/month) to Solo (1,000/month), your bootstrap allowance resets to 1,000 on the new billing cycle start date.
 
 ## Cancelling a scheduled downgrade
 

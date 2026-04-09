@@ -16,6 +16,7 @@ interface BillingStatus {
   trialEndsAt: string | null;
   lastPaymentFailed: boolean;
   hasStripeCustomer: boolean;
+  usageUnavailable?: boolean;
   tierDisplay: {
     name: string;
     atomsUsed: number;
@@ -71,7 +72,8 @@ function BillingWidget({
   billing: BillingStatus;
   onBillingPortal: () => void;
 }) {
-  const { status, tier, renewsAt, trialEndsAt, lastPaymentFailed, tierDisplay } = billing;
+  const { status, tier, renewsAt, trialEndsAt, lastPaymentFailed, usageUnavailable, tierDisplay } =
+    billing;
 
   // Payment warning takes priority over normal active display
   if (lastPaymentFailed && status !== "suspended") {
@@ -192,19 +194,25 @@ function BillingWidget({
           </p>
           {tierDisplay.atomsLimit > 0 && (
             <div className="space-y-1 pt-1">
-              <div className="flex justify-between text-xs text-zinc-500">
-                <span>
-                  {tierDisplay.atomsUsed.toLocaleString()} /{" "}
-                  {tierDisplay.atomsLimit.toLocaleString()} memories
-                </span>
-                <span>{atomPct.toFixed(0)}%</span>
-              </div>
-              <div className="h-1 overflow-hidden rounded-full bg-zinc-800">
-                <div
-                  className={`h-full rounded-full transition-all ${atomPct > 80 ? "bg-amber-500" : "bg-indigo-500"}`}
-                  style={{ width: `${atomPct}%` }}
-                />
-              </div>
+              {usageUnavailable ? (
+                <p className="text-xs text-zinc-500 italic">Usage data temporarily unavailable</p>
+              ) : (
+                <>
+                  <div className="flex justify-between text-xs text-zinc-500">
+                    <span>
+                      {tierDisplay.atomsUsed.toLocaleString()} /{" "}
+                      {tierDisplay.atomsLimit.toLocaleString()} memories
+                    </span>
+                    <span>{atomPct.toFixed(0)}%</span>
+                  </div>
+                  <div className="h-1 overflow-hidden rounded-full bg-zinc-800">
+                    <div
+                      className={`h-full rounded-full transition-all ${atomPct > 80 ? "bg-amber-500" : "bg-indigo-500"}`}
+                      style={{ width: `${atomPct}%` }}
+                    />
+                  </div>
+                </>
+              )}
             </div>
           )}
         </div>
@@ -650,16 +658,18 @@ export default function DashboardClient({
 
   // Billing status — drives the billing widget and renewal banner
   const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
+  const [billingError, setBillingError] = useState(false);
   useEffect(() => {
     fetch("/api/billing/status")
       .then((r) => {
-        if (!r.ok) return;
+        if (!r.ok) throw new Error(`status ${r.status}`);
         return r.json();
       })
       .then((d) => {
         if (d && !d.error) setBillingStatus(d);
+        else setBillingError(true);
       })
-      .catch(() => {});
+      .catch(() => setBillingError(true));
   }, []);
 
   // Check for checkout success/cancel query param
@@ -1003,6 +1013,11 @@ export default function DashboardClient({
         {billingStatus && !awaitingWebhook && (
           <div className="mb-3">
             <BillingWidget billing={billingStatus} onBillingPortal={handleBillingPortalClick} />
+          </div>
+        )}
+        {billingError && !billingStatus && (
+          <div className="mb-3 rounded-xl border border-zinc-800 bg-zinc-900/30 px-5 py-3">
+            <p className="text-xs text-zinc-500">Billing status unavailable — refresh to retry</p>
           </div>
         )}
 

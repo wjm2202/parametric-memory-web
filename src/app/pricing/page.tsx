@@ -9,14 +9,14 @@ import { TeamInquiryForm } from "./TeamInquiryForm";
 export const metadata: Metadata = {
   title: "Pricing — Plans from $3/mo",
   description:
-    "Claude remembers everything. Persistent AI memory for developers — flat monthly subscription, no per-query costs. Starter $3/mo, Indie $9/mo, Pro $29/mo, Team $79/mo.",
+    "Claude remembers everything. Persistent AI memory for developers — flat monthly subscription, no per-query costs. Starter $3/mo, Solo $9/mo, Professional $29/mo, Team $79/mo.",
   alternates: {
     canonical: "https://parametric-memory.dev/pricing",
   },
   openGraph: {
     title: "Parametric Memory Pricing — Plans from $3/mo",
     description:
-      "Persistent AI memory from $3/month. Flat rate subscription — no per-query costs, no credits. Merkle proofs, Markov prediction, MCP native.",
+      "Persistent AI memory from $3/month. Flat rate subscription — no per-query costs, no credits. Starter, Solo, Professional, and Team plans. Merkle proofs, Markov prediction, MCP native.",
   },
 };
 

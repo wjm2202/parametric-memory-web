@@ -8,7 +8,7 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 export const metadata: Metadata = {
   title: "Parametric Memory — Persistent, Verifiable Memory for AI",
   description:
-    "Stop re-explaining. Give your AI a second brain with cryptographic Merkle proofs, Markov-chain prediction, and sub-millisecond recall. Dedicated instances from $9/mo.",
+    "Stop re-explaining. Give your AI a second brain with cryptographic Merkle proofs, Markov-chain prediction, and sub-millisecond recall. Dedicated instances from $3/mo.",
   alternates: { canonical: "https://parametric-memory.dev" },
 };
 
@@ -19,7 +19,7 @@ const landingJsonLd = {
   name: "Parametric Memory — Home",
   url: "https://parametric-memory.dev",
   description:
-    "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances from $9/mo.",
+    "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances from $3/mo.",
   datePublished: "2025-01-01",
   dateModified: new Date().toISOString().split("T")[0],
   inLanguage: "en-US",
@@ -70,7 +70,7 @@ const homeFaqJsonLd = {
       name: "What is Parametric Memory?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Parametric Memory (MMPM) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as named atoms in a SHA-256 Merkle tree, provides RFC 6962 consistency proofs on every read, and uses a Markov chain prediction layer to pre-fetch context before you ask for it. Dedicated instances from $9/month.",
+        text: "Parametric Memory (MMPM) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as named atoms in a SHA-256 Merkle tree, provides RFC 6962 consistency proofs on every read, and uses a Markov chain prediction layer to pre-fetch context before you ask for it. Dedicated instances from $3/month.",
       },
     },
     {
@@ -102,7 +102,7 @@ const homeFaqJsonLd = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Three plans: Indie at $9/month (10,000 memories, up to 33 Claude sessions/day), Pro at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month. All paid plans include a 14-day free trial — no charge until day 15.",
+        text: "Four plans: Starter at $3/month (1,000 memories, up to 6 Claude sessions/day), Solo at $9/month (10,000 memories, up to 33 sessions/day), Professional at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month. All paid plans include a 14-day free trial — no charge until day 15.",
       },
     },
     {
@@ -738,12 +738,13 @@ export default async function HomePage() {
 
             {/* Microcopy — removes friction */}
             <p className="text-surface-600 font-mono text-[12px]">
-              Starting at $9/month · 14-day free trial · Cancel before day 15, pay nothing
+              Starting at $3/month · 14-day free trial · Cancel before day 15, pay nothing
             </p>
 
             {/* Tier hint */}
             <p className="text-surface-600 mt-3 font-mono text-[11px]">
-              Indie $9 · Pro $29 · Team $79 · Enterprise Cloud $299 · Self-Hosted $499
+              Starter $3 · Solo $9 · Professional $29 · Team $79 · Enterprise Cloud $299 ·
+              Self-Hosted $499
             </p>
           </div>
         </section>

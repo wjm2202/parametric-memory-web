@@ -72,7 +72,7 @@ export function PricingCTA({
         : tierId === "indie"
           ? "Solo"
           : tierId === "pro"
-            ? "Pro"
+            ? "Professional"
             : tierName;
     return (
       <WaitlistForm

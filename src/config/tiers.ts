@@ -117,11 +117,11 @@ export const TIERS: Tier[] = [
   },
   {
     id: "indie",
-    name: "Indie",
+    name: "Solo",
     price: 9,
     description: "For individual developers building with persistent memory.",
     badge: null,
-    cta: "Get Indie",
+    cta: "Get Solo",
     limits: {
       maxAtoms: 10_000,
       maxBootstrapsPerMonth: 1_000,
@@ -145,11 +145,11 @@ export const TIERS: Tier[] = [
   },
   {
     id: "pro",
-    name: "Pro",
+    name: "Professional",
     price: 29,
     description: "For power users with large knowledge bases.",
     badge: "Most Popular",
-    cta: "Get Pro",
+    cta: "Get Professional",
     limits: {
       maxAtoms: 100_000,
       maxBootstrapsPerMonth: 10_000,
@@ -212,7 +212,7 @@ export const TIER_ORDER: TierId[] = ["free", "starter", "indie", "pro", "team"];
 
 /**
  * Display name lookup — import this instead of creating local inline objects.
- * @example TIER_LABELS["pro"] → "Pro"
+ * @example TIER_LABELS["pro"] → "Professional"
  */
 export const TIER_LABELS: Record<TierId, string> = Object.fromEntries(
   TIERS.map((t) => [t.id, t.name]),
@@ -244,7 +244,7 @@ export function isValidTierId(id: string): id is TierId {
  * Returns the display name for a tier ID, falling back to the raw ID string
  * if it isn't recognised. Safe to call with any string from the database.
  *
- * @example getTierLabel("pro")          → "Pro"
+ * @example getTierLabel("pro")          → "Professional"
  * @example getTierLabel("unknown_tier") → "unknown_tier"
  * @example getTierLabel(null)           → "—"
  */

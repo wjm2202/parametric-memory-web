@@ -1,6 +1,6 @@
 ---
 title: Upgrade Plan
-description: How to upgrade from Indie to Pro or Team — what happens to your instance, your billing, and your data.
+description: How to upgrade your plan — what happens to your instance, your billing, and your data.
 section: Subscription Management
 order: 1
 ---
@@ -21,10 +21,10 @@ You are redirected back to your Dashboard. The tier change is queued and process
 
 ## What happens to your instance
 
-### Indie → Pro (shared to shared)
+### Shared-to-shared upgrades (e.g. Starter → Solo, Solo → Professional)
 
 This is the fastest path. The tier-change worker:
-1. Updates your container's resource limits (CPU, memory, atom cap, bootstrap cap)
+1. Updates your container's resource limits (atom cap, bootstrap cap, storage)
 2. Restarts your container to apply the new limits — this takes under 30 seconds
 3. Updates your subscription record
 
@@ -46,12 +46,12 @@ This process takes approximately 3–5 minutes. During this window you have read
 
 ## Billing for upgrades
 
-Stripe prorates upgrades immediately. If you are on Indie ($9/month) and upgrade to Pro ($29/month) halfway through your billing cycle, you pay:
-- A credit for unused Indie days (~$4.50)
-- A charge for remaining Pro days (~$14.50)
+Stripe prorates upgrades immediately. If you are on Solo ($9/month) and upgrade to Professional ($29/month) halfway through your billing cycle, you pay:
+- A credit for unused Solo days (~$4.50)
+- A charge for remaining Professional days (~$14.50)
 - Net charge: ~$10 immediately
 
-From the next billing cycle, you are charged the full Pro price.
+From the next billing cycle, you are charged the full Professional price.
 
 ## After upgrading
 
@@ -61,4 +61,4 @@ From the next billing cycle, you are charged the full Pro price.
 
 ## Upgrading during a trial
 
-You can upgrade during your 14-day trial at any time. The trial clock continues on your new tier — if you are on day 3 of a Pro trial and upgrade to Team, you have 11 days remaining on your Team trial before billing starts.
+You can upgrade during your 14-day trial at any time. The trial clock continues on your new tier — if you are on day 3 of a Professional trial and upgrade to Team, you have 11 days remaining on your Team trial before billing starts.
