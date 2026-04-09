@@ -36,11 +36,7 @@ afterEach(() => {
 // ---------- helpers ----------
 
 /** Build a minimal Response-like object that the route's fetch() returns. */
-function fakeResponse(
-  body: string,
-  status = 200,
-  contentType = "application/json",
-) {
+function fakeResponse(body: string, status = 200, contentType = "application/json") {
   return {
     ok: status >= 200 && status < 300,
     status,
@@ -186,9 +182,7 @@ describe("GET /api/capacity", () => {
 
   it("always returns Content-Type application/json, never text/html", async () => {
     // The core invariant: no matter what upstream sends, we return JSON.
-    fetchSpy.mockResolvedValueOnce(
-      fakeResponse("<html>anything</html>", 200, "text/html"),
-    );
+    fetchSpy.mockResolvedValueOnce(fakeResponse("<html>anything</html>", 200, "text/html"));
 
     const res = await GET();
     expect(res.headers.get("Content-Type")).toContain("application/json");

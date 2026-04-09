@@ -55,11 +55,7 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default function AdminClient({
-  account,
-}: {
-  account: AccountInfo;
-}) {
+export default function AdminClient({ account }: { account: AccountInfo }) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
 
@@ -150,11 +146,7 @@ export default function AdminClient({
           </div>
         </div>
 
-        {hasTier ? (
-          <InstanceSection accountId={account.id} />
-        ) : (
-          <NoPlanBanner />
-        )}
+        {hasTier ? <InstanceSection accountId={account.id} /> : <NoPlanBanner />}
       </main>
     </div>
   );
@@ -196,11 +188,7 @@ function NoPlanBanner() {
 }
 
 /* ── Instance section ────────────────────────────────────────────────────── */
-function InstanceSection({
-  accountId,
-}: {
-  accountId: string;
-}) {
+function InstanceSection({ accountId }: { accountId: string }) {
   const [instances, setInstances] = useState<InstanceInfo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -277,23 +265,14 @@ function InstanceSection({
         Your instance
       </h2>
       {instances.map((instance) => (
-        <InstanceCard
-          key={instance.id}
-          instance={instance}
-          accountId={accountId}
-        />
+        <InstanceCard key={instance.id} instance={instance} accountId={accountId} />
       ))}
     </div>
   );
 }
 
 /* ── Individual instance card ────────────────────────────────────────────── */
-function InstanceCard({
-  instance,
-}: {
-  instance: InstanceInfo;
-  accountId: string;
-}) {
+function InstanceCard({ instance }: { instance: InstanceInfo; accountId: string }) {
   const [detail, setDetail] = useState<InstanceDetail | null>(null);
   const [keysCopied, setKeysCopied] = useState<Record<string, boolean>>({});
   const [showDestroy, setShowDestroy] = useState(false);
@@ -688,7 +667,6 @@ function DestroyModal({
             </div>
           </>
         )}
-
       </div>
     </div>
   );

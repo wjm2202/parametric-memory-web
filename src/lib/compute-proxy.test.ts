@@ -97,7 +97,8 @@ describe("computeProxy — valid JSON upstream", () => {
 
 describe("computeProxy — non-JSON upstream (M-0A regression)", () => {
   it("returns 502 JSON when nginx sends HTML 502 page", async () => {
-    const html = "<html><head><title>502 Bad Gateway</title></head><body><h1>502 Bad Gateway</h1></body></html>";
+    const html =
+      "<html><head><title>502 Bad Gateway</title></head><body><h1>502 Bad Gateway</h1></body></html>";
     fetchSpy.mockResolvedValueOnce(fakeResponse(html, 502, "text/html"));
 
     const result = await computeProxy("api/v1/capacity", { label: "capacity" });
@@ -207,12 +208,28 @@ describe("computeProxy — header forwarding", () => {
 
 describe("computeProxy — Content-Type invariant", () => {
   const scenarios = [
-    { name: "valid JSON 200", setup: () => fetchSpy.mockResolvedValueOnce(fakeResponse('{"ok":true}')) },
-    { name: "HTML 502", setup: () => fetchSpy.mockResolvedValueOnce(fakeResponse("<html>502</html>", 502, "text/html")) },
+    {
+      name: "valid JSON 200",
+      setup: () => fetchSpy.mockResolvedValueOnce(fakeResponse('{"ok":true}')),
+    },
+    {
+      name: "HTML 502",
+      setup: () =>
+        fetchSpy.mockResolvedValueOnce(fakeResponse("<html>502</html>", 502, "text/html")),
+    },
     { name: "empty body", setup: () => fetchSpy.mockResolvedValueOnce(fakeResponse("", 200)) },
-    { name: "network error", setup: () => fetchSpy.mockRejectedValueOnce(new Error("ECONNREFUSED")) },
-    { name: "JSON 404", setup: () => fetchSpy.mockResolvedValueOnce(fakeResponse('{"error":"not_found"}', 404)) },
-    { name: "JSON 500", setup: () => fetchSpy.mockResolvedValueOnce(fakeResponse('{"error":"internal"}', 500)) },
+    {
+      name: "network error",
+      setup: () => fetchSpy.mockRejectedValueOnce(new Error("ECONNREFUSED")),
+    },
+    {
+      name: "JSON 404",
+      setup: () => fetchSpy.mockResolvedValueOnce(fakeResponse('{"error":"not_found"}', 404)),
+    },
+    {
+      name: "JSON 500",
+      setup: () => fetchSpy.mockResolvedValueOnce(fakeResponse('{"error":"internal"}', 500)),
+    },
   ];
 
   for (const { name, setup } of scenarios) {

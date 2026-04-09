@@ -88,13 +88,7 @@ export async function computeProxy(
   path: string,
   opts: ComputeProxyOptions = {},
 ): Promise<ComputeProxyResult> {
-  const {
-    method = "GET",
-    headers = {},
-    body,
-    label = path,
-    forwardHeaders = [],
-  } = opts;
+  const { method = "GET", headers = {}, body, label = path, forwardHeaders = [] } = opts;
 
   const url = `${COMPUTE_URL}/${path}`;
 

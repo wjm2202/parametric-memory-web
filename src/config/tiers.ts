@@ -11,7 +11,7 @@
 
 // ── Canonical billing tiers ───────────────────────────────────────────────────
 
-export type TierId = "free" | "indie" | "pro" | "team";
+export type TierId = "free" | "starter" | "indie" | "pro" | "team";
 
 export interface TierLimits {
   maxAtoms: number; // -1 = unlimited
@@ -83,6 +83,36 @@ export const TIERS: Tier[] = [
       { name: "Markov prediction", included: true },
       { name: "MCP native", included: true },
       { name: "Community support", included: true },
+    ],
+  },
+  {
+    id: "starter",
+    name: "Starter",
+    price: 3,
+    description: "Experience persistent memory. $3/month, 30-day money-back guarantee.",
+    badge: null,
+    cta: "Start Building",
+    limits: {
+      maxAtoms: 1_000,
+      maxBootstrapsPerMonth: 200,
+      maxStorageMB: 100,
+      maxMonthlyCents: 500,
+      maxSubstrates: 1,
+    },
+    stripePriceEnvKey: "STRIPE_PRICE_STARTER_MONTHLY",
+    stripeProductEnvKey: "STRIPE_PRODUCT_STARTER",
+    features: [
+      { name: "1,000 atoms", included: true },
+      { name: "200 bootstraps / month", included: true },
+      { name: "100 MB storage", included: true },
+      { name: "1 substrate instance", included: true },
+      { name: "$5/mo spend cap", included: true },
+      { name: "Merkle proofs", included: true },
+      { name: "Markov prediction", included: true },
+      { name: "Knowledge graph edges", included: true },
+      { name: "MCP native", included: true },
+      { name: "Community support", included: true },
+      { name: "30-day money-back guarantee", included: true },
     ],
   },
   {
@@ -178,7 +208,7 @@ export const TIERS: Tier[] = [
 export const TIERS_BY_ID = Object.fromEntries(TIERS.map((t) => [t.id, t])) as Record<TierId, Tier>;
 
 /** All canonical billing tier IDs in upgrade order (cheapest → most expensive). */
-export const TIER_ORDER: TierId[] = ["free", "indie", "pro", "team"];
+export const TIER_ORDER: TierId[] = ["free", "starter", "indie", "pro", "team"];
 
 /**
  * Display name lookup — import this instead of creating local inline objects.
