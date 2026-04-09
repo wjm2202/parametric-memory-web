@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
+import { computeProxy, authHeaders } from "@/lib/compute-proxy";
 
-const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
 const SESSION_COOKIE = "mmpm_session";
 
 /**
@@ -20,34 +20,21 @@ async function getSessionToken(): Promise<string | undefined> {
   return cookieStore.get(SESSION_COOKIE)?.value;
 }
 
-function buildHeaders(sessionToken?: string): HeadersInit {
-  const headers: Record<string, string> = { "Content-Type": "application/json" };
-  if (sessionToken) headers["Authorization"] = `Bearer ${sessionToken}`;
-  return headers;
-}
-
 export async function GET(
   _request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
 ): Promise<NextResponse> {
   const { path } = await params;
   const sessionToken = await getSessionToken();
+  const subPath = path.join("/");
 
-  try {
-    const res = await fetch(`${COMPUTE_URL}/api/${path.join("/")}`, {
-      method: "GET",
-      headers: buildHeaders(sessionToken),
-      cache: "no-store",
-    });
-    const body = await res.text();
-    return new NextResponse(body, {
-      status: res.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error(`[compute-proxy] GET /api/${path.join("/")} failed:`, err);
-    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
-  }
+  const { response } = await computeProxy(`api/${subPath}`, {
+    method: "GET",
+    headers: authHeaders(sessionToken),
+    label: `compute/${subPath}`,
+  });
+
+  return response;
 }
 
 export async function POST(
@@ -56,6 +43,7 @@ export async function POST(
 ): Promise<NextResponse> {
   const { path } = await params;
   const sessionToken = await getSessionToken();
+  const subPath = path.join("/");
 
   let body: unknown = {};
   try {
@@ -64,22 +52,14 @@ export async function POST(
     /* empty body */
   }
 
-  try {
-    const res = await fetch(`${COMPUTE_URL}/api/${path.join("/")}`, {
-      method: "POST",
-      headers: buildHeaders(sessionToken),
-      body: JSON.stringify(body),
-      cache: "no-store",
-    });
-    const responseBody = await res.text();
-    return new NextResponse(responseBody, {
-      status: res.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error(`[compute-proxy] POST /api/${path.join("/")} failed:`, err);
-    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
-  }
+  const { response } = await computeProxy(`api/${subPath}`, {
+    method: "POST",
+    body: JSON.stringify(body),
+    headers: authHeaders(sessionToken),
+    label: `compute/${subPath}`,
+  });
+
+  return response;
 }
 
 export async function DELETE(
@@ -88,20 +68,13 @@ export async function DELETE(
 ): Promise<NextResponse> {
   const { path } = await params;
   const sessionToken = await getSessionToken();
+  const subPath = path.join("/");
 
-  try {
-    const res = await fetch(`${COMPUTE_URL}/api/${path.join("/")}`, {
-      method: "DELETE",
-      headers: buildHeaders(sessionToken),
-      cache: "no-store",
-    });
-    const body = await res.text();
-    return new NextResponse(body, {
-      status: res.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error(`[compute-proxy] DELETE /api/${path.join("/")} failed:`, err);
-    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
-  }
+  const { response } = await computeProxy(`api/${subPath}`, {
+    method: "DELETE",
+    headers: authHeaders(sessionToken),
+    label: `compute/${subPath}`,
+  });
+
+  return response;
 }

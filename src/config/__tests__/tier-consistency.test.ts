@@ -41,7 +41,7 @@ function readSrc(relPath: string): string {
 
 describe("tiers.ts — registry internal consistency", () => {
   it("TIER_ORDER contains exactly the canonical billing tiers", () => {
-    expect(TIER_ORDER).toEqual(["free", "indie", "pro", "team"]);
+    expect(TIER_ORDER).toEqual(["free", "starter", "indie", "pro", "team"]);
   });
 
   it("TIERS array length matches TIER_ORDER length", () => {
@@ -75,6 +75,10 @@ describe("tiers.ts — registry internal consistency", () => {
     expect(TIER_PRICES.free).toBe(1);
   });
 
+  it("starter tier has price 3", () => {
+    expect(TIER_PRICES.starter).toBe(3);
+  });
+
   it("atom limits increase with tier order", () => {
     // -1 means unlimited — only team may have that
     const limits = TIER_ORDER.map((id) => TIERS_BY_ID[id].limits.maxAtoms);
@@ -95,9 +99,8 @@ describe("tiers.ts — registry internal consistency", () => {
     }
   });
 
-  it("every tier has a non-empty stripePriceEnvKey (except free)", () => {
+  it("every tier has a non-empty stripePriceEnvKey", () => {
     for (const tier of TIERS) {
-      if (tier.id === "free") continue; // free has no checkout
       expect(tier.stripePriceEnvKey.length).toBeGreaterThan(0);
       expect(tier.stripePriceEnvKey).toMatch(/^STRIPE_PRICE_/);
     }
@@ -121,9 +124,13 @@ describe("tiers.ts — helper functions", () => {
   });
 
   it("isValidTierId returns false for legacy names", () => {
-    for (const legacy of ["starter", "solo", "enterprise", "growth"]) {
+    for (const legacy of ["solo", "enterprise", "growth"]) {
       expect(isValidTierId(legacy)).toBe(false);
     }
+  });
+
+  it("isValidTierId returns true for starter (canonical tier)", () => {
+    expect(isValidTierId("starter")).toBe(true);
   });
 
   it("getTier returns the correct Tier object", () => {
@@ -131,21 +138,27 @@ describe("tiers.ts — helper functions", () => {
     expect(getTier("indie").name).toBe("Indie");
   });
 
+  it("getTier returns correct Starter tier", () => {
+    expect(getTier("starter").price).toBe(3);
+    expect(getTier("starter").name).toBe("Starter");
+  });
+
   it("getTier throws for unknown IDs", () => {
-    expect(() => getTier("starter")).toThrow(/Unknown tier/);
     expect(() => getTier("solo")).toThrow(/Unknown tier/);
+    expect(() => getTier("growth")).toThrow(/Unknown tier/);
   });
 
   it("getTierLabel returns display name for canonical IDs", () => {
     expect(getTierLabel("free")).toBe("Free");
+    expect(getTierLabel("starter")).toBe("Starter");
     expect(getTierLabel("indie")).toBe("Indie");
     expect(getTierLabel("pro")).toBe("Pro");
     expect(getTierLabel("team")).toBe("Team");
   });
 
   it("getTierLabel falls back to raw string for unknown IDs", () => {
-    expect(getTierLabel("starter")).toBe("starter");
     expect(getTierLabel("solo")).toBe("solo");
+    expect(getTierLabel("growth")).toBe("growth");
   });
 
   it("getTierLabel returns '—' for null/undefined", () => {
@@ -155,13 +168,14 @@ describe("tiers.ts — helper functions", () => {
 
   it("getTierPrice returns correct price for canonical IDs", () => {
     expect(getTierPrice("free")).toBe(1);
+    expect(getTierPrice("starter")).toBe(3);
     expect(getTierPrice("indie")).toBe(9);
     expect(getTierPrice("pro")).toBe(29);
     expect(getTierPrice("team")).toBe(79);
   });
 
   it("getTierPrice returns 0 for unknown/null IDs", () => {
-    expect(getTierPrice("starter")).toBe(0);
+    expect(getTierPrice("solo")).toBe(0);
     expect(getTierPrice(null)).toBe(0);
   });
 });
@@ -186,7 +200,6 @@ describe("source files — no legacy tier names", () => {
   it("pricing/PricingCTA.tsx does not contain TIER_TO_CHECKOUT remapping", () => {
     const src = readSrc("app/pricing/PricingCTA.tsx");
     expect(src).not.toContain("TIER_TO_CHECKOUT");
-    expect(src).not.toContain('"starter"');
     expect(src).not.toContain('"solo"');
     // Should import validation from tiers registry
     expect(src).toMatch(/@\/config\/tiers/);
@@ -228,10 +241,10 @@ describe("dead code — legacy config files must be removed", () => {
 // ── 5. FAQ answers reference correct plan names ───────────────────────────────
 
 describe("pricing/PricingClient.tsx — FAQ uses canonical plan names", () => {
-  it("does not reference 'Starter' plan", () => {
+  it("references 'Starter' plan (canonical $3/mo tier)", () => {
     const src = readSrc("app/pricing/PricingClient.tsx");
-    // Starter was the old Architecture A name at $9 — now called Indie
-    expect(src).not.toMatch(/\bStarter\b/);
+    // Starter at $3/mo is a canonical billing tier
+    expect(src).toMatch(/Starter/);
   });
 
   it("does not reference 'Solo' plan", () => {

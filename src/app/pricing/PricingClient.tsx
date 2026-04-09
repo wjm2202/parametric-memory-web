@@ -12,7 +12,7 @@ const faqs = [
   {
     question: "How much does Parametric Memory cost?",
     answer:
-      "Four plans, all billed monthly: Free at $1/month (500 atoms, 100 bootstraps/month), Indie at $9/month (10,000 atoms, 1,000 bootstraps/month, email support), Pro at $29/month (100,000 atoms, 10,000 bootstraps/month, knowledge graph edges, priority support), and Team at $79/month (500,000 atoms, unlimited bootstraps, dedicated support). No contracts, cancel anytime from your dashboard.",
+      "Four plans, all billed monthly: Starter at $3/month (1,000 memories, 200 bootstraps/month, 30-day money-back guarantee), Indie at $9/month (10,000 memories, 1,000 bootstraps/month, email support), Pro at $29/month (100,000 memories, 10,000 bootstraps/month, knowledge graph edges, priority support), and Team at $79/month (500,000 memories, unlimited bootstraps, dedicated support). No contracts, cancel anytime from your dashboard.",
   },
   {
     question: "Does Parametric Memory work with Claude and MCP?",

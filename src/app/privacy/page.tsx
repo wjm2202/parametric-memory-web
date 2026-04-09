@@ -338,7 +338,7 @@ export default async function PrivacyPage() {
                     <code>mmpm_session</code>
                   </td>
                   <td>
-                    Authenticate your session after magic link or TOTP login. httpOnly, secure,
+                    Authenticate your session after magic link login. httpOnly, secure,
                     sameSite=lax.
                   </td>
                   <td>Essential</td>

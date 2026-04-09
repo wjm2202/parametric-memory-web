@@ -4,7 +4,6 @@ import { useState, useEffect, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { getTierLabel } from "@/config/tiers";
-import { SudoChallenge } from "@/components/ui/SudoChallenge";
 
 interface AccountInfo {
   id: string;
@@ -56,17 +55,9 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default function AdminClient({
-  account,
-  totpEnrolled = false,
-}: {
-  account: AccountInfo;
-  totpEnrolled?: boolean;
-}) {
+export default function AdminClient({ account }: { account: AccountInfo }) {
   const router = useRouter();
   const [loggingOut, setLoggingOut] = useState(false);
-  const [totpNudgeDismissed, setTotpNudgeDismissed] = useState(false);
-  const showTotpNudge = !totpEnrolled && !totpNudgeDismissed;
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -124,59 +115,6 @@ export default function AdminClient({
           <p className="text-sm text-white/40">Your dedicated Parametric Memory droplets</p>
         </div>
 
-        {/* ── 2FA nudge banner ── */}
-        {showTotpNudge && (
-          <div className="mb-6 flex items-center justify-between rounded-xl border border-amber-500/20 bg-amber-500/[0.06] px-5 py-4">
-            <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-amber-500/15">
-                <svg
-                  className="h-5 w-5 text-amber-400"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1.5}
-                    d="M9 12.75L11.25 15 15 9.75m-3-7.036A11.959 11.959 0 013.598 6 11.99 11.99 0 003 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285z"
-                  />
-                </svg>
-              </div>
-              <div>
-                <p className="text-sm font-medium text-white/90">
-                  Secure your account with two-factor authentication
-                </p>
-                <p className="mt-0.5 text-xs text-white/40">
-                  Add an authenticator app as a second step when signing in.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Link
-                href="/admin/security"
-                className="shrink-0 rounded-lg bg-amber-600/80 px-3.5 py-2 text-xs font-medium text-white transition-colors hover:bg-amber-500"
-              >
-                Set up 2FA
-              </Link>
-              <button
-                onClick={() => setTotpNudgeDismissed(true)}
-                className="shrink-0 rounded-lg p-2 text-white/30 transition-colors hover:bg-white/5 hover:text-white/60"
-                aria-label="Dismiss"
-              >
-                <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M6 18L18 6M6 6l12 12"
-                  />
-                </svg>
-              </button>
-            </div>
-          </div>
-        )}
-
         <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
           <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
             <p className="mb-1 text-xs tracking-wider text-white/40 uppercase">Account</p>
@@ -208,11 +146,7 @@ export default function AdminClient({
           </div>
         </div>
 
-        {hasTier ? (
-          <InstanceSection accountId={account.id} totpEnrolled={totpEnrolled} />
-        ) : (
-          <NoPlanBanner />
-        )}
+        {hasTier ? <InstanceSection accountId={account.id} /> : <NoPlanBanner />}
       </main>
     </div>
   );
@@ -254,13 +188,7 @@ function NoPlanBanner() {
 }
 
 /* ── Instance section ────────────────────────────────────────────────────── */
-function InstanceSection({
-  accountId,
-  totpEnrolled,
-}: {
-  accountId: string;
-  totpEnrolled: boolean;
-}) {
+function InstanceSection({ accountId }: { accountId: string }) {
   const [instances, setInstances] = useState<InstanceInfo[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -337,26 +265,14 @@ function InstanceSection({
         Your instance
       </h2>
       {instances.map((instance) => (
-        <InstanceCard
-          key={instance.id}
-          instance={instance}
-          accountId={accountId}
-          totpEnrolled={totpEnrolled}
-        />
+        <InstanceCard key={instance.id} instance={instance} accountId={accountId} />
       ))}
     </div>
   );
 }
 
 /* ── Individual instance card ────────────────────────────────────────────── */
-function InstanceCard({
-  instance,
-  totpEnrolled,
-}: {
-  instance: InstanceInfo;
-  accountId: string;
-  totpEnrolled: boolean;
-}) {
+function InstanceCard({ instance }: { instance: InstanceInfo; accountId: string }) {
   const [detail, setDetail] = useState<InstanceDetail | null>(null);
   const [keysCopied, setKeysCopied] = useState<Record<string, boolean>>({});
   const [showDestroy, setShowDestroy] = useState(false);
@@ -620,7 +536,6 @@ function InstanceCard({
       {showDestroy && (
         <DestroyModal
           instanceId={instance.id}
-          totpEnrolled={totpEnrolled}
           onClose={() => setShowDestroy(false)}
           onDestroyed={() => {
             // Stay on /admin — close the modal and re-fetch so the card flips to
@@ -637,38 +552,29 @@ function InstanceCard({
 /* ── Destroy modal ───────────────────────────────────────────────────────── */
 function DestroyModal({
   instanceId,
-  totpEnrolled,
   onClose,
   onDestroyed,
 }: {
   instanceId: string;
-  totpEnrolled: boolean;
   onClose: () => void;
   onDestroyed: () => void;
 }) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Step 1: type "destroy". Step 2: TOTP sudo challenge (only if enrolled).
-  const [step, setStep] = useState<"confirm" | "sudo">("confirm");
   const confirmed = input === "destroy";
 
-  async function executeDestroy(sudoToken?: string) {
+  async function executeDestroy() {
     setLoading(true);
     setError(null);
     try {
       const res = await fetch(`/api/compute/instances/${instanceId}`, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(sudoToken ? { sudoToken } : {}),
       });
       if (!res.ok) {
         const data = await res.json().catch(() => ({}));
         setError(data.error ?? "Failed to destroy instance. Please try again.");
-        // If sudo token is invalid/expired, go back to sudo step
-        if (data.error === "sudo_token_invalid" && totpEnrolled) {
-          setStep("sudo");
-        }
         return;
       }
       onDestroyed();
@@ -681,12 +587,7 @@ function DestroyModal({
 
   function handleConfirmStep() {
     if (!confirmed) return;
-    if (totpEnrolled) {
-      setStep("sudo");
-      setError(null);
-    } else {
-      executeDestroy();
-    }
+    executeDestroy();
   }
 
   return (
@@ -722,67 +623,46 @@ function DestroyModal({
           </div>
         </div>
 
-        {step === "confirm" && (
-          <>
-            <div className="mb-4">
-              <label className="mb-1.5 block text-xs text-white/50">
-                Type <span className="font-mono text-red-400">destroy</span> to confirm
-              </label>
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && confirmed && handleConfirmStep()}
-                placeholder="destroy"
-                autoFocus
-                className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-sm text-white placeholder-white/20 transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none"
-              />
-            </div>
+        <div className="mb-4">
+          <label className="mb-1.5 block text-xs text-white/50">
+            Type <span className="font-mono text-red-400">destroy</span> to confirm
+          </label>
+          <input
+            type="text"
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && confirmed && handleConfirmStep()}
+            placeholder="destroy"
+            autoFocus
+            className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-sm text-white placeholder-white/20 transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none"
+          />
+        </div>
 
-            {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
+        {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
 
-            <div className="flex gap-3">
-              <button
-                onClick={onClose}
-                disabled={loading}
-                className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConfirmStep}
-                disabled={!confirmed || loading}
-                className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-30"
-              >
-                {loading ? (
-                  <>
-                    <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                    Destroying…
-                  </>
-                ) : totpEnrolled ? (
-                  "Continue →"
-                ) : (
-                  "Destroy instance"
-                )}
-              </button>
-            </div>
-          </>
-        )}
-
-        {step === "sudo" && (
-          <>
-            {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
-            <SudoChallenge
-              action="destroy_instance"
-              title="Verify identity to destroy instance"
-              onSuccess={({ sudoToken }) => executeDestroy(sudoToken)}
-              onCancel={() => {
-                setStep("confirm");
-                setError(null);
-              }}
-            />
-          </>
-        )}
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirmStep}
+            disabled={!confirmed || loading}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-30"
+          >
+            {loading ? (
+              <>
+                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+                Destroying…
+              </>
+            ) : (
+              "Destroy instance"
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );

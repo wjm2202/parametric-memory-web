@@ -36,7 +36,7 @@ describe("POST /api/billing/portal", () => {
   it("returns 401 when no session cookie is present", async () => {
     mockCookies.mockResolvedValue(makeCookieStore());
 
-    const res = await POST(makeRequest({ sudoToken: "tok_123" }));
+    const res = await POST(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(401);
@@ -44,7 +44,7 @@ describe("POST /api/billing/portal", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("proxies POST to compute with sudoToken and returns portalUrl", async () => {
+  it("proxies POST to compute and returns portalUrl", async () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockResolvedValue({
       status: 200,
@@ -52,7 +52,7 @@ describe("POST /api/billing/portal", () => {
         Promise.resolve(JSON.stringify({ portalUrl: "https://billing.stripe.com/session/xyz" })),
     });
 
-    const res = await POST(makeRequest({ sudoToken: "sudo_tok_billing" }));
+    const res = await POST(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -69,11 +69,6 @@ describe("POST /api/billing/portal", () => {
         }),
       }),
     );
-
-    // Verify sudoToken was forwarded
-    const callArgs = mockFetch.mock.calls[0][1];
-    const sentBody = JSON.parse(callArgs.body);
-    expect(sentBody.sudoToken).toBe("sudo_tok_billing");
   });
 
   it("forwards 422 when account has no Stripe customer", async () => {
@@ -83,32 +78,18 @@ describe("POST /api/billing/portal", () => {
       text: () => Promise.resolve(JSON.stringify({ error: "no_stripe_customer" })),
     });
 
-    const res = await POST(makeRequest({ sudoToken: "sudo_tok_billing" }));
+    const res = await POST(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(422);
     expect(body.error).toBe("no_stripe_customer");
   });
 
-  it("forwards 401 when sudoToken is invalid or expired", async () => {
-    mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
-    mockFetch.mockResolvedValue({
-      status: 401,
-      text: () => Promise.resolve(JSON.stringify({ error: "invalid_sudo_token" })),
-    });
-
-    const res = await POST(makeRequest({ sudoToken: "expired_tok" }));
-    const body = await res.json();
-
-    expect(res.status).toBe(401);
-    expect(body.error).toBe("invalid_sudo_token");
-  });
-
   it("returns 502 when compute is unreachable", async () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
 
-    const res = await POST(makeRequest({ sudoToken: "sudo_tok_billing" }));
+    const res = await POST(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(502);

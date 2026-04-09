@@ -38,7 +38,7 @@ describe("POST /api/my-substrate/rotate-key", () => {
   it("returns 401 when no session cookie is present", async () => {
     mockCookies.mockResolvedValue(makeCookieStore());
 
-    const res = await POST(makeRequest({ sudoToken: "tok_123" }));
+    const res = await POST(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(401);
@@ -46,7 +46,7 @@ describe("POST /api/my-substrate/rotate-key", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("proxies POST to compute with sudoToken and returns jobId on success", async () => {
+  it("proxies POST to compute and returns jobId on success", async () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockResolvedValue({
       status: 200,
@@ -54,14 +54,14 @@ describe("POST /api/my-substrate/rotate-key", () => {
       headers: new Headers({ "Content-Type": "application/json" }),
     });
 
-    const res = await POST(makeRequest({ sudoToken: "sudo_tok_456" }));
+    const res = await POST(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(200);
     expect(body.jobId).toBe("job_xyz");
     expect(body.status).toBe("pending");
 
-    // Verify it called the correct upstream URL with Bearer auth and forwarded the body
+    // Verify it called the correct upstream URL with Bearer auth
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/my-substrate/rotate-key"),
       expect.objectContaining({
@@ -72,11 +72,6 @@ describe("POST /api/my-substrate/rotate-key", () => {
         }),
       }),
     );
-
-    // Verify the sudoToken was forwarded in the body
-    const callArgs = mockFetch.mock.calls[0][1];
-    const sentBody = JSON.parse(callArgs.body);
-    expect(sentBody.sudoToken).toBe("sudo_tok_456");
   });
 
   it("forwards 429 rate-limit responses from compute", async () => {
@@ -87,7 +82,7 @@ describe("POST /api/my-substrate/rotate-key", () => {
       headers: new Headers({ "Content-Type": "application/json" }),
     });
 
-    const res = await POST(makeRequest({ sudoToken: "sudo_tok_789" }));
+    const res = await POST(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(429);
@@ -98,18 +93,18 @@ describe("POST /api/my-substrate/rotate-key", () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
 
-    const res = await POST(makeRequest({ sudoToken: "sudo_tok_000" }));
+    const res = await POST(makeRequest());
     const body = await res.json();
 
     expect(res.status).toBe(502);
     expect(body.error).toBe("upstream_error");
   });
 
-  it("handles empty body gracefully (compute will reject with missing_sudo_token)", async () => {
+  it("handles empty body gracefully", async () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockResolvedValue({
-      status: 400,
-      text: () => Promise.resolve(JSON.stringify({ error: "missing_sudo_token" })),
+      status: 200,
+      text: () => Promise.resolve(JSON.stringify({ jobId: "job_empty", status: "pending" })),
       headers: new Headers({ "Content-Type": "application/json" }),
     });
 
@@ -119,7 +114,7 @@ describe("POST /api/my-substrate/rotate-key", () => {
     const res = await POST(req);
     const body = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("missing_sudo_token");
+    expect(res.status).toBe(200);
+    expect(body.jobId).toBe("job_empty");
   });
 });

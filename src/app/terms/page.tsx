@@ -83,11 +83,10 @@ export default async function TermsPage() {
 
           <h2>4. Account Creation &amp; Security</h2>
           <p>
-            MMPM uses email magic-link authentication with optional TOTP two-factor authentication.
-            You are responsible for keeping your credentials confidential, not sharing API keys or
-            bearer tokens, immediately notifying us of unauthorized access, and all activity that
-            occurs under your account. We are not liable for unauthorized access resulting from your
-            failure to secure your credentials.
+            MMPM uses email magic-link authentication. You are responsible for keeping your
+            credentials confidential, not sharing API keys or bearer tokens, immediately notifying
+            us of unauthorized access, and all activity that occurs under your account. We are not
+            liable for unauthorized access resulting from your failure to secure your credentials.
           </p>
 
           <h2>5. Subscription Plans &amp; Payment</h2>

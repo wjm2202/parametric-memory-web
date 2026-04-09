@@ -7,27 +7,32 @@ import { TIERS } from "@/config/tiers";
 import { TeamInquiryForm } from "./TeamInquiryForm";
 
 export const metadata: Metadata = {
-  title: "Pricing — Plans from $9/mo",
+  title: "Pricing — Plans from $3/mo",
   description:
-    "Claude remembers everything. Persistent AI memory for developers — flat monthly subscription, no per-query costs. Indie $9/mo, Pro $29/mo, Team $79/mo.",
+    "Claude remembers everything. Persistent AI memory for developers — flat monthly subscription, no per-query costs. Starter $3/mo, Indie $9/mo, Pro $29/mo, Team $79/mo.",
   alternates: {
     canonical: "https://parametric-memory.dev/pricing",
   },
   openGraph: {
-    title: "Parametric Memory Pricing — Plans from $9/mo",
+    title: "Parametric Memory Pricing — Plans from $3/mo",
     description:
-      "Persistent AI memory from $9/month. Flat rate subscription — no per-query costs, no credits. Merkle proofs, Markov prediction, MCP native.",
+      "Persistent AI memory from $3/month. Flat rate subscription — no per-query costs, no credits. Merkle proofs, Markov prediction, MCP native.",
   },
 };
 
 // ── Display tiers — free tier not publicly sold; filtered out ─────────────────
 // The 'free' tier exists only as an expired-trial fallback state in the system.
-// Publicly we show indie, pro, and team. Team uses a contact-sales flow.
+// Publicly we show starter, indie, pro, and team. Team uses a contact-sales flow.
 const DISPLAY_TIERS = TIERS.filter((t) => t.id !== "free");
 
 // ── Human-readable tier copy ──────────────────────────────────────────────────
 const TIER_COPY: Record<string, { tagline: string; humanAtoms: string; humanBootstraps: string }> =
   {
+    starter: {
+      tagline: "Experience persistent memory",
+      humanAtoms: "1,000 memories (≈ 2 months of daily use)",
+      humanBootstraps: "Up to 6 Claude sessions / day",
+    },
     indie: {
       tagline: "Your personal AI memory",
       humanAtoms: "10,000 memories (≈ 18 months of daily use)",
@@ -126,7 +131,7 @@ const faqSchema = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Three plans: Solo at $9/month (10,000 memories, up to 33 Claude sessions/day), Professional at $29/month (100,000 memories, up to 333 Claude sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). All plans billed monthly, cancel anytime, no contracts.",
+        text: "Four plans: Starter at $3/month (1,000 memories, up to 6 Claude sessions/day, 30-day money-back guarantee), Solo at $9/month (10,000 memories, up to 33 Claude sessions/day), Professional at $29/month (100,000 memories, up to 333 Claude sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). All plans billed monthly, cancel anytime, no contracts.",
       },
     },
     {
@@ -226,8 +231,8 @@ export default async function PricingPage() {
         </section>
 
         {/* Pricing cards */}
-        <section className="mx-auto w-full max-w-5xl px-6 pb-24" aria-label="Pricing plans">
-          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+        <section className="mx-auto w-full max-w-6xl px-6 pb-24" aria-label="Pricing plans">
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             {DISPLAY_TIERS.map((tier) => {
               const copy = TIER_COPY[tier.id];
               const isTeam = tier.id === "team";
@@ -254,7 +259,13 @@ export default async function PricingPage() {
                   {/* Tier name + tagline */}
                   <div className="mb-6">
                     <h3 className="text-xl font-bold tracking-wide text-white uppercase">
-                      {tier.id === "indie" ? "SOLO" : tier.id === "pro" ? "PROFESSIONAL" : "TEAM"}
+                      {tier.id === "starter"
+                        ? "STARTER"
+                        : tier.id === "indie"
+                          ? "SOLO"
+                          : tier.id === "pro"
+                            ? "PROFESSIONAL"
+                            : "TEAM"}
                     </h3>
                     <p className="text-surface-200/60 mt-1 text-sm">{copy?.tagline}</p>
                   </div>
@@ -275,7 +286,13 @@ export default async function PricingPage() {
                     <PricingCardClient
                       tierId={tier.id}
                       tierName={tier.name}
-                      ctaLabel={tier.id === "indie" ? "Get Solo" : "Get Professional"}
+                      ctaLabel={
+                        tier.id === "starter"
+                          ? "Start Building"
+                          : tier.id === "indie"
+                            ? "Get Solo"
+                            : "Get Professional"
+                      }
                       isLoggedIn={isLoggedIn}
                     >
                       {/* Price — rendered as children inside the client wrapper */}

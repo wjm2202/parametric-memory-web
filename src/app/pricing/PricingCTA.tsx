@@ -66,7 +66,14 @@ export function PricingCTA({
   // Capacity gate — show waitlist if status was already known to be full
   // OR if we just checked on click and it came back full
   if (capacityStatus === "waitlist" || capacityStatus === "paused" || blockedByCapacity) {
-    const displayName = tierName.includes("indie") || tierId === "indie" ? "Solo" : "Pro";
+    const displayName =
+      tierId === "starter"
+        ? "Starter"
+        : tierId === "indie"
+          ? "Solo"
+          : tierId === "pro"
+            ? "Pro"
+            : tierName;
     return (
       <WaitlistForm
         tier={tierId}

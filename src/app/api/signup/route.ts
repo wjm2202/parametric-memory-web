@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { verifyCsrfOrigin } from "@/lib/csrf";
-
-const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
+import { computeProxy } from "@/lib/compute-proxy";
 
 /**
  * POST /api/signup
@@ -25,21 +24,11 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     return NextResponse.json({ error: "Invalid request body" }, { status: 400 });
   }
 
-  try {
-    const res = await fetch(`${COMPUTE_URL}/api/v1/signup`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(body),
-      cache: "no-store",
-    });
+  const { response } = await computeProxy("api/v1/signup", {
+    method: "POST",
+    body,
+    label: "signup",
+  });
 
-    const responseBody = await res.text();
-    return new NextResponse(responseBody, {
-      status: res.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch (err) {
-    console.error("[signup-proxy] POST /api/v1/signup failed:", err);
-    return NextResponse.json({ error: "Service unavailable" }, { status: 503 });
-  }
+  return response;
 }
