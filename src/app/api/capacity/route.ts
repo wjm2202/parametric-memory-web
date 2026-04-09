@@ -3,21 +3,18 @@
  * POST /api/capacity
  *
  * GET: Proxies to compute's /api/v1/capacity endpoint.
- * Returns tier availability and capacity status.
- * No longer ISR-cached — capacity is now event-driven. The pricing page
- * fetches on mount (hydrate badge) and again on CTA click (gate checkout).
- * Compute's own 60 s in-memory cache deduplicates rapid requests.
+ * Returns tier availability and capacity status. Uses fail-open: if compute
+ * is unreachable or returns garbage, all tiers default to "available".
  *
  * POST: Proxies to compute's /api/v1/capacity/waitlist endpoint.
- * Forwards request body and passes through 4xx errors. Returns 500 on upstream errors.
+ * Forwards request body and passes through 4xx errors.
+ *
+ * Uses the shared compute-proxy utility to guarantee JSON responses.
  */
 
 import { NextResponse, NextRequest } from "next/server";
+import { computeProxy } from "@/lib/compute-proxy";
 
-const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
-
-// Removed: export const revalidate = 60;
-// Capacity is now event-driven, not ISR-polled.
 export const dynamic = "force-dynamic";
 
 const FAIL_OPEN_RESPONSE = {
@@ -48,68 +45,38 @@ const FAIL_OPEN_RESPONSE = {
 };
 
 export async function GET(): Promise<NextResponse> {
-  try {
-    const res = await fetch(`${COMPUTE_URL}/api/v1/capacity`, {
-      cache: "no-store",
-    });
+  const result = await computeProxy("api/v1/capacity", {
+    label: "capacity",
+  });
 
-    const data = await res.text();
-    return new NextResponse(data, {
-      status: res.status,
-      headers: {
-        "Content-Type": res.headers.get("Content-Type") ?? "application/json",
-        "Cache-Control": "no-store",
-      },
-    });
-  } catch (error) {
-    console.error("Capacity endpoint error:", error);
+  // Capacity is special: fail open so the pricing page never blocks signups.
+  // The compute server enforces real capacity gating at checkout time.
+  if (!result.ok) {
     return NextResponse.json(FAIL_OPEN_RESPONSE, {
       status: 200,
       headers: { "Cache-Control": "no-store" },
     });
   }
+
+  return NextResponse.json(result.data, {
+    status: 200,
+    headers: { "Cache-Control": "no-store" },
+  });
 }
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  let body: unknown = {};
   try {
-    const body = await request.json();
-
-    const res = await fetch(`${COMPUTE_URL}/api/v1/capacity/waitlist`, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-    });
-
-    const data = await res.text();
-
-    // Pass through 4xx status codes (semantic errors like bad email, invalid tier)
-    if (res.status >= 400 && res.status < 500) {
-      return new NextResponse(data, {
-        status: res.status,
-        headers: { "Content-Type": res.headers.get("Content-Type") ?? "application/json" },
-      });
-    }
-
-    // 5xx or network errors: return generic error
-    if (!res.ok) {
-      return NextResponse.json(
-        { error: "Could not save your details. Please try again." },
-        { status: 500 },
-      );
-    }
-
-    // Success: return upstream body with 201
-    return new NextResponse(data, {
-      status: 201,
-      headers: { "Content-Type": res.headers.get("Content-Type") ?? "application/json" },
-    });
-  } catch (error) {
-    console.error("Capacity waitlist error:", error);
-    return NextResponse.json(
-      { error: "Could not save your details. Please try again." },
-      { status: 500 },
-    );
+    body = await request.json();
+  } catch {
+    /* empty body */
   }
+
+  const result = await computeProxy("api/v1/capacity/waitlist", {
+    method: "POST",
+    body,
+    label: "capacity/waitlist",
+  });
+
+  return result.response;
 }

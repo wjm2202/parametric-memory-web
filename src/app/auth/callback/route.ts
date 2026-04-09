@@ -10,17 +10,11 @@ const SESSION_MAX_AGE = 30 * 24 * 60 * 60; // 30 days in seconds
 /**
  * Magic link callback — exchanges the raw token for a session.
  *
- * Flow (no TOTP):
+ * Flow:
  *   1. Email contains link: GET /auth/callback?token=RAW_TOKEN
  *   2. This handler calls mmpm-compute /api/auth/verify?token=RAW_TOKEN
  *   3. On success: sets httpOnly session cookie, redirects to /admin
  *   4. On failure: redirects to /login?error=...
- *
- * Flow (TOTP enrolled):
- *   1-2. Same as above.
- *   3. Compute returns { totpRequired: true, pendingToken, accountId }
- *   4. This handler redirects to /auth/totp?pending=PENDING_TOKEN
- *   5. User enters TOTP code → POST /api/auth/totp/challenge → session set
  *
  * IMPORTANT: redirect() in Next.js App Router works by throwing a special
  * NEXT_REDIRECT error internally. Calling redirect() inside a try/catch means
@@ -39,9 +33,7 @@ export async function GET(request: NextRequest): Promise<Response> {
   let sessionToken: string | null = null;
   let accountId: string | null = null;
   /**
-   * redirectPath is set for any non-cookie outcome:
-   *   - Error:          /login?error=*
-   *   - TOTP required:  /auth/totp?pending=*
+   * redirectPath is set for any non-cookie outcome (e.g. /login?error=*).
    * When set, we redirect instead of setting a cookie.
    */
   let redirectPath: string | null = null;
@@ -58,20 +50,11 @@ export async function GET(request: NextRequest): Promise<Response> {
     } else {
       const data = (await res.json()) as {
         ok: boolean;
-        totpRequired?: boolean;
         sessionToken?: string;
-        pendingToken?: string;
         accountId: string;
       };
       accountId = data.accountId;
-
-      if (data.totpRequired && data.pendingToken) {
-        // TOTP enrolled — redirect to challenge page with the pending token.
-        // Do NOT set a cookie yet — the full session is only issued after TOTP succeeds.
-        redirectPath = `/auth/totp?pending=${encodeURIComponent(data.pendingToken)}`;
-      } else {
-        sessionToken = data.sessionToken ?? null;
-      }
+      sessionToken = data.sessionToken ?? null;
     }
   } catch (err) {
     console.error("[auth/callback] Network error:", err);

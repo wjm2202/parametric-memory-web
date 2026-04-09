@@ -6,7 +6,6 @@ import Link from "next/link";
 import { TIER_ORDER, getTierLabel, getTierPrice } from "@/config/tiers";
 import { RotationStepper, type RotationStatus } from "@/components/ui/RotationStepper";
 import { UpdateInstructions } from "@/components/ui/UpdateInstructions";
-import { SudoChallenge } from "@/components/ui/SudoChallenge";
 
 // ── Billing Status Types ────────────────────────────────────────────────────
 
@@ -43,11 +42,10 @@ function daysUntil(iso: string | null): number {
 
 // ── Manage Billing helper ─────────────────────────────────────────────────────
 
-async function openBillingPortal(sudoToken: string) {
+async function openBillingPortal() {
   const res = await fetch("/api/billing/portal", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ sudoToken }),
   });
   if (res.status === 422) {
     // No Stripe customer yet — shouldn't happen on a paid plan but be safe
@@ -598,7 +596,6 @@ export default function DashboardClient({
   const [rotationError, setRotationError] = useState<string | null>(null);
   const [_rotationJobId, setRotationJobId] = useState<string | null>(null);
   const [rotationConfirmOpen, setRotationConfirmOpen] = useState(false);
-  const [rotationSudoOpen, setRotationSudoOpen] = useState(false);
   const [rotationStarting, setRotationStarting] = useState(false);
   const [rotationRateLimitMsg, setRotationRateLimitMsg] = useState<string | null>(null);
   const [claimKeyOpen, setClaimKeyOpen] = useState(false);
@@ -608,22 +605,15 @@ export default function DashboardClient({
   const rotationActive =
     rotationStatus !== "none" && rotationStatus !== "complete" && rotationStatus !== "failed";
 
-  // Called after user confirms rotation intent — opens TOTP challenge
-  function confirmRotation() {
+  // Called after user confirms rotation intent — starts rotation directly
+  async function confirmRotation() {
     setRotationConfirmOpen(false);
-    setRotationSudoOpen(true);
-  }
-
-  // Called after TOTP verification succeeds — starts actual rotation with sudoToken
-  async function startRotation(sudoToken: string) {
-    setRotationSudoOpen(false);
     setRotationStarting(true);
     setRotationRateLimitMsg(null);
     try {
       const res = await fetch("/api/my-substrate/rotate-key", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ sudoToken }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -653,16 +643,8 @@ export default function DashboardClient({
   const [destroyConfirmText, setDestroyConfirmText] = useState("");
   const [destroying, setDestroying] = useState(false);
 
-  // ── Billing portal sudo state ─────────────────────────────────────────
-  const [billingSudoOpen, setBillingSudoOpen] = useState(false);
-
   function handleBillingPortalClick() {
-    setBillingSudoOpen(true);
-  }
-
-  async function handleBillingSudoSuccess({ sudoToken }: { sudoToken: string }) {
-    setBillingSudoOpen(false);
-    await openBillingPortal(sudoToken);
+    openBillingPortal();
   }
 
   // Billing status — drives the billing widget and renewal banner
@@ -1243,18 +1225,6 @@ export default function DashboardClient({
                 </div>
               )}
 
-              {/* TOTP sudo challenge for key rotation */}
-              {rotationSudoOpen && (
-                <div className="mb-3">
-                  <SudoChallenge
-                    action="rotate_keys"
-                    title="Confirm Key Rotation"
-                    onSuccess={({ sudoToken }) => startRotation(sudoToken)}
-                    onCancel={() => setRotationSudoOpen(false)}
-                  />
-                </div>
-              )}
-
               {/* Rate limit message */}
               {rotationRateLimitMsg && (
                 <div className="mb-3 rounded-md border border-amber-800/40 bg-amber-950/20 px-3 py-2 text-xs text-amber-400">
@@ -1508,20 +1478,6 @@ export default function DashboardClient({
           </div>
         )}
       </div>
-
-      {/* ── Billing sudo challenge modal ────────────────────────────────────── */}
-      {billingSudoOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm">
-          <div className="w-full max-w-sm rounded-2xl border border-white/10 bg-[#0d1117] p-6 shadow-2xl">
-            <SudoChallenge
-              action="cancel_subscription"
-              title="Verify Identity for Billing"
-              onSuccess={handleBillingSudoSuccess}
-              onCancel={() => setBillingSudoOpen(false)}
-            />
-          </div>
-        </div>
-      )}
 
       {/* ── Upgrade consent modal ─────────────────────────────────────────────── */}
       {upgradeConsentTier && (

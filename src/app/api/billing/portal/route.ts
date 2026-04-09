@@ -4,18 +4,13 @@
  * Proxies to compute's session-authenticated POST /api/v1/billing/portal.
  * Returns { portalUrl } — the frontend navigates to this URL directly.
  *
- * Request body must include { sudoToken } — obtained via POST /api/auth/sudo
- * with action "cancel_subscription".
- *
  * 422 if the account has no Stripe customer (never completed checkout).
- * 400 if sudoToken is missing.
- * 401 if sudoToken is expired or wrong action.
  */
 
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { computeProxy, authHeaders } from "@/lib/compute-proxy";
 
-const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
 const SESSION_COOKIE = "mmpm_session";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
@@ -30,29 +25,15 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   try {
     body = await request.json();
   } catch {
-    /* empty body — compute will return 400 missing_sudo_token */
+    /* empty body is fine — no required fields */
   }
 
-  try {
-    const res = await fetch(`${COMPUTE_URL}/api/v1/billing/portal`, {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${sessionToken}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify(body),
-      cache: "no-store",
-    });
+  const { response } = await computeProxy("api/v1/billing/portal", {
+    method: "POST",
+    body,
+    headers: authHeaders(sessionToken),
+    label: "billing/portal",
+  });
 
-    const data = await res.text();
-    return new NextResponse(data, {
-      status: res.status,
-      headers: { "Content-Type": "application/json" },
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "upstream_error", message: "Failed to reach compute service" },
-      { status: 502 },
-    );
-  }
+  return response;
 }

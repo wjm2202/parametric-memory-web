@@ -10,8 +10,8 @@
 
 import { NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { computeProxy, authHeaders } from "@/lib/compute-proxy";
 
-const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
 const SESSION_COOKIE = "mmpm_session";
 
 export async function POST(): Promise<NextResponse> {
@@ -22,21 +22,11 @@ export async function POST(): Promise<NextResponse> {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
-  try {
-    const res = await fetch(`${COMPUTE_URL}/api/v1/my-substrate/reactivate`, {
-      method: "POST",
-      headers: { Authorization: `Bearer ${sessionToken}` },
-    });
+  const { response } = await computeProxy("api/v1/my-substrate/reactivate", {
+    method: "POST",
+    headers: authHeaders(sessionToken),
+    label: "my-substrate/reactivate",
+  });
 
-    const data = await res.text();
-    return new NextResponse(data, {
-      status: res.status,
-      headers: { "Content-Type": res.headers.get("Content-Type") ?? "application/json" },
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "upstream_error", message: "Failed to reach compute service" },
-      { status: 502 },
-    );
-  }
+  return response;
 }

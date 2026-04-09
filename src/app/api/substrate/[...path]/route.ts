@@ -7,8 +7,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
+import { computeProxy } from "@/lib/compute-proxy";
 
-const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
 const SESSION_COOKIE = "mmpm_session";
 
 async function proxyRequest(
@@ -24,40 +24,30 @@ async function proxyRequest(
 
   const { path } = await params;
   const subPath = path.join("/");
-  const url = `${COMPUTE_URL}/api/v1/substrate/${subPath}`;
 
-  try {
-    const headers: Record<string, string> = {
-      Authorization: `Bearer ${sessionToken}`,
-    };
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${sessionToken}`,
+  };
 
-    // Forward Content-Type for POST/PUT/PATCH
-    const contentType = request.headers.get("content-type");
-    if (contentType) headers["Content-Type"] = contentType;
+  // Forward Content-Type for POST/PUT/PATCH
+  const contentType = request.headers.get("content-type");
+  if (contentType) headers["Content-Type"] = contentType;
 
-    const fetchOptions: RequestInit = {
-      method: request.method,
-      headers,
-    };
+  let body: string | undefined;
 
-    // Forward body for non-GET requests
-    if (request.method !== "GET" && request.method !== "HEAD") {
-      fetchOptions.body = await request.text();
-    }
-
-    const res = await fetch(url, fetchOptions);
-    const data = await res.text();
-
-    return new NextResponse(data, {
-      status: res.status,
-      headers: { "Content-Type": res.headers.get("Content-Type") ?? "application/json" },
-    });
-  } catch {
-    return NextResponse.json(
-      { error: "upstream_error", message: "Failed to reach compute service" },
-      { status: 502 },
-    );
+  // Forward body for non-GET requests
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    body = await request.text();
   }
+
+  const { response } = await computeProxy(`api/v1/substrate/${subPath}`, {
+    method: request.method,
+    headers,
+    body,
+    label: `substrate/${subPath}`,
+  });
+
+  return response;
 }
 
 export const GET = proxyRequest;
