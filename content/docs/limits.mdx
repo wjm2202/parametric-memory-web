@@ -11,14 +11,13 @@ Every tier has hard limits on atoms, bootstraps, storage, and compute resources.
 
 ## Limits per tier
 
-| Limit | Indie | Pro | Team |
-|---|---|---|---|
-| **Max atoms** | 10,000 | 100,000 | 500,000 |
-| **Bootstraps / month** | 1,000 | 10,000 | 20,000 |
-| **Storage** | 500 MB | 2 GB | 10 GB |
-| **Container memory** | 512 MB | 1 GB | 2 GB |
-| **Container CPU** | 1 vCPU | 1 vCPU | 2 vCPU |
-| **Hosting model** | Shared host | Shared host | Dedicated droplet |
+| Limit | Starter | Solo | Professional | Team |
+|---|---|---|---|---|
+| **Max atoms** | 1,000 | 10,000 | 100,000 | 500,000 |
+| **Bootstraps / month** | 200 | 1,000 | 10,000 | Unlimited |
+| **Storage** | 100 MB | 500 MB | 2 GB | 10 GB |
+| **Substrates** | 1 | 2 | 3 | 5 |
+| **Hosting model** | Shared host | Shared host | Shared host | Dedicated droplet |
 
 ## What each limit means
 
@@ -42,11 +41,12 @@ The maximum number of `memory_session_bootstrap` calls per calendar month (reset
 
 **How to plan your bootstrap usage:**
 - Each Claude session uses 1 bootstrap call
-- Indie: 1,000/month ≈ 33 sessions/day
-- Pro: 10,000/month ≈ 333 sessions/day
-- Team: 20,000/month ≈ 667 sessions/day
+- Starter: 200/month ≈ 6 sessions/day
+- Solo: 1,000/month ≈ 33 sessions/day
+- Professional: 10,000/month ≈ 333 sessions/day
+- Team: Unlimited
 
-If you are hitting the bootstrap limit regularly, consider upgrading your plan. You can check your remaining bootstraps on the Dashboard under **My Substrate → Usage**.
+If you are hitting the bootstrap limit regularly, consider upgrading your plan. You can check your remaining bootstraps on the Dashboard under **My Substrate → Usage**. Team plans have unlimited bootstraps.
 
 ### Storage
 

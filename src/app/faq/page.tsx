@@ -103,7 +103,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "why",
     question: "Why is Parametric Memory better than Mem0?",
     answer:
-      "Three structural differences. First, cryptographic proofs: Parametric Memory provides SHA-256 Merkle proofs with every memory read — Mem0 provides no cryptographic verification whatsoever. Second, infrastructure isolation: every Parametric Memory customer gets a dedicated instance with their own PostgreSQL and Merkle tree — Mem0 uses shared infrastructure. Third, Markov prediction: Parametric Memory pre-fetches context with 64% hit rate — Mem0 has no predictive layer. On pricing, Mem0's graph features (equivalent to Parametric Memory's base knowledge graph) require their $249/mo tier. Parametric Memory includes them from $9/mo.",
+      "Three structural differences. First, cryptographic proofs: Parametric Memory provides SHA-256 Merkle proofs with every memory read — Mem0 provides no cryptographic verification whatsoever. Second, infrastructure isolation: every Parametric Memory customer gets a dedicated instance with their own PostgreSQL and Merkle tree — Mem0 uses shared infrastructure. Third, Markov prediction: Parametric Memory pre-fetches context with 64% hit rate — Mem0 has no predictive layer. On pricing, Mem0's graph features (equivalent to Parametric Memory's base knowledge graph) require their $249/mo tier. Parametric Memory includes them from $3/mo.",
   },
   {
     category: "why",
@@ -115,7 +115,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "why",
     question: "Why is Parametric Memory better than Letta / MemGPT?",
     answer:
-      "Letta and MemGPT are research projects that require self-hosting and significant infrastructure investment. Parametric Memory is a production SaaS: managed hosting, SSL per instance, Prometheus monitoring, OAuth2 auth, and full commercial support from $9/month. Letta provides no cryptographic verification. Parametric Memory provides RFC 6962 Merkle proofs. Letta requires running your own server — Parametric Memory is operational in under 60 seconds with one config block.",
+      "Letta and MemGPT are research projects that require self-hosting and significant infrastructure investment. Parametric Memory is a production SaaS: managed hosting, SSL per instance, Prometheus monitoring, OAuth2 auth, and full commercial support from $3/month. Letta provides no cryptographic verification. Parametric Memory provides RFC 6962 Merkle proofs. Letta requires running your own server — Parametric Memory is operational in under 60 seconds with one config block.",
   },
   {
     category: "why",
@@ -127,7 +127,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "why",
     question: "What does 'dedicated instance' mean and why does it matter?",
     answer:
-      "A dedicated instance means your memory substrate runs on its own server, with its own PostgreSQL database, its own Merkle tree, and its own SSL certificate — completely isolated from every other customer. Mem0 and Zep run all customers in a shared database. With shared infrastructure, a noisy neighbour degrades your performance, a breach in one account risks data from others, and your data is physically co-located with competitors. Parametric Memory provides complete isolation from $9/month.",
+      "A dedicated instance means your memory substrate runs on its own server, with its own PostgreSQL database, its own Merkle tree, and its own SSL certificate — completely isolated from every other customer. Mem0 and Zep run all customers in a shared database. With shared infrastructure, a noisy neighbour degrades your performance, a breach in one account risks data from others, and your data is physically co-located with competitors. Parametric Memory provides complete isolation from $3/month.",
   },
   {
     category: "why",
@@ -211,7 +211,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "setup",
     question: "How much does Parametric Memory cost?",
     answer:
-      "Indie: $9/month — 10,000 atoms, up to 33 Claude sessions per day. Pro: $29/month — 100,000 atoms, up to 333 Claude sessions per day, knowledge graph edges. Team: $79/month — 500,000 atoms, unlimited bootstraps, 5 substrate instances, dedicated support. Enterprise Cloud: $299/month — 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML. Enterprise Self-Hosted: $499/month — commercial license, deploy on AWS/GCP/Azure. All paid plans include a 14-day free trial. No charge until day 15. Cancel anytime before day 15 and pay nothing.",
+      "Starter: $3/month — 1,000 atoms, up to 6 Claude sessions per day, 30-day money-back guarantee. Solo: $9/month — 10,000 atoms, up to 33 Claude sessions per day, email support. Professional: $29/month — 100,000 atoms, up to 333 Claude sessions per day, knowledge graph edges, priority support. Team: $79/month — 500,000 atoms, unlimited bootstraps, 5 substrate instances, dedicated support. Enterprise Cloud: $299/month — 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML. Enterprise Self-Hosted: $499/month — commercial license, deploy on AWS/GCP/Azure. All paid plans include a 14-day free trial. No charge until day 15. Cancel anytime before day 15 and pay nothing.",
   },
   {
     category: "setup",
@@ -374,7 +374,7 @@ export default async function FAQPage() {
                 { value: "0.045ms", label: "Recall p50" },
                 { value: "64%", label: "Markov hit rate" },
                 { value: "RFC 6962", label: "Merkle proofs" },
-                { value: "From $9/mo", label: "Dedicated instance" },
+                { value: "From $3/mo", label: "Dedicated instance" },
               ].map((stat) => (
                 <div
                   key={stat.label}
@@ -462,7 +462,7 @@ export default async function FAQPage() {
                   use shared multi-tenant infrastructure.
                 </p>
                 <p>
-                  Flat monthly pricing from $9/month with no per-query costs. Mem0 charges overages.
+                  Flat monthly pricing from $3/month with no per-query costs. Mem0 charges overages.
                   Zep uses credit-based pay-as-you-go.
                 </p>
                 <p>

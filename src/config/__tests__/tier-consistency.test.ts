@@ -5,7 +5,7 @@
  * They catch any naming inconsistency before it reaches production:
  *
  *  1. The registry itself is internally consistent.
- *  2. Source files do NOT reference legacy tier names (starter, solo).
+ *  2. Source files use correct tier display names (Starter, Solo, Professional, Team).
  *  3. Source files that previously had inline tier constants have been
  *     migrated to import from the registry.
  *  4. PricingCTA.tsx does NOT contain a TIER_TO_CHECKOUT remapping table.
@@ -135,7 +135,7 @@ describe("tiers.ts — helper functions", () => {
 
   it("getTier returns the correct Tier object", () => {
     expect(getTier("pro").price).toBe(29);
-    expect(getTier("indie").name).toBe("Indie");
+    expect(getTier("indie").name).toBe("Solo");
   });
 
   it("getTier returns correct Starter tier", () => {
@@ -151,8 +151,8 @@ describe("tiers.ts — helper functions", () => {
   it("getTierLabel returns display name for canonical IDs", () => {
     expect(getTierLabel("free")).toBe("Free");
     expect(getTierLabel("starter")).toBe("Starter");
-    expect(getTierLabel("indie")).toBe("Indie");
-    expect(getTierLabel("pro")).toBe("Pro");
+    expect(getTierLabel("indie")).toBe("Solo");
+    expect(getTierLabel("pro")).toBe("Professional");
     expect(getTierLabel("team")).toBe("Team");
   });
 
@@ -247,10 +247,10 @@ describe("pricing/PricingClient.tsx — FAQ uses canonical plan names", () => {
     expect(src).toMatch(/Starter/);
   });
 
-  it("does not reference 'Solo' plan", () => {
+  it("references 'Solo' as the display name for the indie tier", () => {
     const src = readSrc("app/pricing/PricingClient.tsx");
-    // Solo was the old Architecture A name at $29 — now called Pro
-    expect(src).not.toMatch(/\bSolo\b/);
+    // Solo is the public display name for the indie ($9/mo) tier
+    expect(src).toMatch(/\bSolo\b/);
   });
 
   it("does not claim 'dedicated instance' architecture for all tiers", () => {

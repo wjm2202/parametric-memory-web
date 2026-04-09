@@ -59,7 +59,7 @@ describe("GET /api/billing/status", () => {
       lastPaymentFailed: false,
       hasStripeCustomer: true,
       tierDisplay: {
-        name: "Indie",
+        name: "Solo",
         atomsUsed: 0,
         atomsLimit: 50000,
         bootstrapsUsed: 0,

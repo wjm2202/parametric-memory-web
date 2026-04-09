@@ -40,12 +40,12 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   description:
-    "Persistent, verifiable memory for AI agents. Dedicated instances from $9/mo with cryptographic Merkle proofs, Markov prediction, and MCP-native integration.",
+    "Persistent, verifiable memory for AI agents. Dedicated instances from $3/mo with cryptographic Merkle proofs, Markov prediction, and MCP-native integration.",
   metadataBase: new URL("https://parametric-memory.dev"),
   openGraph: {
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
     description:
-      "Enterprise-grade AI memory with cryptographic Merkle proofs, Markov-chain prediction, and sub-millisecond recall. Dedicated instances from $9/mo.",
+      "Enterprise-grade AI memory with cryptographic Merkle proofs, Markov-chain prediction, and sub-millisecond recall. Dedicated instances from $3/mo.",
     url: "https://parametric-memory.dev",
     siteName: "Parametric Memory",
     locale: "en_US",
@@ -63,7 +63,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
     description:
-      "Enterprise-grade AI memory with cryptographic Merkle proofs. Dedicated instances from $9/mo.",
+      "Enterprise-grade AI memory with cryptographic Merkle proofs. Dedicated instances from $3/mo.",
     images: ["https://parametric-memory.dev/brand/og.png"],
   },
   robots: {
@@ -187,7 +187,23 @@ const softwareApplicationJsonLd = {
   offers: [
     {
       "@type": "Offer",
-      name: "Indie",
+      name: "Starter",
+      description: "Experience persistent memory. 1,000 atoms, up to 6 Claude sessions/day.",
+      price: "3",
+      priceCurrency: "USD",
+      priceSpecification: {
+        "@type": "UnitPriceSpecification",
+        price: "3",
+        priceCurrency: "USD",
+        billingDuration: "P1M",
+        unitCode: "MON",
+      },
+      availability: "https://schema.org/InStock",
+      url: "https://parametric-memory.dev/pricing#starter",
+    },
+    {
+      "@type": "Offer",
+      name: "Solo",
       description: "Your personal AI memory. 10,000 atoms, up to 33 Claude sessions/day.",
       price: "9",
       priceCurrency: "USD",
@@ -203,7 +219,7 @@ const softwareApplicationJsonLd = {
     },
     {
       "@type": "Offer",
-      name: "Pro",
+      name: "Professional",
       description:
         "For serious daily AI development. 100,000 atoms, up to 333 Claude sessions/day.",
       price: "29",

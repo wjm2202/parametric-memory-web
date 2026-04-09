@@ -1,5 +1,6 @@
 import type { MetadataRoute } from "next";
 import { getAllPostSlugs, getPostBySlug } from "@/lib/blog";
+import { getAllDocSlugsFromNav } from "@/config/docs-nav";
 
 export default function sitemap(): MetadataRoute.Sitemap {
   // Generate individual blog post entries from the content directory
@@ -19,6 +20,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     };
   });
+
+  // Generate individual docs page entries from the docs nav config
+  const docSlugs = getAllDocSlugsFromNav();
+  const docEntries: MetadataRoute.Sitemap = docSlugs.map((slug) => ({
+    url: `https://parametric-memory.dev/docs/${slug}`,
+    lastModified: new Date(),
+    changeFrequency: "weekly",
+    priority: 0.8,
+  }));
 
   return [
     {
@@ -70,6 +80,25 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.6,
     },
+    {
+      url: "https://parametric-memory.dev/signup",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.7,
+    },
+    {
+      url: "https://parametric-memory.dev/terms",
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: "https://parametric-memory.dev/privacy",
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    ...docEntries,
     ...blogEntries,
   ];
 }

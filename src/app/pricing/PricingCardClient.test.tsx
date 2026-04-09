@@ -60,7 +60,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Indie" ctaLabel="Get Solo" isLoggedIn={false}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -83,7 +83,7 @@ describe("PricingCardClient", () => {
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockReturnValueOnce(new Promise(() => {}));
 
     render(
-      <PricingCardClient tierId="indie" tierName="Indie" ctaLabel="Get Solo" isLoggedIn={false}>
+      <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
         <div>$9/month</div>
       </PricingCardClient>,
     );
@@ -96,7 +96,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Indie" ctaLabel="Get Solo" isLoggedIn={false}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -114,7 +114,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Indie" ctaLabel="Get Solo" isLoggedIn={false}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -136,7 +136,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Indie" ctaLabel="Get Solo" isLoggedIn={true}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={true}>
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -186,7 +186,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Indie" ctaLabel="Get Solo" isLoggedIn={true}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={true}>
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -231,7 +231,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Indie" ctaLabel="Get Solo" isLoggedIn={true}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={true}>
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -270,7 +270,7 @@ describe("PricingCardClient", () => {
       render(
         <PricingCardClient
           tierId="pro"
-          tierName="Pro"
+          tierName="Professional"
           ctaLabel="Get Professional"
           isLoggedIn={false}
         >

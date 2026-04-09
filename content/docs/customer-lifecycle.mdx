@@ -44,10 +44,10 @@ The diagram below shows every state your account and memory instance can be in, 
 ### Signup → Running (~2 min)
 You complete the Stripe Checkout. Stripe fires `customer.subscription.created`. Our system creates your substrate record and queues provisioning. A container (or dedicated droplet for Team) is started and registered with our routing layer. Once the health check passes, status becomes `running`.
 
-### Upgrade (e.g. Indie → Pro)
-Stripe processes the upgrade immediately with proration. Our webhook handler queues a tier-change job. For shared-to-shared upgrades (Indie↔Pro), the container is restarted with higher resource limits — this takes under 30 seconds with no data loss. For a shared-to-dedicated upgrade (any tier → Team), a new dedicated droplet is provisioned while your old container remains in `read_only` — once the new instance is live, it becomes your active endpoint.
+### Upgrade (e.g. Solo → Professional)
+Stripe processes the upgrade immediately with proration. Our webhook handler queues a tier-change job. For shared-to-shared upgrades (Starter↔Solo↔Professional), the container is restarted with higher resource limits — this takes under 30 seconds with no data loss. For a shared-to-dedicated upgrade (any tier → Team), a new dedicated droplet is provisioned while your old container remains in `read_only` — once the new instance is live, it becomes your active endpoint.
 
-### Downgrade (e.g. Team → Pro)
+### Downgrade (e.g. Team → Professional)
 Stripe schedules the downgrade for the next billing cycle. When the new cycle starts, our webhook handler queues a tier-change job. For dedicated-to-shared (Team → lower), your droplet is snapshotted and queued for destruction while a new shared container is provisioned. For shared-to-shared, limits are reduced and the container restarted.
 
 ### Cancellation → 30-day grace period
