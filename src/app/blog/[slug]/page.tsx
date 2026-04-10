@@ -19,11 +19,38 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   const { slug } = await params;
   try {
     const { frontmatter } = getPostBySlug(slug);
+    const keywords = frontmatter.tags ?? ["AI memory", "parametric memory", "MMPM"];
     return {
       title: frontmatter.title,
       description: frontmatter.excerpt,
       alternates: {
         canonical: `https://parametric-memory.dev/blog/${slug}`,
+      },
+      keywords,
+      openGraph: {
+        title: frontmatter.title,
+        description: frontmatter.excerpt,
+        url: `https://parametric-memory.dev/blog/${slug}`,
+        type: "article",
+        publishedTime: frontmatter.date,
+        authors: [frontmatter.author ?? "Entity One"],
+        images: frontmatter.coverImage
+          ? [
+              {
+                url: `https://parametric-memory.dev${frontmatter.coverImage}`,
+                width: 1200,
+                height: 630,
+                alt: frontmatter.title,
+              },
+            ]
+          : [
+              {
+                url: "https://parametric-memory.dev/brand/og.png",
+                width: 1200,
+                height: 630,
+                alt: frontmatter.title,
+              },
+            ],
       },
     };
   } catch {

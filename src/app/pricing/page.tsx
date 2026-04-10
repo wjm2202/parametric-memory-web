@@ -13,10 +13,28 @@ export const metadata: Metadata = {
   alternates: {
     canonical: "https://parametric-memory.dev/pricing",
   },
+  keywords: [
+    "AI memory pricing",
+    "persistent memory cost",
+    "Merkle proof pricing",
+    "AI memory plans",
+    "Claude memory pricing",
+    "MCP server pricing",
+    "verifiable memory pricing",
+  ],
   openGraph: {
     title: "Parametric Memory Pricing — Plans from $3/mo",
     description:
       "Persistent AI memory from $3/month. Flat rate subscription — no per-query costs, no credits. Starter, Solo, Professional, and Team plans. Merkle proofs, Markov prediction, MCP native.",
+    url: "https://parametric-memory.dev/pricing",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory Pricing",
+      },
+    ],
   },
 };
 

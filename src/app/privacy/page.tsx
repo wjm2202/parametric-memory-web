@@ -8,6 +8,20 @@ export const metadata: Metadata = {
   description:
     "How Parametric Memory collects, uses, and protects your personal data. Covers GDPR, CCPA, NZ Privacy Act 2020, and Australian Privacy Principles.",
   alternates: { canonical: "https://parametric-memory.dev/privacy" },
+  openGraph: {
+    title: "Privacy Policy | Parametric Memory",
+    description:
+      "How Parametric Memory collects, uses, and protects your personal data. GDPR, CCPA, and NZ Privacy Act 2020 compliant.",
+    url: "https://parametric-memory.dev/privacy",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory Privacy Policy",
+      },
+    ],
+  },
 };
 
 export default async function PrivacyPage() {

@@ -28,6 +28,27 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       alternates: {
         canonical: `https://parametric-memory.dev/docs/${slugStr}`,
       },
+      keywords: [
+        "Parametric Memory docs",
+        "AI memory documentation",
+        "MCP integration",
+        "Merkle proof API",
+        frontmatter.title,
+      ],
+      openGraph: {
+        title: `${frontmatter.title} | Parametric Memory Docs`,
+        description: frontmatter.description,
+        url: `https://parametric-memory.dev/docs/${slugStr}`,
+        type: "article",
+        images: [
+          {
+            url: "https://parametric-memory.dev/brand/og.png",
+            width: 1200,
+            height: 630,
+            alt: frontmatter.title,
+          },
+        ],
+      },
     };
   } catch {
     return { title: "Docs" };

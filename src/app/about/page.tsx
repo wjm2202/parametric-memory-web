@@ -8,6 +8,13 @@ export const metadata: Metadata = {
   description:
     "Parametric Memory is a persistent, cryptographically verifiable memory substrate for AI agents. One founder, built with Claude, operated the same way we sell it.",
   alternates: { canonical: "https://parametric-memory.dev/about" },
+  keywords: [
+    "Parametric Memory team",
+    "AI memory company",
+    "Merkle proof technology",
+    "AI-first development",
+    "AI agent collaboration",
+  ],
   openGraph: {
     title: "About | Parametric Memory",
     description:

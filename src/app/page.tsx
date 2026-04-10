@@ -10,6 +10,36 @@ export const metadata: Metadata = {
   description:
     "Stop re-explaining. Give your AI a second brain with cryptographic Merkle proofs, Markov-chain prediction, and sub-millisecond recall. Dedicated instances from $3/mo.",
   alternates: { canonical: "https://parametric-memory.dev" },
+  keywords: [
+    "AI memory",
+    "persistent AI memory",
+    "Merkle proof memory",
+    "AI agent memory",
+    "Claude memory",
+    "MCP memory server",
+    "verifiable AI memory",
+    "parametric memory",
+    "MMPM",
+    "Markov prediction",
+    "AI memory substrate",
+    "cryptographic memory",
+  ],
+  openGraph: {
+    title: "Parametric Memory — Persistent, Verifiable Memory for AI",
+    description:
+      "Stop re-explaining. Give your AI a second brain with cryptographic Merkle proofs, Markov-chain prediction, and sub-millisecond recall. Dedicated instances from $3/mo.",
+    url: "https://parametric-memory.dev",
+    siteName: "Parametric Memory",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory — Persistent, verifiable AI memory",
+      },
+    ],
+    type: "website",
+  },
 };
 
 // ── JSON-LD for this page ──────────────────────────────────────────────────

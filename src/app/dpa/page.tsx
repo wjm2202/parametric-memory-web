@@ -8,6 +8,19 @@ export const metadata: Metadata = {
   description:
     "GDPR Article 28-compliant Data Processing Agreement for B2B customers. Covers processor obligations, sub-processors, breach notification, and data subject rights.",
   alternates: { canonical: "https://parametric-memory.dev/dpa" },
+  openGraph: {
+    title: "Data Processing Agreement | Parametric Memory",
+    description: "GDPR Article 28-compliant Data Processing Agreement for B2B customers.",
+    url: "https://parametric-memory.dev/dpa",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory DPA",
+      },
+    ],
+  },
 };
 
 export default async function DPAPage() {

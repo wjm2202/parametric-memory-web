@@ -7,6 +7,27 @@ export const metadata: Metadata = {
   description:
     "Live 3D visualisation of the MMPM Merkle tree — watch memory atoms, proof paths, and Markov transitions in real time.",
   alternates: { canonical: "https://parametric-memory.dev/visualise" },
+  keywords: [
+    "Merkle tree visualization",
+    "AI memory visualization",
+    "memory substrate viewer",
+    "3D Merkle tree",
+    "cryptographic proof visualization",
+  ],
+  openGraph: {
+    title: "Substrate Viewer | Parametric Memory",
+    description:
+      "Live 3D visualization of the MMPM Merkle tree — watch memory atoms, proof paths, and Markov transitions in real time.",
+    url: "https://parametric-memory.dev/visualise",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory Substrate Viewer",
+      },
+    ],
+  },
 };
 
 const visualiseBreadcrumbJsonLd = {
