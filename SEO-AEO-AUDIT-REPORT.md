@@ -1,4 +1,5 @@
 # SEO/AEO/JSON-LD Audit Report — Parametric Memory
+
 **Date**: 11 April 2026  
 **Scope**: Exhaustive audit as if Google is evaluating the entire site for make-or-break indexing
 
@@ -15,6 +16,7 @@ The site has **excellent JSON-LD structured data** (Organization, SoftwareApplic
 ## ✅ STRENGTHS (What's Working)
 
 ### 1. **JSON-LD Structured Data** — Excellent
+
 - ✅ Organization schema in root layout
 - ✅ SoftwareApplication with all 6 pricing tiers (Starter through Enterprise Self-Hosted)
 - ✅ FAQPage schema on /faq with 25+ Q&A pairs
@@ -23,14 +25,16 @@ The site has **excellent JSON-LD structured data** (Organization, SoftwareApplic
 - ✅ AboutPage schema on /about
 
 ### 2. **AEO (Answer Engine Optimization)** — Excellent
+
 - ✅ llms.txt comprehensive (298 lines, covers product, pricing, MCP tools, FAQ)
 - ✅ robots.txt allows all AI crawlers (ClaudeBot, ChatGPT-User, PerplexityBot, etc.)
 - ✅ FAQ page optimized for AI citation with natural language Q&A
 - ✅ Meta tag: ai-content-declaration="human-authored"
 
 ### 3. **Technical SEO** — Very Good
+
 - ✅ Canonical tags on all indexable pages
-- ✅ Noindex on protected pages (dashboard, admin, billing/*)
+- ✅ Noindex on protected pages (dashboard, admin, billing/\*)
 - ✅ Sitemap includes all pages with correct priorities (FAQ = 0.9 for AEO)
 - ✅ Proper robots meta (max-snippet: -1, max-image-preview: large)
 - ✅ All images have alt text
@@ -43,6 +47,7 @@ The site has **excellent JSON-LD structured data** (Organization, SoftwareApplic
 ## 🚨 CRITICAL ISSUES (Must Fix)
 
 ### 1. **Pricing Inconsistency in JSON-LD**
+
 **Location**: `/src/app/layout.tsx` line 129  
 **Issue**: WebApplication schema says `lowPrice: "9"` but Starter tier is actually **$3/mo**  
 **Impact**: AI answer engines (ChatGPT, Perplexity, Google AI Mode) will surface incorrect pricing  
@@ -67,31 +72,38 @@ offers: {
 OpenGraph tags are critical for social shares (LinkedIn, Twitter, Slack) and AI preview cards. Missing on:
 
 #### **Home Page** (`/src/app/page.tsx`)
+
 - ❌ No OpenGraph tags
 - Current: Only has title + description in metadata
 - **Impact**: Broken social preview cards when shared on LinkedIn/Twitter
 
 #### **Blog Index** (`/src/app/blog/page.tsx`)
+
 - ❌ No OpenGraph tags
 - ❌ No keywords metadata
 
 #### **Blog Posts** (`/src/app/blog/[slug]/page.tsx`)
+
 - ❌ No OpenGraph images, types, or URLs
 - Note: Has BlogPosting JSON-LD ✅ but missing OG tags
 
 #### **Docs Pages** (`/src/app/docs/[...slug]/page.tsx`)
+
 - ❌ No OpenGraph tags
 - ❌ No keywords metadata
 
 #### **Visualise** (`/src/app/visualise/page.tsx`)
+
 - ❌ No OpenGraph tags
 - ❌ No keywords
 
 #### **Knowledge** (`/src/app/knowledge/page.tsx`)
+
 - ❌ No OpenGraph tags
 - ❌ No keywords
 
 #### **Legal Pages** (`/terms`, `/privacy`, `/dpa`, `/aup`)
+
 - ❌ No OpenGraph tags
 - **Why it matters**: B2B buyers share legal pages for compliance review
 
@@ -100,6 +112,7 @@ OpenGraph tags are critical for social shares (LinkedIn, Twitter, Slack) and AI 
 ### 3. **Missing Keywords Metadata**
 
 Keywords help AI answer engines understand page topics. Missing on:
+
 - Home page
 - Pricing page (has OG, not keywords)
 - About page (has OG, not keywords)
@@ -114,16 +127,19 @@ Keywords help AI answer engines understand page topics. Missing on:
 ## ⚠️ MODERATE ISSUES (Should Fix)
 
 ### 1. **No Twitter Handle References**
+
 - Have Twitter card metadata ✅
 - Missing: `twitter:site` and `twitter:creator` handles
 - **Impact**: Twitter can't attribute shares to your account
 
 ### 2. **Blog Posts: Keywords Duplication**
+
 - Keywords exist in BlogPosting JSON-LD
 - Not in `metadata.keywords` field
 - **Fix**: Add both for maximum compatibility
 
 ### 3. **Docs Pages: Minimal Metadata**
+
 - Only title + description + canonical
 - No OG, no keywords, no article metadata
 
@@ -132,6 +148,7 @@ Keywords help AI answer engines understand page topics. Missing on:
 ## 📋 DETAILED FIXES REQUIRED
 
 ### Fix #1: Update WebApplication lowPrice
+
 **File**: `src/app/layout.tsx`  
 **Line**: ~129  
 **Change**: `lowPrice: "9"` → `lowPrice: "3"`
@@ -139,8 +156,10 @@ Keywords help AI answer engines understand page topics. Missing on:
 ---
 
 ### Fix #2: Add OpenGraph to Home Page
+
 **File**: `src/app/page.tsx`  
 **Add to metadata**:
+
 ```typescript
 openGraph: {
   title: "Parametric Memory — Persistent, Verifiable Memory for AI",
@@ -164,6 +183,7 @@ openGraph: {
 ### Fix #3: Add Keywords to All Major Pages
 
 **Home** (`/src/app/page.tsx`):
+
 ```typescript
 keywords: [
   "AI memory",
@@ -181,6 +201,7 @@ keywords: [
 ```
 
 **Pricing** (`/src/app/pricing/page.tsx`):
+
 ```typescript
 keywords: [
   "AI memory pricing",
@@ -193,6 +214,7 @@ keywords: [
 ```
 
 **About** (`/src/app/about/page.tsx`):
+
 ```typescript
 keywords: [
   "Parametric Memory team",
@@ -203,6 +225,7 @@ keywords: [
 ```
 
 **Blog Index** (`/src/app/blog/page.tsx`):
+
 ```typescript
 keywords: [
   "AI memory blog",
@@ -213,6 +236,7 @@ keywords: [
 ```
 
 **Visualise** (`/src/app/visualise/page.tsx`):
+
 ```typescript
 keywords: [
   "Merkle tree visualization",
@@ -223,6 +247,7 @@ keywords: [
 ```
 
 **Knowledge** (`/src/app/knowledge/page.tsx`):
+
 ```typescript
 keywords: [
   "knowledge graph",
@@ -237,6 +262,7 @@ keywords: [
 ### Fix #4: Add OpenGraph to All Legal Pages
 
 **Terms** (`/src/app/terms/page.tsx`):
+
 ```typescript
 openGraph: {
   title: "Terms of Service | Parametric Memory",
@@ -250,8 +276,10 @@ openGraph: {
 ---
 
 ### Fix #5: Add OpenGraph to Blog Posts
+
 **File**: `src/app/blog/[slug]/page.tsx`  
 **Add to generateMetadata**:
+
 ```typescript
 openGraph: {
   title: frontmatter.title,
@@ -279,8 +307,10 @@ openGraph: {
 ---
 
 ### Fix #6: Add OpenGraph to Docs Pages
+
 **File**: `src/app/docs/[...slug]/page.tsx`  
 **Add to generateMetadata**:
+
 ```typescript
 openGraph: {
   title: `${frontmatter.title} | Parametric Memory Docs`,
@@ -293,8 +323,10 @@ openGraph: {
 ---
 
 ### Fix #7: Add Twitter Handles (Optional but Recommended)
+
 **File**: `src/app/layout.tsx`  
 **Add to root metadata**:
+
 ```typescript
 twitter: {
   card: "summary_large_image",
@@ -310,15 +342,15 @@ twitter: {
 
 ## 📊 PRIORITY MATRIX
 
-| Issue | Severity | Impact on SEO | Impact on AEO | Effort |
-|-------|----------|---------------|---------------|--------|
-| Pricing inconsistency in JSON-LD | 🔴 Critical | High | **Critical** | 1 min |
-| Missing OG on home page | 🔴 Critical | **Critical** | Medium | 2 min |
-| Missing OG on blog posts | 🟠 High | High | Medium | 5 min |
-| Missing keywords everywhere | 🟠 High | Medium | High | 10 min |
-| Missing OG on docs | 🟡 Medium | Medium | Medium | 5 min |
-| Missing OG on legal pages | 🟡 Medium | Low | Low | 3 min |
-| Missing Twitter handles | 🟢 Low | Low | Low | 1 min |
+| Issue                            | Severity    | Impact on SEO | Impact on AEO | Effort |
+| -------------------------------- | ----------- | ------------- | ------------- | ------ |
+| Pricing inconsistency in JSON-LD | 🔴 Critical | High          | **Critical**  | 1 min  |
+| Missing OG on home page          | 🔴 Critical | **Critical**  | Medium        | 2 min  |
+| Missing OG on blog posts         | 🟠 High     | High          | Medium        | 5 min  |
+| Missing keywords everywhere      | 🟠 High     | Medium        | High          | 10 min |
+| Missing OG on docs               | 🟡 Medium   | Medium        | Medium        | 5 min  |
+| Missing OG on legal pages        | 🟡 Medium   | Low           | Low           | 3 min  |
+| Missing Twitter handles          | 🟢 Low      | Low           | Low           | 1 min  |
 
 ---
 
@@ -339,6 +371,7 @@ twitter: {
 ## 🧪 VALIDATION CHECKLIST
 
 After fixes, validate with:
+
 - ✅ Google Rich Results Test: https://search.google.com/test/rich-results
 - ✅ Facebook Sharing Debugger: https://developers.facebook.com/tools/debug/
 - ✅ Twitter Card Validator: https://cards-dev.twitter.com/validator
@@ -353,6 +386,7 @@ After fixes, validate with:
 ## 📌 NOTES FOR FUTURE
 
 ### When Adding New Pages:
+
 - Always add OpenGraph tags (even on legal/utility pages)
 - Always add keywords (5-10 relevant terms)
 - Always add canonical URL
@@ -360,12 +394,14 @@ After fixes, validate with:
 - For blog posts: add keywords to both metadata.keywords AND JSON-LD
 
 ### When Changing Pricing:
+
 - Update THREE places:
   1. WebApplication schema (layout.tsx line ~129)
   2. SoftwareApplication offers array (layout.tsx line ~189)
   3. Pricing page copy (pricing/page.tsx)
 
 ### AEO Best Practices:
+
 - Keep llms.txt updated when adding new pages/features
 - FAQ page is your #1 AEO asset — keep expanding it
 - AI answer engines prioritize: FAQPage > SoftwareApplication > Organization
