@@ -11,7 +11,6 @@
 - [Visualise](https://parametric-memory.dev/visualise): Live 3D Merkle tree visualization of the memory substrate
 - [Knowledge](https://parametric-memory.dev/knowledge): Interactive knowledge graph explorer
 - [Blog](https://parametric-memory.dev/blog): Technical articles on memory architecture, AI memory patterns, and MMPM updates
-- [GitHub](https://github.com/wjm2202/Parametric-Memory): Source repository
 
 ## Product
 
@@ -145,5 +144,4 @@ Yes. Every atom read returns a Merkle proof — a SHA-256 hash chain from the at
 ## Contact
 
 - Email: entityone22@gmail.com
-- GitHub: https://github.com/wjm2202/Parametric-Memory
 - Website: https://parametric-memory.dev
