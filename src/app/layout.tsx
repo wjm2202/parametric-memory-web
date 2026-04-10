@@ -94,7 +94,6 @@ const organizationJsonLd = {
   description:
     "Enterprise-grade persistent memory for AI with cryptographic Merkle proofs, Markov prediction, and MCP-native integration.",
   foundingDate: "2025",
-  sameAs: ["https://github.com/wjm2202/Parametric-Memory"],
   image: {
     "@type": "ImageObject",
     url: "https://parametric-memory.dev/brand/og.png",
