@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import AdminClient from "./AdminClient";
+
+export const metadata: Metadata = {
+  title: "Admin",
+  robots: { index: false, follow: false },
+};
 
 const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
 const SESSION_COOKIE = "mmpm_session";

@@ -61,6 +61,8 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
+    site: "@parametricmem",
+    creator: "@parametricmem",
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
     description:
       "Enterprise-grade AI memory with cryptographic Merkle proofs. Dedicated instances from $3/mo.",
@@ -128,10 +130,10 @@ const webApplicationJsonLd = {
     "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond access (0.045ms p50). Self-hosted on dedicated instances.",
   offers: {
     "@type": "AggregateOffer",
-    lowPrice: "9",
+    lowPrice: "3",
     highPrice: "499",
     priceCurrency: "USD",
-    offerCount: "5",
+    offerCount: "6",
   },
   featureList: [
     "Cryptographic Merkle proofs (RFC 6962)",

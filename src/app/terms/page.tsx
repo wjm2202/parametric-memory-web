@@ -8,6 +8,20 @@ export const metadata: Metadata = {
   description:
     "Terms of Service for Parametric Memory. Covers subscriptions, AI disclaimers, data retention, liability limits, and dispute resolution.",
   alternates: { canonical: "https://parametric-memory.dev/terms" },
+  openGraph: {
+    title: "Terms of Service | Parametric Memory",
+    description:
+      "Terms of Service for Parametric Memory — subscription terms, AI disclaimers, liability limits.",
+    url: "https://parametric-memory.dev/terms",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory Terms of Service",
+      },
+    ],
+  },
 };
 
 export default async function TermsPage() {

@@ -8,6 +8,20 @@ export const metadata: Metadata = {
   description:
     "What you may and may not do with Parametric Memory. Covers permitted uses, prohibited conduct, enforcement, and how to report violations.",
   alternates: { canonical: "https://parametric-memory.dev/aup" },
+  openGraph: {
+    title: "Acceptable Use Policy | Parametric Memory",
+    description:
+      "What you may and may not do with Parametric Memory — permitted uses, prohibited conduct, enforcement.",
+    url: "https://parametric-memory.dev/aup",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory AUP",
+      },
+    ],
+  },
 };
 
 export default async function AUPPage() {

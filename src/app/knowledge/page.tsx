@@ -7,6 +7,28 @@ export const metadata: Metadata = {
   description:
     "3D interactive knowledge graph — explore the semantic connections inside your MMPM memory substrate. Search to seed, click to expand Markov arcs.",
   alternates: { canonical: "https://parametric-memory.dev/knowledge" },
+  keywords: [
+    "knowledge graph",
+    "AI memory graph",
+    "semantic memory",
+    "memory connections",
+    "3D knowledge graph",
+    "Markov arcs",
+  ],
+  openGraph: {
+    title: "Knowledge Graph | Parametric Memory",
+    description:
+      "3D interactive knowledge graph — explore the semantic connections inside your MMPM memory substrate.",
+    url: "https://parametric-memory.dev/knowledge",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory Knowledge Graph",
+      },
+    ],
+  },
 };
 
 const knowledgeBreadcrumbJsonLd = {

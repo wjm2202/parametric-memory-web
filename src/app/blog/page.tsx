@@ -8,6 +8,28 @@ export const metadata: Metadata = {
   description:
     "Engineering insights, product updates, and deep dives from the Parametric Memory team.",
   alternates: { canonical: "https://parametric-memory.dev/blog" },
+  keywords: [
+    "AI memory blog",
+    "Merkle proof articles",
+    "AI agent memory",
+    "persistent memory insights",
+    "AI memory architecture",
+  ],
+  openGraph: {
+    title: "Blog | Parametric Memory",
+    description:
+      "Engineering insights, product updates, and deep dives from the Parametric Memory team.",
+    url: "https://parametric-memory.dev/blog",
+    images: [
+      {
+        url: "https://parametric-memory.dev/brand/og.png",
+        width: 1200,
+        height: 630,
+        alt: "Parametric Memory Blog",
+      },
+    ],
+    type: "website",
+  },
 };
 
 // ── Tag pill ─────────────────────────────────────────────────────────────────
