@@ -15,15 +15,13 @@ import Link from "next/link";
 export default function BlogNotFound() {
   return (
     <main className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-      <p className="font-mono text-xs tracking-widest text-violet-400/60">
-        404 — POST NOT FOUND
-      </p>
+      <p className="font-mono text-xs tracking-widest text-violet-400/60">404 — POST NOT FOUND</p>
       <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
         We couldn&apos;t find that post.
       </h1>
       <p className="text-surface-300/80 max-w-lg text-base leading-relaxed">
-        The post may have been renamed or removed. Browse the blog index
-        for the latest writing, or head back to the homepage.
+        The post may have been renamed or removed. Browse the blog index for the latest writing, or
+        head back to the homepage.
       </p>
       <nav
         className="mt-4 flex flex-wrap items-center justify-center gap-3"

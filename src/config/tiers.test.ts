@@ -84,9 +84,10 @@ describe("tiers.ts — registry shape", () => {
   it("tier prices are in non-decreasing upgrade order", () => {
     const prices = TIER_ORDER.map((id) => TIERS_BY_ID[id].price);
     for (let i = 1; i < prices.length; i++) {
-      expect(prices[i], `${TIER_ORDER[i]} should cost >= ${TIER_ORDER[i - 1]}`).toBeGreaterThanOrEqual(
-        prices[i - 1],
-      );
+      expect(
+        prices[i],
+        `${TIER_ORDER[i]} should cost >= ${TIER_ORDER[i - 1]}`,
+      ).toBeGreaterThanOrEqual(prices[i - 1]);
     }
   });
 });

@@ -14,15 +14,13 @@ import Link from "next/link";
 export default function DocsNotFound() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-      <p className="font-mono text-xs tracking-widest text-violet-400/60">
-        404 — DOC NOT FOUND
-      </p>
+      <p className="font-mono text-xs tracking-widest text-violet-400/60">404 — DOC NOT FOUND</p>
       <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
         We couldn&apos;t find that page.
       </h1>
       <p className="text-surface-300/80 max-w-lg text-base leading-relaxed">
-        The doc may have been renamed, moved, or removed. Browse the docs
-        index on the left, or start from the getting-started guide.
+        The doc may have been renamed, moved, or removed. Browse the docs index on the left, or
+        start from the getting-started guide.
       </p>
       <nav
         className="mt-4 flex flex-wrap items-center justify-center gap-3"

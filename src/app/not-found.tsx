@@ -17,15 +17,13 @@ export default function NotFound() {
     <div className="bg-surface-950 flex min-h-screen flex-col">
       <SiteNavbar isLoggedIn={false} variant="standard" />
       <main className="mx-auto flex w-full max-w-2xl flex-1 flex-col items-center justify-center gap-6 px-6 py-24 text-center">
-        <p className="font-mono text-xs tracking-widest text-violet-400/60">
-          404 — PAGE NOT FOUND
-        </p>
+        <p className="font-mono text-xs tracking-widest text-violet-400/60">404 — PAGE NOT FOUND</p>
         <h1 className="text-4xl font-bold tracking-tight text-white sm:text-5xl">
           We couldn&apos;t find that page.
         </h1>
         <p className="text-surface-300/80 max-w-lg text-base leading-relaxed">
-          The link may be broken, the page may have moved, or you may have
-          typed the URL incorrectly. Try one of the paths below.
+          The link may be broken, the page may have moved, or you may have typed the URL
+          incorrectly. Try one of the paths below.
         </p>
         <nav
           className="mt-4 flex flex-wrap items-center justify-center gap-3"

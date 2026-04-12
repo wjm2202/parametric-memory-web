@@ -257,8 +257,8 @@ describe("cross-project — compute Stripe product names align with website", ()
   const EXPECTED_STRIPE_NAMES: Record<string, string> = {
     free: "Parametric Memory — Free",
     starter: "Parametric Memory — Starter",
-    indie: "Parametric Memory — Solo",          // internal ID "indie", display "Solo"
-    pro: "Parametric Memory — Professional",    // internal ID "pro", display "Professional"
+    indie: "Parametric Memory — Solo", // internal ID "indie", display "Solo"
+    pro: "Parametric Memory — Professional", // internal ID "pro", display "Professional"
     team: "Parametric Memory — Team",
   };
 
