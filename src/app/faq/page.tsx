@@ -211,7 +211,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "setup",
     question: "How much does Parametric Memory cost?",
     answer:
-      "Starter: $3/month — 1,000 atoms, up to 6 Claude sessions per day, 30-day money-back guarantee. Solo: $9/month — 10,000 atoms, up to 33 Claude sessions per day, email support. Professional: $29/month — 100,000 atoms, up to 333 Claude sessions per day, knowledge graph edges, priority support. Team: $79/month — 500,000 atoms, unlimited bootstraps, 5 substrate instances, dedicated support. Enterprise Cloud: $299/month — 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML. Enterprise Self-Hosted: $499/month — commercial license, deploy on AWS/GCP/Azure. All paid plans include a 14-day free trial. No charge until day 15. Cancel anytime before day 15 and pay nothing.",
+      "Starter: $3/month — 1,000 atoms, up to 6 Claude sessions per day, 30-day money-back guarantee. Solo: $9/month — 10,000 atoms, up to 33 Claude sessions per day, email support. Professional: $29/month — 100,000 atoms, up to 333 Claude sessions per day, knowledge graph edges, priority support. Team: $79/month — 500,000 atoms, unlimited bootstraps, dedicated support. Enterprise Cloud: $299/month — 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML. Enterprise Self-Hosted: $499/month — commercial license, deploy on AWS/GCP/Azure. All paid plans include a 14-day free trial. No charge until day 15. Cancel anytime before day 15 and pay nothing.",
   },
   {
     category: "setup",

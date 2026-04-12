@@ -28,6 +28,11 @@ export const docsNav: DocNavSection[] = [
       { title: "Plans & Trial", slug: "plans-and-trial" },
       { title: "Your Instance & API Key", slug: "your-instance" },
       { title: "Customer Lifecycle", slug: "customer-lifecycle" },
+      {
+        title: "Self-Service Operations",
+        slug: "self-service-guide",
+        badge: "new",
+      },
     ],
   },
   {

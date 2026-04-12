@@ -17,7 +17,7 @@ Parametric Memory offers four paid tiers and a 14-day free trial on all of them.
 | **Atoms** | 1,000 | 10,000 | 100,000 | 500,000 |
 | **Bootstraps / month** | 200 (~6/day) | 1,000 (~33/day) | 10,000 (~333/day) | Unlimited (~667+/day) |
 | **Storage** | 100 MB | 500 MB | 2 GB | 10 GB |
-| **Substrates** | 1 | 2 | 3 | 5 |
+| **Substrates** | 1 | 1 | 1 | 1 |
 | **Hosting** | Shared host | Shared host | Shared host | Dedicated droplet |
 
 ### What "bootstraps" means
@@ -45,9 +45,13 @@ If you exceed your atom limit, atoms are charged at **$0.001 per atom** above yo
 ### When to choose Team
 
 Team gives you a dedicated DigitalOcean droplet rather than a shared container. Choose Team when:
-- You need guaranteed compute isolation from other customers
+- You need guaranteed compute isolation from other customers — your instance runs on its own server with no shared resources
 - You want 500,000+ atoms for large-scale institutional memory
 - Multiple people on your team will share the same memory instance
+- You need up to 5 independent memory substrates for different projects or teams
+- You want the best possible response times for bootstraps and large batch operations
+
+**What "dedicated" means in practice:** On shared tiers, your container runs alongside other customers on the same server. Resources are allocated per container, but you share the underlying host. On Team, you get an entire server to yourself — provisioned from a pre-built image for faster startup, running in your chosen region, with full CPU and memory exclusively for your workloads.
 
 ## The 14-day trial
 

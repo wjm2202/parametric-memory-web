@@ -48,13 +48,17 @@ You complete the Stripe Checkout. Stripe fires `customer.subscription.created`. 
 Stripe processes the upgrade immediately with proration. Our webhook handler queues a tier-change job. For shared-to-shared upgrades (Starter↔Solo↔Professional), the container is restarted with higher resource limits — this takes under 30 seconds with no data loss. For a shared-to-dedicated upgrade (any tier → Team), a new dedicated droplet is provisioned while your old container remains in `read_only` — once the new instance is live, it becomes your active endpoint.
 
 ### Downgrade (e.g. Team → Professional)
-Stripe schedules the downgrade for the next billing cycle. When the new cycle starts, our webhook handler queues a tier-change job. For dedicated-to-shared (Team → lower), your droplet is snapshotted and queued for destruction while a new shared container is provisioned. For shared-to-shared, limits are reduced and the container restarted.
+Stripe schedules the downgrade for the next billing cycle. When the new cycle starts, our webhook handler queues a tier-change job. For dedicated-to-shared (Team → lower), your dedicated server enters read-only mode while a new shared container is provisioned. The dedicated server is kept available for 48 hours after the migration completes to ensure data integrity before being decommissioned. For shared-to-shared, limits are reduced and the container restarted.
 
 ### Cancellation → 30-day grace period
 When you cancel, Stripe fires `customer.subscription.deleted` at the end of your billing period. Your instance immediately moves to `read_only`. You retain read access — you can still retrieve and verify your atoms for 30 days. On day 30, a data purge warning is sent, followed by deprovisioning 24 hours later.
 
 ### Resubscription during grace period
 If you resubscribe before the 30-day window closes, your instance is re-provisioned from scratch. Your atoms are not migrated from the read-only instance — you start fresh. If you need to preserve your atoms, export them via the API before the grace period expires (see the Atoms API reference).
+
+## Provisioning reliability
+
+If provisioning encounters an issue (network timeout, server unavailability), the system automatically retries. A provisioning job that has been processing for more than 15 minutes is considered stale and is requeued for a fresh attempt. You do not need to take any action — the retry happens transparently and your dashboard will continue to show "Provisioning" until the instance is ready.
 
 ## Billing cycle
 

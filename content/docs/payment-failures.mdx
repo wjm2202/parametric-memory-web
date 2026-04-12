@@ -60,9 +60,18 @@ If all Stripe retries are exhausted and the subscription is cancelled:
 
 To resubscribe, go to the Dashboard and complete a new Stripe Checkout. Note that resubscription creates a new instance — your previous atoms are in the read-only instance but are not automatically migrated. Export them during the grace period if needed.
 
+## Adding credits to resolve suspension
+
+If your account has been suspended due to failed payments and you want to reactivate without resubscribing, you can add credits to bring your balance positive. Credit additions are processed atomically — the balance update and billing event are recorded together, so credits cannot be lost or double-counted. Each credit is tracked by its Stripe payment intent ID, making the operation safe to retry.
+
+## Payment failures during trial
+
+If your first charge on day 15 fails, Stripe begins its normal retry schedule. Your instance continues running during retries. If all retries fail, the trial subscription is cancelled and your instance enters the standard 30-day read-only grace period.
+
 ## Preventing payment failures
 
 - Keep your card details up to date in the Billing Portal before the expiry date
-- If you use a virtual card, ensure the limit covers your subscription amount
+- If you use a virtual card, ensure the limit covers your subscription amount plus any expected overage charges
 - Enable email notifications in your Stripe billing settings to get advance notice of upcoming charges
 - Check your Dashboard regularly — the `past_due` status banner appears before your instance is affected
+- If you are travelling, pre-authorise your card for international transactions to avoid fraud blocks

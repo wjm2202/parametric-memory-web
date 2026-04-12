@@ -19,7 +19,17 @@ export interface TierLimits {
   maxStorageMB: number; // -1 = unlimited
   /** Maximum monthly spend in cents (platform ceiling). Users cannot exceed this. */
   maxMonthlyCents: number;
-  /** Maximum number of substrates per account. */
+  /**
+   * Maximum number of live substrates per account.
+   *
+   * Architectural constraint (2026-04-11): every tier is pinned to 1. The
+   * compute API resolves "my substrate" from `req.session.accountId` via
+   * `SELECT ... LIMIT 1 ORDER BY created_at DESC` and has no path for the
+   * client to disambiguate between multiple live substrates on the same
+   * account. Do not advertise a number > 1 on any customer surface until
+   * the rotate-key, billing-portal, reactivate, and deprovision routes
+   * accept a `substrateId` in the URL.
+   */
   maxSubstrates: number;
 }
 
@@ -77,7 +87,7 @@ export const TIERS: Tier[] = [
       { name: "500 atoms", included: true },
       { name: "100 bootstraps / month", included: true },
       { name: "50 MB storage", included: true },
-      { name: "1 substrate instance", included: true },
+      { name: "1 substrate", included: true },
       { name: "$2/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
@@ -105,7 +115,7 @@ export const TIERS: Tier[] = [
       { name: "1,000 atoms", included: true },
       { name: "200 bootstraps / month", included: true },
       { name: "100 MB storage", included: true },
-      { name: "1 substrate instance", included: true },
+      { name: "1 substrate", included: true },
       { name: "$5/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
@@ -127,7 +137,7 @@ export const TIERS: Tier[] = [
       maxBootstrapsPerMonth: 1_000,
       maxStorageMB: 500,
       maxMonthlyCents: 1500,
-      maxSubstrates: 2,
+      maxSubstrates: 1,
     },
     stripePriceEnvKey: "STRIPE_PRICE_INDIE_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_INDIE",
@@ -135,7 +145,7 @@ export const TIERS: Tier[] = [
       { name: "10,000 atoms", included: true },
       { name: "1,000 bootstraps / month", included: true },
       { name: "500 MB storage", included: true },
-      { name: "2 substrate instances", included: true },
+      { name: "1 substrate", included: true },
       { name: "$15/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
@@ -155,7 +165,7 @@ export const TIERS: Tier[] = [
       maxBootstrapsPerMonth: 10_000,
       maxStorageMB: 2_048,
       maxMonthlyCents: 5000,
-      maxSubstrates: 3,
+      maxSubstrates: 1,
     },
     stripePriceEnvKey: "STRIPE_PRICE_PRO_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_PRO",
@@ -163,7 +173,7 @@ export const TIERS: Tier[] = [
       { name: "100,000 atoms", included: true },
       { name: "10,000 bootstraps / month", included: true },
       { name: "2 GB storage", included: true },
-      { name: "3 substrate instances", included: true },
+      { name: "1 substrate", included: true },
       { name: "$50/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
@@ -184,7 +194,7 @@ export const TIERS: Tier[] = [
       maxBootstrapsPerMonth: -1,
       maxStorageMB: 10_240,
       maxMonthlyCents: 12000,
-      maxSubstrates: 5,
+      maxSubstrates: 1,
     },
     stripePriceEnvKey: "STRIPE_PRICE_TEAM_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_TEAM",
@@ -192,7 +202,7 @@ export const TIERS: Tier[] = [
       { name: "500,000 atoms", included: true },
       { name: "Unlimited bootstraps", included: true },
       { name: "10 GB storage", included: true },
-      { name: "5 substrate instances", included: true },
+      { name: "1 substrate", included: true },
       { name: "$120/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
