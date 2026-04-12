@@ -1,0 +1,219 @@
+---
+title: Self-Service Operations Guide
+description: Everything you can do with your Parametric Memory account — from first signup to managing multiple substrates, changing tiers, handling billing, and exporting your data.
+section: Getting Started
+order: 5
+---
+
+# Self-Service Operations Guide
+
+This page walks through every action you can take as a Parametric Memory customer, organised by where you are in your journey. Each section explains what happens, how long it takes, and what to expect.
+
+## Your journey at a glance
+
+Your path through Parametric Memory typically follows these phases:
+
+1. **Sign up and provision** — create your account, start your trial, get your first memory instance running
+2. **Day-to-day usage** — store atoms, run bootstraps, monitor your usage against tier limits
+3. **Scale up or down** — change tiers as your needs grow, add substrates on higher plans
+4. **Manage billing** — understand spend caps, handle payment issues, add credits
+5. **Export or leave** — export your data, cancel gracefully, or resubscribe later
+
+Each section below covers one phase in detail.
+
+---
+
+## Phase 1: Sign up and provision
+
+### What happens when you sign up
+
+When you complete Stripe Checkout, three things happen in quick succession. First, Stripe confirms your subscription and sends a notification to our system. Second, we create your substrate record and queue it for provisioning. Third, a background worker picks up the job, sets up your container, runs a health check, and marks your instance as running.
+
+For shared tiers (Starter, Solo, Professional), this takes about 2 minutes. For Team tier, which gets a dedicated server, expect closer to 5 minutes because we allocate a fresh machine just for you.
+
+### What you see during provisioning
+
+Your dashboard updates automatically as provisioning progresses. You will see the status change from "Initialising" to "Provisioning" to "Running". The dashboard checks every 5 seconds while your instance is starting up, so you do not need to refresh.
+
+If provisioning takes longer than expected, the system will retry automatically. A stuck job is detected after 15 minutes and requeued for another attempt. You do not need to do anything — just wait.
+
+### Your MCP endpoint
+
+Once running, your instance is available at `https://{your-slug}.droplet-mcp.nz/mcp`. This is the URL you will paste into Claude Desktop, Cowork, or any other MCP client. For shared tiers, this URL stays the same even if you upgrade between Starter, Solo, and Professional. It only changes if you move to or from Team tier (because Team uses a different server).
+
+### Trial period
+
+Your 14-day trial starts the moment you subscribe. Your card is not charged until day 15. During the trial, you have full access to your chosen tier's limits. If you cancel before day 15, nothing is charged and your instance is immediately deprovisioned (no 30-day grace period for trial cancellations).
+
+You can upgrade your tier during a trial and the trial clock keeps running on the new tier. You can also downgrade during the trial, and unlike paid downgrades, trial downgrades take effect immediately rather than waiting for the next billing cycle.
+
+---
+
+## Phase 2: Day-to-day usage
+
+### Understanding your tier limits
+
+Every tier has four key limits that govern your daily usage.
+
+**Atom storage** is the total number of memory atoms your instance can hold. When you reach the limit, new writes return a "limit exceeded" error. Your existing atoms remain fully readable — nothing is deleted. The limits are: Starter has 1,000 atoms, Solo has 10,000, Professional has 100,000, and Team has 500,000.
+
+**Monthly bootstraps** are the number of times your AI client can call `memory_session_bootstrap` in a calendar month. This counter resets on the 1st of each month regardless of your billing date. Limits are: Starter gets 200, Solo gets 1,000, Professional gets 10,000, and Team gets unlimited.
+
+**Storage** is the disk space your atoms and indexes consume. All tiers have a fixed storage allocation. If you approach the storage limit, you will receive a warning before new writes are rejected.
+
+**Compute resources** determine how responsive your instance is. Higher tiers get more memory and CPU allocated to your container. Starter runs on 256 MB with half a CPU core. Solo gets 512 MB with a full CPU core. Professional gets 1,024 MB with a full CPU core. Team gets a dedicated server with 2,048 MB and 2 full CPU cores. In practice, this affects how quickly bootstraps and large batch operations return.
+
+### What happens when you hit a limit
+
+If you hit your atom limit mid-operation (for example, during a `session_checkpoint` that tries to store 5 new atoms when you only have room for 3), the entire write is rejected — no partial writes occur. You will see a 429 error with the message "ATOM_LIMIT_EXCEEDED" plus your current count and limit. Your options are to tombstone old atoms you no longer need, or upgrade to a higher tier for an immediate limit increase.
+
+If you hit your bootstrap limit, you will see a 429 error. The counter resets on the 1st of the next calendar month. If you consistently run out of bootstraps before month-end, consider upgrading.
+
+### Monitoring your usage
+
+Your dashboard shows current atom count, bootstrap usage this month, and storage consumption. Check it regularly to avoid surprise limit hits. There is no programmatic usage API yet — the dashboard is the primary monitoring tool.
+
+---
+
+## Phase 3: Scale up or down
+
+### Upgrading your tier
+
+You can upgrade at any time from your dashboard. Click "Manage Subscription" to open the Stripe billing portal, select your new tier, and confirm. The upgrade takes effect immediately.
+
+**What happens to your bill:** Stripe prorates the change. You get a credit for the unused portion of your current tier and are charged for the new tier's remaining days in the cycle. For example, if you upgrade from Solo ($9/month) to Professional ($29/month) halfway through a cycle, you get a ~$4.50 credit and pay ~$14.50 for the remaining days on Professional.
+
+**Shared-to-shared upgrades** (Starter ↔ Solo ↔ Professional) are the simplest. Your container is restarted with the new resource limits. This takes under 30 seconds. Your MCP endpoint stays the same and your AI client does not need to reconnect — the new limits apply on the next request.
+
+**Shared-to-dedicated upgrades** (any tier → Team) are more involved. Your current instance is placed in read-only mode while a brand new dedicated server is provisioned for you. This takes 3–5 minutes. Once the new server passes its health check, it becomes your active instance. Your MCP endpoint URL changes because you are now on a different server — you will need to update the URL in your AI clients. Your old shared container is decommissioned after the new one is live.
+
+### Downgrading your tier
+
+Downgrades work differently from upgrades. When you request a downgrade, it is scheduled for the start of your next billing cycle so you get the full value of what you have already paid. You can cancel a pending downgrade at any time before it takes effect.
+
+**When the downgrade activates**, the same mechanics apply as upgrades but in reverse:
+
+**Shared-to-shared downgrades** restart your container with lower limits. Takes under 30 seconds.
+
+**Dedicated-to-shared downgrades** (Team → lower tier) provision a new shared container while your dedicated server enters read-only mode. The dedicated server is kept available for 48 hours after migration completes to ensure data integrity, then decommissioned.
+
+**What happens to excess atoms:** If you have more atoms than your new tier allows (for example, 5,000 atoms when downgrading from Solo to Starter's 1,000 limit), your atoms are not deleted. They remain readable. However, you cannot write new atoms until your count drops below the new limit. Overage charges of $0.001 per atom above your tier limit apply until you reduce your count. To avoid overage charges, tombstone unneeded atoms before your downgrade takes effect.
+
+### Your substrate
+
+Each account has one active memory substrate — your dedicated instance with its own atom storage, bootstrap counter, and MCP endpoint.
+
+---
+
+## Phase 4: Manage billing
+
+### How billing works
+
+Your billing cycle starts on the day you first subscribe. Stripe charges you on that same day each month. The charge includes your tier subscription fee plus any overage charges from the previous period.
+
+### Spend caps
+
+Every tier has a platform spending ceiling that cannot be removed. This protects you from unexpected charges.
+
+| Tier | Monthly ceiling |
+|---|---|
+| Starter | $5 |
+| Solo | $15 |
+| Professional | $50 |
+| Team | $120 |
+
+You can also set a custom spend cap below the platform ceiling. Both your subscription fee and any overage charges count toward the cap.
+
+**What happens when you hit your cap:** You first receive a warning notification. Then a 15-minute grace period begins — this gives any in-progress AI sessions time to finish cleanly. After 15 minutes, your running instances are paused. Your data is completely safe during a pause — nothing is deleted.
+
+While paused, API requests return a 503 error with a "cap_paused" message. To resume, either wait for your billing cycle to reset (caps reset on your billing date), raise your custom cap, or upgrade to a tier with a higher ceiling.
+
+**Practical example:** On Starter ($3/month subscription, $5 ceiling), you have $2 of headroom for overages. At $0.001 per excess atom, that is 2,000 atoms above your tier limit before hitting the ceiling.
+
+### Low balance warnings
+
+If your account balance drops below what would cover one hour of usage, you receive a warning. If it drops below 5 minutes of coverage, you receive an urgent warning. If your balance reaches zero, all running instances are paused immediately — there is no grace period for balance exhaustion (unlike spend caps, which get 15 minutes). Each warning type is sent at most once every 2 hours to avoid flooding you.
+
+### Adding credits
+
+Credits are added via Stripe payments. Each credit addition is tracked by its Stripe payment intent ID, which means the same payment cannot be applied twice even if a network error causes a retry. Credits are applied to your balance instantly. If your account was suspended due to zero balance, adding credits is the path to reactivation — your instances can resume once the balance is positive.
+
+### When a payment fails
+
+If a monthly charge fails, your instance keeps running. Stripe automatically retries using its Smart Retry system — typically attempting about 4 times over 8–10 days, choosing optimal retry times based on card network signals.
+
+During this period, your dashboard shows a "past due" banner. The single most important thing to do is update your payment method in the Stripe billing portal (accessible from your dashboard). Once a retry succeeds or you update your card, the banner clears automatically.
+
+If all retries are exhausted without success, Stripe cancels your subscription. At that point your instance enters the 30-day grace period described in Phase 5 below. You can resubscribe at any time to get a new instance.
+
+---
+
+## Phase 5: Export or leave
+
+### Exporting your atoms
+
+You can export your atoms at any time — whether your instance is running or in read-only mode during a grace period. Use the Atoms API endpoint with your API key:
+
+```bash
+curl -H "Authorization: Bearer YOUR_API_KEY" \
+     https://your-slug.droplet-mcp.nz/atoms/export
+```
+
+This returns all your atoms in NDJSON format (one JSON object per line). Save the output to a file for safekeeping. If you have a large number of atoms, the export streams progressively so you will not hit a timeout.
+
+### Cancelling your subscription
+
+You can cancel from the Stripe billing portal via your dashboard. Your instance immediately moves to read-only mode. You retain full read access for 30 days — you can still retrieve atoms, verify Merkle proofs, and run exports.
+
+During the grace period, you cannot write new atoms or call bootstraps (these return a 403 "read_only" error).
+
+The timeline after cancellation: on day 29, you receive a data purge warning. On day 30, a final 24-hour notice. On day 31, your instance is permanently deprovisioned and all data is deleted.
+
+**Trial cancellation** works differently — there is no 30-day grace period. Your instance is deprovisioned immediately and no charge is made.
+
+### Resubscribing after cancellation
+
+If you resubscribe during the 30-day grace period, you get a brand-new instance. Atoms are not automatically migrated from the old read-only instance. If you need your old data, export it before the grace period expires and re-import it into your new instance using the Atoms API import endpoint.
+
+If the grace period has expired and your instance has been deprovisioned, your data is permanently gone. Resubscribing still works, but you start completely fresh.
+
+### Refunds
+
+Current-period subscription fees are not refunded upon cancellation. If you are on a higher tier and want to reduce costs, downgrade first (which takes effect at the next billing cycle) rather than cancelling.
+
+---
+
+## Quick reference: what can I do in each state?
+
+| Instance state | Read atoms | Write atoms | Bootstrap | Export | Change tier | Cancel |
+|---|---|---|---|---|---|---|
+| Running | Yes | Yes | Yes | Yes | Yes | Yes |
+| Read-only (grace period) | Yes | No | No | Yes | No (resubscribe instead) | Already cancelled |
+| Suspended (billing) | No | No | No | No | Resolve payment first | Yes |
+| Paused (spend cap) | No | No | No | No | Yes (raise cap or upgrade) | Yes |
+| Deprovisioned | No | No | No | No | Resubscribe for new instance | N/A |
+
+---
+
+## Common scenarios
+
+### "I hit my atom limit mid-sprint"
+Tombstone atoms you no longer need, then retry your write. Or upgrade your tier — the new limit applies instantly.
+
+### "My AI client says 503 cap_paused"
+You have hit your spend cap. Either wait for the monthly reset, raise your custom cap in the dashboard, or upgrade to a tier with a higher ceiling.
+
+### "I upgraded to Team but my old MCP URL stopped working"
+Team tier uses a dedicated server with a new URL. Check your dashboard for the updated MCP endpoint and paste it into your AI client configuration.
+
+### "I want to downgrade but I have too many atoms"
+Your atoms will not be deleted. But you will be charged $0.001/atom/month for each atom above your new tier's limit until you reduce the count. Tombstone unneeded atoms before the downgrade activates to avoid these charges.
+
+### "My payment failed — is my data safe?"
+Yes. Your instance keeps running during Stripe's retry window (about 10 days). Update your payment method as soon as possible. If retries fail, your instance goes read-only with a 30-day window to export.
+
+### "I cancelled but I want to come back"
+Resubscribe before the 30-day grace period ends. You will get a new instance — export your atoms from the old one first if you need them.
+
+### "Can I have multiple memory substrates?"
+Each account currently has one active substrate. If you need to work across multiple projects, you can use atom naming conventions (prefixes) to organise different knowledge domains within a single substrate.

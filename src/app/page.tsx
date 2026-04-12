@@ -790,7 +790,10 @@ export default async function HomePage() {
                 Parametric Memory
               </span>
             </div>
-            <nav className="flex items-center gap-6" aria-label="Footer navigation">
+            <nav
+              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
+              aria-label="Footer navigation"
+            >
               <Link
                 href="/docs"
                 className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
@@ -821,6 +824,33 @@ export default async function HomePage() {
               >
                 Knowledge
               </a>
+              {/* Legal — required for enterprise trust signals and for the
+                  public-legal-pages journey test, which enforces that every
+                  legal page is reachable from the homepage nav/footer. */}
+              <Link
+                href="/privacy"
+                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+              >
+                Privacy
+              </Link>
+              <Link
+                href="/terms"
+                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+              >
+                Terms
+              </Link>
+              <Link
+                href="/aup"
+                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+              >
+                AUP
+              </Link>
+              <Link
+                href="/dpa"
+                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+              >
+                DPA
+              </Link>
             </nav>
             <p className="text-surface-700 font-mono text-[11px]">
               © 2026 Parametric Memory · parametric-memory.dev

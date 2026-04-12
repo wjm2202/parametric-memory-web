@@ -16,7 +16,9 @@ Every tier has hard limits on atoms, bootstraps, storage, and compute resources.
 | **Max atoms** | 1,000 | 10,000 | 100,000 | 500,000 |
 | **Bootstraps / month** | 200 | 1,000 | 10,000 | Unlimited |
 | **Storage** | 100 MB | 500 MB | 2 GB | 10 GB |
-| **Substrates** | 1 | 2 | 3 | 5 |
+| **Substrates** | 1 | 1 | 1 | 1 |
+| **Container memory** | 256 MB | 512 MB | 1,024 MB | Dedicated |
+| **Container CPU** | 0.5 cores | 1.0 cores | 1.0 cores | Dedicated |
 | **Hosting model** | Shared host | Shared host | Shared host | Dedicated droplet |
 
 ## What each limit means
@@ -26,6 +28,8 @@ Every tier has hard limits on atoms, bootstraps, storage, and compute resources.
 The maximum number of atoms your substrate will hold simultaneously. This is a hard cap — once reached, `session_checkpoint` calls that would exceed the limit return a `cap_hit` error.
 
 The limit applies to **live (non-tombstoned) atoms**. When you tombstone an atom via `session_checkpoint`, it is removed from the count. If you are near the limit, tombstone obsolete atoms to reclaim capacity.
+
+**Important:** writes are all-or-nothing. If a `session_checkpoint` tries to store 5 new atoms but you only have room for 3, the entire write is rejected — no partial writes occur. This protects data consistency.
 
 **What your AI sees when the cap is hit:**
 ```
@@ -55,6 +59,19 @@ Total disk storage for your atom values and Merkle tree data. In practice this l
 ### Container memory and CPU
 
 These are the compute resources allocated to your MMPM container. They affect how quickly your instance can process parallel requests and how large your in-memory Markov model can grow. You do not configure these directly — they are set automatically by your tier and adjusted during tier changes.
+
+| Tier | Memory | CPU |
+|---|---|---|
+| **Starter** | 256 MB | 0.5 cores |
+| **Solo** | 512 MB | 1.0 cores |
+| **Professional** | 1,024 MB | 1.0 cores |
+| **Team** | Dedicated server resources | Dedicated server resources |
+
+In practice, higher compute resources mean faster bootstrap responses, quicker Merkle proof generation, and better handling of concurrent requests from multiple AI clients.
+
+### Substrates
+
+Each account has one active memory substrate. This is your dedicated memory instance with its own atom storage, bootstrap counter, and MCP endpoint.
 
 ## What happens when limits are hit
 

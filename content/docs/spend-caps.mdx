@@ -79,3 +79,32 @@ When your instance is paused due to a spend cap:
 ## Monthly reset
 
 Spend caps reset at the start of your billing cycle (the same date each month as your subscription renewal). If your instance is paused due to cap, it automatically resumes at the start of the new billing cycle.
+
+## Spend cap vs balance exhaustion
+
+There are two separate mechanisms that can pause your instance, and they work differently:
+
+**Spend cap pause** — triggered when your month-to-date spend reaches the cap. You get a 15-minute grace period before instances are paused. This protects against runaway overage charges.
+
+**Balance exhaustion pause** — triggered when your account balance reaches zero. This is immediate with no grace period. If your balance hits zero while instances are running, they are paused right away. To resume, add credits to your account.
+
+If both conditions are true simultaneously (zero balance and at cap), the balance exhaustion takes priority and instances are paused immediately.
+
+## Warning notifications
+
+To help you stay ahead of pauses, the system sends two levels of balance warnings:
+
+- **Low balance warning** — sent when your balance would cover less than 1 hour of usage at your current burn rate
+- **Urgent warning** — sent when your balance would cover less than 5 minutes of usage
+
+Each warning type is sent at most once every 2 hours to avoid flooding your inbox. If you receive an urgent warning, update your payment method or add credits promptly to avoid an immediate pause.
+
+## Practical examples
+
+**Starter ($3 subscription, $5 ceiling):** You have $2 of headroom for overages. At $0.001 per excess atom, that covers 2,000 atoms above your tier limit before hitting the ceiling.
+
+**Solo ($9 subscription, $15 ceiling):** You have $6 of headroom — enough for 6,000 excess atoms before hitting the ceiling.
+
+**Professional ($29 subscription, $50 ceiling):** $21 of headroom covers 21,000 excess atoms.
+
+If you consistently approach your ceiling, consider upgrading to a tier with both higher atom limits (reducing overages) and a higher ceiling.

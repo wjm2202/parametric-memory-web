@@ -238,7 +238,55 @@ describe("dead code — legacy config files must be removed", () => {
   });
 });
 
-// ── 5. FAQ answers reference correct plan names ───────────────────────────────
+// ── 5. Cross-project naming: compute product names must match website labels ──
+
+describe("cross-project — compute Stripe product names align with website", () => {
+  /**
+   * The compute project's substrate-tier.ts defines `name` fields that become
+   * Stripe product display names (visible on invoices, billing portal, emails).
+   * These MUST use the same display names as the website tier registry.
+   *
+   * Expected format: "Parametric Memory — {displayName}"
+   *
+   * If this test fails, update the `name` field in:
+   *   mmpm-compute/parametric-memory-compute/src/types/substrate-tier.ts
+   * Then re-run: STRIPE_SECRET_KEY=sk_test_xxx npx tsx scripts/setup-stripe-products.ts
+   */
+
+  // Map of compute tier ID → expected Stripe product display name
+  const EXPECTED_STRIPE_NAMES: Record<string, string> = {
+    free: "Parametric Memory — Free",
+    starter: "Parametric Memory — Starter",
+    indie: "Parametric Memory — Solo", // internal ID "indie", display "Solo"
+    pro: "Parametric Memory — Professional", // internal ID "pro", display "Professional"
+    team: "Parametric Memory — Team",
+  };
+
+  it("all tiers have a defined expected Stripe product name", () => {
+    for (const id of TIER_ORDER) {
+      expect(EXPECTED_STRIPE_NAMES[id]).toBeDefined();
+    }
+  });
+
+  it("expected Stripe names use the website display name, not the internal ID", () => {
+    // These two tiers have internal IDs that differ from their display names.
+    // This test ensures we never regress to using the internal ID in Stripe.
+    expect(EXPECTED_STRIPE_NAMES["indie"]).toContain("Solo");
+    expect(EXPECTED_STRIPE_NAMES["indie"]).not.toContain("Indie");
+    expect(EXPECTED_STRIPE_NAMES["pro"]).toContain("Professional");
+    expect(EXPECTED_STRIPE_NAMES["pro"]).not.toMatch(/— Pro$/);
+  });
+
+  it("expected Stripe product names match the 'Parametric Memory — {label}' pattern", () => {
+    for (const id of TIER_ORDER) {
+      const label = TIER_LABELS[id];
+      const expected = `Parametric Memory — ${label}`;
+      expect(EXPECTED_STRIPE_NAMES[id]).toBe(expected);
+    }
+  });
+});
+
+// ── 6. FAQ answers reference correct plan names ───────────────────────────────
 
 describe("pricing/PricingClient.tsx — FAQ uses canonical plan names", () => {
   it("references 'Starter' plan (canonical $3/mo tier)", () => {
