@@ -54,7 +54,7 @@ export async function POST(
 
   const { response } = await computeProxy(`api/${subPath}`, {
     method: "POST",
-    body: JSON.stringify(body),
+    body,
     headers: authHeaders(sessionToken),
     label: `compute/${subPath}`,
   });

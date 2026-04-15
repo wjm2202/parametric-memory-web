@@ -149,7 +149,7 @@ describe("tiers.ts — helper functions", () => {
   });
 
   it("getTierLabel returns display name for canonical IDs", () => {
-    expect(getTierLabel("free")).toBe("Free");
+    expect(getTierLabel("free")).toBe("Basic");
     expect(getTierLabel("starter")).toBe("Starter");
     expect(getTierLabel("indie")).toBe("Solo");
     expect(getTierLabel("pro")).toBe("Professional");
@@ -255,7 +255,7 @@ describe("cross-project — compute Stripe product names align with website", ()
 
   // Map of compute tier ID → expected Stripe product display name
   const EXPECTED_STRIPE_NAMES: Record<string, string> = {
-    free: "Parametric Memory — Free",
+    free: "Parametric Memory — Basic",
     starter: "Parametric Memory — Starter",
     indie: "Parametric Memory — Solo", // internal ID "indie", display "Solo"
     pro: "Parametric Memory — Professional", // internal ID "pro", display "Professional"

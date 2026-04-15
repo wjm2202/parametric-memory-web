@@ -60,7 +60,7 @@ export async function POST(
 
   const result = await computeProxy(`api/auth/${subPath}`, {
     method: "POST",
-    body: JSON.stringify(body),
+    body,
     headers: authHeaders(sessionToken),
     label: `auth/${subPath}`,
     forwardHeaders: ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
@@ -103,7 +103,7 @@ export async function DELETE(
 
   const { response } = await computeProxy(`api/auth/${subPath}`, {
     method: "DELETE",
-    body: JSON.stringify(body),
+    body,
     headers: authHeaders(sessionToken),
     label: `auth/${subPath}`,
   });
