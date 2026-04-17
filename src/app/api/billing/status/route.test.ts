@@ -1,4 +1,5 @@
 import { describe, it, expect, vi, beforeEach } from "vitest";
+import type { NextRequest } from "next/server";
 
 // ── Mocks ──────────────────────────────────────────────────────────────────
 vi.mock("next/headers", () => ({
@@ -17,6 +18,18 @@ function makeCookieStore(token?: string) {
   return {
     get: (name: string) => (name === "mmpm_session" && token ? { value: token } : undefined),
   };
+}
+
+/**
+ * Minimal NextRequest stand-in. The route only reads
+ * `request.nextUrl.searchParams.get("slug")`, so we only need that shape.
+ * Pass a slug string to simulate `/api/billing/status?slug=<slug>`; omit for
+ * the unscoped call.
+ */
+function makeReq(slug?: string): NextRequest {
+  const params = new URLSearchParams();
+  if (slug) params.set("slug", slug);
+  return { nextUrl: { searchParams: params } } as unknown as NextRequest;
 }
 
 beforeEach(() => {
@@ -40,7 +53,7 @@ describe("GET /api/billing/status", () => {
   it("returns 401 when no session cookie is present — never calls compute", async () => {
     mockCookies.mockResolvedValue(makeCookieStore());
 
-    const res = await GET();
+    const res = await GET(makeReq());
     const body = await res.json();
 
     expect(res.status).toBe(401);
@@ -72,7 +85,7 @@ describe("GET /api/billing/status", () => {
       text: () => Promise.resolve(JSON.stringify(snapshot)),
     });
 
-    const res = await GET();
+    const res = await GET(makeReq());
     const body = await res.json();
 
     expect(res.status).toBe(200);
@@ -102,7 +115,7 @@ describe("GET /api/billing/status", () => {
       text: () => Promise.resolve(JSON.stringify({ error: "Account not found" })),
     });
 
-    const res = await GET();
+    const res = await GET(makeReq());
     const body = await res.json();
 
     expect(res.status).toBe(404);
@@ -119,7 +132,7 @@ describe("GET /api/billing/status", () => {
       text: () => Promise.resolve(JSON.stringify({ error: "Authentication required" })),
     });
 
-    const res = await GET();
+    const res = await GET(makeReq());
     const body = await res.json();
 
     expect(res.status).toBe(401);
@@ -127,14 +140,27 @@ describe("GET /api/billing/status", () => {
   });
 
   it("returns 502 when compute is unreachable", async () => {
+    // compute-proxy.ts logs a diagnostic console.error on network failure —
+    // that's intended ops signal in prod. In tests the log leaks into vitest
+    // output and clutters `npm run preflight` logs, so silence it here while
+    // still verifying the alarm fired.
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
 
-    const res = await GET();
+    const res = await GET(makeReq());
     const body = await res.json();
 
     expect(res.status).toBe(502);
     expect(body.error).toBe("upstream_error");
+    // Prove compute-proxy raised its network-error alarm (swallowed-silently
+    // would be a worse bug than log noise).
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[compute-proxy]"),
+      expect.any(Error),
+    );
+    errSpy.mockRestore();
   });
 
   it("forwards 429 rate-limit response from compute", async () => {
@@ -144,7 +170,7 @@ describe("GET /api/billing/status", () => {
       text: () => Promise.resolve(JSON.stringify({ error: "Too Many Requests" })),
     });
 
-    const res = await GET();
+    const res = await GET(makeReq());
 
     expect(res.status).toBe(429);
   });

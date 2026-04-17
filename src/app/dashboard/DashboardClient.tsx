@@ -135,8 +135,8 @@ function BillingWidget({
               <span>⚠</span> Payment issue — we&apos;ll retry
             </p>
             <p className="mt-1 text-sm text-white/50">
-              Your last payment didn&apos;t go through. Stripe will automatically retry. Your account
-              remains fully active.
+              Your last payment didn&apos;t go through. Stripe will automatically retry. Your
+              account remains fully active.
             </p>
           </div>
           <button

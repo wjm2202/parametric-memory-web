@@ -321,6 +321,12 @@ describe("substrates proxy — substrate checkout", () => {
 
 describe("substrates proxy — error handling", () => {
   it("wraps network errors as 502 JSON", async () => {
+    // compute-proxy.ts logs a diagnostic console.error on network failure —
+    // that's intended ops signal in prod. In tests the log leaks into vitest
+    // output and clutters `npm run preflight` logs, so silence it here while
+    // still verifying the alarm fired.
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     fetchSpy.mockRejectedValueOnce(new Error("ECONNREFUSED"));
 
     const result = await computeProxy("api/v1/substrates/my-brain", {
@@ -331,6 +337,13 @@ describe("substrates proxy — error handling", () => {
     expect(result.upstreamStatus).toBeNull();
     const body = await result.response.json();
     expect(body.error).toBe("upstream_error");
+    // Prove compute-proxy raised its network-error alarm (swallowed-silently
+    // would be a worse bug than log noise).
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[compute-proxy]"),
+      expect.any(Error),
+    );
+    errSpy.mockRestore();
   });
 
   it("wraps HTML error pages (nginx 502) as 502 JSON", async () => {

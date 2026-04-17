@@ -15,6 +15,11 @@ const fetchSpy = vi.fn();
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchSpy);
+  // compute-proxy.ts intentionally emits console.error on network/parse
+  // failures — that's the prod ops signal. Silence it in tests so the log
+  // noise doesn't clutter `npm run preflight` output. afterEach's
+  // restoreAllMocks brings console.error back between tests.
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {

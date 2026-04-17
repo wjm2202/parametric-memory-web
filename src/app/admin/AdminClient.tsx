@@ -1,11 +1,22 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { getTierLabel } from "@/config/tiers";
 import { RotationStepper, type RotationStatus } from "@/components/ui/RotationStepper";
 import { UpdateInstructions } from "@/components/ui/UpdateInstructions";
+import { useTierChangePoll } from "@/hooks/useTierChangePoll";
+import { TierChangeProgressBanner } from "./TierChangeProgressBanner";
+import { ChangePlanButton } from "./ChangePlanButton";
+import type { CurrentTierLimits } from "./ChangePlanSheet";
+import {
+  TOAST_PENDING_TITLE,
+  TOAST_PENDING_BODY,
+  TOAST_CANCELLED_TITLE,
+  TOAST_CANCELLED_BODY,
+} from "./tier-change-copy";
 
 interface AccountInfo {
   id: string;
@@ -141,6 +152,7 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
 
 export default function AdminClient({ account, slug, initialSubstrate }: AdminClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loggingOut, setLoggingOut] = useState(false);
   const [substrate, setSubstrate] = useState<SubstrateInfo | null>(initialSubstrate);
   const [billingStatus, setBillingStatus] = useState<AdminBillingStatus | null>(null);
@@ -152,6 +164,33 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   const [deprovisionModalOpen, setDeprovisionModalOpen] = useState(false);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
+
+  // One poll instance, shared between the progress banner and the change-plan
+  // button, so only a single 3 s interval runs regardless of which consumers
+  // observe it.
+  const tierChangeResult = useTierChangePoll(slug);
+
+  // Translate the substrate's raw caps into the shape ChangePlanSheet wants.
+  // Note the casing flip: SubstrateInfo uses `maxStorageMB`, the sheet uses
+  // `maxStorageMb` (a tiny naming inconsistency we absorb at the boundary
+  // rather than touching every caller).
+  const currentLimits: CurrentTierLimits | null = useMemo(() => {
+    if (!substrate) return null;
+    return {
+      maxAtoms: substrate.maxAtoms,
+      maxBootstrapsMonth: substrate.maxBootstrapsMonth,
+      maxStorageMb: substrate.maxStorageMB,
+    };
+  }, [substrate]);
+
+  // Next billing date is driven off billingStatus.renewalDate when it's set.
+  // The dialog uses it for "…then $29/mo on May 17"; if we don't have it yet,
+  // the dialog renders a generic "on your next billing date" fallback.
+  const nextBillingDate: Date | null = useMemo(() => {
+    if (!billingStatus?.renewalDate) return null;
+    const d = new Date(billingStatus.renewalDate);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }, [billingStatus?.renewalDate]);
 
   // Fetch substrate details
   const fetchSubstrate = useCallback(async () => {
@@ -216,7 +255,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
       }, 2000);
       return () => clearInterval(timer);
     }
-  }, [keyRotating, rotationStatus, slug]);
+  }, [keyRotating, rotationStatus, slug, fetchSubstrate]);
 
   // beforeunload guard
   useEffect(() => {
@@ -237,6 +276,33 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   useEffect(() => {
     fetchBillingStatus();
   }, [fetchBillingStatus]);
+
+  // Handle ?upgrade=pending | ?upgrade=cancelled, the two query params Stripe
+  // Checkout bounces the customer back with. We fire one toast then strip the
+  // param from the URL via history.replaceState so a reload doesn't re-fire it.
+  // Using replaceState (not router.replace) is intentional — router.replace
+  // would force Next to re-run loaders; we just want to clean the URL.
+  useEffect(() => {
+    const upgradeParam = searchParams?.get("upgrade");
+    if (!upgradeParam) return;
+
+    if (upgradeParam === "pending") {
+      toast.info(TOAST_PENDING_TITLE, { description: TOAST_PENDING_BODY });
+    } else if (upgradeParam === "cancelled") {
+      toast(TOAST_CANCELLED_TITLE, { description: TOAST_CANCELLED_BODY });
+    } else {
+      // Unknown value — ignore. Still strip so it doesn't linger.
+    }
+
+    // Strip the param from the URL without touching history depth.
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("upgrade");
+      window.history.replaceState({}, "", url.toString());
+    }
+    // Only react to the string value of ?upgrade — searchParams identity can
+    // change without the value changing, and we don't want to refire.
+  }, [searchParams]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -369,112 +435,54 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
         {/* Status section */}
         {substrate && (
           <div className="mb-8 space-y-5">
-            {/* Billing widget */}
-            {billingStatus && (
-              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-                <div className="mb-4 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs tracking-wider text-white/40 uppercase">Billing</p>
-                    <p className="mt-1 text-lg font-semibold text-white">
-                      {getTierLabel(billingStatus.tier)}
-                    </p>
-                  </div>
-                  <span
-                    className={`rounded-full border px-3 py-1 text-xs font-medium ${
-                      billingStatus.status === "active"
-                        ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
-                        : billingStatus.status === "trialing"
-                          ? "border-indigo-500/30 bg-indigo-500/20 text-indigo-400"
-                          : billingStatus.status === "past_due"
-                            ? "border-amber-500/30 bg-amber-500/20 text-amber-400"
-                            : "border-red-500/30 bg-red-500/20 text-red-400"
-                    }`}
-                  >
-                    {billingStatus.status}
-                  </span>
-                </div>
-                {billingStatus.renewalDate && (
-                  <p className="text-sm text-white/60">
-                    Renewal: {new Date(billingStatus.renewalDate).toLocaleDateString()}
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Tier + Status */}
+            {/* Tier-change progress banner — self-hides when state === "none".
+                Receives the single shared poll result + the current tier's
+                display name (used only in failure-mode copy). */}
+            <TierChangeProgressBanner
+              result={tierChangeResult}
+              currentTierName={getTierLabel(billingStatus?.tier ?? substrate.tier)}
+            />
+            {/* Billing card — tier you're paying for + how the substrate is doing. */}
+            {/* Merged from what used to be a separate Billing card and a separate Status card. */}
+            {/* The thing you're paying for and the thing you're running are one product; one card. */}
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-              <div className="flex items-center justify-between">
+              {/* Row 1 — header: BILLING label + tier name on the left, subscription badge + actions on the right */}
+              <div className="flex items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs tracking-wider text-white/40 uppercase">Status</p>
-                  <div className="mt-2 flex items-center gap-3">
-                    <StatusBadge status={substrate.status} />
-                    {substrate.cancelAt && (
-                      <span className="text-sm text-amber-400">
-                        Cancel scheduled for {new Date(substrate.cancelAt).toLocaleDateString()}
-                      </span>
-                    )}
-                  </div>
-
-                  {/* Health badges — only rendered when health data is present */}
-                  {substrate.health && (
-                    <div className="mt-3 flex flex-wrap gap-2">
-                      {/* SSL */}
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                          substrate.health.https.configured
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                            : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
-                        }`}
-                      >
-                        <span>{substrate.health.https.configured ? "●" : "○"}</span>
-                        SSL
-                      </span>
-
-                      {/* MCP reachable */}
-                      <span
-                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                          substrate.health.substrate.reachable === true
-                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                            : substrate.health.substrate.reachable === false
-                              ? "border-red-500/30 bg-red-500/10 text-red-400"
-                              : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
-                        }`}
-                      >
-                        <span>{substrate.health.substrate.reachable === true ? "●" : "○"}</span>
-                        MCP
-                      </span>
-
-                      {/* SSH */}
-                      {substrate.health.droplet && (
-                        <span
-                          className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                            substrate.health.droplet.sshReady
-                              ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                              : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
-                          }`}
-                        >
-                          <span>{substrate.health.droplet.sshReady ? "●" : "○"}</span>
-                          SSH
-                        </span>
-                      )}
-
-                      {/* Droplet IP — shown as a dim pill when available */}
-                      {substrate.health.droplet?.ip && (
-                        <span className="inline-flex items-center rounded-full border border-zinc-700/50 bg-zinc-800/30 px-2.5 py-0.5 font-mono text-xs text-zinc-500">
-                          {substrate.health.droplet.ip}
-                        </span>
-                      )}
-                    </div>
-                  )}
+                  <p className="text-xs tracking-wider text-white/40 uppercase">Billing</p>
+                  <p className="mt-1 text-lg font-semibold text-white">
+                    {getTierLabel(billingStatus?.tier ?? substrate.tier)}
+                  </p>
                 </div>
-                <div className="flex gap-2">
-                  {substrate.status !== "running" && substrate.status !== "destroyed" && (
-                    <button
-                      onClick={() => router.push("/pricing")}
-                      className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white transition-colors hover:bg-indigo-500"
+                <div className="flex items-center gap-2">
+                  {billingStatus && (
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                        billingStatus.status === "active"
+                          ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
+                          : billingStatus.status === "trialing"
+                            ? "border-indigo-500/30 bg-indigo-500/20 text-indigo-400"
+                            : billingStatus.status === "past_due"
+                              ? "border-amber-500/30 bg-amber-500/20 text-amber-400"
+                              : "border-red-500/30 bg-red-500/20 text-red-400"
+                      }`}
                     >
-                      Upgrade
-                    </button>
+                      {billingStatus.status}
+                    </span>
+                  )}
+                  {/* Change plan — replaces the old "Upgrade" button that
+                      pushed to /pricing. Opens the tier-comparison sheet inline
+                      so the substrate slug / current tier / current caps stay
+                      in context. Visible whenever the substrate is running —
+                      changing plan is only meaningful on a live substrate. */}
+                  {substrate.status === "running" && (
+                    <ChangePlanButton
+                      substrateSlug={substrate.slug ?? slug}
+                      currentTier={billingStatus?.tier ?? substrate.tier}
+                      currentLimits={currentLimits}
+                      nextBillingDate={nextBillingDate}
+                      pollResult={tierChangeResult}
+                    />
                   )}
                   {substrate.cancelAt && (
                     <button
@@ -486,6 +494,75 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                   )}
                 </div>
               </div>
+
+              {/* Row 2 — runtime status pill + cancel-scheduled note, dividing into the live section below */}
+              <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/5 pt-4">
+                <StatusBadge status={substrate.status} />
+                {substrate.cancelAt && (
+                  <span className="text-sm text-amber-400">
+                    Cancel scheduled for {new Date(substrate.cancelAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
+
+              {/* Row 3 — health pills (SSL / MCP / SSH / IP), only when live health data is present */}
+              {substrate.health && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {/* SSL */}
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                      substrate.health.https.configured
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
+                    }`}
+                  >
+                    <span>{substrate.health.https.configured ? "●" : "○"}</span>
+                    SSL
+                  </span>
+
+                  {/* MCP reachable */}
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                      substrate.health.substrate.reachable === true
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : substrate.health.substrate.reachable === false
+                          ? "border-red-500/30 bg-red-500/10 text-red-400"
+                          : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
+                    }`}
+                  >
+                    <span>{substrate.health.substrate.reachable === true ? "●" : "○"}</span>
+                    MCP
+                  </span>
+
+                  {/* SSH */}
+                  {substrate.health.droplet && (
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                        substrate.health.droplet.sshReady
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
+                      }`}
+                    >
+                      <span>{substrate.health.droplet.sshReady ? "●" : "○"}</span>
+                      SSH
+                    </span>
+                  )}
+
+                  {/* Droplet IP — shown as a dim pill when available */}
+                  {substrate.health.droplet?.ip && (
+                    <span className="inline-flex items-center rounded-full border border-zinc-700/50 bg-zinc-800/30 px-2.5 py-0.5 font-mono text-xs text-zinc-500">
+                      {substrate.health.droplet.ip}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Row 4 — renewal date footer, only when billing reports one */}
+              {billingStatus?.renewalDate && (
+                <p className="mt-4 text-sm text-white/60">
+                  Renewal: {new Date(billingStatus.renewalDate).toLocaleDateString()}
+                </p>
+              )}
             </div>
 
             {/* Provision failed callout */}

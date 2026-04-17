@@ -182,7 +182,8 @@ describe("DashboardClient — cancel subscription flow", () => {
   it("modal warning text is specific to provision_failed status", () => {
     render(<DashboardClient account={baseAccount} substrates={[failedSub]} />);
     fireEvent.click(screen.getByRole("button", { name: /cancel subscription/i }));
-    expect(screen.getByText(/never started/i)).toBeInTheDocument();
+    // The copy reads "no containers were ever started" — match on the core phrase.
+    expect(screen.getByText(/ever started/i)).toBeInTheDocument();
   });
 
   it("closes modal when 'Keep it' is clicked", () => {
