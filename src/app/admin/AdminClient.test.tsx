@@ -27,9 +27,7 @@ import type { CurrentTierLimits } from "./ChangePlanSheet";
 const h = vi.hoisted(() => {
   return {
     mockSearchParamsGet: vi.fn<(key: string) => string | null>(() => null),
-    mockUseTierChangePoll: vi.fn<
-      (slug: string | null | undefined) => TierChangePollResult
-    >(),
+    mockUseTierChangePoll: vi.fn<(slug: string | null | undefined) => TierChangePollResult>(),
     mockBannerRender: vi.fn(),
     mockButtonRender: vi.fn(),
     // mockToast is callable (neutral toast) AND carries .info/.success/.error
@@ -530,8 +528,7 @@ describe("AdminClient — tier-change wiring", () => {
       if (url.includes("/api/billing/status")) {
         return Promise.resolve({
           ok: true,
-          json: () =>
-            Promise.resolve({ tier: "pro", status: "active", renewalDate: "2026-05-17" }),
+          json: () => Promise.resolve({ tier: "pro", status: "active", renewalDate: "2026-05-17" }),
         });
       }
       return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
@@ -550,9 +547,9 @@ describe("AdminClient — tier-change wiring", () => {
       const lastBtnProps = h.mockButtonRender.mock.calls.at(-1)![0];
       expect(lastBtnProps.currentTier).toBe("pro");
       expect(lastBtnProps.nextBillingDate).toBeInstanceOf(Date);
-      expect(
-        (lastBtnProps.nextBillingDate as Date).toISOString().startsWith("2026-05-17"),
-      ).toBe(true);
+      expect((lastBtnProps.nextBillingDate as Date).toISOString().startsWith("2026-05-17")).toBe(
+        true,
+      );
     } finally {
       globalThis.fetch = original;
     }
@@ -633,9 +630,7 @@ describe("AdminClient — upgrade query-param toasts", () => {
   });
 
   it("ignores unknown ?upgrade values but still strips the param", () => {
-    h.mockSearchParamsGet.mockImplementation((key) =>
-      key === "upgrade" ? "mystery-value" : null,
-    );
+    h.mockSearchParamsGet.mockImplementation((key) => (key === "upgrade" ? "mystery-value" : null));
     renderAdmin({ status: "running" });
 
     expect(h.mockToast).not.toHaveBeenCalled();
