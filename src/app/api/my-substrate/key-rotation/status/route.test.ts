@@ -94,6 +94,12 @@ describe("GET /api/my-substrate/key-rotation/status", () => {
   });
 
   it("returns 502 when compute is unreachable", async () => {
+    // compute-proxy.ts logs a diagnostic console.error on network failure —
+    // that's intended ops signal in prod. In tests the log leaks into vitest
+    // output and clutters `npm run preflight` logs, so silence it here while
+    // still verifying the alarm fired.
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
 
@@ -102,5 +108,12 @@ describe("GET /api/my-substrate/key-rotation/status", () => {
 
     expect(res.status).toBe(502);
     expect(body.error).toBe("upstream_error");
+    // Prove compute-proxy raised its network-error alarm (swallowed-silently
+    // would be a worse bug than log noise).
+    expect(errSpy).toHaveBeenCalledWith(
+      expect.stringContaining("[compute-proxy]"),
+      expect.any(Error),
+    );
+    errSpy.mockRestore();
   });
 });

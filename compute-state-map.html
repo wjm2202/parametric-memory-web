@@ -1,0 +1,441 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>MMPM Compute — State Machine Map</title>
+<style>
+  :root {
+    --ink:#111;
+    --muted:#666;
+    --line:#c9c9c9;
+    --web:#1f6feb;       /* blue  - human on website */
+    --stripe:#635bff;    /* purple - stripe event */
+    --timer:#8a6d1f;     /* amber - timer/cron */
+    --queue:#444;
+    --state-ok:#0e7c3a;
+    --state-warn:#b36b00;
+    --state-bad:#b3261e;
+    --paper:#fbfbfa;
+    --card:#fff;
+  }
+  * { box-sizing:border-box }
+  html,body { margin:0; background:var(--paper); color:var(--ink);
+    font:14px/1.45 -apple-system,"Inter","Helvetica Neue",Arial,sans-serif; }
+  .wrap { max-width:1320px; margin:0 auto; padding:28px 32px 64px; }
+  h1 { font-size:22px; margin:0 0 4px; letter-spacing:-0.01em }
+  h1 small { font-weight:400; color:var(--muted); font-size:13px; margin-left:8px }
+  .sub { color:var(--muted); margin:0 0 22px; font-size:13px }
+  .verified { color:#0e7c3a; font-size:12px; font-weight:600; margin-left:8px }
+
+  /* Legend */
+  .legend { display:flex; flex-wrap:wrap; gap:14px; margin:0 0 22px;
+            padding:10px 14px; background:var(--card); border:1px solid var(--line); border-radius:8px; }
+  .legend .item { display:flex; align-items:center; gap:6px; font-size:12px; color:#333 }
+  .dot { width:10px; height:10px; border-radius:50% }
+  .dot.web    { background:var(--web) }
+  .dot.stripe { background:var(--stripe) }
+  .dot.timer  { background:var(--timer) }
+  .dot.queue  { background:var(--queue) }
+
+  /* Story rows */
+  .row {
+    display:grid;
+    grid-template-columns: 230px 40px 240px 40px 1fr;
+    align-items:center;
+    gap:6px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+    padding:14px 16px;
+    margin:10px 0;
+  }
+  .row .title {
+    grid-column: 1 / -1;
+    font-size:12px;
+    text-transform:uppercase;
+    letter-spacing:0.08em;
+    color:var(--muted);
+    margin:0 0 8px;
+    font-weight:600;
+  }
+  .trigger, .api, .worker { display:flex; flex-direction:column; gap:4px; }
+  .trigger .who { font-size:11px; text-transform:uppercase; letter-spacing:.05em; font-weight:600 }
+  .trigger.web .who    { color:var(--web) }
+  .trigger.stripe .who { color:var(--stripe) }
+  .trigger.timer .who  { color:var(--timer) }
+  .trigger .what { font-weight:600 }
+  .trigger .detail { font-size:12px; color:var(--muted) }
+
+  .api .endpoint {
+    font-family:"SF Mono","Menlo",Consolas,monospace;
+    font-size:12px;
+    background:#f1f1ef;
+    padding:3px 6px;
+    border-radius:4px;
+    display:inline-block;
+    color:#222;
+  }
+  .api .queue {
+    font-size:11px;
+    color:var(--queue);
+    margin-top:2px;
+  }
+
+  .arrow {
+    color:#aaa;
+    text-align:center;
+    font-size:20px;
+    user-select:none;
+  }
+
+  .worker .name {
+    font-weight:700;
+    font-size:13px;
+  }
+  .worker .flow {
+    display:flex;
+    flex-wrap:wrap;
+    gap:4px;
+    margin-top:4px;
+    align-items:center;
+  }
+  .state {
+    font-size:11px;
+    padding:3px 8px;
+    border-radius:999px;
+    background:#eef2f7;
+    border:1px solid #d7dde6;
+    color:#213044;
+    white-space:nowrap;
+  }
+  .state.ok   { background:#e8f5ee; border-color:#b8dcc4; color:var(--state-ok) }
+  .state.warn { background:#fdf4e3; border-color:#e6cf9a; color:var(--state-warn) }
+  .state.bad  { background:#fbe9e7; border-color:#efbdb8; color:var(--state-bad) }
+  .sep { color:#bbb; font-size:12px }
+
+  /* Services card */
+  .services {
+    margin-top:28px;
+    padding:16px 18px;
+    background:var(--card);
+    border:1px solid var(--line);
+    border-radius:10px;
+  }
+  .services h2 { font-size:14px; margin:0 0 10px; letter-spacing:.04em; text-transform:uppercase; color:#333 }
+  .svc-grid {
+    display:grid;
+    grid-template-columns:repeat(4, 1fr);
+    gap:10px;
+  }
+  .svc {
+    border:1px solid var(--line);
+    border-radius:8px;
+    padding:10px 12px;
+    background:#fafafa;
+  }
+  .svc .n { font-weight:700; font-size:13px }
+  .svc .d { font-size:11px; color:var(--muted); margin-top:3px; line-height:1.35 }
+
+  .footnote { margin-top:18px; font-size:11px; color:var(--muted) }
+  .footnote code { background:#f1f1ef; padding:1px 5px; border-radius:3px; font-size:11px }
+
+  @media (max-width:1100px) {
+    .row { grid-template-columns: 1fr; }
+    .arrow { transform:rotate(90deg); margin:4px 0 }
+    .svc-grid { grid-template-columns:repeat(2,1fr) }
+  }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <h1>MMPM Compute — State Machine Map
+    <small>how website clicks &amp; Stripe events drive the backend</small>
+    <span class="verified">✓ verified against code 2026-04-14</span>
+  </h1>
+  <p class="sub">Read each row left → right. A <b>trigger</b> (blue = you on the website, purple = Stripe, amber = timer)
+  hits an <b>API endpoint or queue</b>, which wakes a <b>worker</b> that walks its state machine.
+  Key insight: <b>website clicks never enqueue provisioning directly</b> — they only redirect to Stripe. Stripe is what triggers substrate provisioning.</p>
+
+  <div class="legend">
+    <div class="item"><span class="dot web"></span> Human action on website</div>
+    <div class="item"><span class="dot stripe"></span> Stripe webhook event</div>
+    <div class="item"><span class="dot timer"></span> Timer / cron</div>
+    <div class="item"><span class="dot queue"></span> DB queue row (outbox)</div>
+    <div class="item"><span class="state ok">ok state</span></div>
+    <div class="item"><span class="state warn">warning / grace</span></div>
+    <div class="item"><span class="state bad">terminal</span></div>
+  </div>
+
+  <!-- 1. SIGNUP -->
+  <div class="row">
+    <div class="title">1 · Sign in (magic link)</div>
+    <div class="trigger web">
+      <div class="who">You · Website</div>
+      <div class="what">Enter email → Send link</div>
+      <div class="detail">Click link in inbox</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="api">
+      <span class="endpoint">POST /api/auth/request-link</span>
+      <span class="endpoint">POST /api/auth/verify</span>
+      <div class="queue">inserts row into <b>accounts</b></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="worker">
+      <div class="name">account service</div>
+      <div class="flow">
+        <span class="state">new</span><span class="sep">→</span>
+        <span class="state ok">active (session cookie issued)</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 2. CHECKOUT -->
+  <div class="row">
+    <div class="title">2 · Pick a tier &amp; pay (this is the only place the user initiates billing)</div>
+    <div class="trigger web">
+      <div class="who">You · Website</div>
+      <div class="what">Click “Buy Free / Starter / Indie / Pro / Team”</div>
+      <div class="detail">every tier is a Stripe subscription</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="api">
+      <span class="endpoint">POST /api/checkout</span>
+      <div class="queue">creates Stripe Checkout session<br/><b>mode: 'subscription'</b> (verified)</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="worker">
+      <div class="name">Stripe (hosted)</div>
+      <div class="flow">
+        <span class="state">checkout.session.created</span><span class="sep">→</span>
+        <span class="state ok">customer.subscription.created</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 3. WEBHOOK: SUBSCRIPTION CREATED -->
+  <div class="row">
+    <div class="title">3 · Stripe tells compute a subscription started — this is what actually enqueues provisioning</div>
+    <div class="trigger stripe">
+      <div class="who">Stripe · Webhook</div>
+      <div class="what">customer.subscription.created</div>
+      <div class="detail">signed, raw-body verified<br/>src/api/webhooks/substrate-stripe.ts</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="api">
+      <span class="endpoint">POST /api/v1/webhooks/substrate-stripe</span>
+      <div class="queue">UPSERT <b>substrate_subscriptions</b></div>
+      <div class="queue">INSERT <b>substrate_provision_queue</b> (pending, with stripe_subscription_id)</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="worker">
+      <div class="name">substrate-stripe webhook handler</div>
+      <div class="flow">
+        <span class="state">subscription=active</span><span class="sep">·</span>
+        <span class="state">substrate=provisioning</span>
+        <span class="sep">·</span>
+        <span class="state ok">queue row enqueued</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 4. PROVISION (WORKER) -->
+  <div class="row">
+    <div class="title">4 · substrate-provisioner builds the containers</div>
+    <div class="trigger timer">
+      <div class="who">Worker · poll loop</div>
+      <div class="what">FOR UPDATE SKIP LOCKED on queue</div>
+      <div class="detail">only process that SSHes to hosts</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="api">
+      <div class="queue">reads <b>substrate_provision_queue</b></div>
+      <div class="queue">writes <b>substrates</b> + Traefik config via SSH</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="worker">
+      <div class="name">substrate-provisioner (PM2 #6)</div>
+      <div class="flow">
+        <span class="state">pending</span><span class="sep">→</span>
+        <span class="state">processing</span><span class="sep">→</span>
+        <span class="state ok">completed</span>
+        <span class="sep">·</span>
+        <span class="state">substrates: provisioning</span><span class="sep">→</span>
+        <span class="state ok">running</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 5. TIER CHANGE -->
+  <div class="row">
+    <div class="title">5 · Upgrade or downgrade tier</div>
+    <div class="trigger stripe">
+      <div class="who">Stripe · Webhook</div>
+      <div class="what">customer.subscription.updated</div>
+      <div class="detail">user changes plan in Stripe portal</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="api">
+      <span class="endpoint">substrate-stripe handler</span>
+      <div class="queue">INSERT <b>substrate_tier_changes</b> (pending)</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="worker">
+      <div class="name">tier-change-worker (PM2 #10)</div>
+      <div class="flow">
+        <span class="state">pending</span><span class="sep">→</span>
+        <span class="state">processing</span><span class="sep">→</span>
+        <span class="state ok">completed</span>
+        <span class="sep">·</span>
+        <span class="state">shared↔shared limits / shared↔dedicated host move</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 6. CANCEL → GRACE PERIOD -->
+  <div class="row">
+    <div class="title">6 · User cancels subscription → 30-day grace period</div>
+    <div class="trigger stripe">
+      <div class="who">Stripe · Webhook</div>
+      <div class="what">customer.subscription.deleted</div>
+      <div class="detail">or invoice.payment_failed escalation</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="api">
+      <span class="endpoint">substrate-stripe handler</span>
+      <div class="queue">UPDATE <b>substrates</b> status, set grace_period_ends_at = now()+30d</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="worker">
+      <div class="name">substrates status</div>
+      <div class="flow">
+        <span class="state ok">running</span><span class="sep">→</span>
+        <span class="state warn">read_only (grace, data kept)</span><span class="sep">→</span>
+        <span class="state warn">suspended</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 7. GRACE PERIOD EXPIRES -->
+  <div class="row">
+    <div class="title">7 · Grace period expires → deprovision</div>
+    <div class="trigger timer">
+      <div class="who">Timer · worker poll</div>
+      <div class="what">grace-period-worker</div>
+      <div class="detail">WHERE status=read_only AND grace_period_ends_at &lt; now()</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="api">
+      <div class="queue">UPDATE <b>substrates</b> status=deprovisioned</div>
+      <div class="queue">enqueue <b>destroy_queue</b></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="worker">
+      <div class="name">grace-period-worker (PM2 #9)</div>
+      <div class="flow">
+        <span class="state warn">read_only</span><span class="sep">→</span>
+        <span class="state bad">deprovisioned</span>
+        <span class="sep">·</span>
+        <span class="state">hands off to substrate-destroyer</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 8. DESTROY -->
+  <div class="row">
+    <div class="title">8 · Tear down containers (soft keep 30d, or hard GDPR delete)</div>
+    <div class="trigger timer">
+      <div class="who">Worker · destroy_queue</div>
+      <div class="what">substrate-destroyer</div>
+      <div class="detail">soft=data retained, hard=full wipe</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="api">
+      <div class="queue">docker compose down on host</div>
+      <div class="queue">UPDATE <b>destroy_queue</b></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="worker">
+      <div class="name">substrate-destroyer (PM2 #7)</div>
+      <div class="flow">
+        <span class="state">pending</span><span class="sep">→</span>
+        <span class="state">processing</span><span class="sep">→</span>
+        <span class="state ok">completed</span>
+        <span class="sep">·</span>
+        <span class="state bad">substrates: deprovisioned</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 9. METERING -->
+  <div class="row">
+    <div class="title">9 · Daily usage metering &amp; overage billing</div>
+    <div class="trigger timer">
+      <div class="who">Timer · 02:00 daily</div>
+      <div class="what">substrate-metering</div>
+      <div class="detail">reads atom count + bootstrap usage per substrate</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="api">
+      <div class="queue">reports overages to Stripe meter</div>
+      <div class="queue">writes <b>billing_events</b></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="worker">
+      <div class="name">substrate-metering (PM2 #8)</div>
+      <div class="flow">
+        <span class="state ok">within tier limits</span><span class="sep">→</span>
+        <span class="state warn">overage detected</span><span class="sep">→</span>
+        <span class="state">Stripe mtr_ event posted</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SERVICES REFERENCE -->
+  <div class="services">
+    <h2>PM2 services on the compute box — 14 processes (verified from ecosystem.config.cjs)</h2>
+    <div class="svc-grid">
+      <div class="svc"><div class="n">1 · compute-server</div><div class="d">Express API · port 3100 · auth, checkout, keys, caps, webhooks</div></div>
+      <div class="svc"><div class="n">3 · compute-traefik</div><div class="d">Outbox worker · posts to api.droplet-mcp.nz/register for SSL</div></div>
+      <div class="svc"><div class="n">4 · compute-destroyer</div><div class="d">Legacy droplet destroy (kept for historical rows)</div></div>
+      <div class="svc"><div class="n">5 · compute-reaper</div><div class="d">Every 5 min · resets stuck queue rows</div></div>
+      <div class="svc"><div class="n">6 · substrate-provisioner</div><div class="d">Polls substrate_provision_queue · only SSH writer to hosts</div></div>
+      <div class="svc"><div class="n">7 · substrate-destroyer</div><div class="d">Docker compose down · soft 30d keep vs hard GDPR delete</div></div>
+      <div class="svc"><div class="n">8 · substrate-metering</div><div class="d">Daily 02:00 · atoms + bootstraps → Stripe overage meter</div></div>
+      <div class="svc"><div class="n">9 · grace-period-worker</div><div class="d">read_only + grace expired → deprovisioned</div></div>
+      <div class="svc"><div class="n">10 · tier-change-worker</div><div class="d">Drives substrate_tier_changes · shared↔dedicated moves</div></div>
+      <div class="svc"><div class="n">11 · capacity-worker</div><div class="d">Capacity metrics for the provisioned fleet</div></div>
+      <div class="svc"><div class="n">12 · substrate-telemetry-worker</div><div class="d">Docker stats + DO Monitoring API collection</div></div>
+      <div class="svc"><div class="n">13 · substrate-migration-worker</div><div class="d">11-state cross-host migration lifecycle</div></div>
+      <div class="svc"><div class="n">14 · key-rotation-worker</div><div class="d">Polls key_rotation_jobs · 5min stuck-job timeout</div></div>
+      <div class="svc"><div class="n">15 · ops-inference</div><div class="d">Shadow-mode agent · 6h cadence · narrative digest</div></div>
+    </div>
+    <p class="footnote">
+      Slot <b>2</b> (the legacy droplet provisioner) was removed in migration <code>067_remove-legacy-compute-tiers.sql</code>
+      — comment in ecosystem.config.cjs: “Legacy droplet provisioner — REMOVED in migration 067. Replaced by substrate-provisioner.”
+      Substrate containers are now the <b>only</b> model.
+    </p>
+  </div>
+
+  <p class="footnote">
+    <b>Mental model in one sentence:</b> the website sells subscriptions through Stripe, Stripe’s webhooks insert rows into
+    <code>substrate_provision_queue</code> / <code>substrate_tier_changes</code> / <code>destroy_queue</code>, and workers on
+    the compute box drain those queues and walk the <code>substrates</code> state machine
+    (<code>provisioning → running → read_only → suspended → deprovisioned</code>). Workers are the only things that move state forward.
+  </p>
+
+  <p class="footnote">
+    <b>Verified against code 2026-04-14:</b>
+    checkout mode = <code>subscription</code> (session-route.ts:158,175 · signup/routes.ts:206 · substrate-checkout.ts:171) ·
+    droplet model sunset (migrations 028, 067 · ecosystem.config.cjs slot 2 comment) ·
+    provisioning trigger = Stripe webhook (substrate-stripe.ts:307,322 inserts <code>substrate_provision_queue</code>) ·
+    14 PM2 processes.
+    Also flagged: <code>POST /api/v1/provision</code> in <code>src/api/substrate/routes.ts</code> still writes to the legacy
+    <code>provision_queue</code> and reads from <code>instances</code> — it looks orphaned vs. the live Stripe-triggered path.
+    Worth auditing.
+  </p>
+
+</div>
+</body>
+</html>

@@ -27,6 +27,11 @@ const fetchSpy = vi.fn();
 
 beforeEach(() => {
   vi.stubGlobal("fetch", fetchSpy);
+  // The capacity route calls computeProxy, which emits console.error on
+  // network failures and non-JSON upstreams — intended prod ops signal. In
+  // tests it's just noise. Silence here; afterEach's restoreAllMocks brings
+  // it back between tests.
+  vi.spyOn(console, "error").mockImplementation(() => {});
 });
 
 afterEach(() => {

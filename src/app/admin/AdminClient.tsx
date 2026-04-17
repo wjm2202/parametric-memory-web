@@ -1,50 +1,89 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
 import { getTierLabel } from "@/config/tiers";
+import { RotationStepper, type RotationStatus } from "@/components/ui/RotationStepper";
+import { UpdateInstructions } from "@/components/ui/UpdateInstructions";
+import { useTierChangePoll } from "@/hooks/useTierChangePoll";
+import { TierChangeProgressBanner } from "./TierChangeProgressBanner";
+import { ChangePlanButton } from "./ChangePlanButton";
+import type { CurrentTierLimits } from "./ChangePlanSheet";
+import {
+  TOAST_PENDING_TITLE,
+  TOAST_PENDING_BODY,
+  TOAST_CANCELLED_TITLE,
+  TOAST_CANCELLED_BODY,
+} from "./tier-change-copy";
 
 interface AccountInfo {
   id: string;
   email: string;
-  name?: string | null;
+  name: string | null;
   tier: string | null;
   status: string;
   balanceCents: number;
   createdAt: string;
 }
 
-interface InstanceInfo {
-  id: string;
-  dropletSize: string;
-  region: string;
-  state: "provisioning" | "traefik_pending" | "running" | "paused" | "destroying" | "destroyed";
-  subdomain: string | null;
-  traefikStatus: "pending" | "registered" | "failed" | null;
-  mcpEndpointUrl: string | null;
-  endpointUrl: string | null;
+interface ProvisioningProgress {
+  queueStatus: string;
+  phase: string | null;
+  dropletId: number | null;
+  dropletIp: string | null;
   startedAt: string | null;
-  createdAt: string;
 }
 
-interface InstanceDetail extends InstanceInfo {
-  healthStatus: "healthy" | "unhealthy" | "unknown";
-  masterKey?: string;
-  vizKey?: string;
+interface HealthInfo {
+  droplet?: { status: string; ip: string | null; sshReady: boolean };
+  substrate: { status: string; mcpEndpoint: string | null; reachable: boolean | null };
+  https: { configured: boolean; endpoint: string | null };
 }
 
-// TIER_LABELS and TIER_PRICES are imported from @/config/tiers (canonical registry)
+interface SubstrateInfo {
+  id: string | null;
+  slug: string | null;
+  tier: string;
+  status: string;
+  mcpEndpoint: string | null;
+  hostingModel: string;
+  provisioning: ProvisioningProgress | null;
+  health: HealthInfo | null;
+  maxAtoms: number;
+  maxBootstrapsMonth: number;
+  maxStorageMB: number;
+  atomCount: number;
+  bootstrapCountMonth: number;
+  storageUsedMB: number;
+  provisionedAt: string | null;
+  gracePeriodEndsAt: string | null;
+  cancelAt: string | null;
+  keyUnclaimed: boolean;
+}
 
-function formatBalance(cents: number): string {
-  return `$${(cents / 100).toFixed(2)}`;
+interface AdminBillingStatus {
+  tier: string;
+  status: string;
+  renewalDate: string | null;
+}
+
+interface AdminClientProps {
+  account: AccountInfo;
+  slug: string;
+  initialSubstrate: SubstrateInfo | null;
 }
 
 function StatusBadge({ status }: { status: string }) {
   const colours: Record<string, string> = {
-    active: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
-    suspended: "bg-amber-500/20 text-amber-400 border-amber-500/30",
-    closed: "bg-red-500/20 text-red-400 border-red-500/30",
+    running: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
+    provisioning: "bg-amber-500/20 text-amber-400 border-amber-500/30",
+    read_only: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    suspended: "bg-red-500/20 text-red-400 border-red-500/30",
+    deprovisioned: "bg-slate-500/20 text-slate-400 border-slate-500/30",
+    destroyed: "bg-red-600/20 text-red-500 border-red-600/30",
+    provision_failed: "bg-red-500/20 text-red-400 border-red-500/30",
   };
   return (
     <span
@@ -55,9 +94,215 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
-export default function AdminClient({ account }: { account: AccountInfo }) {
+function UsageBar({
+  label,
+  current,
+  max,
+  unit,
+}: {
+  label: string;
+  current: number | null | undefined;
+  max: number | null | undefined;
+  unit: string;
+}) {
+  const safeCurrentVal = current ?? 0;
+  const safeMaxVal = max ?? 0;
+  const percentage =
+    safeMaxVal === -1 ? 0 : safeMaxVal === 0 ? 0 : (safeCurrentVal / safeMaxVal) * 100;
+  const isOverage = safeMaxVal !== -1 && safeMaxVal > 0 && safeCurrentVal > safeMaxVal;
+
+  return (
+    <div>
+      <div className="mb-2 flex items-center justify-between">
+        <p className="text-xs text-white/50">{label}</p>
+        <p className="text-xs text-white/70">
+          {safeCurrentVal.toLocaleString()} /{" "}
+          {safeMaxVal === -1 ? "∞" : safeMaxVal.toLocaleString()} {unit}
+        </p>
+      </div>
+      <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
+        <div
+          className={`h-full transition-all ${isOverage ? "bg-red-500/60" : "bg-indigo-500/60"}`}
+          style={{ width: `${Math.min(percentage, 100)}%` }}
+        />
+      </div>
+      {isOverage && <p className="mt-1 text-xs text-red-400">Overage detected</p>}
+    </div>
+  );
+}
+
+function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+  const [copied, setCopied] = useState(false);
+
+  async function handleCopy() {
+    await navigator.clipboard.writeText(text);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  }
+
+  return (
+    <button
+      onClick={handleCopy}
+      className="rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-indigo-500"
+    >
+      {copied ? "Copied!" : label}
+    </button>
+  );
+}
+
+export default function AdminClient({ account, slug, initialSubstrate }: AdminClientProps) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [loggingOut, setLoggingOut] = useState(false);
+  const [substrate, setSubstrate] = useState<SubstrateInfo | null>(initialSubstrate);
+  const [billingStatus, setBillingStatus] = useState<AdminBillingStatus | null>(null);
+  const [rotationStatus, setRotationStatus] = useState<RotationStatus>("none");
+  const [keyRotating, setKeyRotating] = useState(false);
+  const [showKeyReveal, setShowKeyReveal] = useState(false);
+  const [revealedKey, setRevealedKey] = useState<string | null>(null);
+  const [cancelModalOpen, setCancelModalOpen] = useState(false);
+  const [deprovisionModalOpen, setDeprovisionModalOpen] = useState(false);
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
+  const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
+
+  // One poll instance, shared between the progress banner and the change-plan
+  // button, so only a single 3 s interval runs regardless of which consumers
+  // observe it.
+  const tierChangeResult = useTierChangePoll(slug);
+
+  // Translate the substrate's raw caps into the shape ChangePlanSheet wants.
+  // Note the casing flip: SubstrateInfo uses `maxStorageMB`, the sheet uses
+  // `maxStorageMb` (a tiny naming inconsistency we absorb at the boundary
+  // rather than touching every caller).
+  const currentLimits: CurrentTierLimits | null = useMemo(() => {
+    if (!substrate) return null;
+    return {
+      maxAtoms: substrate.maxAtoms,
+      maxBootstrapsMonth: substrate.maxBootstrapsMonth,
+      maxStorageMb: substrate.maxStorageMB,
+    };
+  }, [substrate]);
+
+  // Next billing date is driven off billingStatus.renewalDate when it's set.
+  // The dialog uses it for "…then $29/mo on May 17"; if we don't have it yet,
+  // the dialog renders a generic "on your next billing date" fallback.
+  const nextBillingDate: Date | null = useMemo(() => {
+    if (!billingStatus?.renewalDate) return null;
+    const d = new Date(billingStatus.renewalDate);
+    return Number.isNaN(d.getTime()) ? null : d;
+  }, [billingStatus?.renewalDate]);
+
+  // Fetch substrate details
+  const fetchSubstrate = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/substrates/${slug}`);
+      if (res.ok) {
+        const data = await res.json();
+        // Handler returns the substrate object directly (no { substrate: ... } wrapper).
+        // Fall back to data.substrate for any cached/proxy response that still wraps.
+        setSubstrate(data.substrate ?? data);
+      }
+    } catch {
+      // Silent fail, keep using cached data
+    }
+  }, [slug]);
+
+  // Fetch billing status
+  const fetchBillingStatus = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/billing/status?slug=${slug}`);
+      if (res.ok) {
+        const data = await res.json();
+        setBillingStatus(data);
+      }
+    } catch {
+      // Silent fail
+    }
+  }, [slug]);
+
+  // Poll substrate during provisioning
+  useEffect(() => {
+    if (substrate?.status === "provisioning") {
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      pollTimerRef.current = setInterval(fetchSubstrate, 5000);
+      return () => {
+        if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+      };
+    }
+  }, [substrate?.status, fetchSubstrate]);
+
+  // Poll rotation status
+  useEffect(() => {
+    if (keyRotating && rotationStatus !== "complete" && rotationStatus !== "failed") {
+      const timer = setInterval(async () => {
+        try {
+          const res = await fetch(`/api/substrates/${slug}/key-rotation/status`);
+          if (res.ok) {
+            const data = await res.json();
+            setRotationStatus(data.status);
+            if (data.status === "complete" || data.status === "failed") {
+              setKeyRotating(false);
+              if (data.status === "complete") {
+                // Refresh substrate so keyUnclaimed flips to true and the
+                // "Claim your key" banner appears in the MCP CONNECTION section.
+                await fetchSubstrate();
+              }
+            }
+          }
+        } catch {
+          // Silent fail
+        }
+      }, 2000);
+      return () => clearInterval(timer);
+    }
+  }, [keyRotating, rotationStatus, slug, fetchSubstrate]);
+
+  // beforeunload guard
+  useEffect(() => {
+    if (keyRotating || showKeyReveal) {
+      beforeUnloadRef.current = (e) => {
+        e.preventDefault();
+        e.returnValue = "";
+      };
+      window.addEventListener("beforeunload", beforeUnloadRef.current);
+      return () => {
+        if (beforeUnloadRef.current) {
+          window.removeEventListener("beforeunload", beforeUnloadRef.current);
+        }
+      };
+    }
+  }, [keyRotating, showKeyReveal]);
+
+  useEffect(() => {
+    fetchBillingStatus();
+  }, [fetchBillingStatus]);
+
+  // Handle ?upgrade=pending | ?upgrade=cancelled, the two query params Stripe
+  // Checkout bounces the customer back with. We fire one toast then strip the
+  // param from the URL via history.replaceState so a reload doesn't re-fire it.
+  // Using replaceState (not router.replace) is intentional — router.replace
+  // would force Next to re-run loaders; we just want to clean the URL.
+  useEffect(() => {
+    const upgradeParam = searchParams?.get("upgrade");
+    if (!upgradeParam) return;
+
+    if (upgradeParam === "pending") {
+      toast.info(TOAST_PENDING_TITLE, { description: TOAST_PENDING_BODY });
+    } else if (upgradeParam === "cancelled") {
+      toast(TOAST_CANCELLED_TITLE, { description: TOAST_CANCELLED_BODY });
+    } else {
+      // Unknown value — ignore. Still strip so it doesn't linger.
+    }
+
+    // Strip the param from the URL without touching history depth.
+    if (typeof window !== "undefined") {
+      const url = new URL(window.location.href);
+      url.searchParams.delete("upgrade");
+      window.history.replaceState({}, "", url.toString());
+    }
+    // Only react to the string value of ?upgrade — searchParams identity can
+    // change without the value changing, and we don't want to refire.
+  }, [searchParams]);
 
   async function handleLogout() {
     setLoggingOut(true);
@@ -68,7 +313,82 @@ export default function AdminClient({ account }: { account: AccountInfo }) {
     }
   }
 
-  const hasTier = Boolean(account.tier);
+  async function handleRotateKey() {
+    setKeyRotating(true);
+    setRotationStatus("pending");
+    try {
+      const res = await fetch(`/api/substrates/${slug}/rotate-key`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        setRotationStatus("failed");
+        setKeyRotating(false);
+      }
+    } catch {
+      setRotationStatus("failed");
+      setKeyRotating(false);
+    }
+  }
+
+  async function handleClaimKey() {
+    try {
+      const res = await fetch(`/api/substrates/${slug}/claim-key`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.claimed && data.apiKey) {
+          setRevealedKey(data.apiKey);
+          setShowKeyReveal(true);
+          // Refresh substrate so keyUnclaimed flips to false (prevents amber banner reappearing)
+          await fetchSubstrate();
+        }
+      }
+    } catch {
+      // Error handling
+    }
+  }
+
+  async function handleCancel() {
+    try {
+      const res = await fetch(`/api/substrates/${slug}/cancel`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        await fetchSubstrate();
+        setCancelModalOpen(false);
+      }
+    } catch {
+      // Error handling
+    }
+  }
+
+  async function handleReactivate() {
+    try {
+      const res = await fetch(`/api/substrates/${slug}/reactivate`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        await fetchSubstrate();
+      }
+    } catch {
+      // Error handling
+    }
+  }
+
+  async function handleDeprovision() {
+    try {
+      const res = await fetch(`/api/substrates/${slug}/deprovision`, {
+        method: "POST",
+      });
+      if (res.ok) {
+        await fetchSubstrate();
+        setDeprovisionModalOpen(false);
+      }
+    } catch {
+      // Error handling
+    }
+  }
 
   return (
     <div className="min-h-screen bg-[#030712] text-white">
@@ -85,19 +405,13 @@ export default function AdminClient({ account }: { account: AccountInfo }) {
             Parametric Memory
           </Link>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-white/40">{account.email}</span>
             <Link
               href="/dashboard"
-              className="text-sm font-medium text-indigo-400 transition-colors hover:text-indigo-300"
+              className="text-sm text-indigo-400 transition-colors hover:text-indigo-300"
             >
-              My Substrate →
+              ← Back to Dashboard
             </Link>
-            <Link
-              href="/admin/security"
-              className="text-sm text-white/50 transition-colors hover:text-white/80"
-            >
-              Security
-            </Link>
+            <span className="text-sm text-white/40">{account.email}</span>
             <button
               onClick={handleLogout}
               disabled={loggingOut}
@@ -110,491 +424,472 @@ export default function AdminClient({ account }: { account: AccountInfo }) {
       </header>
 
       <main className="relative mx-auto max-w-5xl px-6 py-10">
+        {/* Substrate header */}
         <div className="mb-8">
-          <h1 className="mb-1 font-[family-name:var(--font-syne)] text-2xl font-bold">Instances</h1>
-          <p className="text-sm text-white/40">Your dedicated Parametric Memory droplets</p>
+          <h1 className="mb-1 font-[family-name:var(--font-syne)] text-2xl font-bold">
+            {substrate?.slug || slug}
+          </h1>
+          <p className="text-sm text-white/40">Substrate administration and management</p>
         </div>
 
-        <div className="mb-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-            <p className="mb-1 text-xs tracking-wider text-white/40 uppercase">Account</p>
-            <p className="truncate text-sm text-white/80">{account.email}</p>
-            <div className="mt-2">
-              <StatusBadge status={account.status} />
-            </div>
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-            <p className="mb-1 text-xs tracking-wider text-white/40 uppercase">Plan</p>
-            <p className="text-sm text-white/80">
-              {hasTier ? getTierLabel(account.tier) : "No active plan"}
-            </p>
-            {!hasTier && (
-              <Link
-                href="/pricing"
-                className="mt-2 inline-flex items-center text-xs text-indigo-400 transition-colors hover:text-indigo-300"
-              >
-                Get started →
-              </Link>
-            )}
-          </div>
-          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-5">
-            <p className="mb-1 text-xs tracking-wider text-white/40 uppercase">Balance</p>
-            <p className="text-sm text-white/80">{formatBalance(account.balanceCents)}</p>
-            {account.balanceCents < 500 && hasTier && (
-              <p className="mt-1 text-xs text-amber-400">Low balance</p>
-            )}
-          </div>
-        </div>
+        {/* Status section */}
+        {substrate && (
+          <div className="mb-8 space-y-5">
+            {/* Tier-change progress banner — self-hides when state === "none".
+                Receives the single shared poll result + the current tier's
+                display name (used only in failure-mode copy). */}
+            <TierChangeProgressBanner
+              result={tierChangeResult}
+              currentTierName={getTierLabel(billingStatus?.tier ?? substrate.tier)}
+            />
+            {/* Billing card — tier you're paying for + how the substrate is doing. */}
+            {/* Merged from what used to be a separate Billing card and a separate Status card. */}
+            {/* The thing you're paying for and the thing you're running are one product; one card. */}
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
+              {/* Row 1 — header: BILLING label + tier name on the left, subscription badge + actions on the right */}
+              <div className="flex items-start justify-between gap-4">
+                <div>
+                  <p className="text-xs tracking-wider text-white/40 uppercase">Billing</p>
+                  <p className="mt-1 text-lg font-semibold text-white">
+                    {getTierLabel(billingStatus?.tier ?? substrate.tier)}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  {billingStatus && (
+                    <span
+                      className={`rounded-full border px-3 py-1 text-xs font-medium ${
+                        billingStatus.status === "active"
+                          ? "border-emerald-500/30 bg-emerald-500/20 text-emerald-400"
+                          : billingStatus.status === "trialing"
+                            ? "border-indigo-500/30 bg-indigo-500/20 text-indigo-400"
+                            : billingStatus.status === "past_due"
+                              ? "border-amber-500/30 bg-amber-500/20 text-amber-400"
+                              : "border-red-500/30 bg-red-500/20 text-red-400"
+                      }`}
+                    >
+                      {billingStatus.status}
+                    </span>
+                  )}
+                  {/* Change plan — replaces the old "Upgrade" button that
+                      pushed to /pricing. Opens the tier-comparison sheet inline
+                      so the substrate slug / current tier / current caps stay
+                      in context. Visible whenever the substrate is running —
+                      changing plan is only meaningful on a live substrate. */}
+                  {substrate.status === "running" && (
+                    <ChangePlanButton
+                      substrateSlug={substrate.slug ?? slug}
+                      currentTier={billingStatus?.tier ?? substrate.tier}
+                      currentLimits={currentLimits}
+                      nextBillingDate={nextBillingDate}
+                      pollResult={tierChangeResult}
+                    />
+                  )}
+                  {substrate.cancelAt && (
+                    <button
+                      onClick={handleReactivate}
+                      className="rounded-lg border border-indigo-500/30 px-4 py-2 text-sm text-indigo-400 transition-colors hover:border-indigo-500/50"
+                    >
+                      Reactivate
+                    </button>
+                  )}
+                </div>
+              </div>
 
-        {hasTier ? <InstanceSection accountId={account.id} /> : <NoPlanBanner />}
-      </main>
-    </div>
-  );
-}
+              {/* Row 2 — runtime status pill + cancel-scheduled note, dividing into the live section below */}
+              <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/5 pt-4">
+                <StatusBadge status={substrate.status} />
+                {substrate.cancelAt && (
+                  <span className="text-sm text-amber-400">
+                    Cancel scheduled for {new Date(substrate.cancelAt).toLocaleDateString()}
+                  </span>
+                )}
+              </div>
 
-/* ── No-plan CTA ─────────────────────────────────────────────────────────── */
-function NoPlanBanner() {
-  return (
-    <div className="rounded-2xl border border-indigo-500/20 bg-indigo-500/5 p-8 text-center">
-      <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-indigo-500/20">
-        <svg
-          className="h-6 w-6 text-indigo-400"
-          fill="none"
-          viewBox="0 0 24 24"
-          stroke="currentColor"
-        >
-          <path
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            strokeWidth={1.5}
-            d="M5 12h14M12 5l7 7-7 7"
-          />
-        </svg>
-      </div>
-      <h2 className="mb-2 font-[family-name:var(--font-syne)] text-lg font-semibold">
-        No active instance
-      </h2>
-      <p className="mx-auto mb-5 max-w-sm text-sm text-white/50">
-        Purchase a plan to get your dedicated Parametric Memory instance with your own MCP endpoint.
-      </p>
-      <Link
-        href="/pricing"
-        className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
-      >
-        View plans
-      </Link>
-    </div>
-  );
-}
+              {/* Row 3 — health pills (SSL / MCP / SSH / IP), only when live health data is present */}
+              {substrate.health && (
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {/* SSL */}
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                      substrate.health.https.configured
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
+                    }`}
+                  >
+                    <span>{substrate.health.https.configured ? "●" : "○"}</span>
+                    SSL
+                  </span>
 
-/* ── Instance section ────────────────────────────────────────────────────── */
-function InstanceSection({ accountId }: { accountId: string }) {
-  const [instances, setInstances] = useState<InstanceInfo[] | null>(null);
-  const [error, setError] = useState<string | null>(null);
+                  {/* MCP reachable */}
+                  <span
+                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                      substrate.health.substrate.reachable === true
+                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                        : substrate.health.substrate.reachable === false
+                          ? "border-red-500/30 bg-red-500/10 text-red-400"
+                          : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
+                    }`}
+                  >
+                    <span>{substrate.health.substrate.reachable === true ? "●" : "○"}</span>
+                    MCP
+                  </span>
 
-  const fetchInstances = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/compute/instances`);
-      if (!res.ok) throw new Error("Failed to load instances");
-      const data = (await res.json()) as { instances: InstanceInfo[] };
-      setInstances(data.instances);
-    } catch {
-      setError("Could not load instance data. Please refresh.");
-    }
-  }, []);
+                  {/* SSH */}
+                  {substrate.health.droplet && (
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                        substrate.health.droplet.sshReady
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
+                      }`}
+                    >
+                      <span>{substrate.health.droplet.sshReady ? "●" : "○"}</span>
+                      SSH
+                    </span>
+                  )}
 
-  useEffect(() => {
-    fetchInstances();
-  }, [fetchInstances]);
+                  {/* Droplet IP — shown as a dim pill when available */}
+                  {substrate.health.droplet?.ip && (
+                    <span className="inline-flex items-center rounded-full border border-zinc-700/50 bg-zinc-800/30 px-2.5 py-0.5 font-mono text-xs text-zinc-500">
+                      {substrate.health.droplet.ip}
+                    </span>
+                  )}
+                </div>
+              )}
 
-  // Poll: fast (5s) during transitional states, slow (30s) for running instances
-  useEffect(() => {
-    const transitional = instances?.some(
-      (i) =>
-        i.state === "provisioning" || i.state === "traefik_pending" || i.state === "destroying",
-    );
-    const hasLive = instances?.some((i) => i.state === "running" || i.state === "paused");
-
-    if (!transitional && !hasLive) return;
-
-    const interval = transitional ? 5_000 : 30_000;
-    const timer = setInterval(fetchInstances, interval);
-    return () => clearInterval(timer);
-  }, [instances, fetchInstances]);
-
-  if (error) {
-    return (
-      <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-5 text-sm text-red-400">
-        {error}
-      </div>
-    );
-  }
-
-  if (instances === null) {
-    return (
-      <div className="space-y-4">
-        <h2 className="font-[family-name:var(--font-syne)] text-base font-semibold text-white/80">
-          Your instance
-        </h2>
-        <div className="flex items-center gap-3 rounded-xl border border-white/10 bg-white/[0.03] p-6">
-          <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-indigo-400" />
-          <span className="text-sm text-white/50">Loading…</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (instances.length === 0) {
-    return (
-      <div className="space-y-4">
-        <h2 className="font-[family-name:var(--font-syne)] text-base font-semibold text-white/80">
-          Your instance
-        </h2>
-        <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-6 text-center">
-          <p className="text-sm text-white/60">
-            No instance found. Your provisioning may still be queued.
-          </p>
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-4">
-      <h2 className="font-[family-name:var(--font-syne)] text-base font-semibold text-white/80">
-        Your instance
-      </h2>
-      {instances.map((instance) => (
-        <InstanceCard key={instance.id} instance={instance} accountId={accountId} />
-      ))}
-    </div>
-  );
-}
-
-/* ── Individual instance card ────────────────────────────────────────────── */
-function InstanceCard({ instance }: { instance: InstanceInfo; accountId: string }) {
-  const [detail, setDetail] = useState<InstanceDetail | null>(null);
-  const [keysCopied, setKeysCopied] = useState<Record<string, boolean>>({});
-  const [showDestroy, setShowDestroy] = useState(false);
-
-  const fetchDetail = useCallback(async () => {
-    const res = await fetch(`/api/compute/instances/${instance.id}`);
-    if (!res.ok) return;
-    const data = (await res.json()) as InstanceDetail & {
-      instance: InstanceInfo;
-      healthStatus: string;
-    };
-    setDetail({
-      ...data.instance,
-      healthStatus: data.healthStatus as InstanceDetail["healthStatus"],
-      masterKey: data.masterKey,
-      vizKey: data.vizKey,
-    });
-  }, [instance.id]);
-
-  useEffect(() => {
-    fetchDetail();
-  }, [fetchDetail]);
-
-  // Poll: fast (5s) during transitions, slow (30s) for running/paused
-  useEffect(() => {
-    const live = detail ?? instance;
-    const transitional =
-      live.state === "provisioning" ||
-      live.state === "traefik_pending" ||
-      live.state === "destroying";
-    const isLive = live.state === "running" || live.state === "paused";
-
-    if (!transitional && !isLive) return;
-
-    const interval = transitional ? 5_000 : 30_000;
-    const timer = setInterval(fetchDetail, interval);
-    return () => clearInterval(timer);
-  }, [detail, instance, fetchDetail]);
-
-  async function copyKey(label: string, value: string) {
-    await navigator.clipboard.writeText(value);
-    setKeysCopied((prev) => ({ ...prev, [label]: true }));
-    setTimeout(() => setKeysCopied((prev) => ({ ...prev, [label]: false })), 2000);
-  }
-
-  const live = detail ?? instance;
-  const stateColours: Record<string, string> = {
-    provisioning: "bg-amber-400 animate-pulse",
-    traefik_pending: "bg-indigo-400 animate-pulse",
-    running: "bg-emerald-400 shadow-[0_0_6px_2px] shadow-emerald-400/40",
-    paused: "bg-slate-400",
-    destroying: "bg-red-400",
-    destroyed: "bg-red-600",
-  };
-
-  const stateLabel: Record<string, string> = {
-    provisioning: "Provisioning",
-    traefik_pending: "Setting up SSL",
-    running: "Running",
-    paused: "Paused",
-    destroying: "Destroying",
-    destroyed: "Destroyed",
-  };
-
-  const [urlCopied, setUrlCopied] = useState(false);
-  const [configCopied, setConfigCopied] = useState(false);
-
-  async function copyMcpUrl(url: string) {
-    await navigator.clipboard.writeText(url);
-    setUrlCopied(true);
-    setTimeout(() => setUrlCopied(false), 2000);
-  }
-
-  async function copyDesktopConfig(url: string) {
-    const json = JSON.stringify({ mcpServers: { memory: { url } } }, null, 2);
-    await navigator.clipboard.writeText(json);
-    setConfigCopied(true);
-    setTimeout(() => setConfigCopied(false), 2000);
-  }
-
-  return (
-    <div className="space-y-5 rounded-xl border border-white/10 bg-white/[0.03] p-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <div
-            className={`h-2.5 w-2.5 shrink-0 rounded-full ${stateColours[live.state] ?? "bg-white/30"}`}
-          />
-          <div>
-            {live.subdomain ? (
-              <span className="font-mono text-sm font-medium text-white/90">{live.subdomain}</span>
-            ) : (
-              <span className="text-sm font-medium text-white/80 capitalize">
-                {stateLabel[live.state] ?? live.state}
-              </span>
-            )}
-            {live.subdomain && (
-              <span className="ml-2 text-xs text-white/30 capitalize">
-                · {stateLabel[live.state] ?? live.state}
-              </span>
-            )}
-          </div>
-          {live.state === "running" && detail?.healthStatus && (
-            <span
-              className={`rounded-full border px-2 py-0.5 text-xs ${
-                detail.healthStatus === "healthy"
-                  ? "border-emerald-500/20 bg-emerald-500/10 text-emerald-400"
-                  : detail.healthStatus === "unhealthy"
-                    ? "border-red-500/20 bg-red-500/10 text-red-400"
-                    : "border-white/10 bg-white/5 text-white/30"
-              }`}
-            >
-              {detail.healthStatus}
-            </span>
-          )}
-          {/* SSL status badge — hide when destroyed */}
-          {live.state !== "destroyed" && live.traefikStatus === "registered" && (
-            <span className="rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2 py-0.5 text-xs text-emerald-400">
-              SSL ●
-            </span>
-          )}
-          {live.state !== "destroyed" && live.traefikStatus === "failed" && (
-            <span className="rounded-full border border-red-500/20 bg-red-500/10 px-2 py-0.5 text-xs text-red-400">
-              SSL failed
-            </span>
-          )}
-        </div>
-        <span className="font-mono text-xs text-white/30">
-          {live.dropletSize} · {live.region}
-        </span>
-      </div>
-
-      {/* Provisioning progress */}
-      {live.state === "provisioning" && (
-        <div className="flex items-center gap-3 rounded-lg border border-amber-500/15 bg-amber-500/5 px-4 py-3 text-xs text-amber-300/70">
-          <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-amber-400/20 border-t-amber-400/60" />
-          Your droplet is being created — typically 2–3 minutes. This page updates automatically.
-        </div>
-      )}
-
-      {/* SSL setup in progress */}
-      {live.state === "traefik_pending" && (
-        <div className="flex items-center gap-3 rounded-lg border border-indigo-500/15 bg-indigo-500/5 px-4 py-3 text-xs text-indigo-300/70">
-          <span className="h-3 w-3 shrink-0 animate-spin rounded-full border-2 border-indigo-400/20 border-t-indigo-400/60" />
-          Droplet is ready — issuing your SSL certificate. Usually takes 30–60 seconds.
-        </div>
-      )}
-
-      {/* Destroyed tombstone — shown instead of MCP panel */}
-      {live.state === "destroyed" && (
-        <div className="rounded-lg border border-white/10 bg-white/[0.02] px-4 py-4 text-center">
-          <p className="text-sm text-white/30">
-            This instance has been destroyed. All data and keys are permanently deleted.
-          </p>
-          <Link
-            href="/pricing"
-            className="mt-3 inline-flex items-center gap-1.5 text-xs text-indigo-400/70 transition-colors hover:text-indigo-400"
-          >
-            Launch a new instance →
-          </Link>
-        </div>
-      )}
-
-      {/* MCP Connection panel — the main event (hidden when destroyed) */}
-      {live.state !== "destroyed" &&
-        (live.mcpEndpointUrl ? (
-          <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/[0.06] p-4">
-            <p className="mb-3 text-xs font-semibold tracking-wider text-indigo-300/80 uppercase">
-              MCP Connection URL
-            </p>
-
-            {/* URL + copy */}
-            <div className="mb-4 flex items-center gap-2">
-              <code className="flex-1 truncate rounded-lg border border-indigo-500/25 bg-black/30 px-3 py-2 font-mono text-sm text-indigo-200">
-                {live.mcpEndpointUrl}
-              </code>
-              <button
-                onClick={() => copyMcpUrl(live.mcpEndpointUrl!)}
-                className="shrink-0 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-indigo-500"
-              >
-                {urlCopied ? "Copied!" : "Copy"}
-              </button>
+              {/* Row 4 — renewal date footer, only when billing reports one */}
+              {billingStatus?.renewalDate && (
+                <p className="mt-4 text-sm text-white/60">
+                  Renewal: {new Date(billingStatus.renewalDate).toLocaleDateString()}
+                </p>
+              )}
             </div>
 
-            {/* Claude Desktop config */}
-            <p className="mb-2 text-xs text-white/40">
-              Add to Claude Desktop{" "}
-              <code className="text-white/30">claude_desktop_config.json</code>:
-            </p>
-            <div className="relative">
-              <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-3 font-mono text-xs leading-relaxed text-white/50">
-                {`{
+            {/* Provision failed callout */}
+            {substrate.status === "provision_failed" && (
+              <div className="rounded-xl border border-red-500/30 bg-red-500/5 p-6">
+                <div className="flex items-start gap-3">
+                  <div className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-red-500/15">
+                    <svg
+                      className="h-4 w-4 text-red-400"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={1.5}
+                        d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+                      />
+                    </svg>
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-sm font-semibold text-red-300">Provisioning failed</p>
+                    <p className="mt-1 text-sm text-white/50">
+                      Something went wrong while setting up your substrate. Your billing has not
+                      been affected. You can deprovision this substrate below and start fresh, or
+                      contact support if you need help.
+                    </p>
+                    <div className="mt-4 flex gap-3">
+                      <button
+                        onClick={() => setDeprovisionModalOpen(true)}
+                        className="rounded-lg border border-red-500/30 px-4 py-2 text-sm text-red-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10"
+                      >
+                        Deprovision &amp; start fresh
+                      </button>
+                      <a
+                        href={`mailto:support@parametric-memory.dev?subject=Provision%20failed%3A%20${encodeURIComponent(substrate.slug ?? slug)}`}
+                        className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80"
+                      >
+                        Contact support
+                      </a>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* Connection section */}
+            {substrate.status === "running" && substrate.mcpEndpoint && (
+              <div className="rounded-xl border border-indigo-500/30 bg-indigo-500/[0.06] p-6">
+                <p className="mb-5 text-xs font-semibold tracking-wider text-indigo-300/80 uppercase">
+                  MCP Connection
+                </p>
+
+                {/* Endpoint URL */}
+                <div className="mb-4">
+                  <p className="mb-1.5 text-xs text-white/50">Endpoint URL</p>
+                  <div className="flex items-center gap-2">
+                    <code className="flex-1 truncate rounded-lg border border-indigo-500/25 bg-black/30 px-3 py-2 font-mono text-sm text-indigo-200">
+                      {substrate.mcpEndpoint}
+                    </code>
+                    <CopyButton text={substrate.mcpEndpoint} />
+                  </div>
+                </div>
+
+                {/* Claim key banner — high visibility, only when unclaimed and not yet revealed */}
+                {substrate.keyUnclaimed && !showKeyReveal && (
+                  <div className="mb-4 rounded-lg border border-amber-500/50 bg-amber-500/10 p-4">
+                    <div className="flex items-center justify-between gap-4">
+                      <div>
+                        <p className="text-sm font-semibold text-amber-300">⚠ Claim your API key</p>
+                        <p className="mt-0.5 text-xs text-amber-400/70">
+                          Shown only once — store it somewhere safe before continuing.
+                        </p>
+                      </div>
+                      <button
+                        onClick={handleClaimKey}
+                        className="shrink-0 rounded-lg bg-amber-500 px-4 py-2 text-sm font-semibold text-black transition-colors hover:bg-amber-400"
+                      >
+                        Claim Key →
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Key revealed — prominent display with one-time warning */}
+                {showKeyReveal && revealedKey && (
+                  <div className="mb-4 rounded-lg border border-emerald-500/30 bg-emerald-500/[0.07] p-4">
+                    <p className="mb-2 text-xs font-semibold tracking-wider text-emerald-400 uppercase">
+                      🔑 Your API key — copy it now. It will never be shown again.
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <code className="flex-1 truncate rounded border border-white/10 bg-black/40 px-3 py-2 font-mono text-xs text-emerald-300">
+                        {revealedKey}
+                      </code>
+                      <button
+                        onClick={async () => {
+                          await navigator.clipboard.writeText(revealedKey);
+                        }}
+                        className="shrink-0 rounded bg-emerald-600 px-3 py-2 text-xs font-medium text-white transition-colors hover:bg-emerald-500"
+                      >
+                        Copy
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* mcp-remote config block */}
+                <div className="mb-5">
+                  <p className="mb-2 text-xs text-white/50">
+                    Add to Claude Desktop{" "}
+                    <code className="text-white/30">claude_desktop_config.json</code>:
+                  </p>
+                  <div className="relative">
+                    <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-4 font-mono text-xs leading-relaxed text-white/60">
+                      {`{
   "mcpServers": {
-    "memory": {
-      "url": "${live.mcpEndpointUrl}"
+    "Memory-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "${substrate.mcpEndpoint}",
+        "--header",
+        "Authorization:\${AUTH_HEADER}"
+      ],
+      "env": {
+        "AUTH_HEADER": "${showKeyReveal && revealedKey ? `Bearer ${revealedKey}` : "Bearer ••••••••"}"
+      }
     }
   }
 }`}
-              </pre>
-              <button
-                onClick={() => copyDesktopConfig(live.mcpEndpointUrl!)}
-                className="absolute top-2 right-2 rounded bg-white/10 px-2 py-1 text-xs text-white/50 transition-colors hover:bg-white/20 hover:text-white/80"
-              >
-                {configCopied ? "Copied!" : "Copy"}
-              </button>
+                    </pre>
+                    <button
+                      onClick={async () => {
+                        const authValue =
+                          showKeyReveal && revealedKey
+                            ? `Bearer ${revealedKey}`
+                            : "Bearer YOUR_API_KEY_HERE";
+                        const config = {
+                          mcpServers: {
+                            "Memory-mcp": {
+                              command: "npx",
+                              args: [
+                                "-y",
+                                "mcp-remote",
+                                substrate.mcpEndpoint,
+                                "--header",
+                                "Authorization:${AUTH_HEADER}",
+                              ],
+                              env: { AUTH_HEADER: authValue },
+                            },
+                          },
+                        };
+                        await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
+                      }}
+                      className="absolute top-2 right-2 rounded bg-white/10 px-2 py-1 text-xs text-white/50 transition-colors hover:bg-white/20 hover:text-white/80"
+                    >
+                      Copy
+                    </button>
+                  </div>
+                  {!showKeyReveal && (
+                    <p className="mt-2 text-xs text-white/30">
+                      {substrate.keyUnclaimed
+                        ? "Claim your key above to populate AUTH_HEADER."
+                        : "Rotate your key below to generate a new claimable key."}
+                    </p>
+                  )}
+                </div>
+
+                <UpdateInstructions />
+              </div>
+            )}
+
+            {/* Provisioning progress */}
+            {substrate.status === "provisioning" && substrate.provisioning && (
+              <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-6">
+                <p className="mb-4 text-xs font-semibold tracking-wider text-amber-300/80 uppercase">
+                  Provisioning Progress
+                </p>
+                <div className="space-y-2 text-sm text-white/70">
+                  <p>Phase: {substrate.provisioning.phase || "pending"}</p>
+                  {substrate.provisioning.dropletIp && (
+                    <p>
+                      Droplet IP:{" "}
+                      <code className="text-white/50">{substrate.provisioning.dropletIp}</code>
+                    </p>
+                  )}
+                </div>
+              </div>
+            )}
+
+            {/* Usage section */}
+            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
+              <p className="mb-4 text-xs font-semibold tracking-wider text-white/60 uppercase">
+                Resource Usage
+              </p>
+              <div className="space-y-4">
+                <UsageBar
+                  label="Atoms"
+                  current={substrate.atomCount}
+                  max={substrate.maxAtoms}
+                  unit="atoms"
+                />
+                <UsageBar
+                  label="Bootstraps (this month)"
+                  current={substrate.bootstrapCountMonth}
+                  max={substrate.maxBootstrapsMonth}
+                  unit="requests"
+                />
+                <UsageBar
+                  label="Storage"
+                  current={substrate.storageUsedMB}
+                  max={substrate.maxStorageMB}
+                  unit="MB"
+                />
+              </div>
+            </div>
+
+            {/* API Key section — hidden for provision_failed (no substrate was ever running) */}
+            {substrate.status !== "provision_failed" && (
+              <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
+                <p className="mb-4 text-xs font-semibold tracking-wider text-white/60 uppercase">
+                  API Key Management
+                </p>
+
+                {keyRotating ? (
+                  <div className="space-y-4">
+                    <RotationStepper status={rotationStatus} />
+                    {rotationStatus === "complete" && (
+                      <p className="text-xs text-white/50">
+                        Scroll up to the MCP Connection section to claim your new key.
+                      </p>
+                    )}
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    <p className="text-sm text-white/50">
+                      Rotating invalidates your current key and generates a new claimable one.
+                    </p>
+                    <button
+                      onClick={handleRotateKey}
+                      className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white transition-colors hover:bg-indigo-500"
+                    >
+                      Rotate Key
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Danger zone — hidden for provision_failed (callout above owns that action) */}
+            {substrate.status !== "provision_failed" && (
+              <div className="rounded-xl border border-red-500/20 bg-red-500/5 p-6">
+                <p className="mb-4 text-xs font-semibold tracking-wider text-red-300/80 uppercase">
+                  Danger Zone
+                </p>
+                <div className="flex gap-2">
+                  {substrate.tier !== "free" &&
+                    !substrate.cancelAt &&
+                    substrate.status !== "provision_failed" && (
+                      <button
+                        onClick={() => setCancelModalOpen(true)}
+                        className="rounded-lg border border-red-500/20 px-4 py-2 text-sm text-red-400/70 transition-colors hover:border-red-500/40 hover:text-red-400"
+                      >
+                        Cancel Subscription
+                      </button>
+                    )}
+                  {/* Deprovision available for free tier only here — provision_failed uses the callout above */}
+                  {substrate.tier === "free" && substrate.status !== "provision_failed" && (
+                    <button
+                      onClick={() => setDeprovisionModalOpen(true)}
+                      className="rounded-lg border border-red-500/20 px-4 py-2 text-sm text-red-400/70 transition-colors hover:border-red-500/40 hover:text-red-400"
+                    >
+                      Deprovision Substrate
+                    </button>
+                  )}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
+
+        {!substrate && (
+          <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6 text-center">
+            <div className="flex items-center justify-center gap-2">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/20 border-t-indigo-400" />
+              <span className="text-sm text-white/50">Loading substrate details…</span>
             </div>
           </div>
-        ) : live.traefikStatus === "failed" ? (
-          <div className="rounded-lg border border-red-500/20 bg-red-500/5 px-4 py-3 text-xs text-red-400/80">
-            SSL certificate setup failed. Contact support with your instance ID:{" "}
-            <code className="font-mono text-red-300/70">{live.id}</code>
-          </div>
-        ) : null)}
+        )}
+      </main>
 
-      {/* One-time key reveal */}
-      {(detail?.masterKey || detail?.vizKey) && (
-        <div className="space-y-3 rounded-lg border border-indigo-500/20 bg-indigo-500/5 p-4">
-          <p className="text-xs font-medium text-indigo-300">
-            Your API keys — copy these now. They will not be shown again.
-          </p>
-          {detail.masterKey && (
-            <KeyReveal
-              label="Master key"
-              value={detail.masterKey}
-              copied={keysCopied["master"]}
-              onCopy={() => copyKey("master", detail.masterKey!)}
-            />
-          )}
-          {detail.vizKey && (
-            <KeyReveal
-              label="Visualise key (read-only)"
-              value={detail.vizKey}
-              copied={keysCopied["viz"]}
-              onCopy={() => copyKey("viz", detail.vizKey!)}
-            />
-          )}
-        </div>
+      {/* Cancel modal */}
+      {cancelModalOpen && (
+        <CancelModal onClose={() => setCancelModalOpen(false)} onConfirm={handleCancel} />
       )}
 
-      {/* Danger zone — only show for active instances */}
-      {live.state !== "destroyed" && live.state !== "destroying" && (
-        <div className="border-t border-white/5 pt-4">
-          <p className="mb-3 text-xs tracking-wider text-white/30 uppercase">Danger zone</p>
-          <button
-            onClick={() => setShowDestroy(true)}
-            className="rounded-lg border border-red-500/20 px-4 py-2 text-sm text-red-400/70 transition-colors hover:border-red-500/40 hover:text-red-400"
-          >
-            Destroy instance
-          </button>
-        </div>
-      )}
-
-      {live.state === "destroying" && (
-        <div className="flex items-center gap-2 border-t border-white/5 pt-4 text-sm text-red-400/60">
-          <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-red-400/20 border-t-red-400/60" />
-          Destroying…
-        </div>
-      )}
-
-      {/* Destroy modal */}
-      {showDestroy && (
-        <DestroyModal
-          instanceId={instance.id}
-          onClose={() => setShowDestroy(false)}
-          onDestroyed={() => {
-            // Stay on /admin — close the modal and re-fetch so the card flips to
-            // "destroying" state immediately. The existing 5s poll takes it from there.
-            setShowDestroy(false);
-            fetchDetail();
-          }}
+      {/* Deprovision modal */}
+      {deprovisionModalOpen && (
+        <DeprovisionModal
+          onClose={() => setDeprovisionModalOpen(false)}
+          onConfirm={handleDeprovision}
         />
       )}
     </div>
   );
 }
 
-/* ── Destroy modal ───────────────────────────────────────────────────────── */
-function DestroyModal({
-  instanceId,
-  onClose,
-  onDestroyed,
-}: {
-  instanceId: string;
-  onClose: () => void;
-  onDestroyed: () => void;
-}) {
-  const [input, setInput] = useState("");
+function CancelModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
+  const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const confirmed = input === "destroy";
 
-  async function executeDestroy() {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch(`/api/compute/instances/${instanceId}`, {
-        method: "DELETE",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Failed to destroy instance. Please try again.");
-        return;
-      }
-      onDestroyed();
-    } catch {
-      setError("Network error. Please try again.");
-    } finally {
+  async function handleConfirm() {
+    if (step === 1) {
+      setStep(2);
+    } else {
+      setLoading(true);
+      await onConfirm();
       setLoading(false);
+      onClose();
     }
-  }
-
-  function handleConfirmStep() {
-    if (!confirmed) return;
-    executeDestroy();
   }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
-      {/* Backdrop */}
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-
       <div className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-[#0d0d14] p-6 shadow-2xl">
         <div className="mb-4 flex items-start gap-3">
           <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/15">
@@ -614,11 +909,84 @@ function DestroyModal({
           </div>
           <div>
             <h2 className="font-[family-name:var(--font-syne)] text-base font-semibold text-white">
-              Destroy instance
+              Cancel subscription
             </h2>
             <p className="mt-1 text-sm text-white/50">
-              This will permanently delete your droplet and all data on it. Your API keys will stop
-              working immediately. <strong className="text-white/70">This cannot be undone.</strong>
+              Your substrate will be deprovisioned at the end of the current billing period.
+            </p>
+          </div>
+        </div>
+
+        <div className="mb-4 space-y-2 text-sm text-white/70">
+          {step === 1 ? (
+            <p>Are you sure you want to cancel your subscription?</p>
+          ) : (
+            <>
+              <p className="font-medium">Please confirm you want to proceed.</p>
+              <p className="text-xs">You will lose access to your substrate.</p>
+            </>
+          )}
+        </div>
+
+        <div className="flex gap-3">
+          <button
+            onClick={onClose}
+            disabled={loading}
+            className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
+          >
+            Keep subscription
+          </button>
+          <button
+            onClick={handleConfirm}
+            disabled={loading}
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-50"
+          >
+            {loading ? "Cancelling…" : step === 1 ? "Continue" : "Confirm cancel"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function DeprovisionModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
+  const [input, setInput] = useState("");
+  const [loading, setLoading] = useState(false);
+  const confirmed = input === "destroy";
+
+  async function handleConfirm() {
+    setLoading(true);
+    await onConfirm();
+    setLoading(false);
+    onClose();
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-[#0d0d14] p-6 shadow-2xl">
+        <div className="mb-4 flex items-start gap-3">
+          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/15">
+            <svg
+              className="h-5 w-5 text-red-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.5}
+                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
+              />
+            </svg>
+          </div>
+          <div>
+            <h2 className="font-[family-name:var(--font-syne)] text-base font-semibold text-white">
+              Deprovision substrate
+            </h2>
+            <p className="mt-1 text-sm text-white/50">
+              This will permanently delete your substrate and all data on it. This cannot be undone.
             </p>
           </div>
         </div>
@@ -631,14 +999,12 @@ function DestroyModal({
             type="text"
             value={input}
             onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && confirmed && handleConfirmStep()}
+            onKeyDown={(e) => e.key === "Enter" && confirmed && handleConfirm()}
             placeholder="destroy"
             autoFocus
             className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-sm text-white placeholder-white/20 transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none"
           />
         </div>
-
-        {error && <p className="mb-3 text-sm text-red-400">{error}</p>}
 
         <div className="flex gap-3">
           <button
@@ -649,50 +1015,13 @@ function DestroyModal({
             Cancel
           </button>
           <button
-            onClick={handleConfirmStep}
+            onClick={handleConfirm}
             disabled={!confirmed || loading}
             className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-30"
           >
-            {loading ? (
-              <>
-                <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-                Destroying…
-              </>
-            ) : (
-              "Destroy instance"
-            )}
+            {loading ? "Deprovisioning…" : "Deprovision"}
           </button>
         </div>
-      </div>
-    </div>
-  );
-}
-
-/* ── Key reveal row ──────────────────────────────────────────────────────── */
-function KeyReveal({
-  label,
-  value,
-  copied,
-  onCopy,
-}: {
-  label: string;
-  value: string;
-  copied?: boolean;
-  onCopy: () => void;
-}) {
-  return (
-    <div>
-      <p className="mb-1 text-xs text-white/40">{label}</p>
-      <div className="flex items-center gap-2">
-        <code className="flex-1 truncate rounded border border-white/10 bg-white/5 px-2 py-1.5 font-mono text-xs text-white/70">
-          {value}
-        </code>
-        <button
-          onClick={onCopy}
-          className="shrink-0 rounded bg-indigo-600/80 px-2.5 py-1.5 text-xs text-white transition-colors hover:bg-indigo-500"
-        >
-          {copied ? "Copied!" : "Copy"}
-        </button>
       </div>
     </div>
   );

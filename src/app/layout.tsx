@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Syne, Outfit, JetBrains_Mono } from "next/font/google";
+import { Toaster } from "sonner";
 import "./globals.css";
 import { BetaBanner } from "@/components/ui/BetaBanner";
 
@@ -319,6 +320,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body className="min-h-screen">
         <BetaBanner />
         <div className="relative flex min-h-screen flex-col">{children}</div>
+        {/* Sonner renderer — mounted site-wide so toast() calls anywhere in
+            the app have a target. Dark-themed + top-right to match the admin
+            page aesthetic. */}
+        <Toaster theme="dark" position="top-right" richColors closeButton />
       </body>
     </html>
   );

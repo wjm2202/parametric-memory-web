@@ -22,13 +22,14 @@ export interface TierLimits {
   /**
    * Maximum number of live substrates per account.
    *
-   * Architectural constraint (2026-04-11): every tier is pinned to 1. The
-   * compute API resolves "my substrate" from `req.session.accountId` via
-   * `SELECT ... LIMIT 1 ORDER BY created_at DESC` and has no path for the
-   * client to disambiguate between multiple live substrates on the same
-   * account. Do not advertise a number > 1 on any customer surface until
-   * the rotate-key, billing-portal, reactivate, and deprovision routes
-   * accept a `substrateId` in the URL.
+   * Multi-substrate support (2026-04-13): the compute API now has slug-scoped
+   * endpoints at `/api/v1/substrates/:slug/*` for all substrate management
+   * operations (cancel, reactivate, rotate-key, claim-key, deprovision, usage).
+   * The website dashboard lists all substrates and admin manages individual ones
+   * by slug. Each subscription maps to one substrate. Users can purchase
+   * multiple subscriptions to have multiple substrates.
+   *
+   * Current tier config still pins to 1 per tier — bump when capacity allows.
    */
   maxSubstrates: number;
 }
@@ -69,9 +70,9 @@ export interface Tier {
 export const TIERS: Tier[] = [
   {
     id: "free",
-    name: "Free",
+    name: "Basic",
     price: 1,
-    description: "Get started with Parametric Memory. $1/month, cancel anytime.",
+    description: "Post-trial fallback tier. Not publicly sold.",
     badge: null,
     cta: "Get Started",
     limits: {
