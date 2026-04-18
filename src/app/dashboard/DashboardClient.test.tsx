@@ -207,3 +207,149 @@ describe("DashboardClient — cancel subscription flow", () => {
     expect(screen.queryByText(/cancel subscription for ashen-north/i)).not.toBeInTheDocument();
   });
 });
+
+// ── F-BILLING-3 + F-PROV-1 — per-substrate attention banners ──────────────────
+
+describe("DashboardClient — pending_payment state (F-BILLING-3)", () => {
+  stubFetch();
+
+  const pendingSubstrate = makeSubstrate({
+    status: "pending_payment",
+    slug: "pending-one",
+  });
+
+  it('renders the "Payment Pending" badge for pending_payment status', () => {
+    // This is the specific F-BILLING-3 regression guard — before the fix the
+    // badge fell through to the default gray pill with the literal string
+    // "pending_payment". Customers now see a dedicated amber label.
+    render(<DashboardClient account={baseAccount} substrates={[pendingSubstrate]} />);
+    expect(screen.getByText("Payment Pending")).toBeInTheDocument();
+    // Ensure we're not accidentally rendering the raw snake_case status.
+    expect(screen.queryByText("pending_payment")).not.toBeInTheDocument();
+  });
+
+  it("renders the SubstrateStateBanner above the grid for pending_payment", () => {
+    render(<DashboardClient account={baseAccount} substrates={[pendingSubstrate]} />);
+    const banner = screen.getByTestId("substrate-banner-pending-one");
+    expect(banner).toHaveAttribute("data-variant", "pending_payment");
+    expect(banner).toHaveTextContent("pending-one");
+    expect(screen.getByRole("button", { name: /Complete payment/i })).toBeInTheDocument();
+  });
+
+  it("does NOT render a banner for a healthy running substrate", () => {
+    render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
+    expect(screen.queryByTestId(/substrate-banner-/)).not.toBeInTheDocument();
+  });
+
+  it("stacks one banner per attention-worthy substrate", () => {
+    const anotherPending = makeSubstrate({
+      id: "sub_2",
+      status: "pending_payment",
+      slug: "pending-two",
+    });
+    render(
+      <DashboardClient
+        account={baseAccount}
+        substrates={[pendingSubstrate, runningSubstrate, anotherPending]}
+      />,
+    );
+    // Two pending substrates → two banners; the running one stays silent.
+    expect(screen.getByTestId("substrate-banner-pending-one")).toBeInTheDocument();
+    expect(screen.getByTestId("substrate-banner-pending-two")).toBeInTheDocument();
+    expect(screen.queryByTestId("substrate-banner-bold-junction")).not.toBeInTheDocument();
+  });
+});
+
+describe("DashboardClient — provision_failed state (F-PROV-1)", () => {
+  stubFetch();
+
+  const failedStandalone = makeSubstrate({
+    status: "provision_failed",
+    slug: "doomed-alpha",
+    hasActiveSubscription: false, // focus this block on the banner, not the cancel footer
+  });
+
+  it("renders the support-CTA banner above the grid for provision_failed", () => {
+    render(<DashboardClient account={baseAccount} substrates={[failedStandalone]} />);
+    const banner = screen.getByTestId("substrate-banner-doomed-alpha");
+    expect(banner).toHaveAttribute("data-variant", "provision_failed");
+    expect(banner).toHaveTextContent("doomed-alpha");
+  });
+
+  it("banner CTA links to a mailto: with the slug in the subject", () => {
+    render(<DashboardClient account={baseAccount} substrates={[failedStandalone]} />);
+    const link = screen.getByRole("link", { name: /Contact support/i });
+    const href = link.getAttribute("href") ?? "";
+    expect(href.startsWith("mailto:")).toBe(true);
+    expect(decodeURIComponent(href)).toContain("Provisioning failed for doomed-alpha");
+  });
+
+  it("keeps the existing Provision Failed badge on the card (regression guard)", () => {
+    // Before F-PROV-1 the card already showed the badge + red dot; we must
+    // not have regressed those.
+    render(<DashboardClient account={baseAccount} substrates={[failedStandalone]} />);
+    expect(screen.getByText("Provision Failed")).toBeInTheDocument();
+  });
+});
+
+// ── F-BILLING-2 — read_only badge tooltip + banner ────────────────────────────
+
+describe("DashboardClient — read_only state (F-BILLING-2)", () => {
+  stubFetch();
+
+  const readOnlySubstrate = makeSubstrate({
+    status: "read_only",
+    slug: "frozen-peak",
+  });
+
+  it('renders the "Read Only" badge for read_only status', () => {
+    render(<DashboardClient account={baseAccount} substrates={[readOnlySubstrate]} />);
+    expect(screen.getByText("Read Only")).toBeInTheDocument();
+    // Regression guard: never show the raw snake_case status string.
+    expect(screen.queryByText("read_only")).not.toBeInTheDocument();
+  });
+
+  it("adds a tooltip to the Read Only badge explaining reads still work", () => {
+    // F-BILLING-2 key UX: the amber badge reads as "warning". The tooltip is
+    // the customer's first line of self-service context — it must clarify
+    // that reads still work and point them at billing.
+    render(<DashboardClient account={baseAccount} substrates={[readOnlySubstrate]} />);
+    const badge = screen.getByText("Read Only");
+    const title = badge.getAttribute("title") ?? "";
+    expect(title).toMatch(/reads still work/i);
+    expect(title).toMatch(/billing/i);
+  });
+
+  it("adds tooltips to other status badges too (regression guard on the titles map)", () => {
+    // Guard against a refactor that drops the titles map. We assert on
+    // `running` because it's the most common state and the tooltip copy is
+    // stable.
+    render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
+    const badge = screen.getByText("Running");
+    expect(badge.getAttribute("title")).toMatch(/running/i);
+  });
+
+  it("renders the read_only SubstrateStateBanner above the grid", () => {
+    render(<DashboardClient account={baseAccount} substrates={[readOnlySubstrate]} />);
+    const banner = screen.getByTestId("substrate-banner-frozen-peak");
+    expect(banner).toHaveAttribute("data-variant", "read_only");
+    expect(banner).toHaveTextContent("frozen-peak");
+    expect(screen.getByRole("button", { name: /Manage billing/i })).toBeInTheDocument();
+  });
+
+  it("banner explains reads still work (customer calm)", () => {
+    // Copy must explicitly distinguish read_only from a total outage — this is
+    // the single most important piece of read_only UX.
+    render(<DashboardClient account={baseAccount} substrates={[readOnlySubstrate]} />);
+    expect(screen.getByText(/reads still work/i)).toBeInTheDocument();
+  });
+
+  it("stacks banners correctly when mixing read_only with healthy substrates", () => {
+    render(
+      <DashboardClient account={baseAccount} substrates={[readOnlySubstrate, runningSubstrate]} />,
+    );
+    expect(screen.getByTestId("substrate-banner-frozen-peak")).toBeInTheDocument();
+    // Running substrate must stay silent — no banner for healthy states.
+    expect(screen.queryByTestId("substrate-banner-bold-junction")).not.toBeInTheDocument();
+  });
+});

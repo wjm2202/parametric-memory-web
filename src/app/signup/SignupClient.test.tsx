@@ -22,6 +22,9 @@ const h = vi.hoisted(() => {
       success: vi.fn(),
       error: vi.fn(),
     }),
+    // Mutable mock for useSearchParams — individual tests override `params` to
+    // simulate landing on `/signup?checkout=cancelled` etc.
+    searchParamsState: { params: new URLSearchParams() } as { params: URLSearchParams },
   };
 });
 
@@ -41,6 +44,14 @@ vi.mock("next/link", () => ({
       {children}
     </a>
   ),
+}));
+
+vi.mock("next/navigation", () => ({
+  // Each call returns an object backed by the hoisted state, so tests can
+  // flip the param set without re-mocking.
+  useSearchParams: () => ({
+    get: (key: string) => h.searchParamsState.params.get(key),
+  }),
 }));
 
 // ── sonner mock ───────────────────────────────────────────────────────────────
@@ -98,6 +109,10 @@ beforeEach(() => {
   h.mockToast.info.mockReset();
   h.mockToast.success.mockReset();
   h.mockToast.error.mockReset();
+
+  // Reset search params every test so cancel banner only shows where explicitly
+  // set. Individual tests mutate h.searchParamsState.params before render().
+  h.searchParamsState.params = new URLSearchParams();
 
   // Writable window.location.href so we can spy on redirects
   Object.defineProperty(window, "location", {
@@ -410,5 +425,96 @@ describe("SignupClient — 500 with canonical ApiError envelope", () => {
       expect(screen.getByText("Signup temporarily unavailable.")).toBeInTheDocument();
     });
     expect(window.location.href).toBe("");
+  });
+});
+
+// ── F-BILLING-1: cancel-landing banner on /signup?checkout=cancelled ──────────
+
+describe("SignupClient — cancel-landing banner (F-BILLING-1)", () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    // Stub fetch so the banner tests don't accidentally touch the network
+    // (the banner renders BEFORE any form submit, so no fetch is expected,
+    // but defensive stubbing keeps failures loud and specific).
+    globalThis.fetch = vi.fn().mockResolvedValue({
+      ok: false,
+      json: () => Promise.resolve({}),
+    });
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("renders the banner when ?checkout=cancelled is present", () => {
+    h.searchParamsState.params = new URLSearchParams("checkout=cancelled");
+    render(<SignupClient />);
+    expect(screen.getByTestId("signup-cancel-banner")).toBeInTheDocument();
+    expect(screen.getByText(/Payment cancelled/i)).toBeInTheDocument();
+    expect(screen.getByText(/no charge was made/i)).toBeInTheDocument();
+  });
+
+  it("does NOT render the banner when no checkout param is set", () => {
+    // Default state — h.searchParamsState.params is empty per beforeEach.
+    render(<SignupClient />);
+    expect(screen.queryByTestId("signup-cancel-banner")).not.toBeInTheDocument();
+  });
+
+  it("does NOT render the banner for unrelated checkout values", () => {
+    // Defence in depth — only the exact string "cancelled" should trigger it.
+    h.searchParamsState.params = new URLSearchParams("checkout=success");
+    render(<SignupClient />);
+    expect(screen.queryByTestId("signup-cancel-banner")).not.toBeInTheDocument();
+  });
+
+  it("dismisses locally when the ✕ is clicked", () => {
+    h.searchParamsState.params = new URLSearchParams("checkout=cancelled");
+    render(<SignupClient />);
+    expect(screen.getByTestId("signup-cancel-banner")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: /dismiss/i }));
+    expect(screen.queryByTestId("signup-cancel-banner")).not.toBeInTheDocument();
+  });
+
+  it("banner renders alongside the signup form (not instead of it)", () => {
+    h.searchParamsState.params = new URLSearchParams("checkout=cancelled");
+    render(<SignupClient />);
+    // Regression guard: the banner must NOT replace the form — the whole
+    // point of the banner is to help the user retry the flow right there.
+    expect(screen.getByTestId("signup-cancel-banner")).toBeInTheDocument();
+    expect(screen.getByLabelText(/email address/i)).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /continue/i })).toBeInTheDocument();
+  });
+
+  it("banner hides once the user completes signup (CheckEmailView takes over)", async () => {
+    // Once the user re-submits successfully we show CheckEmailView which has
+    // its own "Complete payment →" CTA — stacking the cancel banner on top
+    // would be redundant and noisy.
+    h.searchParamsState.params = new URLSearchParams("checkout=cancelled");
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (url === "/api/signup") {
+        return Promise.resolve({
+          ok: true,
+          status: 201,
+          json: () => Promise.resolve(VALID_SIGNUP_RESULT),
+        });
+      }
+      if (url === "/api/auth/request-link") {
+        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({}) });
+      }
+      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+    });
+
+    render(<SignupClient />);
+    expect(screen.getByTestId("signup-cancel-banner")).toBeInTheDocument();
+
+    await fillAndSubmit();
+    // NOTE: target a string unique to CheckEmailView — the banner's own copy
+    // contains "Check your email for the sign-in link…", which would otherwise
+    // false-positive this assertion before CheckEmailView actually mounted.
+    await waitFor(() => {
+      expect(screen.getByText(/we sent a sign-in link to/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId("signup-cancel-banner")).not.toBeInTheDocument();
   });
 });

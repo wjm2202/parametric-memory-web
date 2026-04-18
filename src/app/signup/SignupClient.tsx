@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { useState, type FormEvent } from "react";
+import { Suspense, useState, type FormEvent } from "react";
+import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { isApiError } from "@/types/api-error";
 
@@ -42,6 +43,67 @@ function isSignupResult(x: unknown): x is SignupResult {
     r.limits !== null &&
     typeof r.mcpConfig === "object" &&
     r.mcpConfig !== null
+  );
+}
+
+// ── Cancel-landing banner (F-BILLING-1) ───────────────────────────────────────
+//
+// When a user cancels the Stripe checkout for a fresh signup, Stripe's
+// cancel_url is `${baseUrl}/signup?checkout=cancelled` (see
+// parametric-memory-compute/src/api/signup/routes.ts). Today they land back on
+// a bare signup form with no context — it looks like nothing happened and they
+// often assume their account wasn't created. Explain clearly: no charge was
+// made, their account is waiting, and they can check their email or try again.
+//
+// Dismissible (local state only — URL param stays so a hard refresh still
+// shows it). Only rendered while the form is visible; once the user re-submits
+// and reaches CheckEmailView we suppress the banner — that view has its own
+// "Complete payment →" CTA.
+
+function SignupCancelBannerInner({ onDismiss }: { onDismiss?: () => void }) {
+  const searchParams = useSearchParams();
+  const cancelled = searchParams.get("checkout") === "cancelled";
+  const [dismissed, setDismissed] = useState(false);
+
+  if (!cancelled || dismissed) return null;
+
+  return (
+    <div
+      role="alert"
+      data-testid="signup-cancel-banner"
+      className="mb-6 flex items-start justify-between gap-4 rounded-xl border border-amber-500/30 bg-amber-500/10 px-4 py-3"
+    >
+      <div className="min-w-0">
+        <p className="flex items-center gap-2 text-sm font-semibold text-amber-300">
+          <span aria-hidden="true">⏸</span>
+          <span>Payment cancelled — no charge was made.</span>
+        </p>
+        <p className="mt-1 text-xs text-white/60">
+          Your account is saved. Check your email for the sign-in link to retry checkout from your
+          dashboard, or enter your email again below to restart.
+        </p>
+      </div>
+      <button
+        type="button"
+        aria-label="Dismiss"
+        onClick={() => {
+          setDismissed(true);
+          onDismiss?.();
+        }}
+        className="shrink-0 text-amber-400/60 transition hover:text-amber-300"
+      >
+        ✕
+      </button>
+    </div>
+  );
+}
+
+/** Suspense-wrapped cancel banner. useSearchParams requires a Suspense boundary. */
+function SignupCancelBanner() {
+  return (
+    <Suspense fallback={null}>
+      <SignupCancelBannerInner />
+    </Suspense>
   );
 }
 
@@ -436,7 +498,12 @@ export default function SignupClient() {
               signupData={completed.data}
             />
           ) : (
-            <SignupForm onComplete={(email, isNew, data) => setCompleted({ email, isNew, data })} />
+            <>
+              <SignupCancelBanner />
+              <SignupForm
+                onComplete={(email, isNew, data) => setCompleted({ email, isNew, data })}
+              />
+            </>
           )}
         </div>
 
