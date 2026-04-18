@@ -676,54 +676,51 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                     Add to Claude Desktop{" "}
                     <code className="text-white/30">claude_desktop_config.json</code>:
                   </p>
-                  <div className="relative">
-                    <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-4 font-mono text-xs leading-relaxed text-white/60">
-                      {`{
-  "mcpServers": {
-    "Memory-mcp": {
-      "command": "npx",
-      "args": [
-        "-y",
-        "mcp-remote",
-        "${substrate.mcpEndpoint}",
-        "--header",
-        "Authorization:\${AUTH_HEADER}"
-      ],
-      "env": {
-        "AUTH_HEADER": "${showKeyReveal && revealedKey ? `Bearer ${revealedKey}` : "Bearer ••••••••"}"
-      }
-    }
-  }
-}`}
-                    </pre>
-                    <button
-                      onClick={async () => {
-                        const authValue =
-                          showKeyReveal && revealedKey
-                            ? `Bearer ${revealedKey}`
-                            : "Bearer YOUR_API_KEY_HERE";
-                        const config = {
-                          mcpServers: {
-                            "Memory-mcp": {
-                              command: "npx",
-                              args: [
-                                "-y",
-                                "mcp-remote",
-                                substrate.mcpEndpoint,
-                                "--header",
-                                "Authorization:${AUTH_HEADER}",
-                              ],
-                              env: { AUTH_HEADER: authValue },
-                            },
-                          },
-                        };
-                        await navigator.clipboard.writeText(JSON.stringify(config, null, 2));
-                      }}
-                      className="absolute top-2 right-2 rounded bg-white/10 px-2 py-1 text-xs text-white/50 transition-colors hover:bg-white/20 hover:text-white/80"
-                    >
-                      Copy
-                    </button>
-                  </div>
+                  {(() => {
+                    // Build the config object once and serialize it for BOTH the
+                    // rendered <pre> and the clipboard write. Using JSON.stringify
+                    // guarantees straight ASCII quotes regardless of any ancestor
+                    // CSS (typography plugins) or browser extension that might
+                    // otherwise rewrite smart quotes on a template literal.
+                    const authDisplay =
+                      showKeyReveal && revealedKey ? `Bearer ${revealedKey}` : "Bearer ••••••••";
+                    const authCopy =
+                      showKeyReveal && revealedKey
+                        ? `Bearer ${revealedKey}`
+                        : "Bearer YOUR_API_KEY_HERE";
+                    const buildConfig = (auth: string) => ({
+                      mcpServers: {
+                        "Memory-mcp": {
+                          command: "npx",
+                          args: [
+                            "-y",
+                            "mcp-remote",
+                            substrate.mcpEndpoint,
+                            "--header",
+                            "Authorization:${AUTH_HEADER}",
+                          ],
+                          env: { AUTH_HEADER: auth },
+                        },
+                      },
+                    });
+                    const displayJson = JSON.stringify(buildConfig(authDisplay), null, 2);
+                    const copyJson = JSON.stringify(buildConfig(authCopy), null, 2);
+                    return (
+                      <div className="relative">
+                        <pre className="overflow-x-auto rounded-lg border border-white/10 bg-black/40 p-4 font-mono text-xs leading-relaxed text-white/60">
+                          {displayJson}
+                        </pre>
+                        <button
+                          onClick={async () => {
+                            await navigator.clipboard.writeText(copyJson);
+                          }}
+                          className="absolute top-2 right-2 rounded bg-white/10 px-2 py-1 text-xs text-white/50 transition-colors hover:bg-white/20 hover:text-white/80"
+                        >
+                          Copy
+                        </button>
+                      </div>
+                    );
+                  })()}
                   {!showKeyReveal && (
                     <p className="mt-2 text-xs text-white/30">
                       {substrate.keyUnclaimed

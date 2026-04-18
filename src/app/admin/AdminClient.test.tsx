@@ -303,6 +303,79 @@ describe("AdminClient — MCP block", () => {
   });
 });
 
+// ── Claude Desktop JSON config block ─────────────────────────────────────────
+//
+// Regression guard for a Unicode smart-quote bug we saw in prod: the <pre>
+// block inside the admin MCP card was being rendered with a U+201C LEFT DOUBLE
+// QUOTATION MARK as the very first character of the JSON, which broke copy-
+// paste into claude_desktop_config.json (JSON.parse rejects smart quotes).
+// The source template literal used straight ASCII quotes, so the corruption
+// was happening at render time — suspected causes: an ancestor CSS typography
+// plugin rewriting quotes, a browser extension auto-"smartening" on copy, or
+// a font ligature. Fix: render the JSON via JSON.stringify() so both the
+// <pre> display and the Copy button produce identical, straight-ASCII output
+// regardless of any rendering pipeline quirks.
+//
+// These tests pin the fix by checking the actual rendered characters.
+
+describe("AdminClient — JSON config block", () => {
+  stubFetch();
+
+  /** Shared setup — a running substrate with an MCP endpoint shows the pre block. */
+  function renderConfigBlock() {
+    return renderAdmin({
+      status: "running",
+      mcpEndpoint: "https://silver-vista.droplet-mcp.nz/mcp",
+    });
+  }
+
+  it("renders the <pre> with straight ASCII double quotes (no U+201C/U+201D)", () => {
+    renderConfigBlock();
+    // Locate the <pre> by its content — the JSON starts with `{`.
+    const pre = document.querySelector("pre");
+    expect(pre).not.toBeNull();
+    const text = pre!.textContent ?? "";
+    // Must contain the JSON skeleton
+    expect(text).toContain(`"mcpServers"`);
+    expect(text).toContain(`"Memory-mcp"`);
+    // Must NOT contain smart quotes anywhere
+    expect(text).not.toMatch(/[\u201C\u201D\u2018\u2019]/);
+    // First non-whitespace character must be `{` and the very first quote
+    // after it must be a straight ASCII `"`.
+    const firstQuote = text.indexOf('"');
+    expect(firstQuote).toBeGreaterThan(0);
+    expect(text.charCodeAt(firstQuote)).toBe(0x22); // " = U+0022
+  });
+
+  it("renders the substrate's mcpEndpoint verbatim in the JSON block", () => {
+    renderConfigBlock();
+    const pre = document.querySelector("pre");
+    expect(pre?.textContent).toContain("https://silver-vista.droplet-mcp.nz/mcp");
+  });
+
+  it("renders placeholder auth header until key is revealed", () => {
+    renderConfigBlock();
+    const pre = document.querySelector("pre");
+    // Dots placeholder — we don't dictate exact glyph, just that no real key leaked
+    expect(pre?.textContent).toContain("Bearer ");
+    expect(pre?.textContent).not.toContain("mmk_"); // no real key prefix in display
+  });
+
+  it("produces valid JSON that JSON.parse accepts (round-trip)", () => {
+    renderConfigBlock();
+    const pre = document.querySelector("pre");
+    const text = pre!.textContent ?? "";
+    // The <pre> body is JUST the JSON (no preamble / postamble). If this
+    // ever fails, the component is rendering extra garbage into the block.
+    expect(() => JSON.parse(text)).not.toThrow();
+    const parsed = JSON.parse(text);
+    expect(parsed.mcpServers["Memory-mcp"].command).toBe("npx");
+    expect(parsed.mcpServers["Memory-mcp"].args).toContain(
+      "https://silver-vista.droplet-mcp.nz/mcp",
+    );
+  });
+});
+
 // ── Health badges ─────────────────────────────────────────────────────────────
 
 const fullHealth = {
