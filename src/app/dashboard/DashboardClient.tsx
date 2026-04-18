@@ -4,6 +4,7 @@ import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getTierLabel } from "@/config/tiers";
+import SubstrateStateBanner from "@/components/ui/SubstrateStateBanner";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -83,6 +84,10 @@ function StatusBadge({ status }: { status: string }) {
   const styles: Record<string, string> = {
     running: "bg-emerald-500/20 text-emerald-400 border-emerald-500/30",
     provisioning: "bg-blue-500/20 text-blue-400 border-blue-500/30",
+    // F-BILLING-3: pending_payment used to fall through to the default gray
+    // badge. Now surfaced with an amber "Payment Pending" pill so customers
+    // can see at a glance that a substrate is waiting on their Stripe session.
+    pending_payment: "bg-amber-500/20 text-amber-400 border-amber-500/30",
     read_only: "bg-amber-500/20 text-amber-400 border-amber-500/30",
     cancelled: "bg-red-500/20 text-red-400 border-red-500/30",
     suspended: "bg-red-500/20 text-red-400 border-red-500/30",
@@ -94,6 +99,7 @@ function StatusBadge({ status }: { status: string }) {
   const labels: Record<string, string> = {
     running: "Running",
     provisioning: "Provisioning",
+    pending_payment: "Payment Pending",
     read_only: "Read Only",
     cancelled: "Cancelled",
     suspended: "Suspended",
@@ -102,8 +108,26 @@ function StatusBadge({ status }: { status: string }) {
     provision_failed: "Provision Failed",
   };
 
+  // F-BILLING-2: tooltips on every status so the dashboard explains itself on
+  // hover. Particularly important for `read_only` — the badge colour reads as
+  // "warning", but the customer needs to know WHY (billing issue, not an
+  // outage) and HOW to resume (manage billing).
+  const titles: Record<string, string> = {
+    running: "This substrate is running and accepting reads and writes.",
+    provisioning: "Your substrate is being created. Usually takes 1–2 minutes.",
+    pending_payment: "Payment hasn't completed yet. Finish checkout to activate.",
+    read_only: "Writes are paused. Reads still work. Check billing to resume writes.",
+    cancelled: "Subscription cancelled. Memory preserved for 90 days.",
+    suspended: "Account suspended after failed payment attempts.",
+    deprovisioned: "This substrate has been deprovisioned and its data removed.",
+    destroyed: "This substrate has been destroyed.",
+    provision_failed:
+      "Provisioning didn't complete. No charges were made — contact support to retry.",
+  };
+
   return (
     <span
+      title={titles[status] ?? undefined}
       className={`inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-medium ${
         styles[status] ?? "border-white/20 bg-white/10 text-white/50"
       }`}
@@ -654,6 +678,21 @@ export default function DashboardClient({
         {billingStatus && !billingError && (
           <BillingWidget billing={billingStatus} onBillingPortal={handleBillingPortal} />
         )}
+
+        {/* F-BILLING-3 + F-PROV-1: per-substrate attention banners.
+            SubstrateStateBanner returns null for healthy statuses, so we can
+            render one per substrate without any filtering — the stack stays
+            empty unless something actually needs the user's attention. */}
+        <div className="space-y-3">
+          {substrates.map((substrate) => (
+            <SubstrateStateBanner
+              key={`banner-${substrate.id}`}
+              slug={substrate.slug}
+              status={substrate.status}
+              onBillingPortal={handleBillingPortal}
+            />
+          ))}
+        </div>
 
         {/* Substrates grid */}
         <div>
