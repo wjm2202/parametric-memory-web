@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { useState, type FormEvent } from "react";
+import { toast } from "sonner";
+import { isApiError } from "@/types/api-error";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -11,15 +13,36 @@ interface SignupResult {
   tier: string;
   mcpEndpoint: string;
   apiKey: string;
+  checkoutUrl: string;
   limits: {
     maxAtoms: number;
     maxBootstrapsPerMonth: number;
     maxStorageMB: number;
+    maxMonthlyCents: number;
+    maxSubstrates: number;
   };
   status: string;
   mcpConfig: {
     mcpServers: Record<string, { command: string; args: string[] }>;
   };
+}
+
+function isSignupResult(x: unknown): x is SignupResult {
+  if (typeof x !== "object" || x === null) return false;
+  const r = x as Record<string, unknown>;
+  return (
+    typeof r.customerId === "string" &&
+    typeof r.slug === "string" &&
+    typeof r.tier === "string" &&
+    typeof r.mcpEndpoint === "string" &&
+    typeof r.apiKey === "string" &&
+    typeof r.checkoutUrl === "string" &&
+    typeof r.status === "string" &&
+    typeof r.limits === "object" &&
+    r.limits !== null &&
+    typeof r.mcpConfig === "object" &&
+    r.mcpConfig !== null
+  );
 }
 
 // ── Copy button ───────────────────────────────────────────────────────────────
@@ -117,6 +140,24 @@ function CheckEmailView({
             </p>
           </div>
 
+          {/* Payment CTA — required to activate the substrate */}
+          {signupData.checkoutUrl && (
+            <div className="space-y-2">
+              <p className="text-center text-sm text-white/60">
+                Activate your substrate by completing payment.
+              </p>
+              <button
+                type="button"
+                onClick={() => {
+                  window.location.href = signupData.checkoutUrl;
+                }}
+                className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
+              >
+                Complete payment →
+              </button>
+            </div>
+          )}
+
           {/* API key — show once warning */}
           <div className="rounded-xl border border-amber-500/20 bg-amber-500/5 p-4">
             <div className="mb-2 flex items-center justify-between">
@@ -211,7 +252,22 @@ function SignupForm({
       if (signupRes.ok) {
         // New account created successfully
         isNewAccount = true;
-        signupData = (await signupRes.json()) as SignupResult;
+        const raw: unknown = await signupRes.json();
+        if (!isSignupResult(raw)) {
+          toast.error(
+            "Account created but the checkout link is missing. Redirecting you to pricing.",
+          );
+          window.location.href = "/pricing";
+          return;
+        }
+        if (!raw.checkoutUrl) {
+          toast.error(
+            "Account created but the checkout link is missing. Redirecting you to pricing.",
+          );
+          window.location.href = "/pricing";
+          return;
+        }
+        signupData = raw;
       } else if (signupRes.status === 409) {
         // Account already exists — that's fine, we'll just send a magic link
         isNewAccount = false;
@@ -221,10 +277,14 @@ function SignupForm({
         setError(fields ? `Validation error: ${fields}` : "Please check your email address.");
         return;
       } else {
-        const data = await signupRes.json().catch(() => ({}));
-        setError(
-          (data as Record<string, string>).error ?? "Something went wrong. Please try again.",
-        );
+        const data: unknown = await signupRes.json().catch(() => ({}));
+        if (isApiError(data)) {
+          setError(data.human_message);
+        } else {
+          setError(
+            (data as Record<string, string>).error ?? "Something went wrong. Please try again.",
+          );
+        }
         return;
       }
 
