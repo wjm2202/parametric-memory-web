@@ -59,6 +59,15 @@ export const docsNav: DocNavSection[] = [
       { title: "Payment Failures", slug: "payment-failures" },
     ],
   },
+  {
+    title: "API Reference",
+    items: [
+      { title: "Authentication", slug: "api/authentication" },
+      { title: "Atoms API", slug: "api/atoms" },
+      { title: "Recall API", slug: "api/recall" },
+      { title: "Atom Safety & Blocking", slug: "api/atom-safety", badge: "new" },
+    ],
+  },
 ];
 
 /** Flat list of all slugs — used by generateStaticParams */

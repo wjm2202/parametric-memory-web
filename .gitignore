@@ -42,9 +42,6 @@ docs/WEB-DROPLET-SETUP-GUIDE.md
 # Docker
 docker-compose.override.yml
 
-# Generated docs (regenerated on build)
-content/docs/api/
-
 # Stripe CLI
 .stripe/
 .gitnexus

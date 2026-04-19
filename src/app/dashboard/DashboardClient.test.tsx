@@ -353,3 +353,39 @@ describe("DashboardClient — read_only state (F-BILLING-2)", () => {
     expect(screen.queryByTestId("substrate-banner-bold-junction")).not.toBeInTheDocument();
   });
 });
+
+// ── Dashboard top-nav links — regression guard (2026-04-19) ───────────────────
+//
+// Regression: the Docs link in the dashboard's top nav was a hardcoded
+// `<a href="https://mmpm.co.nz/docs" target="_blank">` — a leftover from before
+// the /docs route existed on parametric-memory.dev. Every other surface uses
+// a client-side `<Link href="/docs">`, so the dashboard was the odd one out
+// and kicked users out to a different domain.
+//
+// The fix swaps in `<Link href="/docs">`. These tests ensure a future refactor
+// doesn't re-introduce the external URL or open-in-new-tab behaviour.
+
+describe("DashboardClient — top-nav Docs link (regression guard)", () => {
+  stubFetch();
+
+  it("Docs link points to the internal /docs route, not an external domain", () => {
+    render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
+    const docsLink = screen.getByRole("link", { name: /^docs$/i });
+    expect(docsLink).toHaveAttribute("href", "/docs");
+  });
+
+  it("Docs link does not open in a new tab (stays in-app)", () => {
+    render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
+    const docsLink = screen.getByRole("link", { name: /^docs$/i });
+    expect(docsLink).not.toHaveAttribute("target");
+    expect(docsLink).not.toHaveAttribute("rel", expect.stringMatching(/noopener/));
+  });
+
+  it("Docs link href never references mmpm.co.nz (external-domain regression)", () => {
+    render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
+    const docsLink = screen.getByRole("link", { name: /^docs$/i });
+    const href = docsLink.getAttribute("href") ?? "";
+    expect(href).not.toMatch(/mmpm\.co\.nz/);
+    expect(href).not.toMatch(/^https?:\/\//);
+  });
+});

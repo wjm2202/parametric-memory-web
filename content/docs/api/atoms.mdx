@@ -1,0 +1,93 @@
+---
+title: Atoms API
+description: Store, retrieve, and version individual memory atoms via the REST API.
+section: API Reference
+order: 2
+---
+
+# Atoms API
+
+The atoms endpoints are the core of Parametric Memory. They handle storing and
+retrieving individual named knowledge units.
+
+## Store an atom
+
+```http
+POST /atoms
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+```
+
+```json
+{
+  "key": "v1.user.Glen.preference.theme",
+  "value": "dark"
+}
+```
+
+**Response `201`:**
+
+```json
+{
+  "key": "v1.user.Glen.preference.theme",
+  "version": 1,
+  "hash": "a9b2c3d4...",
+  "rootHash": "f1e2d3c4...",
+  "createdAt": 1743638400000
+}
+```
+
+## Retrieve an atom
+
+```http
+GET /atoms/:key
+Authorization: Bearer YOUR_API_KEY
+```
+
+**Response `200`:**
+
+```json
+{
+  "key": "v1.user.Glen.preference.theme",
+  "value": "dark",
+  "version": 3,
+  "hash": "a9b2c3d4...",
+  "proof": {
+    "leafHash": "a9b2c3d4...",
+    "siblings": ["b1c2d3e4...", "c2d3e4f5..."],
+    "rootHash": "f1e2d3c4...",
+    "leafIndex": 42,
+    "treeSize": 500
+  }
+}
+```
+
+## Batch store
+
+```http
+POST /batch-atoms
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+```
+
+```json
+{
+  "atoms": [
+    { "key": "v1.user.Glen.preference.theme", "value": "dark" },
+    { "key": "v1.user.Glen.preference.language", "value": "TypeScript" }
+  ]
+}
+```
+
+Batch operations are processed atomically — either all succeed or all fail.
+
+## Error responses
+
+| Status | Code                           | Meaning                                                                                       |
+| ------ | ------------------------------ | --------------------------------------------------------------------------------------------- |
+| `401`  | `UNAUTHORIZED`                 | Missing or invalid API key                                                                    |
+| `403`  | `FORBIDDEN`                    | Key lacks `full` scope (read-only key)                                                        |
+| `404`  | `NOT_FOUND`                    | Atom key does not exist                                                                       |
+| `413`  | `PAYLOAD_TOO_LARGE`            | Value exceeds tier limit                                                                      |
+| `422`  | `SENSITIVE_CONTENT_REJECTED`   | Value matched a credential pattern or entropy check — see [Atom Safety](/docs/api/atom-safety) |
+| `429`  | `RATE_LIMITED`                 | Too many requests — back off and retry                                                        |
