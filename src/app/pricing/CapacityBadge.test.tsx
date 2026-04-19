@@ -39,6 +39,54 @@ describe("CapacityBadge", () => {
     expect(screen.getByText("1 slot left")).toBeInTheDocument();
   });
 
+  // ── maxSlots: N / M display ─────────────────────────────────────────
+  // When compute returns both slotsRemaining AND the host's configured
+  // max_tenants, the badge should ground urgency in the real host size
+  // rather than a bare number.
+  it("shows 'N / M slots left' when low-capacity and maxSlots is known", () => {
+    render(<CapacityBadge status="open" slotsRemaining={3} maxSlots={30} hydrated={true} />);
+    expect(screen.getByText("3 / 30 slots left")).toBeInTheDocument();
+  });
+
+  it("shows 'N / M slot left' (singular) when exactly 1 remaining and maxSlots known", () => {
+    render(<CapacityBadge status="open" slotsRemaining={1} maxSlots={30} hydrated={true} />);
+    expect(screen.getByText("1 / 30 slot left")).toBeInTheDocument();
+  });
+
+  it("shows 'N / M slots available' when open with healthy headroom and maxSlots known", () => {
+    render(<CapacityBadge status="open" slotsRemaining={12} maxSlots={30} hydrated={true} />);
+    expect(screen.getByText("12 / 30 slots available")).toBeInTheDocument();
+    expect(screen.queryByText("Available")).not.toBeInTheDocument();
+  });
+
+  it("shows 'N / M slot available' (singular) when only 1 slot left but on a 1-tenant host", () => {
+    // Edge case: a single-tenant host with 1 slot remaining — pluralization
+    // should follow slotsRemaining value.
+    render(<CapacityBadge status="open" slotsRemaining={1} maxSlots={1} hydrated={true} />);
+    // 1 slotsRemaining is <= 5 threshold → low-capacity branch wins, so this
+    // renders "1 / 1 slot left", not "... available". That's correct behaviour
+    // — low-capacity copy is more urgent.
+    expect(screen.getByText("1 / 1 slot left")).toBeInTheDocument();
+  });
+
+  it("falls back to plain 'Available' when maxSlots is null (unknown ceiling)", () => {
+    render(<CapacityBadge status="open" slotsRemaining={20} maxSlots={null} hydrated={true} />);
+    expect(screen.getByText("Available")).toBeInTheDocument();
+  });
+
+  it("falls back to plain 'Available' when slotsRemaining is null even with maxSlots", () => {
+    // Should not render "null / 30 slots available" — guard both sides.
+    render(<CapacityBadge status="open" slotsRemaining={null} maxSlots={30} hydrated={true} />);
+    expect(screen.getByText("Available")).toBeInTheDocument();
+  });
+
+  it("falls back to bare count when low-capacity and maxSlots is null", () => {
+    // Existing behaviour — no regression when maxSlots unknown.
+    render(<CapacityBadge status="open" slotsRemaining={3} maxSlots={null} hydrated={true} />);
+    expect(screen.getByText("3 slots left")).toBeInTheDocument();
+    expect(screen.queryByText(/\/ .* slots left/)).not.toBeInTheDocument();
+  });
+
   // ── waitlist / paused ───────────────────────────────────────────────
   it("shows 'Full — join waitlist' when status is waitlist", () => {
     render(<CapacityBadge status="waitlist" slotsRemaining={0} hydrated={true} />);

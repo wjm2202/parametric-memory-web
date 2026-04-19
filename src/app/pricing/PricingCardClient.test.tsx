@@ -23,7 +23,12 @@ vi.mock("next/link", () => ({
 function mockCapacityResponse(
   tierOverrides: Record<
     string,
-    { status: string; slotsRemaining: number | null; message: string | null }
+    {
+      status: string;
+      slotsRemaining: number | null;
+      maxSlots?: number | null;
+      message: string | null;
+    }
   >,
 ) {
   return {
@@ -31,9 +36,9 @@ function mockCapacityResponse(
     json: () =>
       Promise.resolve({
         tiers: {
-          indie: { status: "open", slotsRemaining: 10, message: null },
-          pro: { status: "open", slotsRemaining: 10, message: null },
-          team: { status: "open", slotsRemaining: 10, message: null },
+          indie: { status: "open", slotsRemaining: 10, maxSlots: 30, message: null },
+          pro: { status: "open", slotsRemaining: 10, maxSlots: 30, message: null },
+          team: { status: "open", slotsRemaining: 10, maxSlots: null, message: null },
           ...tierOverrides,
         },
       }),
@@ -89,6 +94,75 @@ describe("PricingCardClient", () => {
     );
 
     expect(screen.getByText("Loading…")).toBeInTheDocument();
+  });
+
+  // ── maxSlots hydration (N / M display) ──────────────────────────────
+  // The pricing card should surface the shared-host ceiling to customers so
+  // they can see real headroom (e.g. "12 / 30 slots available") rather than a
+  // bare number or an opaque "Available". maxSlots comes from compute's
+  // compute_hosts.max_tenants and is passed through the API verbatim.
+  it("hydrates the badge with 'N / M slots available' when maxSlots is present", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      mockCapacityResponse({
+        indie: { status: "open", slotsRemaining: 12, maxSlots: 30, message: null },
+      }),
+    );
+
+    await act(async () => {
+      render(
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
+          <div>$9/month</div>
+        </PricingCardClient>,
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("12 / 30 slots available")).toBeInTheDocument();
+    });
+  });
+
+  it("hydrates the badge with 'N / M slots left' when low-capacity and maxSlots known", async () => {
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      mockCapacityResponse({
+        indie: { status: "open", slotsRemaining: 3, maxSlots: 30, message: null },
+      }),
+    );
+
+    await act(async () => {
+      render(
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
+          <div>$9/month</div>
+        </PricingCardClient>,
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("3 / 30 slots left")).toBeInTheDocument();
+    });
+  });
+
+  it("falls back to plain 'Available' when compute omits maxSlots (null)", async () => {
+    // When the upstream response doesn't carry maxSlots (e.g. fail-open or
+    // unlimited tier), the badge should render "Available" rather than a
+    // broken "12 / null slots available" string.
+    (globalThis.fetch as ReturnType<typeof vi.fn>).mockResolvedValueOnce(
+      mockCapacityResponse({
+        team: { status: "open", slotsRemaining: 12, maxSlots: null, message: null },
+      }),
+    );
+
+    await act(async () => {
+      render(
+        <PricingCardClient tierId="team" tierName="Team" ctaLabel="Contact us" isLoggedIn={false}>
+          <div>$199/month</div>
+        </PricingCardClient>,
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText("Available")).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/\/ .* slots/)).not.toBeInTheDocument();
   });
 
   it("fails open when mount fetch errors — shows 'Available'", async () => {
@@ -279,7 +353,9 @@ describe("PricingCardClient", () => {
       );
     });
 
-    expect(screen.getByText("Available")).toBeInTheDocument();
+    // Default mock now includes maxSlots=30 for pro, so the badge renders
+    // the "N / M slots available" form rather than plain "Available".
+    expect(screen.getByText("10 / 30 slots available")).toBeInTheDocument();
     expect(screen.getByTestId("price-block")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "Get Professional" })).toBeInTheDocument();
   });

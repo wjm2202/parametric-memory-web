@@ -9,6 +9,13 @@ type CapacityStatus = "open" | "waitlist" | "paused";
 interface TierCapacity {
   status: CapacityStatus;
   slotsRemaining: number | null;
+  /**
+   * Total configured slots for this tier on the active shared host
+   * (compute_hosts.max_tenants). Null for unlimited tiers (team) or when
+   * compute didn't return the field (e.g. fail-open fallback). Paired with
+   * slotsRemaining so the badge can render "12 / 30 slots available".
+   */
+  maxSlots: number | null;
   message: string | null;
 }
 
@@ -49,6 +56,7 @@ export function PricingCardClient({
   const [capacity, setCapacity] = useState<TierCapacity>({
     status: "open",
     slotsRemaining: null,
+    maxSlots: null,
     message: null,
   });
   const [checking, setChecking] = useState(false);
@@ -69,11 +77,12 @@ export function PricingCardClient({
       return {
         status: tierData.status ?? "open",
         slotsRemaining: tierData.slotsRemaining ?? null,
+        maxSlots: tierData.maxSlots ?? null,
         message: tierData.message ?? null,
       };
     }
     // Tier not in response — fail open
-    return { status: "open", slotsRemaining: null, message: null };
+    return { status: "open", slotsRemaining: null, maxSlots: null, message: null };
   }, [tierId]);
 
   // ── Mount: hydrate badge with cached capacity ───────────────────────
@@ -125,6 +134,7 @@ export function PricingCardClient({
       <CapacityBadge
         status={capacity.status}
         slotsRemaining={capacity.slotsRemaining}
+        maxSlots={capacity.maxSlots}
         checking={checking}
         hydrated={hydrated}
       />

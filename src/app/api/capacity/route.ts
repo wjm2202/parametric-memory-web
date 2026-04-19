@@ -17,6 +17,11 @@ import { computeProxy } from "@/lib/compute-proxy";
 
 export const dynamic = "force-dynamic";
 
+// Shape mirrors compute's TierAvailability (src/services/capacity-service.ts):
+// keep fields in sync when either side changes — the proxy forwards the
+// upstream response verbatim on the happy path, but when compute is
+// unreachable we return THIS object, so any omissions here become
+// silent "undefined" on the pricing card.
 const FAIL_OPEN_RESPONSE = {
   tiers: {
     indie: {
@@ -24,6 +29,7 @@ const FAIL_OPEN_RESPONSE = {
       status: "open",
       fillPct: null,
       slotsRemaining: null,
+      maxSlots: null,
       message: null,
     },
     pro: {
@@ -31,6 +37,7 @@ const FAIL_OPEN_RESPONSE = {
       status: "open",
       fillPct: null,
       slotsRemaining: null,
+      maxSlots: null,
       message: null,
     },
     team: {
@@ -38,6 +45,7 @@ const FAIL_OPEN_RESPONSE = {
       status: "open",
       fillPct: null,
       slotsRemaining: null,
+      maxSlots: null,
       message: null,
     },
   },
