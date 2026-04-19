@@ -4,7 +4,7 @@ import { FAQAccordion } from "./PricingClient";
 import { PricingCardClient } from "./PricingCardClient";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { TIERS } from "@/config/tiers";
-import { TeamInquiryForm } from "./TeamInquiryForm";
+import { CapacityInquiryForm } from "./CapacityInquiryForm";
 
 export const metadata: Metadata = {
   title: "Pricing — Plans from $3/mo",
@@ -298,7 +298,7 @@ export default async function PricingPage() {
                           <span className="text-surface-200/60 text-sm">/month</span>
                         </div>
                       </div>
-                      <TeamInquiryForm />
+                      <CapacityInquiryForm tier="team" variant="primary" />
                     </>
                   ) : (
                     <PricingCardClient

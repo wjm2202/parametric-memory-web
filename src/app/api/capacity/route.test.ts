@@ -13,12 +13,16 @@ import { GET } from "./route";
  * tier structure, regardless of what compute/nginx returns.
  */
 
-// Shape of a single tier in the fail-open response
+// Shape of a single tier in the fail-open response.
+// maxSlots mirrors compute's TierAvailability.maxSlots (compute_hosts.max_tenants).
+// When compute is unreachable we don't know the ceiling, so maxSlots is null and
+// the pricing badge falls back to plain "Available" rather than "N / M".
 const FAIL_OPEN_TIER = {
   available: true,
   status: "open",
   fillPct: null,
   slotsRemaining: null,
+  maxSlots: null,
   message: null,
 };
 
@@ -181,6 +185,11 @@ describe("GET /api/capacity", () => {
       expect(tierData.status).toBe("open");
       expect(tierData.available).toBe(true);
       expect(tierData.slotsRemaining).toBeNull();
+      // maxSlots must be present (even as null) so the PricingCardClient
+      // reading tierData.maxSlots doesn't get an undefined that breaks
+      // the CapacityBadge's "N / M" conditional.
+      expect(tierData).toHaveProperty("maxSlots");
+      expect(tierData.maxSlots).toBeNull();
       expect(tierData.message).toBeNull();
     }
   });

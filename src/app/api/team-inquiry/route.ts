@@ -1,16 +1,22 @@
 /**
- * POST /api/team-inquiry
+ * POST /api/team-inquiry — DEPRECATED (2026-04-19, sprint 2026-W17 Item B)
  *
- * Receives Team plan inquiry form submissions from the pricing page.
- * Sends an email notification to the sales inbox.
+ * The canonical endpoint is now POST /api/capacity-inquiry, which accepts a
+ * `tier` field so every pricing tier can signal "my limits aren't enough —
+ * quote me something custom".
  *
- * Pre-launch: uses nodemailer with SMTP (or falls back to logging).
- * No CRM integration needed yet — volume will be low enough to handle manually.
+ * This shim is kept for 30 days to avoid breaking:
+ *   - bookmarked URLs,
+ *   - any rogue client still holding the old form open,
+ *   - existing integration tests that exercise this path.
  *
- * Body: { name: string, email: string, teamSize: '1-5' | '6-20' | '20+' }
+ * On 2026-05-19 (or later) once stdout shows no more traffic, delete this
+ * route. The shim translates the legacy `{ name, email, teamSize }` shape
+ * into the new `{ name, email, tier: "team", message }` shape and forwards
+ * to the shared handler.
  */
-
 import { NextRequest, NextResponse } from "next/server";
+import { handleCapacityInquiry } from "../capacity-inquiry/handler";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
   let body: { name?: string; email?: string; teamSize?: string };
@@ -21,42 +27,23 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
   }
 
   const { name, email, teamSize } = body;
-
   if (!name || !email || !teamSize) {
     return NextResponse.json({ error: "missing_fields" }, { status: 400 });
   }
 
-  // Basic email format check
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    return NextResponse.json({ error: "invalid_email" }, { status: 400 });
-  }
-
-  // ── Log inquiry to stdout ─────────────────────────────────────────────────
-  // Pre-launch: log to stdout so it shows up in server logs.
-  // TODO: wire up SMTP (nodemailer) or a transactional email service (Resend, Postmark)
-  //       once inquiry volume warrants it. At $79/month sales velocity will be low enough
-  //       to handle manually from logs.
-  console.log(
-    `[team-inquiry] New inquiry — ${name} <${email}> — ${teamSize} people — ${new Date().toISOString()}`,
+  console.warn(
+    `[team-inquiry] DEPRECATED endpoint — forwarding to /api/capacity-inquiry (tier=team, teamSize=${teamSize})`,
   );
 
-  // ── Forward via webhook if configured ────────────────────────────────────
-  // Set TEAM_INQUIRY_WEBHOOK_URL to a Slack/Discord/Zapier webhook URL in production.
-  const webhookUrl = process.env.TEAM_INQUIRY_WEBHOOK_URL;
-  if (webhookUrl) {
-    try {
-      await fetch(webhookUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          text: `New Team plan inquiry\nName: ${name}\nEmail: ${email}\nTeam size: ${teamSize}`,
-        }),
-      });
-    } catch (err) {
-      console.error("[team-inquiry] Webhook delivery failed:", err);
-      // Don't fail the request — logging is enough
-    }
-  }
+  const result = await handleCapacityInquiry({
+    name,
+    email,
+    tier: "team",
+    message: `Team size: ${teamSize} people`,
+  });
 
-  return NextResponse.json({ ok: true });
+  if (result.ok) {
+    return NextResponse.json({ ok: true });
+  }
+  return NextResponse.json({ error: result.error }, { status: result.status });
 }
