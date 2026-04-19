@@ -1,0 +1,55 @@
+---
+title: Authentication
+description: API key formats, scopes, and how to authenticate with the Parametric Memory REST and MCP APIs.
+section: API Reference
+order: 1
+---
+
+# Authentication
+
+All API requests must include a valid API key in the `Authorization` header.
+
+## Bearer token
+
+```http
+Authorization: Bearer YOUR_API_KEY
+```
+
+API keys have the prefix `mmk_` followed by a hex string:
+
+```
+mmk_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+```
+
+## Scopes
+
+Keys issued through the dashboard carry one of two scopes:
+
+| Scope  | Description                                     |
+| ------ | ----------------------------------------------- |
+| `read` | Recall and verify only — no writes, no training |
+| `full` | Full access: store, recall, checkpoint, admin   |
+
+Read-only keys are safe to embed in client-side applications or share with
+third parties who need to verify facts but not write new ones.
+
+## Key rotation
+
+Keys can be rotated from the [dashboard](/dashboard). Rotation runs a multi-step
+process: a new key is generated, deployed to your substrate containers, and made
+available to claim. **Your old key stays active** until you claim the new key and
+update your client configuration — there is no forced cutover.
+
+After claiming the new key from the dashboard:
+
+1. Open your Claude Desktop config (`Settings → Developer → Edit Config`) and
+   replace the `Authorization` header value with the new key.
+2. Restart Claude Desktop. Your substrate will reconnect automatically.
+
+> **Never commit API keys to version control.** Use environment variables:
+> `MMPM_API_KEY=mmk_...` in `.env.local`.
+
+## MCP OAuth2
+
+The MCP server (`port 3001`) additionally supports OAuth2 for agent frameworks that
+require it. See [MCP Integration](/docs/mcp-integration) for details.

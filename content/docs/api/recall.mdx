@@ -1,0 +1,79 @@
+---
+title: Recall API
+description: Semantic recall with Merkle proof verification — the primary read path for Parametric Memory.
+section: API Reference
+order: 3
+---
+
+# Recall API
+
+The recall endpoint is the primary read path. It performs semantic key matching,
+returns the best matching atom, and includes a Merkle proof for verification.
+
+## Recall by query
+
+```http
+POST /recall
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+```
+
+```json
+{
+  "query": "user theme preference",
+  "limit": 1
+}
+```
+
+**Response `200`:**
+
+```json
+{
+  "atoms": [
+    {
+      "key": "v1.user.Glen.preference.theme",
+      "value": "dark",
+      "version": 3,
+      "score": 0.94,
+      "proof": { ... }
+    }
+  ],
+  "predictions": [
+    "v1.user.Glen.preference.language",
+    "v1.user.Glen.tools.editor"
+  ]
+}
+```
+
+The `predictions` array is populated by the Markov model — these are atoms the model
+expects you to recall next. Pre-fetching them warms your local cache.
+
+## Recall by exact key
+
+For exact key lookups, use the atoms GET endpoint:
+
+```http
+GET /atoms/v1.user.Glen.preference.theme
+```
+
+This is faster than a query recall and always returns the exact atom if it exists.
+
+## Batch recall
+
+```http
+POST /batch-access
+Authorization: Bearer YOUR_API_KEY
+Content-Type: application/json
+```
+
+```json
+{
+  "keys": ["v1.user.Glen.preference.theme", "v1.user.Glen.preference.language"]
+}
+```
+
+Batch recall returns all matching atoms plus a proof for each. Proofs are generated
+against the same tree snapshot, so root hashes will match.
+
+> **Performance tip:** Batch recall is significantly faster than N sequential GET
+> requests — use it whenever you need multiple atoms at once.

@@ -1,0 +1,87 @@
+---
+title: Atom Safety & Blocking
+description: Why Parametric Memory rejects atoms that look like secrets, what the 422 response contains, and how to remediate.
+section: API Reference
+order: 4
+---
+
+# Atom Safety & Blocking
+
+Parametric Memory rejects atoms whose value looks like a credential, secret, or other sensitive token. The server returns HTTP `422` and does not store the atom. This page explains why, what we detect, and what you should do when you see a 422.
+
+## Why we block sensitive atoms
+
+Memory is long-lived on purpose. Atoms are versioned, hashed into a Merkle tree, and replicated into the Markov model that drives recall. That is the point of the product — but it is also why a leaked credential in memory is worse than a leaked credential in a chat log. A chat log expires from context; a memory atom persists, is recalled across sessions, and can appear in bootstraps to future AI sessions.
+
+We block on write for three reasons:
+
+1. **Trust.** You should be able to point any AI client at your substrate without worrying that a stray `export AWS_SECRET_KEY=…` in a transcript will be checkpointed verbatim.
+2. **Liability.** Secrets stored here are secrets we are responsible for. The safer outcome for both of us is that they never land in the substrate.
+3. **Recall risk.** Once an atom is in memory, it can surface during bootstrap to an LLM context window. If that window is shared, copied, or logged, the secret spreads.
+
+**Important:** this is a guardrail, not a data-loss-prevention solution. Treat it as "catches the obvious things"; do not rely on it to scrub arbitrary PII. If you need DLP, run a sanitiser upstream of the checkpoint.
+
+## What we detect
+
+We run lightweight pattern and entropy checks on every atom value before it is persisted. A write is rejected when any of the following match:
+
+- **Known credential patterns** — AWS access keys, GitHub / GitLab tokens, Google API keys, Stripe live keys, Slack tokens, OpenAI / Anthropic keys, Postgres and Mongo connection URIs that include a password, private-key PEM headers, and similar.
+- **High-entropy tokens** — long random-looking strings that resemble API keys even when they don't match a known prefix.
+- **Obvious passwords** — values with keys or surrounding text like `password=`, `passwd:`, `secret:` when the value looks non-trivial.
+
+The detection list is versioned and conservative by default. False positives are possible — for example, a long hexadecimal commit SHA you deliberately want to store may trip the entropy check. See the remediation section below.
+
+## The 422 response
+
+A rejected write returns HTTP `422` with a JSON body. The shape:
+
+```http
+HTTP/1.1 422 Unprocessable Entity
+Content-Type: application/json
+```
+
+```json
+{
+  "error": "sensitive_content_rejected",
+  "reason": "matched_credential_pattern",
+  "field": "value",
+  "pattern": "aws_access_key_id",
+  "message": "This atom looks like it contains an AWS access key. Stored atoms are long-lived; we do not accept credentials."
+}
+```
+
+Fields you can rely on:
+
+| Field     | Meaning                                                                         |
+| --------- | ------------------------------------------------------------------------------- |
+| `error`   | Always `sensitive_content_rejected` for this class of rejection.                |
+| `reason`  | Machine-readable category — e.g. `matched_credential_pattern`, `high_entropy`.  |
+| `field`   | Which part of the payload tripped the check. Usually `value`.                   |
+| `pattern` | When `reason` is `matched_credential_pattern`, the specific pattern identifier. |
+| `message` | Human-readable explanation for logs and UI.                                     |
+
+Batch writes (`POST /batch-atoms`) are **atomic** — if any atom in the batch trips the check, the entire batch is rejected with a 422 whose body includes `failedIndex` pointing at the offending atom.
+
+## How to remediate
+
+If you see a 422, your options in order of preference:
+
+1. **Do not store the value.** If it really is a secret, the right fix is upstream — remove the credential from the payload before calling `session_checkpoint` or `POST /atoms`.
+2. **Reference it indirectly.** Store a pointer, not the secret. For example: `"the staging DB password is in 1Password under 'mmpm-staging'"` is safe; the literal password is not.
+3. **Redact before checkpoint.** If your workflow receives raw transcripts, run them through a redactor first. A three-line regex that strips `Authorization: Bearer …` and `export *_KEY=…` handles most common cases.
+4. **False positive?** If the value is genuinely not sensitive (a commit SHA, a public identifier with high entropy, a test fixture), contact us with the `reason` and `pattern` from the 422 body. We can adjust the rule list.
+
+## What we do not do
+
+To be explicit about scope:
+
+- We do **not** log rejected values anywhere, not even transiently. The 422 response contains only the metadata above; the value itself is discarded.
+- We do **not** train the Markov model on rejected writes. An atom that returned 422 never existed from the substrate's point of view.
+- We do **not** silently redact. A rejected write is an error, not a partial success — you get the 422 and nothing is stored.
+- We do **not** scan existing atoms. The check runs only on write. If you have an atom you believe was stored before detection was strong enough, tombstone it via `session_checkpoint`.
+
+## See also
+
+- [Atoms API](/docs/api/atoms) — full request / response reference for `POST /atoms`.
+- [Authentication](/docs/api/authentication) — how API keys and scopes work.
+- [Tier Limits & Caps](/docs/limits) — other reasons a write may be rejected.

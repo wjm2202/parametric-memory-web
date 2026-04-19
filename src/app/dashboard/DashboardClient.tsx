@@ -637,14 +637,12 @@ export default function DashboardClient({
           <div className="flex items-center gap-6">
             <span className="text-sm text-white/40">{account.email}</span>
             <nav className="flex items-center gap-4">
-              <a
-                href="https://mmpm.co.nz/docs"
-                target="_blank"
-                rel="noopener noreferrer"
+              <Link
+                href="/docs"
                 className="text-sm text-white/50 transition-colors hover:text-white/80"
               >
                 Docs
-              </a>
+              </Link>
               <button
                 onClick={handleBillingPortal}
                 className="text-sm text-white/50 transition-colors hover:text-white/80"
