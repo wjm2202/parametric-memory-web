@@ -141,9 +141,14 @@ export default function SidePanel() {
 
   return (
     <div
-      className={`absolute top-0 right-0 z-20 flex h-full w-80 transform flex-col overflow-hidden border-l border-slate-800/60 bg-slate-950/95 backdrop-blur-md transition-transform duration-300 ease-in-out ${
+      // Sprint 2026-W18 — M3: cap the panel width to 88vw on phones so it
+      // never forces horizontal scroll on 320-412px devices, and still caps
+      // at 320px on desktop (matches the original `w-80`). This is the
+      // minimum viable fix; do NOT widen it without checking mobile.
+      className={`absolute top-0 right-0 z-20 flex h-full w-[min(88vw,320px)] transform flex-col overflow-hidden border-l border-slate-800/60 bg-slate-950/95 backdrop-blur-md transition-transform duration-300 ease-in-out ${
         isOpen ? "translate-x-0" : "translate-x-full"
       }`}
+      data-testid="knowledge-sidepanel"
     >
       {isOpen && (
         <>

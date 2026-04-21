@@ -211,6 +211,7 @@ describe("SignupClient — new account with missing checkoutUrl", () => {
 
   beforeEach(() => {
     // Return a 201 but with checkoutUrl omitted — simulates a backend regression
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { checkoutUrl: _omitted, ...withoutCheckoutUrl } = VALID_SIGNUP_RESULT;
     globalThis.fetch = vi.fn().mockImplementation((url: string) => {
       if (url === "/api/signup") {

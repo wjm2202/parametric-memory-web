@@ -712,3 +712,63 @@ describe("AdminClient — upgrade query-param toasts", () => {
     expect(replaceStateSpy).toHaveBeenCalled();
   });
 });
+
+// ── F6 — Key-rotation error surfaced in admin UI ─────────────────────────────
+//
+// Sprint 2026-W18, item F6. When a key-rotation fails, the existing endpoint
+// returns `{ status: "failed", errorMessage: "..." }`. Until F6 we threw the
+// errorMessage away and just reset to the idle "Rotate Key" button. Now we:
+//   • render an alert region with the errorMessage
+//   • expose a "Retry rotation" CTA with testid `keyrot-restart`
+//   • give the region testid `keyrot-status-error` (see
+//     docs/DUAL-ACCESSIBILITY.md — pre-registered in A1).
+//
+// These tests cover the two entry points to the failed state:
+//   1. POST /rotate-key fails immediately (handleRotateKey catch path)
+//   2. Poll returns status:"failed" + errorMessage (poll handler path)
+
+import { fireEvent, act } from "@testing-library/react";
+
+describe("AdminClient — F6 key-rotation failure (handleRotateKey path)", () => {
+  const originalFetch = globalThis.fetch;
+
+  beforeEach(() => {
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("/rotate-key")) {
+        return Promise.resolve({ ok: false, status: 502, json: () => Promise.resolve({}) });
+      }
+      // All other fetches (fetchBillingStatus, etc.) return empty-ish.
+      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+    });
+  });
+
+  afterEach(() => {
+    globalThis.fetch = originalFetch;
+  });
+
+  it("shows error region and restart CTA when rotate-key POST fails", async () => {
+    renderAdmin({ status: "running", mcpEndpoint: "https://example.com/mcp" });
+
+    // Click the initial Rotate Key button.
+    const rotateBtn = screen.getByTestId("admin-rotate-key");
+    await act(async () => {
+      fireEvent.click(rotateBtn);
+    });
+
+    // After the async fetch rejects (ok:false, status:502), we should land
+    // in the failed UI — not back on the idle button.
+    await waitFor(() => {
+      expect(screen.getByTestId("keyrot-status-error")).toBeInTheDocument();
+    });
+
+    // The error region carries role=alert so screen-readers announce it.
+    const alertRegion = screen.getByTestId("keyrot-status-error");
+    expect(alertRegion).toHaveAttribute("role", "alert");
+    expect(alertRegion).toHaveTextContent(/HTTP 502/);
+
+    // The Retry button is reachable with the pre-registered testid.
+    const retry = screen.getByTestId("keyrot-restart");
+    expect(retry).toBeInTheDocument();
+    expect(retry).toHaveAttribute("aria-label", "Retry key rotation");
+  });
+});

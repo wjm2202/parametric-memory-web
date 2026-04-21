@@ -613,7 +613,8 @@ export default function DashboardClient({
   }
 
   return (
-    <div className="min-h-screen bg-[#030712] text-white">
+    // M7: overflow-x-hidden guard — see AdminClient.tsx for rationale.
+    <div className="min-h-screen overflow-x-hidden bg-[#030712] text-white">
       {/* Cancel subscription warning modal */}
       {cancelWarning && (
         <CancelWarningModal

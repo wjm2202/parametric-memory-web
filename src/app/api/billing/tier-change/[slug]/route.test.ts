@@ -1,6 +1,12 @@
 /**
  * Tests for GET /api/billing/tier-change/:slug — dynamic-route proxy to
- *   compute:/api/v1/billing/tier-change/:slug
+ *   compute:/api/v1/substrates/:slug/upgrade/status
+ *
+ * The compute-side path is under the substrates router (upgrade-handlers.ts),
+ * NOT under /billing/. An earlier version of this route called
+ * `/api/v1/billing/tier-change/:slug` which returned an Express HTML 404
+ * and tripped compute-proxy's non-JSON handler (502). Test #7 guards
+ * against regressing that mismatch.
  *
  * Covers:
  *   1. No session cookie → 401, never calls compute.
@@ -10,6 +16,8 @@
  *      so useTierChangePoll can map it to { state: "none" }.
  *   5. Compute 401 (session expired) → forwarded.
  *   6. Compute unreachable → 502.
+ *   7. Regression: the outgoing compute URL is the substrates upgrade/status
+ *      path, never the legacy /billing/tier-change path.
  *
  * Next.js 15 dynamic-route params are wrapped in a Promise — we mirror that
  * shape when invoking GET directly.
@@ -92,7 +100,7 @@ describe("GET /api/billing/tier-change/:slug", () => {
     expect(body.migrationProgress.atomCountBefore).toBe(42817);
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/v1/billing/tier-change/bold-junction"),
+      expect.stringContaining("/api/v1/substrates/bold-junction/upgrade/status"),
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: "Bearer sess_abc123" }),
         cache: "no-store",
@@ -109,8 +117,11 @@ describe("GET /api/billing/tier-change/:slug", () => {
 
     await GET(DUMMY_REQ, makeCtx("weird/slug with?chars"));
 
+    // Slug goes into the middle of the path, not at the end. Check the
+    // exact encoded form — `/` becomes `%2F`, ` ` becomes `%20`,
+    // `?` becomes `%3F`.
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("tier-change/weird%2Fslug%20with%3Fchars"),
+      expect.stringContaining("/api/v1/substrates/weird%2Fslug%20with%3Fchars/upgrade/status"),
       expect.any(Object),
     );
   });
@@ -139,6 +150,23 @@ describe("GET /api/billing/tier-change/:slug", () => {
     const res = await GET(DUMMY_REQ, makeCtx("bold-junction"));
 
     expect(res.status).toBe(401);
+  });
+
+  it("never calls the legacy /billing/tier-change compute path (regression)", async () => {
+    // Guards against silently resurrecting the path mismatch that used to
+    // return HTML 404 → 502. If someone rewires this route to hit
+    // /billing/tier-change again, this test fails loudly.
+    mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
+    mockFetch.mockResolvedValue({
+      status: 200,
+      text: () => Promise.resolve(JSON.stringify({ state: "none" })),
+    });
+
+    await GET(DUMMY_REQ, makeCtx("bold-junction"));
+
+    const calledUrl = mockFetch.mock.calls[0][0] as string;
+    expect(calledUrl).not.toContain("/billing/tier-change/");
+    expect(calledUrl).toContain("/api/v1/substrates/bold-junction/upgrade/status");
   });
 
   it("returns 502 when compute is unreachable", async () => {

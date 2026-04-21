@@ -471,7 +471,11 @@ export default function SignupClient() {
   } | null>(null);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#030712] px-4 py-12">
+    // M7: `relative` scopes the inner `absolute inset-0` blob wrapper; the
+    // `overflow-x-hidden` is a defence-in-depth guard against the blob ever
+    // escaping horizontally on 320-412px phones. Does not affect the form
+    // (w-full max-w-sm sits inside this div).
+    <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden bg-[#030712] px-4 py-12">
       {/* Background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute top-1/3 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
