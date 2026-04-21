@@ -20,6 +20,25 @@ services:
       - MMPM_VIZ_API_KEY=${MMPM_VIZ_API_KEY}
       # Compute backend
       - MMPM_COMPUTE_URL=${MMPM_COMPUTE_URL:-https://memory.kiwi}
+      # ── OAuth Phase 2 (ADR-003) — website-side OAuth dance ──────────
+      # AUTH_OAUTH_ENABLED defaults to "false" so a host without these
+      # vars set boots cleanly (OAuth endpoints 404; login falls back
+      # to magic-link). To enable: set AUTH_OAUTH_ENABLED=true on the
+      # host AND supply both halves of at least one provider pair.
+      #
+      # The four provider secrets have NO defaults on purpose — if the
+      # host claims OAuth is enabled but a secret is missing, we want
+      # the container to crash loudly at boot, not silently half-mint.
+      - AUTH_OAUTH_ENABLED=${AUTH_OAUTH_ENABLED:-false}
+      - COMPUTE_OAUTH_BRIDGE_SIGNING_KEY=${COMPUTE_OAUTH_BRIDGE_SIGNING_KEY}
+      - GOOGLE_OAUTH_CLIENT_ID=${GOOGLE_OAUTH_CLIENT_ID}
+      - GOOGLE_OAUTH_CLIENT_SECRET=${GOOGLE_OAUTH_CLIENT_SECRET}
+      - GITHUB_OAUTH_CLIENT_ID=${GITHUB_OAUTH_CLIENT_ID}
+      - GITHUB_OAUTH_CLIENT_SECRET=${GITHUB_OAUTH_CLIENT_SECRET}
+      # PUBLIC_SITE_URL is the redirect_uri base handed to providers;
+      # must match what's registered with Google/GitHub exactly. The
+      # default is the prod canonical host — dev overrides via env.
+      - PUBLIC_SITE_URL=${PUBLIC_SITE_URL:-https://parametric-memory.dev}
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://127.0.0.1:3000/api/health"]
       interval: 30s

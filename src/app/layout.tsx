@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Syne, Outfit, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
@@ -24,6 +24,24 @@ const jetbrainsMono = JetBrains_Mono({
   weight: ["400", "500"],
   display: "swap",
 });
+
+/* ── Viewport (Sprint 2026-W18 — M1) ─────────────────────────────────────────
+ * Explicit export so Googlebot Smartphone (mobile-first indexing) sees the
+ * exact configuration we want rather than Next.js's default. Do NOT set
+ * `userScalable: false` — blocking pinch-zoom is a WCAG failure. maximumScale
+ * of 5 gives users headroom for visual-impairment zooming.
+ *
+ * `themeColor` + `colorScheme` prime iOS Safari + Android Chrome to render
+ * the status-bar / address-bar in our dark brand colour instead of white,
+ * which is the single biggest mobile visual-polish win.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  maximumScale: 5,
+  colorScheme: "dark",
+  themeColor: "#030712",
+};
 
 export const metadata: Metadata = {
   title: {

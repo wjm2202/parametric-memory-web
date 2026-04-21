@@ -157,6 +157,9 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   const [substrate, setSubstrate] = useState<SubstrateInfo | null>(initialSubstrate);
   const [billingStatus, setBillingStatus] = useState<AdminBillingStatus | null>(null);
   const [rotationStatus, setRotationStatus] = useState<RotationStatus>("none");
+  // F6: capture errorMessage from /api/substrates/[slug]/key-rotation/status
+  // so the user sees *why* a rotation failed + can restart it.
+  const [rotationError, setRotationError] = useState<string | null>(null);
   const [keyRotating, setKeyRotating] = useState(false);
   const [showKeyReveal, setShowKeyReveal] = useState(false);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
@@ -240,6 +243,18 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
           if (res.ok) {
             const data = await res.json();
             setRotationStatus(data.status);
+            // F6: capture errorMessage from the compute response. The field
+            // comes from substrate_key_rotations.error_reason and is already
+            // returned by the existing endpoint (compute-side).
+            if (data.status === "failed") {
+              setRotationError(
+                typeof data.errorMessage === "string" && data.errorMessage.length > 0
+                  ? data.errorMessage
+                  : "Key rotation failed. You can safely retry.",
+              );
+            } else if (data.status === "complete") {
+              setRotationError(null);
+            }
             if (data.status === "complete" || data.status === "failed") {
               setKeyRotating(false);
               if (data.status === "complete") {
@@ -314,6 +329,8 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   }
 
   async function handleRotateKey() {
+    // F6: clear any stale error from a prior failed attempt before starting.
+    setRotationError(null);
     setKeyRotating(true);
     setRotationStatus("pending");
     try {
@@ -322,10 +339,16 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
       });
       if (!res.ok) {
         setRotationStatus("failed");
+        setRotationError(
+          `Could not start rotation (HTTP ${res.status}). Please try again or contact support.`,
+        );
         setKeyRotating(false);
       }
     } catch {
       setRotationStatus("failed");
+      setRotationError(
+        "Could not reach the rotation service. Check your connection and try again.",
+      );
       setKeyRotating(false);
     }
   }
@@ -391,7 +414,12 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   }
 
   return (
-    <div className="min-h-screen bg-[#030712] text-white">
+    // M7: overflow-x-hidden as a defence-in-depth guard against the
+    // decorative blob (or any other content) forcing horizontal scroll on
+    // 320-412px phones. The blob wrapper uses `fixed inset-0 overflow-hidden`
+    // which should already self-clip, but the outer guard catches edge cases
+    // (long tokens in error messages, etc.) without visual side effects.
+    <div className="min-h-screen overflow-x-hidden bg-[#030712] text-white">
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute top-0 right-1/4 h-[500px] w-[800px] rounded-full bg-indigo-600/5 blur-[160px]" />
       </div>
@@ -787,13 +815,47 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                 </p>
 
                 {keyRotating ? (
-                  <div className="space-y-4">
+                  <div className="space-y-4" data-testid="keyrot-status">
                     <RotationStepper status={rotationStatus} />
                     {rotationStatus === "complete" && (
                       <p className="text-xs text-white/50">
                         Scroll up to the MCP Connection section to claim your new key.
                       </p>
                     )}
+                  </div>
+                ) : rotationStatus === "failed" ? (
+                  /* F6: failed-state panel — shows error_reason + restart CTA.
+                     Uses the pre-registered testids from docs/DUAL-ACCESSIBILITY.md. */
+                  <div className="space-y-3" data-testid="keyrot-status">
+                    <div
+                      role="alert"
+                      data-testid="keyrot-status-error"
+                      className="rounded-lg border border-red-500/30 bg-red-500/10 p-4"
+                    >
+                      <p className="mb-1 text-xs font-semibold tracking-wider text-red-300 uppercase">
+                        Key rotation failed
+                      </p>
+                      <p className="text-sm text-red-200/90">
+                        {rotationError ?? "Key rotation failed. You can safely retry."}
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={handleRotateKey}
+                        data-testid="keyrot-restart"
+                        aria-label="Retry key rotation"
+                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white transition-colors hover:bg-indigo-500"
+                      >
+                        Retry rotation
+                      </button>
+                      <a
+                        href="mailto:entityone22@gmail.com?subject=Key%20rotation%20failed"
+                        className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/70 transition-colors hover:text-white"
+                      >
+                        Contact support
+                      </a>
+                    </div>
                   </div>
                 ) : (
                   <div className="space-y-3">
@@ -802,6 +864,8 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                     </p>
                     <button
                       onClick={handleRotateKey}
+                      data-testid="admin-rotate-key"
+                      aria-label="Rotate API key"
                       className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white transition-colors hover:bg-indigo-500"
                     >
                       Rotate Key

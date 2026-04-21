@@ -28,7 +28,9 @@ const KnowledgeScene = dynamic(() => import("@/components/knowledge/KnowledgeSce
 
 function LoadingSkeleton() {
   return (
-    <div className="flex h-screen w-full items-center justify-center bg-[#030712]">
+    // M2: use dvh so iOS Safari address-bar collapse doesn't cause a layout
+    // jump. Fallback `min-h-screen` covers iOS <15.4 where dvh is unknown.
+    <div className="flex min-h-[100dvh] min-h-screen w-full items-center justify-center bg-[#030712]">
       <div className="text-center">
         <div className="mx-auto mb-6 h-16 w-16 animate-pulse rounded-2xl bg-violet-500/10 ring-1 ring-violet-500/20" />
         <div className="mb-2 font-mono text-sm tracking-widest text-violet-400/60">
@@ -49,7 +51,8 @@ interface KnowledgeClientProps {
 
 export default function KnowledgeClient({ isLoggedIn }: KnowledgeClientProps) {
   return (
-    <div className="flex h-screen w-full flex-col overflow-hidden bg-[#030712]">
+    // M2: see comment above — dvh with min-h-screen fallback.
+    <div className="flex min-h-[100dvh] min-h-screen w-full flex-col overflow-hidden bg-[#030712]">
       {/* Standard navbar — full nav links visible, no Substrate cross-link */}
       <SiteNavbar isLoggedIn={isLoggedIn} variant="standard" />
 

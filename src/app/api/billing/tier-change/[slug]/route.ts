@@ -2,7 +2,14 @@
  * GET /api/billing/tier-change/:slug
  *
  * Proxies to compute's session-authenticated
- *   GET /api/v1/billing/tier-change/:slug
+ *   GET /api/v1/substrates/:slug/upgrade/status
+ *
+ * (Compute does NOT serve `/api/v1/billing/tier-change/:slug`. The poll
+ * endpoint is mounted under the substrates router — see compute
+ * src/api/substrates/routes.ts and upgrade-handlers.ts. Using the wrong
+ * path here caused compute's Express 404 to return HTML, which
+ * computeProxy can't parse as JSON and remapped to a 502 — breaking the
+ * dashboard's useTierChangePoll hook.)
  *
  * Returns the in-flight tier-change state for a single substrate. Used by
  * the useTierChangePoll hook which re-hits this endpoint every 3 s while a
@@ -44,7 +51,7 @@ export async function GET(
   const { slug } = await params;
 
   const { response } = await computeProxy(
-    `api/v1/billing/tier-change/${encodeURIComponent(slug)}`,
+    `api/v1/substrates/${encodeURIComponent(slug)}/upgrade/status`,
     {
       headers: authHeaders(sessionToken),
       label: "billing/tier-change",

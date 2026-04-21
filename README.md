@@ -70,6 +70,15 @@ scripts/
 └── generate-docs.ts  # Extracts API docs from MMPM source
 ```
 
+## Accessibility & automation
+
+This site is dual-accessibility by design — both humans and AI agents
+(Claude-in-Chrome, Gemini, OpenAI Operator/Atlas, Playwright) must be able to
+operate every button. See [`docs/DUAL-ACCESSIBILITY.md`](docs/DUAL-ACCESSIBILITY.md)
+for the `data-testid` + `aria-*` convention. Interactive elements without a
+stable testid or accessible name fail CI (see `scripts/check-testids.mjs`,
+shipping in sprint 2026-W18 item A6).
+
 ## License
 
 Proprietary. All rights reserved.
