@@ -72,7 +72,7 @@ export function TeamInquiryForm() {
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
-        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-sm transition outline-none focus:ring-0"
+        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-base transition outline-none focus:ring-0"
       />
 
       <input
@@ -81,7 +81,7 @@ export function TeamInquiryForm() {
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-sm transition outline-none focus:ring-0"
+        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-base transition outline-none focus:ring-0"
       />
 
       <div className="grid grid-cols-3 gap-2">

@@ -175,6 +175,7 @@ export function HeroAnimatedSequence() {
         {/* Primary */}
         <Link
           href="/pricing"
+          data-testid="landing-hero-cta-primary"
           className="inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold text-white transition-all"
           style={{
             background: "#0c8ee6",
@@ -208,6 +209,7 @@ export function HeroAnimatedSequence() {
         {/* Secondary */}
         <a
           href="/knowledge"
+          data-testid="landing-hero-cta-secondary"
           className="inline-flex items-center gap-2 rounded-xl border px-7 py-3.5 text-sm font-semibold backdrop-blur-sm transition-all"
           style={{
             borderColor: "rgba(30,41,59,1)",

@@ -1,0 +1,57 @@
+name: Guards
+
+# Dual-accessibility (A6) governance guards — runs in parallel with CI lint
+# and tests, gating the merge button on two static structural checks:
+#   1. scripts/check-testids.mjs — every data-testid in src/ is pre-registered
+#      in docs/DUAL-ACCESSIBILITY.md.
+#   2. scripts/check-actions-manifest.mjs — public/.well-known/actions.json
+#      satisfies the Schema.org Action invariants documented at the top of
+#      the script (unique @ids and names, target origin, description length,
+#      agentNotes keys).
+#
+# Why a separate workflow from ci.yml?
+#   - These are governance checks, not code-quality checks. They gate a
+#     different class of drift.
+#   - They can run in parallel with lint/typecheck/test for faster feedback.
+#   - They're intentionally small — no npm install of dev dependencies,
+#     just Node + the repo checkout.
+#   - They can be required status checks independently of CI.
+#
+# Nothing is built or deployed here. Ever.
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: guards-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testid-registry:
+    name: testid registry
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check data-testid coverage against docs/DUAL-ACCESSIBILITY.md
+        run: node scripts/check-testids.mjs
+
+  actions-manifest:
+    name: actions manifest
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Check public/.well-known/actions.json structural invariants
+        run: node scripts/check-actions-manifest.mjs

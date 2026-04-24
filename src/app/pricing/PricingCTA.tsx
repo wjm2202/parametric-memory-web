@@ -244,6 +244,7 @@ export function PricingCTA({
       <button
         onClick={handleCheckout}
         disabled={isDisabled}
+        data-testid={`pricing-card-${tierId === "indie" ? "solo" : tierId}-cta`}
         className="bg-brand-500 hover:bg-brand-400 ring-brand-400/30 hover:ring-brand-400/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white ring-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
       >
         {checkingCapacity ? (

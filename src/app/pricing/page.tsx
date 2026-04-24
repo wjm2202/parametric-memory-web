@@ -5,6 +5,7 @@ import { PricingCardClient } from "./PricingCardClient";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { TIERS } from "@/config/tiers";
 import { CapacityInquiryForm } from "./CapacityInquiryForm";
+import CompetitorComparison from "./CompetitorComparison";
 
 export const metadata: Metadata = {
   title: "Pricing — Plans from $3/mo",
@@ -68,49 +69,6 @@ const TIER_COPY: Record<string, { tagline: string; humanAtoms: string; humanBoot
     },
   };
 
-/* ── Competitor comparison ───────────────────────────────────────────── */
-const competitors = [
-  {
-    feature: "Pricing model",
-    parametric: "Flat monthly subscription",
-    mem0: "Subscription + overages",
-    zep: "Credits (pay-as-you-go)",
-  },
-  {
-    feature: "Dedicated instance",
-    parametric: "Yes (hosted, managed)",
-    mem0: "No (shared)",
-    zep: "No (shared)",
-  },
-  {
-    feature: "SSL/TLS certificate",
-    parametric: "Yes (per instance)",
-    mem0: "Shared / CDN",
-    zep: "Shared / CDN",
-  },
-  { feature: "Cryptographic proofs", parametric: "Yes (RFC 6962)", mem0: "No", zep: "No" },
-  { feature: "Markov prediction", parametric: "Yes (64% hit rate)", mem0: "No", zep: "No" },
-  {
-    feature: "Graph/relational memory",
-    parametric: "Yes (included)",
-    mem0: "No ($249 Pro only)",
-    zep: "Yes",
-  },
-  { feature: "MCP native", parametric: "Yes", mem0: "No", zep: "No" },
-  {
-    feature: "Per-query costs",
-    parametric: "None (flat rate)",
-    mem0: "Yes (limits)",
-    zep: "Yes (credits)",
-  },
-  {
-    feature: "Your data isolated",
-    parametric: "Yes (dedicated DB)",
-    mem0: "No (shared DB)",
-    zep: "No (shared DB)",
-  },
-];
-
 /* ── BreadcrumbList ──────────────────────────────────────────────────── */
 const pricingBreadcrumbJsonLd = {
   "@context": "https://schema.org",
@@ -135,6 +93,7 @@ const pricingBreadcrumbJsonLd = {
 const faqSchema = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
+  "@id": "https://parametric-memory.dev/#faq-pricing",
   mainEntity: [
     {
       "@type": "Question",
@@ -368,55 +327,7 @@ export default async function PricingPage() {
           <p className="text-surface-600 mt-2 text-sm">— The team that built it</p>
         </section>
 
-        {/* Competitor comparison */}
-        <section className="mx-auto max-w-5xl px-6 pb-24" aria-label="Comparison with competitors">
-          <h2 className="mb-3 text-3xl font-bold text-white">vs. Competitors</h2>
-          <p className="text-surface-200/70 mb-8">
-            Parametric Memory Professional ($29/mo) vs. Mem0 Starter ($19/mo) vs. Zep Flex ($25/mo)
-          </p>
-          <div className="border-surface-200/10 bg-surface-900/30 overflow-x-auto rounded-xl border backdrop-blur-sm">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-surface-200/10 border-b">
-                  <th className="bg-surface-950/80 sticky left-0 px-6 py-4 text-left font-semibold text-white">
-                    Feature
-                  </th>
-                  <th className="text-brand-300 px-6 py-4 text-center font-semibold">
-                    Parametric Memory
-                    <div className="mt-1 text-xs font-normal text-white">Professional · $29/mo</div>
-                  </th>
-                  <th className="text-surface-300 px-6 py-4 text-center font-semibold">
-                    Mem0
-                    <div className="text-surface-400 mt-1 text-xs font-normal">
-                      Starter · $19/mo
-                    </div>
-                  </th>
-                  <th className="text-surface-300 px-6 py-4 text-center font-semibold">
-                    Zep
-                    <div className="text-surface-400 mt-1 text-xs font-normal">Flex · $25/mo</div>
-                  </th>
-                </tr>
-              </thead>
-              <tbody>
-                {competitors.map((row, idx) => (
-                  <tr
-                    key={idx}
-                    className="border-surface-200/5 hover:bg-surface-900/50 border-b transition-colors"
-                  >
-                    <td className="bg-surface-950/40 sticky left-0 px-6 py-4 font-medium text-white">
-                      {row.feature}
-                    </td>
-                    <td className="px-6 py-4 text-center">
-                      <span className="text-sm font-medium text-emerald-400">{row.parametric}</span>
-                    </td>
-                    <td className="text-surface-200/70 px-6 py-4 text-center">{row.mem0}</td>
-                    <td className="text-surface-200/70 px-6 py-4 text-center">{row.zep}</td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
+        <CompetitorComparison />
 
         {/* FAQ */}
         <section className="mx-auto max-w-4xl px-6 pb-32" aria-labelledby="faq-heading">

@@ -68,18 +68,20 @@ export function WaitlistForm() {
   }
 
   return (
-    <form onSubmit={submit} className="flex flex-col gap-3 sm:flex-row">
+    <form onSubmit={submit} data-testid="waitlist-form" className="flex flex-col gap-3 sm:flex-row">
       <input
         type="email"
+        data-testid="waitlist-email"
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         placeholder="your@email.com"
         required
         disabled={state === "loading"}
-        className="border-surface-800 bg-surface-900 font-body text-surface-100 placeholder:text-surface-600 focus:border-brand-500 focus:ring-brand-500/30 flex-1 rounded-xl border px-4 py-3 text-sm transition-colors outline-none focus:ring-1 disabled:opacity-50"
+        className="border-surface-800 bg-surface-900 font-body text-surface-100 placeholder:text-surface-600 focus:border-brand-500 focus:ring-brand-500/30 flex-1 rounded-xl border px-4 py-3 text-base transition-colors outline-none focus:ring-1 disabled:opacity-50"
       />
       <button
         type="submit"
+        data-testid="waitlist-submit"
         disabled={state === "loading" || !email}
         className="bg-brand-500 hover:bg-brand-400 inline-flex items-center justify-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold whitespace-nowrap text-white shadow-[0_0_24px_rgba(12,142,230,0.3)] transition-all hover:shadow-[0_0_32px_rgba(54,170,245,0.35)] disabled:cursor-not-allowed disabled:opacity-50"
       >

@@ -15,7 +15,10 @@
     "generate-docs": "tsx scripts/generate-docs.ts",
     "format": "prettier --write \"src/**/*.{ts,tsx,css,json}\"",
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
-    "preflight": "npm run format && npm run lint && npm run typecheck && npm run test && npm run build"
+    "guard:testids": "node scripts/check-testids.mjs --quiet",
+    "guard:actions": "node scripts/check-actions-manifest.mjs --quiet",
+    "guard:all": "npm run guard:testids && npm run guard:actions",
+    "preflight": "npm run format && npm run lint && npm run typecheck && npm run guard:all && npm run test && npm run build"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

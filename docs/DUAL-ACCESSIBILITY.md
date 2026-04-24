@@ -97,7 +97,15 @@ kebab-case, all lower-case. No dots, no underscores, no slashes.
 | `checkout-*` | Stripe checkout embedded flows + return handlers |
 | `waitlist-*` | Landing-page waitlist form |
 | `capacity-*` | Pricing capacity-inquiry form |
+| `knowledge-*` | `/knowledge` immersive surface (SidePanel etc.) |
 | `toast-*` | Toast notifications (`toast-*` id matches the event type) |
+
+**Admin subflow aliases.** Some admin-scoped components register names without
+the `admin-` prefix where the component itself is only ever rendered inside
+`/admin/*` and the extra prefix would be pure noise: `change-plan-*`,
+`confirm-upgrade-*`, `proration-*`, `tier-change-*`, `dedicated-migration-*`.
+These are still admin-only; the short prefix is a convention for
+in-component testids, not a new surface.
 
 ### Verb-object rules
 
@@ -175,11 +183,20 @@ entry here **first**, before the PR that uses it.
 | `pricing-card-team-cta` | Team tier CTA |
 | `pricing-card-enterprise-cloud-cta` | Enterprise Cloud CTA |
 | `pricing-card-enterprise-self-cta` | Enterprise Self-Hosted CTA |
-| `capacity-form` | Capacity-inquiry form |
+| `pricing-comparison` | Competitor comparison section (M5b) |
+| `pricing-comparison-table` | Desktop `<table>` layout (≥ md) (M5b) |
+| `pricing-comparison-cards` | Mobile stacked-card `<ul>` layout (< md) (M5b) |
+| `pricing-comparison-row-<slug>` | One row per feature in both layouts (M5b) |
+| `capacity-form` | Capacity-inquiry form (pre-registered; template below is the live form) |
 | `capacity-email` | Email input |
 | `capacity-company` | Company input |
 | `capacity-notes` | Notes textarea |
 | `capacity-submit` | Submit button |
+| `capacity-form-<tier>` | Per-tier capacity-inquiry form wrapper (`enterprise-cloud`, `enterprise-self`) |
+| `capacity-cta-<tier>` | Open-form CTA on the tier card; also the collapse button after submit |
+| `capacity-success-<tier>` | Post-submit confirmation region (`role="status"`) |
+| `capacity-tier-label-<tier>` | Hidden label paired with the tier-id input |
+| `capacity-tier-input-<tier>` | Hidden `<input>` carrying the tier id on form submit |
 
 ### Login + signup — `src/app/login/*`, `src/app/signup/*`
 
@@ -188,6 +205,7 @@ entry here **first**, before the PR that uses it.
 | `login-form` | Email/password form | (n/a) |
 | `login-email` | Email input | (associated `<label>`) |
 | `login-password` | Password input | (associated `<label>`) |
+| `login-error` | Error message region | (`role="alert"`) |
 | `login-submit` | Submit button | (visible text "Sign in") |
 | `signin-google` | Google SSO button (S2) | "Sign in with Google" |
 | `signin-github` | GitHub SSO button (S2) | "Sign in with GitHub" |
@@ -197,6 +215,7 @@ entry here **first**, before the PR that uses it.
 | `signup-tier-select` | Tier radio group | (fieldset legend) |
 | `signup-form-submit` | Submit button | (visible text "Create account") |
 | `signup-error` | Error message region | (`role="alert"`) |
+| `signup-cancel-banner` | "Signup cancelled" recovery banner shown on return from Stripe checkout cancel | (`role="status"`) |
 
 ### Dashboard — `src/app/dashboard/*`
 
@@ -233,6 +252,48 @@ entry here **first**, before the PR that uses it.
 | `keyrot-status` | Key-rotation status region (F6) |
 | `keyrot-status-error` | Error-reason detail (F6) |
 | `keyrot-restart` | Restart-rotation button (F6) |
+
+**Change-plan subflow — `src/app/admin/ChangePlanButton.tsx`, `ChangePlanSheet.tsx`:**
+
+| testid | Element |
+|---|---|
+| `change-plan-button` | Trigger button that opens the change-plan sheet |
+| `change-plan-sheet` | Sheet dialog container (`role="dialog"`) |
+| `change-plan-sheet-backdrop` | Modal backdrop (click-to-close target) |
+| `change-plan-sheet-close` | Close (×) button inside sheet header |
+| `change-plan-sheet-subtitle` | Subtitle paragraph under the sheet title |
+| `change-plan-sheet-options` | `<ul>` containing the selectable plan options |
+| `change-plan-sheet-loading` | Loading spinner region while options are fetched |
+| `change-plan-sheet-error` | Error region when options fetch fails |
+| `change-plan-sheet-empty` | Empty-state region when no plans are eligible |
+| `change-plan-option-<tier>` | One plan-option row per eligible tier; suffixes `-price`, `-hosting`, `-deltas`, `-warning`, `-select` target the row's subregions |
+
+**Confirm-upgrade subflow — `src/app/admin/ConfirmUpgradeDialog.tsx`:**
+
+| testid | Element |
+|---|---|
+| `confirm-upgrade-dialog` | Confirmation dialog container (`role="dialog"`) |
+| `confirm-upgrade-backdrop` | Modal backdrop |
+| `confirm-upgrade-cancel` | Cancel button |
+| `confirm-upgrade-confirm` | Confirm-and-charge button |
+| `proration-charge` | "Charge today" amount line |
+| `proration-monthly` | New monthly rate line |
+| `proration-full-line` | Full breakdown footnote ("X/mo starting …") |
+| `dedicated-migration-warning` | Warning block shown when the target tier triggers a dedicated-cluster migration |
+
+**Tier-change progress banner — `src/app/admin/TierChangeProgressBanner.tsx`:**
+
+| testid | Element |
+|---|---|
+| `tier-change-banner` | Root banner shown while a tier-change migration is in flight (`role="status"`) |
+| `tier-change-phase-list` | Ordered list of migration phases |
+| `tier-change-retry-counter` | Retry-count detail shown when a phase is retrying |
+
+### Knowledge — `src/components/knowledge/*`
+
+| testid | Element |
+|---|---|
+| `knowledge-sidepanel` | Collapsible side-panel container on `/knowledge` (`role="complementary"`) |
 
 ### Checkout + billing return
 

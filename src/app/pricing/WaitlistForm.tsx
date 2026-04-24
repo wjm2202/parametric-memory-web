@@ -63,7 +63,7 @@ export function WaitlistForm({ tier, tierDisplayName, message }: WaitlistFormPro
           onChange={(e) => setEmail(e.target.value)}
           placeholder="your@email.com"
           required
-          className="bg-surface-900/50 text-surface-200 placeholder:text-surface-500 flex-1 rounded-lg px-3 py-2 text-sm ring-1 ring-amber-400/30 transition-all focus:ring-2 focus:ring-amber-400/50 focus:outline-none"
+          className="bg-surface-900/50 text-surface-200 placeholder:text-surface-500 flex-1 rounded-lg px-3 py-2 text-base ring-1 ring-amber-400/30 transition-all focus:ring-2 focus:ring-amber-400/50 focus:outline-none"
           disabled={status === "loading"}
         />
         <button
