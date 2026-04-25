@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import Image from "next/image";
 import { HeroSceneWrapper } from "@/components/landing/HeroSceneWrapper";
 import { HeroAnimatedSequence } from "@/components/landing/HeroAnimatedSequence";
 import SiteNavbar from "@/components/ui/SiteNavbar";
@@ -169,8 +170,7 @@ const homeBreadcrumbJsonLd = {
 // ── Logomark (inline, footer only) ────────────────────────────────────────
 function Logomark({ size = 24 }: { size?: number }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src="/brand/favicon-192.png"
       width={size}
       height={size}

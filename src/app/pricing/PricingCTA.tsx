@@ -221,7 +221,7 @@ export function PricingCTA({
           }}
           className="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded border-white/20 bg-white/5 accent-indigo-500"
         />
-        <span className="text-xs leading-relaxed text-white/50">
+        <span className="text-xs leading-relaxed text-white/80">
           I agree to the{" "}
           <Link
             href="/terms"

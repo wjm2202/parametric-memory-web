@@ -92,7 +92,7 @@ export default function CompetitorComparison() {
       aria-label="Comparison with competitors"
     >
       <h2 className="mb-3 text-2xl font-bold text-white sm:text-3xl">vs. Competitors</h2>
-      <p className="text-surface-200/70 mb-8 text-sm sm:text-base">
+      <p className="text-surface-200 mb-8 text-sm sm:text-base">
         Parametric Memory Professional ($29/mo) vs. Mem0 Starter ($19/mo) vs. Zep Flex ($25/mo)
       </p>
 
@@ -144,8 +144,8 @@ export default function CompetitorComparison() {
                   <td className="px-6 py-4 text-center">
                     <span className="text-sm font-medium text-emerald-400">{row.parametric}</span>
                   </td>
-                  <td className="text-surface-200/70 px-6 py-4 text-center">{row.mem0}</td>
-                  <td className="text-surface-200/70 px-6 py-4 text-center">{row.zep}</td>
+                  <td className="text-surface-200 px-6 py-4 text-center">{row.mem0}</td>
+                  <td className="text-surface-200 px-6 py-4 text-center">{row.zep}</td>
                 </tr>
               );
             })}

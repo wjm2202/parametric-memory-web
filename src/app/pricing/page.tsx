@@ -209,6 +209,7 @@ export default async function PricingPage() {
 
         {/* Pricing cards */}
         <section className="mx-auto w-full max-w-6xl px-6 pb-24" aria-label="Pricing plans">
+          <h2 className="sr-only">Pricing plans</h2>
           <div className="grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-4">
             {DISPLAY_TIERS.map((tier) => {
               const copy = TIER_COPY[tier.id];
@@ -244,7 +245,7 @@ export default async function PricingPage() {
                             ? "PROFESSIONAL"
                             : "TEAM"}
                     </h3>
-                    <p className="text-surface-200/60 mt-1 text-sm">{copy?.tagline}</p>
+                    <p className="text-surface-200/85 mt-1 text-sm">{copy?.tagline}</p>
                   </div>
 
                   {/* Capacity badge + CTA — event-driven, checks on click */}
@@ -254,7 +255,7 @@ export default async function PricingPage() {
                       <div className="mb-6">
                         <div className="flex items-baseline gap-1">
                           <span className="text-4xl font-bold text-white">${tier.price}</span>
-                          <span className="text-surface-200/60 text-sm">/month</span>
+                          <span className="text-surface-200/85 text-sm">/month</span>
                         </div>
                       </div>
                       <CapacityInquiryForm tier="team" variant="primary" />
@@ -276,7 +277,7 @@ export default async function PricingPage() {
                       <div className="mb-6">
                         <div className="flex items-baseline gap-1">
                           <span className="text-4xl font-bold text-white">${tier.price}</span>
-                          <span className="text-surface-200/60 text-sm">/month</span>
+                          <span className="text-surface-200/85 text-sm">/month</span>
                         </div>
                         <p className="text-surface-400 mt-1.5 text-xs">
                           Billed monthly · cancel anytime from your dashboard
