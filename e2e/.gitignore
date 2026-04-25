@@ -1,0 +1,7 @@
+# Captured authenticated session — contains your live cookies. NEVER commit.
+.auth/
+
+# Playwright artefacts
+playwright-report/
+test-results/
+trace/
