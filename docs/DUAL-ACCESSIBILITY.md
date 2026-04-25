@@ -169,6 +169,7 @@ entry here **first**, before the PR that uses it.
 | `landing-hero-cta-primary` | Primary "Get started" button |
 | `landing-hero-cta-secondary` | Secondary "View pricing" link |
 | `landing-section-features` | Features region |
+| `memory-ring-svg` | Decorative SVG memory diagram in hero (test hook only — `aria-hidden`) |
 | `waitlist-form` | Waitlist form element |
 | `waitlist-email` | Email input |
 | `waitlist-submit` | Submit button |
