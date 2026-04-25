@@ -27,7 +27,7 @@ export function CapacityBadge({
     return (
       <div className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-xs font-medium ring-1 ring-white/10">
         <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-white/30" />
-        <span className="text-white/30">Loading…</span>
+        <span className="text-white/70">Loading…</span>
       </div>
     );
   }
@@ -37,7 +37,7 @@ export function CapacityBadge({
     return (
       <div className="inline-flex items-center gap-1.5 rounded-full bg-white/5 px-2.5 py-1 text-xs font-medium ring-1 ring-white/10">
         <div className="h-1.5 w-1.5 animate-pulse rounded-full bg-white/40" />
-        <span className="text-white/40">Checking availability…</span>
+        <span className="text-white/75">Checking availability…</span>
       </div>
     );
   }

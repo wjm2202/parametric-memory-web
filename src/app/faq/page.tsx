@@ -248,6 +248,7 @@ const ALL_FAQS: FAQItem[] = [
 const faqPageJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
+  "@id": "https://parametric-memory.dev/#faq-page",
   name: "Parametric Memory FAQ",
   description:
     "Frequently asked questions about Parametric Memory — persistent, cryptographically verifiable memory for AI agents. Covers: what Parametric Memory is, why it is better than Mem0 and Zep, benefits for AI agents, how we run our own operation on the platform we sell, setup, pricing, and security.",

@@ -384,13 +384,14 @@ function SignupForm({
         Enter your email to create an account or sign in.
       </p>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" data-testid="signup-form">
         <div>
           <label htmlFor="email" className="mb-1.5 block text-sm text-white/60">
             Email address
           </label>
           <input
             id="email"
+            data-testid="signup-email"
             type="email"
             required
             autoComplete="email"
@@ -398,7 +399,7 @@ function SignupForm({
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/25 transition-colors focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30 focus:outline-none"
+            className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2.5 text-base text-white placeholder-white/25 transition-colors focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30 focus:outline-none"
           />
         </div>
 
@@ -416,7 +417,7 @@ function SignupForm({
             <Link
               href="/terms"
               target="_blank"
-              className="text-white/70 underline underline-offset-2 transition-colors hover:text-white"
+              className="-my-1 inline-block py-1 text-white/70 underline underline-offset-2 transition-colors hover:text-white"
             >
               Terms of Service
             </Link>{" "}
@@ -424,7 +425,7 @@ function SignupForm({
             <Link
               href="/privacy"
               target="_blank"
-              className="text-white/70 underline underline-offset-2 transition-colors hover:text-white"
+              className="-my-1 inline-block py-1 text-white/70 underline underline-offset-2 transition-colors hover:text-white"
             >
               Privacy Policy
             </Link>
@@ -433,15 +434,20 @@ function SignupForm({
         </label>
 
         {error && (
-          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div
+            data-testid="signup-error"
+            role="alert"
+            className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+          >
             {error}
           </div>
         )}
 
         <button
           type="submit"
+          data-testid="signup-form-submit"
           disabled={loading || !email.trim() || !agreedToTerms}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030712] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
         >
           {loading ? (
             <>
@@ -475,7 +481,7 @@ export default function SignupClient() {
     // `overflow-x-hidden` is a defence-in-depth guard against the blob ever
     // escaping horizontally on 320-412px phones. Does not affect the form
     // (w-full max-w-sm sits inside this div).
-    <div className="relative flex min-h-screen items-center justify-center overflow-x-hidden bg-[#030712] px-4 py-12">
+    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-[#030712] px-4 py-12">
       {/* Background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute top-1/3 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />

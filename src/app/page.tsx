@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
+import Image from "next/image";
 import { HeroSceneWrapper } from "@/components/landing/HeroSceneWrapper";
 import { HeroAnimatedSequence } from "@/components/landing/HeroAnimatedSequence";
 import SiteNavbar from "@/components/ui/SiteNavbar";
@@ -46,6 +47,7 @@ export const metadata: Metadata = {
 const landingJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebPage",
+  "@id": "https://parametric-memory.dev/#webpage",
   name: "Parametric Memory — Home",
   url: "https://parametric-memory.dev",
   description:
@@ -55,11 +57,13 @@ const landingJsonLd = {
   inLanguage: "en-US",
   isPartOf: {
     "@type": "WebSite",
+    "@id": "https://parametric-memory.dev/#website",
     name: "Parametric Memory",
     url: "https://parametric-memory.dev",
   },
   mainEntity: {
     "@type": "SoftwareApplication",
+    "@id": "https://parametric-memory.dev/#softwareapplication",
     name: "Parametric Memory",
     alternateName: "MMPM",
     applicationCategory: "DeveloperApplication",
@@ -77,15 +81,16 @@ const landingJsonLd = {
     ],
     publisher: {
       "@type": "Organization",
+      "@id": "https://parametric-memory.dev/#organization",
       name: "Parametric Memory",
       url: "https://parametric-memory.dev",
     },
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: "9",
+      lowPrice: "3",
       highPrice: "499",
       priceCurrency: "USD",
-      offerCount: "5",
+      offerCount: "6",
     },
   },
 };
@@ -94,6 +99,7 @@ const landingJsonLd = {
 const homeFaqJsonLd = {
   "@context": "https://schema.org",
   "@type": "FAQPage",
+  "@id": "https://parametric-memory.dev/#faq-home",
   mainEntity: [
     {
       "@type": "Question",
@@ -150,6 +156,7 @@ const homeFaqJsonLd = {
 const homeBreadcrumbJsonLd = {
   "@context": "https://schema.org",
   "@type": "BreadcrumbList",
+  "@id": "https://parametric-memory.dev/#breadcrumbs-home",
   itemListElement: [
     {
       "@type": "ListItem",
@@ -163,8 +170,7 @@ const homeBreadcrumbJsonLd = {
 // ── Logomark (inline, footer only) ────────────────────────────────────────
 function Logomark({ size = 24 }: { size?: number }) {
   return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img
+    <Image
       src="/brand/favicon-192.png"
       width={size}
       height={size}
@@ -299,7 +305,7 @@ const stats = [
   { value: "0.045ms", label: "p50 recall latency" },
   { value: "64%", label: "Markov hit rate" },
   { value: "37%", label: "token savings (compact proofs)" },
-  { value: "$9/mo", label: "dedicated instance, starting" },
+  { value: "$3/mo", label: "dedicated instance, starting" },
   { value: "<60s", label: "instance setup time" },
 ];
 
@@ -434,7 +440,7 @@ export default async function HomePage() {
                 </div>
 
                 {/* Label pill */}
-                <p className="text-surface-500 mb-3 font-mono text-[10px] tracking-widest uppercase">
+                <p className="text-surface-500 mb-3 font-mono text-[11px] tracking-widest uppercase">
                   {f.label}
                 </p>
 
@@ -767,12 +773,12 @@ export default async function HomePage() {
             </Link>
 
             {/* Microcopy — removes friction */}
-            <p className="text-surface-600 font-mono text-[12px]">
+            <p className="text-surface-400 text-sm">
               Starting at $3/month · 14-day free trial · Cancel before day 15, pay nothing
             </p>
 
             {/* Tier hint */}
-            <p className="text-surface-600 mt-3 font-mono text-[11px]">
+            <p className="text-surface-400 mt-3 font-mono text-xs">
               Starter $3 · Solo $9 · Professional $29 · Team $79 · Enterprise Cloud $299 ·
               Self-Hosted $499
             </p>
@@ -796,31 +802,31 @@ export default async function HomePage() {
             >
               <Link
                 href="/docs"
-                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
               >
                 Docs
               </Link>
               <Link
                 href="/blog"
-                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
               >
                 Blog
               </Link>
               <a
                 href="/pricing"
-                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
               >
                 Pricing
               </a>
               <a
                 href="/visualise"
-                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
               >
                 Visualise
               </a>
               <a
                 href="/knowledge"
-                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
               >
                 Knowledge
               </a>
@@ -829,30 +835,30 @@ export default async function HomePage() {
                   legal page is reachable from the homepage nav/footer. */}
               <Link
                 href="/privacy"
-                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
               >
                 Privacy
               </Link>
               <Link
                 href="/terms"
-                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
               >
                 Terms
               </Link>
               <Link
                 href="/aup"
-                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
               >
                 AUP
               </Link>
               <Link
                 href="/dpa"
-                className="font-body text-surface-600 hover:text-surface-300 text-sm transition-colors"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
               >
                 DPA
               </Link>
             </nav>
-            <p className="text-surface-700 font-mono text-[11px]">
+            <p className="text-surface-400 font-mono text-xs">
               © 2026 Parametric Memory · parametric-memory.dev
             </p>
           </div>

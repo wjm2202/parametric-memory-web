@@ -75,7 +75,7 @@ export function FAQAccordion() {
           </button>
           {openIndex === index && (
             <div id={`faq-answer-${index}`} className="border-surface-200/10 border-t px-6 py-4">
-              <p className="text-surface-200/70 text-sm leading-relaxed">{faq.answer}</p>
+              <p className="text-surface-200 text-sm leading-relaxed">{faq.answer}</p>
             </div>
           )}
         </div>

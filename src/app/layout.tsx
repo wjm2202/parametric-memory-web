@@ -74,7 +74,7 @@ export const metadata: Metadata = {
         url: "https://parametric-memory.dev/brand/og.png",
         width: 1200,
         height: 630,
-        alt: "Parametric Memory — Persistent, verifiable AI memory. 0.045ms recall · 64% Markov hit rate · From $9/mo.",
+        alt: "Parametric Memory — Persistent, verifiable AI memory. 0.045ms recall · 64% Markov hit rate · From $3/mo.",
       },
     ],
   },
@@ -110,6 +110,7 @@ export const metadata: Metadata = {
 const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
+  "@id": "https://parametric-memory.dev/#organization",
   name: "Parametric Memory",
   url: "https://parametric-memory.dev",
   description:
@@ -135,11 +136,68 @@ const organizationJsonLd = {
       availableLanguage: "English",
     },
   ],
+  // Bind discoverable actions to the Organization node.
+  // Agents reading this JSON-LD can invoke these endpoints directly; the
+  // full request/response schemas live at /.well-known/actions.json.
+  potentialAction: [
+    {
+      "@type": "LoginAction",
+      "@id": "https://parametric-memory.dev/#action-signin",
+      name: "Sign in",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: "https://parametric-memory.dev/api/auth/request-link",
+        httpMethod: "POST",
+        contentType: "application/json",
+        actionPlatform: [
+          "https://schema.org/DesktopWebPlatform",
+          "https://schema.org/MobileWebPlatform",
+        ],
+      },
+    },
+    {
+      "@type": "RegisterAction",
+      "@id": "https://parametric-memory.dev/#action-signup",
+      name: "Create an account",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: "https://parametric-memory.dev/api/signup",
+        httpMethod: "POST",
+        contentType: "application/json",
+        actionPlatform: [
+          "https://schema.org/DesktopWebPlatform",
+          "https://schema.org/MobileWebPlatform",
+        ],
+      },
+    },
+    {
+      "@type": "SubscribeAction",
+      "@id": "https://parametric-memory.dev/#action-subscribe-waitlist",
+      name: "Join the waitlist",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: "https://parametric-memory.dev/api/waitlist",
+        httpMethod: "POST",
+        contentType: "application/json",
+      },
+    },
+    {
+      "@type": "SearchAction",
+      "@id": "https://parametric-memory.dev/#action-search-docs",
+      name: "Search documentation",
+      target: {
+        "@type": "EntryPoint",
+        urlTemplate: "https://parametric-memory.dev/docs?q={search_term_string}",
+      },
+      "query-input": "required name=search_term_string",
+    },
+  ],
 };
 
 const webApplicationJsonLd = {
   "@context": "https://schema.org",
   "@type": "WebApplication",
+  "@id": "https://parametric-memory.dev/#webapplication",
   name: "Parametric Memory",
   url: "https://parametric-memory.dev",
   applicationCategory: "DeveloperApplication",
@@ -175,6 +233,7 @@ const webApplicationJsonLd = {
 const softwareApplicationJsonLd = {
   "@context": "https://schema.org",
   "@type": "SoftwareApplication",
+  "@id": "https://parametric-memory.dev/#softwareapplication",
   name: "Parametric Memory",
   alternateName: "MMPM",
   url: "https://parametric-memory.dev",
@@ -332,6 +391,15 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
         {/* AI crawler discoverability — llms.txt standard (llmstxt.org) */}
         <link rel="alternate" type="text/plain" href="/llms.txt" title="LLM-readable site index" />
+        {/* Agent actions manifest — machine-readable catalogue of actions
+            agents can invoke on this origin (signin/signup/waitlist/search).
+            Convention: https://parametric-memory.dev/.well-known/actions.json */}
+        <link
+          rel="actions"
+          type="application/actions+json"
+          href="/.well-known/actions.json"
+          title="Agent actions manifest"
+        />
         {/* Signal content is human-authored and AI-indexable */}
         <meta name="ai-content-declaration" content="human-authored" />
       </head>

@@ -41,7 +41,7 @@ type ProviderButtonMeta = {
 
 const PROVIDER_BUTTON_META: Record<ProviderId, ProviderButtonMeta> = {
   google: {
-    label: "Join with Google",
+    label: "Sign in with Google",
     icon: (
       // Google "G" — simplified single-path monochrome version. The
       // full multicolour logo requires four separate paths; for a
@@ -56,7 +56,7 @@ const PROVIDER_BUTTON_META: Record<ProviderId, ProviderButtonMeta> = {
     ),
   },
   github: {
-    label: "Join with GitHub",
+    label: "Sign in with GitHub",
     icon: (
       <svg viewBox="0 0 24 24" aria-hidden="true" className="h-5 w-5">
         <path
@@ -105,8 +105,8 @@ function OauthButtons({ providers }: { providers: ProviderId[] }) {
           <a
             key={id}
             href={href}
-            data-testid={`oauth-button-${id}`}
-            className="group flex w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-medium text-white/90 transition-all hover:border-violet-400/40 hover:bg-white/[0.08] hover:text-white"
+            data-testid={`signin-${id}`}
+            className="group flex min-h-[48px] w-full items-center justify-center gap-3 rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm font-medium text-white/90 transition-all hover:border-violet-400/40 hover:bg-white/[0.08] hover:text-white focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030712] focus-visible:outline-none"
           >
             <span className="text-white/70 transition-colors group-hover:text-violet-300">
               {meta.icon}
@@ -263,13 +263,14 @@ function LoginForm() {
         <ErrorBanner />
       </Suspense>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form onSubmit={handleSubmit} className="space-y-4" data-testid="login-form">
         <div>
           <label htmlFor="email" className="mb-1.5 block text-sm text-white/60">
             Email address
           </label>
           <input
             id="email"
+            data-testid="login-email"
             type="email"
             required
             autoComplete="email"
@@ -277,20 +278,25 @@ function LoginForm() {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
-            className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2.5 text-sm text-white placeholder-white/25 transition-colors focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30 focus:outline-none"
+            className="w-full rounded-lg border border-white/10 bg-white/[0.05] px-4 py-2.5 text-base text-white placeholder-white/25 transition-colors focus:border-indigo-500/60 focus:ring-1 focus:ring-indigo-500/30 focus:outline-none"
           />
         </div>
 
         {submitError && (
-          <div className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <div
+            data-testid="login-error"
+            role="alert"
+            className="rounded-lg border border-red-500/20 bg-red-500/10 px-4 py-3 text-sm text-red-400"
+          >
             {submitError}
           </div>
         )}
 
         <button
           type="submit"
+          data-testid="login-submit"
           disabled={loading || !email.trim()}
-          className="flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-40"
+          className="flex min-h-[48px] w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500 focus-visible:ring-2 focus-visible:ring-indigo-400 focus-visible:ring-offset-2 focus-visible:ring-offset-[#030712] focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-40"
         >
           {loading ? (
             <>
@@ -330,7 +336,7 @@ export interface LoginClientProps {
 
 export default function LoginClient({ oauthProviders = [] }: LoginClientProps = {}) {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#030712] px-4 py-12">
+    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-[#030712] px-4 py-12">
       {/* Background glow */}
       <div className="pointer-events-none absolute inset-0 overflow-hidden">
         <div className="absolute top-1/3 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
@@ -364,7 +370,10 @@ export default function LoginClient({ oauthProviders = [] }: LoginClientProps = 
 
         <p className="mt-6 text-center text-xs text-white/40">
           First time?{" "}
-          <Link href="/signup" className="text-indigo-400 transition-colors hover:text-indigo-300">
+          <Link
+            href="/signup"
+            className="-my-1 inline-block py-1 text-indigo-400 transition-colors hover:text-indigo-300"
+          >
             Create an account
           </Link>
         </p>

@@ -82,16 +82,16 @@ afterEach(() => {
 describe("LoginClient — OAuth buttons: feature flag off", () => {
   it("renders neither OAuth button when oauthProviders is empty", () => {
     render(<LoginClient oauthProviders={[]} />);
-    expect(screen.queryByText(/Join with Google/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Join with GitHub/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sign in with Google/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sign in with GitHub/i)).not.toBeInTheDocument();
     // Email form still present — flag-off must not break the magic-link fallback.
     expect(screen.getByLabelText(/Email address/i)).toBeInTheDocument();
   });
 
   it("renders neither OAuth button when prop is omitted (default [])", () => {
     render(<LoginClient />);
-    expect(screen.queryByText(/Join with Google/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/Join with GitHub/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sign in with Google/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Sign in with GitHub/i)).not.toBeInTheDocument();
   });
 });
 
@@ -101,29 +101,29 @@ describe("LoginClient — OAuth buttons: provider-specific rendering", () => {
   it("renders only the Google button when oauthProviders=['google']", () => {
     render(<LoginClient oauthProviders={["google"]} />);
 
-    const googleButton = screen.getByTestId("oauth-button-google");
+    const googleButton = screen.getByTestId("signin-google");
     expect(googleButton).toBeInTheDocument();
-    expect(googleButton).toHaveTextContent("Join with Google");
+    expect(googleButton).toHaveTextContent("Sign in with Google");
     expect(googleButton).toHaveAttribute("href", "/api/auth/oauth/google/start?intent=signin");
 
-    expect(screen.queryByTestId("oauth-button-github")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("signin-github")).not.toBeInTheDocument();
   });
 
   it("renders only the GitHub button when oauthProviders=['github']", () => {
     render(<LoginClient oauthProviders={["github"]} />);
 
-    const githubButton = screen.getByTestId("oauth-button-github");
+    const githubButton = screen.getByTestId("signin-github");
     expect(githubButton).toBeInTheDocument();
-    expect(githubButton).toHaveTextContent("Join with GitHub");
+    expect(githubButton).toHaveTextContent("Sign in with GitHub");
     expect(githubButton).toHaveAttribute("href", "/api/auth/oauth/github/start?intent=signin");
 
-    expect(screen.queryByTestId("oauth-button-google")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("signin-google")).not.toBeInTheDocument();
   });
 
   it("renders both buttons in declared order when both providers are enabled", () => {
     render(<LoginClient oauthProviders={["google", "github"]} />);
 
-    const buttons = screen.getAllByRole("link", { name: /Join with/i });
+    const buttons = screen.getAllByRole("link", { name: /Sign in with/i });
     expect(buttons).toHaveLength(2);
     // Source-order check — the first is Google (declared first in the
     // getEnabledOauthProviders table), the second is GitHub.
@@ -139,7 +139,7 @@ describe("LoginClient — OAuth buttons: returnTo forwarding", () => {
     setSearchParams("redirect=/dashboard");
     render(<LoginClient oauthProviders={["google"]} />);
 
-    expect(screen.getByTestId("oauth-button-google")).toHaveAttribute(
+    expect(screen.getByTestId("signin-google")).toHaveAttribute(
       "href",
       "/api/auth/oauth/google/start?intent=signin&returnTo=%2Fdashboard",
     );
@@ -156,7 +156,7 @@ describe("LoginClient — OAuth buttons: returnTo forwarding", () => {
 
     // `?` and `&` inside the returnTo value must be percent-encoded
     // so they're not read as new query params by the start route.
-    expect(screen.getByTestId("oauth-button-google")).toHaveAttribute(
+    expect(screen.getByTestId("signin-google")).toHaveAttribute(
       "href",
       "/api/auth/oauth/google/start?intent=signin&returnTo=%2Fbilling%3Ftab%3Dinvoices%26from%3Demail",
     );
@@ -168,7 +168,7 @@ describe("LoginClient — OAuth buttons: returnTo forwarding", () => {
 
     // //evil.com is a protocol-relative URL — browsers would navigate
     // off-origin. Must be stripped identically to RedirectCookieSetter.
-    expect(screen.getByTestId("oauth-button-google")).toHaveAttribute(
+    expect(screen.getByTestId("signin-google")).toHaveAttribute(
       "href",
       "/api/auth/oauth/google/start?intent=signin",
     );
@@ -180,7 +180,7 @@ describe("LoginClient — OAuth buttons: returnTo forwarding", () => {
 
     // An absolute URL decodes to `https://evil.com` — doesn't start
     // with `/` after decoding by URLSearchParams, so it's stripped.
-    expect(screen.getByTestId("oauth-button-google")).toHaveAttribute(
+    expect(screen.getByTestId("signin-google")).toHaveAttribute(
       "href",
       "/api/auth/oauth/google/start?intent=signin",
     );
@@ -189,7 +189,7 @@ describe("LoginClient — OAuth buttons: returnTo forwarding", () => {
   it("omits returnTo when ?redirect is absent", () => {
     render(<LoginClient oauthProviders={["github"]} />);
 
-    expect(screen.getByTestId("oauth-button-github")).toHaveAttribute(
+    expect(screen.getByTestId("signin-github")).toHaveAttribute(
       "href",
       "/api/auth/oauth/github/start?intent=signin",
     );

@@ -232,3 +232,27 @@ describe("CapacityInquiryForm — required-field enforcement", () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 });
+
+// ── M4 — iOS-zoom prevention ─────────────────────────────────────────────────
+//
+// iOS Safari zooms in on any <input> or <textarea> whose computed font-size is
+// below 16px. Tailwind's `text-sm` (14px) hits that threshold. This block
+// locks `text-base` (16px) on every user-editable field so we don't regress.
+
+describe("CapacityInquiryForm — M4 input font-size guard", () => {
+  it("name, email, and message all use text-base (>=16px) to prevent iOS zoom", () => {
+    render(<CapacityInquiryForm tier="team" variant="primary" />);
+    // Both variants start collapsed behind a CTA. Click to expand so the
+    // real input/textarea elements are in the DOM.
+    fireEvent.click(screen.getByRole("button"));
+
+    const name = screen.getByPlaceholderText(/name/i) as HTMLInputElement;
+    const email = screen.getByPlaceholderText(/email/i) as HTMLInputElement;
+    const message = screen.getByPlaceholderText(/^e\.g\./i) as HTMLTextAreaElement;
+
+    for (const field of [name, email, message]) {
+      expect(field.className).toMatch(/\btext-base\b/);
+      expect(field.className).not.toMatch(/\btext-sm\b/);
+    }
+  });
+});

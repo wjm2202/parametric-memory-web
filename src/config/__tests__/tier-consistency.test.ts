@@ -200,7 +200,15 @@ describe("source files — no legacy tier names", () => {
   it("pricing/PricingCTA.tsx does not contain TIER_TO_CHECKOUT remapping", () => {
     const src = readSrc("app/pricing/PricingCTA.tsx");
     expect(src).not.toContain("TIER_TO_CHECKOUT");
-    expect(src).not.toContain('"solo"');
+    // Phase 2 introduced `tierId === "indie" ? "solo" : tierId` as the
+    // user-facing testid-slug mapping (testids are external-facing, internal
+    // tier IDs stay as `indie`). That is the ONLY legitimate occurrence of
+    // the literal "solo" in this file — narrowed the assertion accordingly.
+    // The original guard still holds: tierId must never be treated as a
+    // legacy internal ID ("solo" or "starter-legacy"), only as a display
+    // slug on the testid path.
+    expect(src).not.toMatch(/tierId\s*===\s*"solo"/);
+    expect(src).not.toContain('"starter-legacy"');
     // Should import validation from tiers registry
     expect(src).toMatch(/@\/config\/tiers/);
   });

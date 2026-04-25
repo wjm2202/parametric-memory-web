@@ -8,18 +8,26 @@
  *   "immersive" — absolute, transparent. Used on /visualise and /knowledge
  *                 (floats over full-screen canvas).
  *
+ * Mobile (< md, item M5 of sprint 2026-W18):
+ *   Below the md breakpoint the centre nav links are hidden and replaced
+ *   by a hamburger button that opens a right-side drawer containing the
+ *   same links + auth action. The drawer:
+ *     - is a role="dialog" aria-modal region,
+ *     - closes on ESC, on backdrop click, and on link tap,
+ *     - locks body scroll while open,
+ *     - returns focus to the hamburger button on close.
+ *
+ * testids + aria-labels follow docs/DUAL-ACCESSIBILITY.md (pre-registered).
+ *
  * Auth:
  *   - `isLoggedIn` is determined server-side from the session cookie and passed
  *     as a prop. This avoids a client-side flash on initial render.
  *   - Session is validated client-side via /api/auth/me on mount.
  *     401 → stale cookie, flips to Sign In. 503/network → can't validate,
  *     optimistically keeps the server-determined state.
- *
- * Nav items (all variants):
- *   Docs · About · Blog · Pricing · FAQ · Legal · Privacy · Knowledge Graph · [Dashboard | Sign In]
  */
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
@@ -48,6 +56,7 @@ function KnowledgeIcon() {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
+      aria-hidden="true"
     >
       <path
         strokeLinecap="round"
@@ -66,11 +75,62 @@ function UserIcon() {
       viewBox="0 0 24 24"
       strokeWidth={1.5}
       stroke="currentColor"
+      aria-hidden="true"
     >
       <path
         strokeLinecap="round"
         strokeLinejoin="round"
         d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z"
+      />
+    </svg>
+  );
+}
+
+function HamburgerIcon({ open }: { open: boolean }) {
+  // Three-bar icon; the bars morph to an X when `open` is true.
+  // `aria-hidden` because the button itself carries the label.
+  return (
+    <svg
+      width="22"
+      height="22"
+      viewBox="0 0 22 22"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.75"
+      strokeLinecap="round"
+      aria-hidden="true"
+    >
+      <line
+        x1="3"
+        y1={open ? "11" : "6"}
+        x2="19"
+        y2={open ? "11" : "6"}
+        style={{
+          transformOrigin: "center",
+          transform: open ? "rotate(45deg)" : "none",
+          transition: "transform 180ms ease, y 180ms ease",
+        }}
+      />
+      <line
+        x1="3"
+        y1="11"
+        x2="19"
+        y2="11"
+        style={{
+          opacity: open ? 0 : 1,
+          transition: "opacity 120ms ease",
+        }}
+      />
+      <line
+        x1="3"
+        y1={open ? "11" : "16"}
+        x2="19"
+        y2={open ? "11" : "16"}
+        style={{
+          transformOrigin: "center",
+          transform: open ? "rotate(-45deg)" : "none",
+          transition: "transform 180ms ease, y 180ms ease",
+        }}
       />
     </svg>
   );
@@ -88,6 +148,27 @@ interface SiteNavbarProps {
   /** Immersive only: accent color class for the LIVE badge (e.g. "text-cyan-400") */
   accentColor?: "cyan" | "violet";
 }
+
+interface NavItem {
+  href: string;
+  label: string;
+  testid: string;
+  /**
+   * Tailwind responsive class that hides this link below a breakpoint in the
+   * desktop centre nav. The mobile drawer always shows every link.
+   */
+  desktopHiddenBelow?: "md" | "lg";
+}
+
+const NAV_ITEMS: NavItem[] = [
+  { href: "/docs", label: "Docs", testid: "nav-link-docs" },
+  { href: "/about", label: "About", testid: "nav-link-about" },
+  { href: "/blog", label: "Blog", testid: "nav-link-blog", desktopHiddenBelow: "md" },
+  { href: "/pricing", label: "Pricing", testid: "nav-link-pricing" },
+  { href: "/faq", label: "FAQ", testid: "nav-link-faq", desktopHiddenBelow: "md" },
+  { href: "/terms", label: "Legal", testid: "nav-link-legal", desktopHiddenBelow: "lg" },
+  { href: "/privacy", label: "Privacy", testid: "nav-link-privacy", desktopHiddenBelow: "lg" },
+];
 
 /* ─── Auth state hook ────────────────────────────────────────────────────── */
 
@@ -135,6 +216,51 @@ function useAuthState(isLoggedIn: boolean): { email: string | null; verified: bo
   return { email, verified };
 }
 
+/* ─── Mobile drawer hook ─────────────────────────────────────────────────── */
+
+/**
+ * Runs drawer side-effects: body scroll lock while open, ESC-to-close,
+ * and focus return to the hamburger trigger on close.
+ */
+function useDrawerBehaviour(
+  open: boolean,
+  onClose: () => void,
+  triggerRef: React.RefObject<HTMLButtonElement | null>,
+) {
+  // Body scroll lock.
+  useEffect(() => {
+    if (typeof document === "undefined") return;
+    if (!open) return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  // ESC to close.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        onClose();
+      }
+    };
+    document.addEventListener("keydown", onKey);
+    return () => document.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  // Return focus to the hamburger trigger when the drawer closes.
+  const wasOpenRef = useRef(false);
+  useEffect(() => {
+    if (wasOpenRef.current && !open) {
+      triggerRef.current?.focus();
+    }
+    wasOpenRef.current = open;
+  }, [open, triggerRef]);
+}
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export default function SiteNavbar({
@@ -146,32 +272,44 @@ export default function SiteNavbar({
   const pathname = usePathname();
   const { email, verified } = useAuthState(isLoggedIn);
 
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  const hamburgerRef = useRef<HTMLButtonElement>(null);
+  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  useDrawerBehaviour(drawerOpen, closeDrawer, hamburgerRef);
+
+  // Close drawer on route change (covers the link-tap close as a safety net).
+  useEffect(() => {
+    setDrawerOpen(false);
+  }, [pathname]);
+
   /* ── Shared link helpers ─────────────────────────────────────────────── */
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
-  /* ── Auth button ─────────────────────────────────────────────────────── */
+  /* ── Desktop auth button (pinned top-right, standard variant) ────────── */
+
+  const authLabel = email ? (email.length > 22 ? email.slice(0, 20) + "…" : email) : "My Substrate";
+  const authLabelShort = email ? email.split("@")[0] : "My Substrate";
 
   const authButton = verified ? (
     <Link
       href="/dashboard"
+      data-testid="nav-auth-dashboard"
+      aria-label="Open dashboard"
       className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-all"
     >
       <UserIcon />
       <span className="hidden truncate sm:inline" style={{ maxWidth: "160px" }}>
-        {email ? (
-          <span title={email}>{email.length > 22 ? email.slice(0, 20) + "…" : email}</span>
-        ) : (
-          "My Substrate"
-        )}
+        {email ? <span title={email}>{authLabel}</span> : "My Substrate"}
       </span>
       <span className="truncate sm:hidden" style={{ maxWidth: "80px" }}>
-        {email ? email.split("@")[0] : "My Substrate"}
+        {authLabelShort}
       </span>
     </Link>
   ) : (
     <Link
       href="/login"
+      data-testid="nav-auth-signin"
       className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-all"
     >
       Sign In
@@ -182,111 +320,100 @@ export default function SiteNavbar({
 
   if (variant === "standard") {
     return (
-      <nav className="border-surface-800/60 bg-surface-950/70 fixed top-0 right-0 left-0 z-50 border-b backdrop-blur-xl">
-        {/*
-         * Three-column layout: logo | nav links | auth button
-         * The nav links sit in the centre column (absolutely positioned so
-         * they never move regardless of how wide the auth button grows).
-         * The auth button is pinned to the right column and grows inward only.
-         */}
-        <div className="relative mx-auto flex max-w-6xl items-center px-6 py-4">
-          {/* ── Left: Logo (static anchor) ─────────────────────────────── */}
-          <Link
-            href="/"
-            className="font-display flex shrink-0 items-center gap-2.5 text-[15px] font-semibold tracking-tight text-white"
-          >
-            <Logomark size={26} />
-            <span className="hidden sm:inline">Parametric Memory</span>
-            <span className="sm:hidden">PMEM</span>
-          </Link>
-
-          {/* ── Centre: Nav links (absolutely centred — never shifts) ───── */}
-          <div className="absolute top-1/2 left-1/2 flex -translate-x-1/2 -translate-y-1/2 items-center gap-1 sm:gap-2">
+      <>
+        <nav
+          aria-label="Primary"
+          className="border-surface-800/60 bg-surface-950/70 fixed top-0 right-0 left-0 z-50 border-b backdrop-blur-xl"
+        >
+          {/*
+           * Three-column layout: logo | nav links | auth button + hamburger
+           * Desktop (≥ md): centre nav links absolutely centred; auth on right.
+           * Mobile  (< md): centre nav hidden; hamburger replaces it visually;
+           *                 auth remains on the right for one-tap sign-in.
+           */}
+          <div className="relative mx-auto flex max-w-6xl items-center px-4 py-3 sm:px-6 sm:py-4">
+            {/* ── Left: Logo (static anchor) ─────────────────────────────── */}
             <Link
-              href="/docs"
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                isActive("/docs") ? "font-medium text-white" : "text-surface-400 hover:text-white"
-              }`}
+              href="/"
+              data-testid="nav-home"
+              aria-label="Parametric Memory — home"
+              className="font-display flex shrink-0 items-center gap-2.5 text-[15px] font-semibold tracking-tight text-white"
             >
-              Docs
-            </Link>
-            <Link
-              href="/about"
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                isActive("/about") ? "font-medium text-white" : "text-surface-400 hover:text-white"
-              }`}
-            >
-              About
-            </Link>
-            <Link
-              href="/blog"
-              className={`hidden rounded-md px-3 py-1.5 text-sm transition-colors md:block ${
-                isActive("/blog") ? "font-medium text-white" : "text-surface-400 hover:text-white"
-              }`}
-            >
-              Blog
-            </Link>
-            <Link
-              href="/pricing"
-              className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
-                isActive("/pricing")
-                  ? "font-medium text-white"
-                  : "text-surface-400 hover:text-white"
-              }`}
-            >
-              Pricing
-            </Link>
-            <Link
-              href="/faq"
-              className={`hidden rounded-md px-3 py-1.5 text-sm transition-colors md:block ${
-                isActive("/faq") ? "font-medium text-white" : "text-surface-400 hover:text-white"
-              }`}
-            >
-              FAQ
+              <Logomark size={26} />
+              <span className="hidden sm:inline">Parametric Memory</span>
+              <span className="sm:hidden">PMEM</span>
             </Link>
 
-            {/* Legal */}
-            <Link
-              href="/terms"
-              className={`hidden rounded-md px-3 py-1.5 text-sm transition-colors lg:block ${
-                isActive("/terms") || isActive("/privacy") || isActive("/aup") || isActive("/dpa")
-                  ? "font-medium text-white"
-                  : "text-surface-400 hover:text-white"
-              }`}
-            >
-              Legal
-            </Link>
+            {/* ── Centre: Nav links (desktop only — hidden below md) ─────── */}
+            <div className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex md:gap-2">
+              {NAV_ITEMS.map((item) => {
+                const hideClass =
+                  item.desktopHiddenBelow === "lg"
+                    ? "hidden lg:block"
+                    : item.desktopHiddenBelow === "md"
+                      ? "hidden md:block"
+                      : "";
+                const active =
+                  isActive(item.href) || (item.href === "/terms" && isActive("/privacy"));
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    data-testid={item.testid}
+                    className={`rounded-md px-3 py-1.5 text-sm transition-colors ${hideClass} ${
+                      active ? "font-medium text-white" : "text-surface-400 hover:text-white"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
 
-            {/* Privacy */}
-            <Link
-              href="/privacy"
-              className={`hidden rounded-md px-3 py-1.5 text-sm transition-colors lg:block ${
-                isActive("/privacy")
-                  ? "font-medium text-white"
-                  : "text-surface-400 hover:text-white"
-              }`}
-            >
-              Privacy
-            </Link>
+              {/* Knowledge Graph (accent — always visible on desktop nav) */}
+              <Link
+                href="/knowledge"
+                data-testid="nav-link-knowledge"
+                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-all ${
+                  isActive("/knowledge")
+                    ? "bg-violet-500/20 text-violet-300 ring-violet-500/50"
+                    : "bg-violet-500/10 text-violet-400 ring-violet-500/25 hover:bg-violet-500/20 hover:ring-violet-500/45"
+                }`}
+              >
+                <KnowledgeIcon />
+                <span className="hidden md:inline">Knowledge</span>
+              </Link>
+            </div>
 
-            {/* Knowledge Graph */}
-            <Link
-              href="/knowledge"
-              className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-all ${
-                isActive("/knowledge")
-                  ? "bg-violet-500/20 text-violet-300 ring-violet-500/50"
-                  : "bg-violet-500/10 text-violet-400 ring-violet-500/25 hover:bg-violet-500/20 hover:ring-violet-500/45"
-              }`}
-            >
-              <KnowledgeIcon />
-              <span className="hidden md:inline">Knowledge</span>
-            </Link>
+            {/* ── Right: Auth + hamburger ─────────────────────────────────── */}
+            <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
+              {authButton}
+
+              {/* Hamburger — mobile only (< md) */}
+              <button
+                ref={hamburgerRef}
+                type="button"
+                data-testid="nav-hamburger"
+                aria-label={drawerOpen ? "Close navigation menu" : "Open navigation menu"}
+                aria-expanded={drawerOpen}
+                aria-controls="nav-drawer"
+                onClick={() => setDrawerOpen((v) => !v)}
+                className="text-surface-300 hover:bg-surface-800/60 focus-visible:ring-brand-500/60 inline-flex h-11 w-11 items-center justify-center rounded-lg ring-1 ring-white/10 transition-colors hover:text-white focus:outline-none focus-visible:ring-2 md:hidden"
+              >
+                <HamburgerIcon open={drawerOpen} />
+              </button>
+            </div>
           </div>
+        </nav>
 
-          {/* ── Right: Auth button (pinned, grows inward only) ──────────── */}
-          <div className="ml-auto shrink-0">{authButton}</div>
-        </div>
-      </nav>
+        {/* ── Mobile drawer (rendered only in standard variant) ─────────── */}
+        <MobileDrawer
+          open={drawerOpen}
+          onClose={closeDrawer}
+          isActive={isActive}
+          verified={verified}
+          email={email}
+        />
+      </>
     );
   }
 
@@ -300,10 +427,15 @@ export default function SiteNavbar({
   const labelClasses = accentColor === "violet" ? "text-violet-500/60" : "text-cyan-500/60";
 
   return (
-    <nav className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 py-3 md:px-6 md:py-4">
+    <nav
+      aria-label="Primary"
+      className="absolute inset-x-0 top-0 z-10 flex items-center justify-between px-3 py-3 md:px-6 md:py-4"
+    >
       {/* Left — brand */}
       <Link
         href="/"
+        data-testid="nav-immersive-home"
+        aria-label="Parametric Memory — home"
         className="flex items-center gap-2 font-mono text-xs font-semibold tracking-wider text-slate-400 transition-colors hover:text-white md:text-sm"
       >
         <Logomark size={18} />
@@ -317,6 +449,8 @@ export default function SiteNavbar({
         {verified ? (
           <Link
             href="/dashboard"
+            data-testid="nav-immersive-auth"
+            aria-label="Open dashboard"
             className="font-mono text-xs text-slate-500 transition-colors hover:text-white"
             title={email ?? "My Substrate"}
           >
@@ -325,6 +459,8 @@ export default function SiteNavbar({
         ) : (
           <Link
             href="/login"
+            data-testid="nav-immersive-auth"
+            aria-label="Sign in"
             className="font-mono text-xs text-slate-500 transition-colors hover:text-white"
           >
             Sign In
@@ -346,5 +482,143 @@ export default function SiteNavbar({
         )}
       </div>
     </nav>
+  );
+}
+
+/* ─── Mobile drawer component ────────────────────────────────────────────── */
+
+interface MobileDrawerProps {
+  open: boolean;
+  onClose: () => void;
+  isActive: (href: string) => boolean;
+  verified: boolean;
+  email: string | null;
+}
+
+function MobileDrawer({ open, onClose, isActive, verified, email }: MobileDrawerProps) {
+  // Every link inside the drawer closes it on tap. Next.js Link navigation
+  // happens synchronously; a parallel onClick is safe.
+  const linkClose = () => onClose();
+
+  return (
+    <div
+      // The outer wrapper is always rendered so CSS transitions can run.
+      // `aria-hidden` + `inert`-like behaviour via pointer-events toggles.
+      className={`fixed inset-0 z-[60] md:hidden ${
+        open ? "pointer-events-auto" : "pointer-events-none"
+      }`}
+      aria-hidden={!open}
+    >
+      {/* Backdrop */}
+      <button
+        type="button"
+        aria-label="Close navigation menu"
+        tabIndex={open ? 0 : -1}
+        onClick={onClose}
+        className={`absolute inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-200 ${
+          open ? "opacity-100" : "opacity-0"
+        }`}
+      />
+
+      {/* Drawer panel */}
+      <aside
+        id="nav-drawer"
+        data-testid="nav-drawer"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Navigation"
+        className={`border-surface-800/60 bg-surface-950/95 absolute top-0 right-0 flex h-[100dvh] w-[min(86vw,320px)] flex-col border-l shadow-2xl backdrop-blur-xl transition-transform duration-200 ease-out ${
+          open ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
+        {/* Header row — brand + close */}
+        <div className="border-surface-800/60 flex items-center justify-between border-b px-5 py-4">
+          <span className="font-display text-[15px] font-semibold tracking-tight text-white">
+            Parametric Memory
+          </span>
+          <button
+            type="button"
+            data-testid="nav-drawer-close"
+            aria-label="Close navigation menu"
+            onClick={onClose}
+            className="text-surface-300 hover:bg-surface-800/60 focus-visible:ring-brand-500/60 inline-flex h-11 w-11 items-center justify-center rounded-lg ring-1 ring-white/10 transition-colors hover:text-white focus:outline-none focus-visible:ring-2"
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 18 18"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="1.75"
+              strokeLinecap="round"
+              aria-hidden="true"
+            >
+              <path d="M4 4 L14 14 M14 4 L4 14" />
+            </svg>
+          </button>
+        </div>
+
+        {/* Nav list */}
+        <nav aria-label="Mobile primary" className="flex flex-col gap-1 px-3 py-4">
+          {NAV_ITEMS.map((item) => (
+            <Link
+              key={item.href}
+              href={item.href}
+              data-testid={item.testid}
+              onClick={linkClose}
+              className={`rounded-lg px-4 py-3 text-base transition-colors ${
+                isActive(item.href)
+                  ? "bg-surface-800/60 font-medium text-white"
+                  : "text-surface-300 hover:bg-surface-800/40 hover:text-white"
+              }`}
+            >
+              {item.label}
+            </Link>
+          ))}
+
+          {/* Knowledge Graph accent link */}
+          <Link
+            href="/knowledge"
+            data-testid="nav-link-knowledge"
+            onClick={linkClose}
+            className={`mt-1 inline-flex items-center gap-2 rounded-lg px-4 py-3 text-base font-medium ring-1 transition-all ${
+              isActive("/knowledge")
+                ? "bg-violet-500/20 text-violet-300 ring-violet-500/50"
+                : "bg-violet-500/10 text-violet-400 ring-violet-500/25 hover:bg-violet-500/20 hover:ring-violet-500/45"
+            }`}
+          >
+            <KnowledgeIcon />
+            Knowledge Graph
+          </Link>
+        </nav>
+
+        {/* Auth action pinned bottom */}
+        <div className="border-surface-800/60 mt-auto border-t px-5 py-4">
+          {verified ? (
+            <Link
+              href="/dashboard"
+              data-testid="nav-auth-dashboard"
+              aria-label="Open dashboard"
+              onClick={linkClose}
+              className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium ring-1 transition-all"
+            >
+              <UserIcon />
+              <span className="truncate">
+                {email ? (email.length > 26 ? email.slice(0, 24) + "…" : email) : "My Substrate"}
+              </span>
+            </Link>
+          ) : (
+            <Link
+              href="/login"
+              data-testid="nav-auth-signin"
+              onClick={linkClose}
+              className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium ring-1 transition-all"
+            >
+              Sign In
+            </Link>
+          )}
+        </div>
+      </aside>
+    </div>
   );
 }

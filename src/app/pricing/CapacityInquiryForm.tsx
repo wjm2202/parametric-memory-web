@@ -162,7 +162,7 @@ export function CapacityInquiryForm({ tier, variant = "primary", ctaLabel }: Pro
         value={name}
         onChange={(e) => setName(e.target.value)}
         required
-        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-sm transition outline-none focus:ring-0"
+        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-base transition outline-none focus:ring-0"
       />
 
       <input
@@ -172,7 +172,7 @@ export function CapacityInquiryForm({ tier, variant = "primary", ctaLabel }: Pro
         value={email}
         onChange={(e) => setEmail(e.target.value)}
         required
-        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-sm transition outline-none focus:ring-0"
+        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-base transition outline-none focus:ring-0"
       />
 
       <textarea
@@ -182,7 +182,7 @@ export function CapacityInquiryForm({ tier, variant = "primary", ctaLabel }: Pro
         onChange={(e) => setMessage(e.target.value)}
         required
         rows={3}
-        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-sm transition outline-none focus:ring-0"
+        className="border-surface-700 bg-surface-800/60 text-surface-100 placeholder-surface-500 focus:border-brand-500 w-full rounded-lg border px-3 py-2 text-base transition outline-none focus:ring-0"
       />
 
       <button

@@ -87,6 +87,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.7,
     },
     {
+      url: "https://parametric-memory.dev/login",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.5,
+    },
+    {
       url: "https://parametric-memory.dev/terms",
       lastModified: new Date(),
       changeFrequency: "yearly",
@@ -94,6 +100,18 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: "https://parametric-memory.dev/privacy",
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: "https://parametric-memory.dev/aup",
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: "https://parametric-memory.dev/dpa",
       lastModified: new Date(),
       changeFrequency: "yearly",
       priority: 0.3,

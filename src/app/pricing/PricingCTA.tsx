@@ -221,7 +221,7 @@ export function PricingCTA({
           }}
           className="mt-0.5 h-4 w-4 flex-shrink-0 cursor-pointer rounded border-white/20 bg-white/5 accent-indigo-500"
         />
-        <span className="text-xs leading-relaxed text-white/50">
+        <span className="text-xs leading-relaxed text-white/80">
           I agree to the{" "}
           <Link
             href="/terms"
@@ -244,6 +244,7 @@ export function PricingCTA({
       <button
         onClick={handleCheckout}
         disabled={isDisabled}
+        data-testid={`pricing-card-${tierId === "indie" ? "solo" : tierId}-cta`}
         className="bg-brand-500 hover:bg-brand-400 ring-brand-400/30 hover:ring-brand-400/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white ring-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
       >
         {checkingCapacity ? (

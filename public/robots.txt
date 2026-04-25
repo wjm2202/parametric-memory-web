@@ -48,6 +48,19 @@ Allow: /
 User-agent: Google-Extended
 Allow: /
 
+# ── General search engine crawlers — explicit allow ───────────────────────
+# Explicit blocks for the two dominant search crawlers so llms.txt's
+# three-agent stance (Browsing agents / Retrieval crawlers / Answer engines)
+# is mirrored here. Both already follow the wildcard Allow above, but being
+# explicit removes any ambiguity when robots.txt parsers apply longest-match
+# user-agent resolution.
+
+User-agent: Googlebot
+Allow: /
+
+User-agent: Bingbot
+Allow: /
+
 # ── Bulk training crawlers — block ────────────────────────────────────────
 # No referral value; scrape for training datasets only.
 

@@ -37,11 +37,16 @@ function escapeForRegex(s: string): string {
 }
 
 describe("M7 overflow-x guards (contract test)", () => {
-  it("Signup outer wrapper has relative + overflow-x-hidden + min-h-screen", () => {
+  it("Signup outer wrapper has relative + overflow-x-hidden + min-h-[100dvh]", () => {
     const src = read("app/signup/SignupClient.tsx");
+    // Phase 3 (SSO tap targets + iOS polish) swapped `min-h-screen` for
+    // `min-h-[100dvh]` so iOS Safari's retracting bottom bar does not
+    // crop the form. The overflow-x guard is unchanged — still needed for
+    // decorative blobs at 320-412px widths. phase3-sso-tap-targets.test.tsx
+    // is the authoritative source for the min-h-[100dvh] invariant.
     expect(
-      hasDivWithAllTokens(src, ["relative", "overflow-x-hidden", "min-h-screen"]),
-      "Signup has no single <div> with `relative`, `overflow-x-hidden`, and `min-h-screen` on the same element",
+      hasDivWithAllTokens(src, ["relative", "overflow-x-hidden", "min-h-[100dvh]"]),
+      "Signup has no single <div> with `relative`, `overflow-x-hidden`, and `min-h-[100dvh]` on the same element",
     ).toBe(true);
   });
 
