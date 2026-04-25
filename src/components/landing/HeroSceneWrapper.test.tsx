@@ -115,7 +115,8 @@ describe("HeroSceneWrapper — prefers-reduced-motion", () => {
     mockMatchMedia(true);
 
     const ricSpy = vi.fn();
-    (window as MockWindow).requestIdleCallback = ricSpy as unknown as MockWindow["requestIdleCallback"];
+    (window as MockWindow).requestIdleCallback =
+      ricSpy as unknown as MockWindow["requestIdleCallback"];
 
     const { queryByTestId } = render(<HeroSceneWrapper />);
     expect(queryByTestId("hero-scene-mounted")).toBeNull();

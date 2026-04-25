@@ -34,17 +34,21 @@ const HeroScene = dynamic(() => import("./HeroScene").then((m) => m.HeroScene), 
 function scheduleIdle(cb: () => void): () => void {
   if (typeof window === "undefined") return () => {};
 
-  const ric = (window as Window & {
-    requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
-    cancelIdleCallback?: (handle: number) => void;
-  }).requestIdleCallback;
+  const ric = (
+    window as Window & {
+      requestIdleCallback?: (cb: () => void, opts?: { timeout: number }) => number;
+      cancelIdleCallback?: (handle: number) => void;
+    }
+  ).requestIdleCallback;
 
   if (ric) {
     const handle = ric(cb, { timeout: 2000 });
     return () => {
-      const cic = (window as Window & {
-        cancelIdleCallback?: (handle: number) => void;
-      }).cancelIdleCallback;
+      const cic = (
+        window as Window & {
+          cancelIdleCallback?: (handle: number) => void;
+        }
+      ).cancelIdleCallback;
       if (cic) cic(handle);
     };
   }
