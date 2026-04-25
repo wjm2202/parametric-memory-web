@@ -7,6 +7,8 @@ import { toast } from "sonner";
 import { getTierLabel } from "@/config/tiers";
 import { RotationStepper, type RotationStatus } from "@/components/ui/RotationStepper";
 import { UpdateInstructions } from "@/components/ui/UpdateInstructions";
+import { FormattedDate } from "@/components/FormattedDate";
+import { FormattedNumber } from "@/components/FormattedNumber";
 import { useTierChangePoll } from "@/hooks/useTierChangePoll";
 import { TierChangeProgressBanner } from "./TierChangeProgressBanner";
 import { ChangePlanButton } from "./ChangePlanButton";
@@ -116,8 +118,8 @@ function UsageBar({
       <div className="mb-2 flex items-center justify-between">
         <p className="text-xs text-white/50">{label}</p>
         <p className="text-xs text-white/70">
-          {safeCurrentVal.toLocaleString()} /{" "}
-          {safeMaxVal === -1 ? "∞" : safeMaxVal.toLocaleString()} {unit}
+          <FormattedNumber value={safeCurrentVal} /> /{" "}
+          {safeMaxVal === -1 ? "∞" : <FormattedNumber value={safeMaxVal} />} {unit}
         </p>
       </div>
       <div className="h-2 w-full overflow-hidden rounded-full bg-zinc-800">
@@ -528,7 +530,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                 <StatusBadge status={substrate.status} />
                 {substrate.cancelAt && (
                   <span className="text-sm text-amber-400">
-                    Cancel scheduled for {new Date(substrate.cancelAt).toLocaleDateString()}
+                    Cancel scheduled for <FormattedDate iso={substrate.cancelAt} />
                   </span>
                 )}
               </div>
@@ -588,7 +590,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
               {/* Row 4 — renewal date footer, only when billing reports one */}
               {billingStatus?.renewalDate && (
                 <p className="mt-4 text-sm text-white/60">
-                  Renewal: {new Date(billingStatus.renewalDate).toLocaleDateString()}
+                  Renewal: <FormattedDate iso={billingStatus.renewalDate} />
                 </p>
               )}
             </div>

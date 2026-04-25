@@ -8,19 +8,24 @@
 import { test, expect } from "@playwright/test";
 
 test.describe("/login", () => {
-  test("renders magic-link login form", async ({ page }) => {
+  test("renders magic-link login form and OAuth providers", async ({ page }) => {
     await page.goto("/login");
     await expect(page.getByTestId("login-form")).toBeVisible();
     await expect(page.getByTestId("login-email")).toBeVisible();
     await expect(page.getByTestId("login-submit")).toBeVisible();
 
-    // Prod is currently magic-link-only; OAuth provider buttons (signin-google,
-    // signin-github) are pre-registered in DUAL-ACCESSIBILITY.md but not yet
-    // wired in the UI. We don't require them — but if they ever ship, this
-    // test happily co-exists.
-    const google = await page.getByTestId("signin-google").count();
-    const github = await page.getByTestId("signin-github").count();
-    expect(google + github, "OAuth providers may be 0 (magic-link-only) or more").toBeGreaterThanOrEqual(0);
+    // Prod has both Google and GitHub OAuth shipped (April 25 2026). If
+    // either of these vanishes from the SSR'd HTML it's almost certainly
+    // the build-time-bake regression — /login lost its `force-dynamic`
+    // export and Next.js statically generated a build that ran without
+    // OAuth env vars. See src/app/login/page.tsx for the long version.
+    //
+    // If you intentionally turn OAuth off (e.g. AUTH_OAUTH_ENABLED=false
+    // for a debug window), relax these to .toHaveCount(0) for the
+    // duration. Don't silently weaken to >= 0 — that's how the original
+    // bug went unnoticed for a build cycle.
+    await expect(page.getByTestId("signin-google")).toBeVisible();
+    await expect(page.getByTestId("signin-github")).toBeVisible();
   });
 
   test("submit button is the magic-link CTA", async ({ page }) => {
