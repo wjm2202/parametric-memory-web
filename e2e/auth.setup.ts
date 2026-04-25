@@ -104,23 +104,23 @@ setup("authenticate the user (magic-link or OAuth)", async ({ page, context }) =
 
   console.log("\n=== Auth capture ===");
   console.log("A Chromium window has opened at /login.\n");
-  console.log("Magic-link flow (the only option on prod right now — OAuth code");
-  console.log("is shipped but feature-flagged off until AUTH_OAUTH_ENABLED=true");
-  console.log("is set in .env.prod):\n");
-  console.log("  1. In the Playwright window, type your email and click");
-  console.log("     'Send sign-in link'.");
-  console.log("  2. Open your inbox in any browser.");
-  console.log("  3. RIGHT-CLICK the magic link → 'Copy Link Address'.");
-  console.log("     (Do not left-click — that opens your default browser and");
-  console.log("     the session cookie lands in the wrong place.)");
-  console.log("  4. Paste the URL into the 'Auth helper' toolbar at the TOP");
-  console.log("     of the Playwright window.");
-  console.log("  5. Click 'Go' (or press Enter). The Playwright window");
-  console.log("     navigates to the callback, your session is captured,");
-  console.log("     and the window closes itself.\n");
-  console.log("If you accidentally clicked the link and it opened your default");
-  console.log("browser: copy the URL from that browser's address bar and paste");
-  console.log("it into the Auth helper toolbar — recovery works the same way.\n");
+  console.log("RECOMMENDED — OAuth (fastest, fully self-contained):");
+  console.log("  1. Click 'Sign in with Google' (or 'Sign in with GitHub').");
+  console.log("  2. Pick the account you want the test suite to use.");
+  console.log("  3. Approve consent on first use.");
+  console.log("  4. The redirect lands you back inside the Playwright window;");
+  console.log("     the script auto-detects post-login testids, saves your");
+  console.log("     session, and closes itself.\n");
+  console.log("FALLBACK — magic link (use if OAuth is unavailable):");
+  console.log("  1. Type your email in the form, click 'Send sign-in link'.");
+  console.log("  2. Open your inbox; RIGHT-CLICK the magic link →");
+  console.log("     'Copy Link Address'. Do NOT left-click — that opens your");
+  console.log("     default browser and the session cookie lands wrong.");
+  console.log("  3. Paste the URL into the 'Auth helper' toolbar at the top");
+  console.log("     of the Playwright window, hit Enter.\n");
+  console.log("If you accidentally clicked the magic link and it opened your");
+  console.log("default browser: copy the URL from that browser's address bar");
+  console.log("and paste into the Auth helper toolbar — same outcome.\n");
   console.log("There is NO per-test timeout — take as long as you need.\n");
 
   await page.goto("/login");
@@ -128,13 +128,38 @@ setup("authenticate the user (magic-link or OAuth)", async ({ page, context }) =
   // Poll forever (the project-level timeout:0 in playwright.config.ts means
   // we're never killed). Generous expect.poll timeout so it doesn't itself
   // become the bottleneck.
+  //
+  // We accept login as "done" when EITHER:
+  //   (a) the browser has settled on a known authed-only URL (the strongest
+  //       signal — middleware would have bounced an unauthed visitor back to
+  //       /login before they could land on /admin, /dashboard, etc.), OR
+  //   (b) any of a known set of post-login testids has rendered on the page
+  //       (catches the case where a future authed route exists but isn't in
+  //       our URL list yet).
+  //
+  // Using URL alone would risk matching during the OAuth callback /api/auth/
+  // path, so we still bail early on /login and /auth/ paths.
   await expect
     .poll(
       async () => {
         const url = page.url();
-        // Still on a login/auth page → keep waiting.
+        // Still on a login or callback/auth page → keep waiting.
         if (url.includes("/login") || url.includes("/auth/")) return false;
-        // Look for any of the post-login testid landmarks.
+
+        // (a) URL-based detection. Any of these paths means middleware has
+        //     accepted the session cookie — capture is safe.
+        const authedPaths = [
+          "/admin",
+          "/dashboard",
+          "/visualise",
+          "/knowledge",
+          "/billing",
+        ];
+        for (const p of authedPaths) {
+          if (url.includes(p)) return true;
+        }
+
+        // (b) Testid-based fallback for routes not in the list above.
         const candidates = [
           "[data-testid='nav-auth-dashboard']",
           "[data-testid='admin-substrate-header']",

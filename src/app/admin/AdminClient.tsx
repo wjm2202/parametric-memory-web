@@ -476,15 +476,24 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
             {/* Merged from what used to be a separate Billing card and a separate Status card. */}
             {/* The thing you're paying for and the thing you're running are one product; one card. */}
             <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-              {/* Row 1 — header: BILLING label + tier name on the left, subscription badge + actions on the right */}
-              <div className="flex items-start justify-between gap-4">
+              {/* Row 1 — header: BILLING label + tier name on the left, subscription badge + actions on the right.
+                  flex-wrap so the right-side actions slide below the title on narrow phones rather
+                  than compressing the badge / Change-plan button against the title. */}
+              <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
                   <p className="text-xs tracking-wider text-white/40 uppercase">Billing</p>
                   <p className="mt-1 text-lg font-semibold text-white">
                     {getTierLabel(billingStatus?.tier ?? substrate.tier)}
                   </p>
+                  {billingStatus?.renewalDate && (
+                    <p className="mt-1 text-xs text-white/40">
+                      Renews <FormattedDate iso={billingStatus.renewalDate} />
+                    </p>
+                  )}
                 </div>
-                <div className="flex items-center gap-2">
+                {/* flex-wrap + justify-end: on narrow phones the badge + button slide to the next
+                    line and stay right-aligned rather than compress to unreadable widths. */}
+                <div className="flex flex-wrap items-center justify-end gap-2">
                   {billingStatus && (
                     <span
                       className={`rounded-full border px-3 py-1 text-xs font-medium ${
@@ -525,74 +534,95 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                 </div>
               </div>
 
-              {/* Row 2 — runtime status pill + cancel-scheduled note, dividing into the live section below */}
-              <div className="mt-5 flex flex-wrap items-center gap-3 border-t border-white/5 pt-4">
+              {/* Row 2 — single horizontal line of every status pill (runtime + SSL/MCP/SSH/IP).
+                  Previously two rows split by 12 px of vertical air; the eye scans them as one
+                  status fact, so the divider was wasted height. Cancel-scheduled note slots in
+                  inline so it stays visually adjacent to the runtime pill it qualifies. */}
+              <div className="mt-5 flex flex-wrap items-center gap-2 border-t border-white/5 pt-4">
                 <StatusBadge status={substrate.status} />
                 {substrate.cancelAt && (
                   <span className="text-sm text-amber-400">
                     Cancel scheduled for <FormattedDate iso={substrate.cancelAt} />
                   </span>
                 )}
-              </div>
-
-              {/* Row 3 — health pills (SSL / MCP / SSH / IP), only when live health data is present */}
-              {substrate.health && (
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {/* SSL */}
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                      substrate.health.https.configured
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                        : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
-                    }`}
-                  >
-                    <span>{substrate.health.https.configured ? "●" : "○"}</span>
-                    SSL
-                  </span>
-
-                  {/* MCP reachable */}
-                  <span
-                    className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                      substrate.health.substrate.reachable === true
-                        ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                        : substrate.health.substrate.reachable === false
-                          ? "border-red-500/30 bg-red-500/10 text-red-400"
-                          : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
-                    }`}
-                  >
-                    <span>{substrate.health.substrate.reachable === true ? "●" : "○"}</span>
-                    MCP
-                  </span>
-
-                  {/* SSH */}
-                  {substrate.health.droplet && (
+                {substrate.health && (
+                  <>
+                    {/* SSL */}
                     <span
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        substrate.health.droplet.sshReady
+                        substrate.health.https.configured
                           ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                           : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
                       }`}
                     >
-                      <span>{substrate.health.droplet.sshReady ? "●" : "○"}</span>
-                      SSH
+                      <span>{substrate.health.https.configured ? "●" : "○"}</span>
+                      SSL
                     </span>
-                  )}
 
-                  {/* Droplet IP — shown as a dim pill when available */}
-                  {substrate.health.droplet?.ip && (
-                    <span className="inline-flex items-center rounded-full border border-zinc-700/50 bg-zinc-800/30 px-2.5 py-0.5 font-mono text-xs text-zinc-500">
-                      {substrate.health.droplet.ip}
+                    {/* MCP reachable */}
+                    <span
+                      className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                        substrate.health.substrate.reachable === true
+                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                          : substrate.health.substrate.reachable === false
+                            ? "border-red-500/30 bg-red-500/10 text-red-400"
+                            : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
+                      }`}
+                    >
+                      <span>{substrate.health.substrate.reachable === true ? "●" : "○"}</span>
+                      MCP
                     </span>
-                  )}
-                </div>
-              )}
 
-              {/* Row 4 — renewal date footer, only when billing reports one */}
-              {billingStatus?.renewalDate && (
-                <p className="mt-4 text-sm text-white/60">
-                  Renewal: <FormattedDate iso={billingStatus.renewalDate} />
-                </p>
-              )}
+                    {/* SSH */}
+                    {substrate.health.droplet && (
+                      <span
+                        className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
+                          substrate.health.droplet.sshReady
+                            ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
+                            : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
+                        }`}
+                      >
+                        <span>{substrate.health.droplet.sshReady ? "●" : "○"}</span>
+                        SSH
+                      </span>
+                    )}
+
+                    {/* Droplet IP — shown as a dim pill when available.
+                        max-w-full + truncate guard against IPv6 (39 chars) or long hostnames
+                        overflowing the viewport on narrow phones. */}
+                    {substrate.health.droplet?.ip && (
+                      <span className="inline-flex max-w-full items-center truncate rounded-full border border-zinc-700/50 bg-zinc-800/30 px-2.5 py-0.5 font-mono text-xs text-zinc-500">
+                        {substrate.health.droplet.ip}
+                      </span>
+                    )}
+                  </>
+                )}
+              </div>
+
+              {/* Row 3 — resource usage. Lives inside the billing card because tier limits and
+                  current consumption are the same product fact ("what you're paying for and how
+                  much of it you've used"). Three-column grid on sm+ keeps it scannable; stacks
+                  on mobile so each bar still has full width. */}
+              <div className="mt-4 grid grid-cols-1 gap-4 border-t border-white/5 pt-4 sm:grid-cols-2 lg:grid-cols-3">
+                <UsageBar
+                  label="Atoms"
+                  current={substrate.atomCount}
+                  max={substrate.maxAtoms}
+                  unit="atoms"
+                />
+                <UsageBar
+                  label="Bootstraps (this month)"
+                  current={substrate.bootstrapCountMonth}
+                  max={substrate.maxBootstrapsMonth}
+                  unit="requests"
+                />
+                <UsageBar
+                  label="Storage"
+                  current={substrate.storageUsedMB}
+                  max={substrate.maxStorageMB}
+                  unit="MB"
+                />
+              </div>
             </div>
 
             {/* Provision failed callout */}
@@ -781,33 +811,6 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                 </div>
               </div>
             )}
-
-            {/* Usage section */}
-            <div className="rounded-xl border border-white/10 bg-white/[0.03] p-6">
-              <p className="mb-4 text-xs font-semibold tracking-wider text-white/60 uppercase">
-                Resource Usage
-              </p>
-              <div className="space-y-4">
-                <UsageBar
-                  label="Atoms"
-                  current={substrate.atomCount}
-                  max={substrate.maxAtoms}
-                  unit="atoms"
-                />
-                <UsageBar
-                  label="Bootstraps (this month)"
-                  current={substrate.bootstrapCountMonth}
-                  max={substrate.maxBootstrapsMonth}
-                  unit="requests"
-                />
-                <UsageBar
-                  label="Storage"
-                  current={substrate.storageUsedMB}
-                  max={substrate.maxStorageMB}
-                  unit="MB"
-                />
-              </div>
-            </div>
 
             {/* API Key section — hidden for provision_failed (no substrate was ever running) */}
             {substrate.status !== "provision_failed" && (
