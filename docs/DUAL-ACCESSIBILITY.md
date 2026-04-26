@@ -175,7 +175,6 @@ entry here **first**, before the PR that uses it.
 | `landing-hero-cta-primary` | Primary "Get started" button |
 | `landing-hero-cta-secondary` | Secondary "View pricing" link |
 | `landing-section-features` | Features region |
-| `memory-ring-svg` | Decorative SVG memory diagram in hero (test hook only — `aria-hidden`) |
 | `waitlist-form` | Waitlist form element |
 | `waitlist-email` | Email input |
 | `waitlist-submit` | Submit button |
@@ -247,6 +246,7 @@ entry here **first**, before the PR that uses it.
 | `admin-substrate-header` | Header region with name + status |
 | `admin-copy-api-key` | Copy-to-clipboard button |
 | `admin-rotate-key` | Rotate-API-key button |
+| `admin-billing-label` | Section label (`<p>Billing</p>`) on the merged Billing+Status card; pinned with a testid so tests can disambiguate it from the `nav-drawer-billing` span in the SiteNavbar drawer that also reads "Billing" |
 | `admin-change-plan` | Change-plan button |
 | `admin-change-plan-sheet` | Change-plan sheet dialog |
 | `admin-change-plan-confirm` | Confirm-upgrade button in sheet |

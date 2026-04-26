@@ -483,7 +483,12 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                   than compressing the badge / Change-plan button against the title. */}
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs tracking-wider text-white/40 uppercase">Billing</p>
+                  <p
+                    data-testid="admin-billing-label"
+                    className="text-xs tracking-wider text-white/40 uppercase"
+                  >
+                    Billing
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-white">
                     {getTierLabel(billingStatus?.tier ?? substrate.tier)}
                   </p>

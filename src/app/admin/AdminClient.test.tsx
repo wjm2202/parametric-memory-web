@@ -471,7 +471,7 @@ describe("AdminClient — merged Billing + Status card", () => {
 
   it("renders the Billing label", () => {
     renderAdmin({ status: "running", health: fullHealth });
-    expect(screen.getByText("Billing")).toBeInTheDocument();
+    expect(screen.getByTestId("admin-billing-label")).toBeInTheDocument();
   });
 
   it("does NOT render a separate Status card label (merged into Billing)", () => {
@@ -483,7 +483,7 @@ describe("AdminClient — merged Billing + Status card", () => {
 
   it("the Billing label and the SSL/MCP/SSH health pills share one card", () => {
     renderAdmin({ status: "running", health: fullHealth });
-    const billingCard = closestCard(screen.getByText("Billing"));
+    const billingCard = closestCard(screen.getByTestId("admin-billing-label"));
     expect(billingCard).not.toBeNull();
 
     const sslCard = closestCard(screen.getByText("SSL"));
@@ -498,7 +498,7 @@ describe("AdminClient — merged Billing + Status card", () => {
 
   it("the runtime status pill ('running') sits inside the Billing card", () => {
     renderAdmin({ status: "running", health: fullHealth });
-    const billingCard = closestCard(screen.getByText("Billing"));
+    const billingCard = closestCard(screen.getByTestId("admin-billing-label"));
     // StatusBadge renders the raw lowercase status string (see the component
     // definition at the top of AdminClient.tsx). If StatusBadge is ever
     // changed to title-case, this assertion needs updating.
