@@ -423,6 +423,9 @@ export default async function DPAPage() {
             <Link href="/aup" className="text-white/40 hover:text-white/70">
               Acceptable Use Policy
             </Link>
+            <Link href="/copyright" className="text-white/40 hover:text-white/70">
+              Copyright
+            </Link>
           </div>
         </div>
       </main>

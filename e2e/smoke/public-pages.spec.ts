@@ -23,6 +23,11 @@ const PUBLIC_PAGES: Array<{ path: string; expect: string }> = [
   { path: "/terms", expect: "nav-link-legal" },
   { path: "/dpa", expect: "nav-link-legal" },
   { path: "/aup", expect: "nav-link-legal" },
+  // Sprint 2026-W18 — closed-source migration: /copyright page
+  // is the public NZ-jurisdiction copyright statement. Anchored on
+  // its H1 testid because there is no nav-link-copyright (the page
+  // is reached via footer Link, not the SiteNavbar).
+  { path: "/copyright", expect: "copyright-page-heading" },
 ];
 
 for (const page of PUBLIC_PAGES) {

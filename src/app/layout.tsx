@@ -3,6 +3,7 @@ import { Syne, Outfit, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { BetaBanner } from "@/components/ui/BetaBanner";
+import SiteFooter from "@/components/ui/SiteFooter";
 
 const syne = Syne({
   subsets: ["latin"],
@@ -405,7 +406,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="min-h-screen">
         <BetaBanner />
-        <div className="relative flex min-h-screen flex-col">{children}</div>
+        <div className="relative flex min-h-screen flex-col">
+          {children}
+          {/* SiteFooter — site-wide canonical copyright + jurisdiction line.
+              Rendered AFTER children so pages with their own bespoke footer
+              (homepage, /privacy, /terms, /aup, /dpa) still show that
+              footer above this one-liner. The bespoke footers no longer
+              carry the © string — this is the single source of truth for
+              copyright wording. See src/components/ui/SiteFooter.tsx. */}
+          <SiteFooter />
+        </div>
         {/* Sonner renderer — mounted site-wide so toast() calls anywhere in
             the app have a target. Dark-themed + top-right to match the admin
             page aesthetic. */}

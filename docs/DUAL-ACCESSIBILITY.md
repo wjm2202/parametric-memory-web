@@ -346,6 +346,36 @@ deletion of a clause fails CI.
 | `aup-discretion` | `<h3>` Section 5.3 (Discretion and Finality) on `/aup` |
 | `aup-no-refund` | `<h3>` Section 5.4 (No Refund on Enforcement Action) on `/aup` |
 
+### Copyright page — `src/app/copyright/page.tsx`
+
+Public-facing copyright + licensing statement (closed-source migration,
+Sprint 2026-W18). Anchors the canonical notice, the human-authorship
+statement, and the New Zealand jurisdiction clause. Asserted by
+`src/app/copyright/__tests__/page.test.tsx` so any wording drift in
+load-bearing legal sentences fails CI before deploy.
+
+| testid | Element |
+|---|---|
+| `copyright-page-main` | `<main>` wrapper on `/copyright` |
+| `copyright-page-heading` | `<h1>` "Copyright & Licensing" on `/copyright` |
+| `copyright-canonical-notice` | Boxed canonical short notice ("© 2025–2026 G. Osborne … New Zealand") on `/copyright` |
+| `copyright-authorship-statement` | `<p>` in §1 stating the work is by a sole human author with AI used as an instrument under continuous human direction |
+| `copyright-jurisdiction-statement` | `<p>` in §2 declaring New Zealand as place of first publication and the exclusive jurisdiction for any dispute |
+
+### SiteFooter — `src/components/ui/SiteFooter.tsx`
+
+Site-wide canonical copyright trailer rendered globally from
+`src/app/layout.tsx` so every page (including ones without their own
+bespoke footer) carries the canonical copyright + jurisdiction line.
+Asserted by `src/components/ui/SiteFooter.test.tsx` and by
+`src/app/__tests__/mobile-typography.test.tsx`.
+
+| testid | Element | Accessible name |
+|---|---|---|
+| `site-footer` | `<footer role="contentinfo">` site-wide trailer | "Site copyright" (`aria-label`) |
+| `site-footer-copyright` | `<p>` containing the canonical "© 2025–2026 G. Osborne …" string + link | (visible text) |
+| `site-footer-copyright-link` | `<Link href="/copyright">` to the public copyright page | "Copyright & licensing" (visible text) |
+
 ---
 
 ## `aria-label` patterns

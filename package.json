@@ -85,5 +85,7 @@
   },
   "overrides": {
     "postcss": "^8.5.10"
-  }
+  },
+  "author": "G. Osborne <entityone22@gmail.com>",
+  "license": "SEE LICENSE IN LICENSE"
 }

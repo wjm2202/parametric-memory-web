@@ -81,4 +81,14 @@ shipping in sprint 2026-W18 item A6).
 
 ## License
 
-Proprietary. All rights reserved.
+This software is proprietary. All rights reserved.
+
+Copyright (c) 2025-2026 G. Osborne. Licensed to Parametric Memory Limited
+(New Zealand) under a separate written agreement; the author retains all
+underlying rights, title and interest.
+
+See [`LICENSE`](./LICENSE) for the full proprietary licence terms,
+authorship statement and New Zealand jurisdiction clause.
+
+Unauthorised use, reproduction, modification or distribution is prohibited.
+Licensing enquiries: entityone22@gmail.com
