@@ -52,6 +52,7 @@ vi.mock("next/navigation", () => ({
   useSearchParams: () => ({
     get: (key: string) => h.searchParamsState.params.get(key),
   }),
+  usePathname: () => "/signup",
 }));
 
 // ── sonner mock ───────────────────────────────────────────────────────────────

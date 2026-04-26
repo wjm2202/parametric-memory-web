@@ -5,6 +5,7 @@ import { Suspense, useState, type FormEvent } from "react";
 import { useSearchParams } from "next/navigation";
 import { toast } from "sonner";
 import { isApiError } from "@/types/api-error";
+import SiteNavbar from "@/components/ui/SiteNavbar";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -481,44 +482,47 @@ export default function SignupClient() {
     // `overflow-x-hidden` is a defence-in-depth guard against the blob ever
     // escaping horizontally on 320-412px phones. Does not affect the form
     // (w-full max-w-sm sits inside this div).
-    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-[#030712] px-4 py-12">
-      {/* Background glow */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
-      </div>
-
-      <div className="relative w-full max-w-sm">
-        {/* Brand */}
-        <div className="mb-8 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-white/70 transition-colors hover:text-white"
-          >
-            <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text font-[family-name:var(--font-syne)] text-2xl font-bold text-transparent">
-              Parametric Memory
-            </span>
-          </Link>
+    <>
+      <SiteNavbar isLoggedIn={false} variant="standard" />
+      <div className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-[#030712] px-4 pt-24 pb-12 sm:pt-28">
+        {/* Background glow */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/3 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-sm">
-          {completed ? (
-            <CheckEmailView
-              email={completed.email}
-              isNewAccount={completed.isNew}
-              signupData={completed.data}
-            />
-          ) : (
-            <>
-              <SignupCancelBanner />
-              <SignupForm
-                onComplete={(email, isNew, data) => setCompleted({ email, isNew, data })}
+        <div className="relative w-full max-w-sm">
+          {/* Brand */}
+          <div className="mb-8 text-center">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-white/70 transition-colors hover:text-white"
+            >
+              <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text font-[family-name:var(--font-syne)] text-2xl font-bold text-transparent">
+                Parametric Memory
+              </span>
+            </Link>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-sm">
+            {completed ? (
+              <CheckEmailView
+                email={completed.email}
+                isNewAccount={completed.isNew}
+                signupData={completed.data}
               />
-            </>
-          )}
-        </div>
+            ) : (
+              <>
+                <SignupCancelBanner />
+                <SignupForm
+                  onComplete={(email, isNew, data) => setCompleted({ email, isNew, data })}
+                />
+              </>
+            )}
+          </div>
 
-        {/* Passive text removed — consent is now captured via the clickwrap checkbox in SignupForm */}
+          {/* Passive text removed — consent is now captured via the clickwrap checkbox in SignupForm */}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

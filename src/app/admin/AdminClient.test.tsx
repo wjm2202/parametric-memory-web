@@ -44,6 +44,7 @@ const h = vi.hoisted(() => {
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/dashboard",
   useSearchParams: () => ({ get: h.mockSearchParamsGet }),
 }));
 

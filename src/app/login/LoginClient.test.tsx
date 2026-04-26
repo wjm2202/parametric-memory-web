@@ -31,6 +31,7 @@ let currentSearchParams = new URLSearchParams();
 
 vi.mock("next/navigation", () => ({
   useSearchParams: () => currentSearchParams,
+  usePathname: () => "/login",
   // useRouter is unused by LoginClient but defensively stubbed — if a
   // future edit calls it, jsdom would otherwise explode.
   useRouter: () => ({ push: vi.fn() }),

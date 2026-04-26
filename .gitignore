@@ -41,6 +41,11 @@ Thumbs.db
 .idea/
 # Docs
 docs/WEB-DROPLET-SETUP-GUIDE.md
+# Local-only sprint plans, journey reviews, etc. Move stale root-level
+# planning docs into this folder to keep them on disk for reference
+# without cluttering the repo. Use `mv` (not `git mv`) when moving files
+# in so they don't stay tracked.
+docs/archive/
 
 # Docker
 docker-compose.override.yml

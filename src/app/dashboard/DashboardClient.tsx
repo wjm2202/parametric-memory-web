@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { getTierLabel } from "@/config/tiers";
 import SubstrateStateBanner from "@/components/ui/SubstrateStateBanner";
+import SiteNavbar from "@/components/ui/SiteNavbar";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -629,21 +630,24 @@ export default function DashboardClient({
         <div className="absolute top-0 right-1/4 h-[500px] w-[800px] rounded-full bg-indigo-600/5 blur-[160px]" />
       </div>
 
-      {/* Header */}
-      <header className="relative border-b border-white/5 px-6 py-4">
-        <div className="mx-auto flex max-w-6xl items-center justify-between">
-          <h1 className="font-[family-name:var(--font-syne)] font-semibold text-white">
+      {/* SiteNavbar — shared across the site, gives mobile users the
+          hamburger drawer with primary nav + account actions
+          (Billing / Security / Sign out). */}
+      <SiteNavbar isLoggedIn={true} variant="standard" />
+
+      {/* Page-level subheader. The "Memory Substrates" title is always
+          visible. The desktop-only secondary actions row mirrors what the
+          mobile drawer already exposes — kept so desktop users have a
+          one-click Billing/Security/Sign-out without opening the drawer
+          (which is hidden on md+ widths). */}
+      <header className="relative border-b border-white/5 px-4 pt-20 pb-4 sm:px-6 sm:pt-24">
+        <div className="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
+          <h1 className="font-[family-name:var(--font-syne)] text-xl font-semibold text-white sm:text-2xl">
             Memory Substrates
           </h1>
-          <div className="flex items-center gap-6">
+          <div className="hidden items-center gap-6 md:flex">
             <span className="text-sm text-white/40">{account.email}</span>
             <nav className="flex items-center gap-4">
-              <Link
-                href="/docs"
-                className="text-sm text-white/50 transition-colors hover:text-white/80"
-              >
-                Docs
-              </Link>
               <button
                 onClick={handleBillingPortal}
                 className="text-sm text-white/50 transition-colors hover:text-white/80"

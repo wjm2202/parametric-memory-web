@@ -23,8 +23,8 @@
  *   - Bloom via KnowledgeEffects
  */
 
-import { Component, Suspense, useRef, type ReactNode } from "react";
-import { Canvas, useFrame } from "@react-three/fiber";
+import { Component, Suspense, useEffect, useRef, type ReactNode } from "react";
+import { Canvas, useFrame, useThree } from "@react-three/fiber";
 import { OrbitControls, Stars } from "@react-three/drei";
 import * as THREE from "three";
 import { useForceGraph } from "./useForceGraph";
@@ -125,7 +125,11 @@ function Scene() {
         autoRotate
         autoRotateSpeed={0.3}
         minDistance={30}
-        maxDistance={800}
+        // Sprint 2026-W17: bumped from 800 → 3000 so users (and the hero-video
+        // capture pass) can frame the entire substrate from far away. The
+        // Stars backdrop sits at radius 120 with depth 60 so a far camera
+        // still sees them; the graph itself caps at ~700 units across.
+        maxDistance={3000}
       />
 
       {/* Stars — fixed infinite backdrop, lives outside the drift group */}
@@ -163,16 +167,90 @@ function Scene() {
   );
 }
 
+/* ─── Camera auto-fit ────────────────────────────────────────────────────── */
+
+/**
+ * APPROX_GRAPH_RADIUS — ballpark for how far node positions extend from the
+ * scene origin. The d3-force-3d simulation in useForceGraph spreads ~833
+ * atoms across roughly a 700-unit box, so radius ≈ 350-400. Used to compute
+ * the camera distance that keeps the whole substrate in view on portrait /
+ * narrow screens. Empirical, not a physics constant — bump it if a future
+ * seed makes the cloud noticeably bigger or smaller.
+ */
+const APPROX_GRAPH_RADIUS = 400;
+
+/**
+ * Compute the camera z-distance that frames the substrate horizontally for
+ * the current viewport. Returns the existing 300-unit close-up on landscape
+ * desktop (aspect ≥ 1.4), and pulls the camera back on portrait / narrow
+ * mobile so the whole graph fits without horizontal cropping.
+ */
+function fitDistance(width: number, height: number, fovDeg: number): number {
+  const aspect = width / height;
+  // Landscape / desktop: keep the current immersive close-up. Pulling back
+  // here would shrink the graph unnecessarily for most users.
+  if (aspect >= 1.4) return 300;
+  // Portrait / narrow: compute the distance such that the horizontal field
+  // of view contains APPROX_GRAPH_RADIUS. Three.js fov is *vertical*; the
+  // horizontal half-width at distance d is d * tan(fov/2) * aspect.
+  // → d = radius / (tan(fov/2) * aspect)
+  const fovRad = (fovDeg * Math.PI) / 180;
+  const distance = APPROX_GRAPH_RADIUS / (Math.tan(fovRad / 2) * aspect);
+  // 1.10× padding so nodes near the edge don't visually clip.
+  // Cap at OrbitControls' maxDistance (3000) minus a margin so the user can
+  // still pinch-zoom in and out from this initial frame.
+  return Math.min(distance * 1.1, 2500);
+}
+
+/**
+ * CameraAutoFit — re-fits the camera on viewport resize / orientation
+ * change. Lives inside the Canvas so it can use `useThree`. Only updates
+ * `camera.position.z` (preserves any user pan/orbit on x/y); leaves
+ * OrbitControls' damping intact.
+ *
+ * We deliberately do NOT re-fit on every render — only when the viewport
+ * size genuinely changes — so the user's pinch-zoom stays sticky during
+ * normal interaction.
+ */
+function CameraAutoFit() {
+  const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
+  // Track the last size we fit for so we don't fight the user's zoom on
+  // unrelated re-renders (e.g. OrbitControls' damping).
+  const lastFit = useRef({ width: 0, height: 0 });
+
+  useEffect(() => {
+    if (lastFit.current.width === size.width && lastFit.current.height === size.height) {
+      return;
+    }
+    lastFit.current = { width: size.width, height: size.height };
+    // Three.js PerspectiveCamera.fov is the vertical FOV; we set 60° in
+    // the Canvas `camera` prop below so the math here matches.
+    const distance = fitDistance(size.width, size.height, 60);
+    camera.position.set(0, 0, distance);
+    camera.updateProjectionMatrix();
+  }, [camera, size.width, size.height]);
+
+  return null;
+}
+
 /* ─── Canvas root ────────────────────────────────────────────────────────── */
 
 export default function KnowledgeScene() {
+  // Compute the initial position synchronously so SSR-skipped, dynamic-
+  // imported mounts get the right framing on first paint instead of
+  // briefly showing a desktop close-up before resizing.
+  const initialDistance =
+    typeof window !== "undefined" ? fitDistance(window.innerWidth, window.innerHeight, 60) : 300;
+
   return (
     <Canvas
-      camera={{ position: [0, 0, 300], fov: 60, near: 0.1, far: 3000 }}
+      camera={{ position: [0, 0, initialDistance], fov: 60, near: 0.1, far: 3000 }}
       gl={{ antialias: true, alpha: false }}
       dpr={[1, 2]}
       style={{ background: "#030712" }}
     >
+      <CameraAutoFit />
       <Scene />
     </Canvas>
   );
