@@ -42,7 +42,7 @@ export default async function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-3 text-sm text-white/50">
-            Effective Date: 5 April 2026 &nbsp;·&nbsp; Governing Law: New Zealand
+            Effective Date: 26 April 2026 &nbsp;·&nbsp; Governing Law: New Zealand
           </p>
         </div>
 
@@ -103,7 +103,9 @@ export default async function TermsPage() {
             liable for unauthorized access resulting from your failure to secure your credentials.
           </p>
 
-          <h2>5. Subscription Plans &amp; Payment</h2>
+          <h2 data-testid="terms-section-5">5. Subscription Plans &amp; Payment</h2>
+
+          <h3>5.1 Plans</h3>
 
           <div className="overflow-x-auto">
             <table>
@@ -157,19 +159,78 @@ export default async function TermsPage() {
           </div>
 
           <p>
-            Subscriptions auto-renew at the end of each billing period unless canceled. All payments
-            are processed via Stripe. We will provide 30 days&rsquo; notice before any price
-            increase. If a payment fails, we retry 3–5 times over 10 days; if unsuccessful, your
-            subscription is suspended and data retained for 30 days before deletion.
+            Listed prices are exclusive of any applicable taxes (including GST, VAT, sales tax,
+            withholding tax, or similar levies), which will be added at checkout or on invoice where
+            required by law.
           </p>
 
+          <h3>5.2 Payment &amp; Auto-Renewal</h3>
+          <p>
+            Subscriptions auto-renew at the end of each billing period unless canceled. All payments
+            are processed via Stripe. By providing a payment method, you authorize us to charge the
+            applicable fees (and any applicable taxes) to that method on each renewal until you
+            cancel. If a payment fails, we retry 3&ndash;5 times over 10 days; if unsuccessful, your
+            subscription is suspended (see Section&nbsp;6.2) and data retained for 30 days before
+            deletion.
+          </p>
+
+          <h3 data-testid="terms-pricing-changes">5.3 Right to Change Pricing</h3>
+          <p>
+            We reserve the right to change pricing, plan structure, included quotas, fee components,
+            or any other commercial term of the Service at any time, in our reasonable discretion,
+            including (without limitation) where:
+          </p>
+          <ul>
+            <li>
+              <strong>Supplier or infrastructure costs change</strong> &mdash; for example, changes
+              in pricing, terms, or availability from our infrastructure providers (such as
+              DigitalOcean, payment processors, AI model providers, network and storage suppliers),
+              or in the underlying open-source or commercial software we depend on.
+            </li>
+            <li>
+              <strong>Operational costs exceed the fees charged for a plan</strong> &mdash;
+              including unanticipated compute, storage, bandwidth, support, security, or compliance
+              costs attributable to your usage or to the plan generally.
+            </li>
+            <li>
+              <strong>Currency, tax, or regulatory changes</strong> &mdash; including foreign
+              exchange movements affecting our cost base, new or amended taxes, levies, duties, or
+              compliance obligations in any jurisdiction in which we or our suppliers operate.
+            </li>
+            <li>
+              <strong>Material changes to the Service</strong> &mdash; including new features,
+              capacity expansions, security investments, or removal of features we no longer
+              commercially support.
+            </li>
+            <li>
+              <strong>Anti-abuse or fair-use enforcement</strong> &mdash; for usage that materially
+              exceeds the median for your plan, where continued provision at the listed price would
+              impose a disproportionate operational, financial, or security risk on us, our
+              suppliers, or other customers.
+            </li>
+          </ul>
+          <p>
+            For paid plans, price increases applicable to existing subscribers take effect on your
+            next renewal following at least <strong>30 days&rsquo; advance notice</strong> by email
+            and on our website. Promotional reductions, fee waivers, new optional add-ons, or
+            pricing for new plans we introduce may take effect immediately. If you do not accept a
+            price increase, you may cancel under Section&nbsp;6.1 before the new price takes effect;
+            continued use after the effective date constitutes acceptance of the new price. Nothing
+            in this Section requires us to offer any particular plan, price, discount, or promotion
+            at any time, and prior pricing does not bind future pricing.
+          </p>
+
+          <h3>5.4 Refunds</h3>
           <p>
             <strong>Refunds:</strong> Subscriptions are non-refundable except if you cancel within 7
             days of initial purchase (full refund), or where mandatory consumer law in your
-            jurisdiction requires otherwise.
+            jurisdiction requires otherwise. No refund or service credit will be issued for periods
+            during which your account was suspended or terminated for cause under Section&nbsp;6.
           </p>
 
-          <h2>6. Cancellation &amp; Termination</h2>
+          <h2 data-testid="terms-section-6">6. Suspension, Cancellation &amp; Termination</h2>
+
+          <h3>6.1 Cancellation by You</h3>
           <p>
             You may cancel your subscription at any time via account settings or by contacting{" "}
             <a href="mailto:support@parametric-memory.dev">support@parametric-memory.dev</a>. Upon
@@ -191,9 +252,105 @@ export default async function TermsPage() {
               <strong>No forensic recovery</strong> after the 90-day backup purge
             </li>
           </ul>
+
+          <h3 data-testid="terms-suspension">6.2 Suspension by MMPM</h3>
           <p>
-            We may terminate your account immediately for breach of these Terms or our Acceptable
-            Use Policy, illegal activity, non-payment after 30 days, or if required by law.
+            We may, at our sole and reasonable discretion, suspend, throttle, rate-limit, place into
+            read-only mode, or otherwise restrict access to all or part of your account, substrate,
+            or API keys, with or without prior notice, where we reasonably believe one or more of
+            the following applies:
+          </p>
+          <ul>
+            <li>
+              You have breached, or are likely to breach, these Terms or the{" "}
+              <Link href="/aup">Acceptable Use Policy</Link>.
+            </li>
+            <li>
+              Your account is the source or target of fraudulent activity, payment chargebacks,
+              account takeover, credential abuse, or unauthorized access.
+            </li>
+            <li>A payment is overdue, declined, reversed, or charged back.</li>
+            <li>
+              Your usage materially exceeds typical usage for your plan or imposes a
+              disproportionate operational, security, capacity, or financial risk on us, our
+              suppliers, or other customers.
+            </li>
+            <li>
+              Your activity threatens the integrity, security, performance, or availability of the
+              Service or any third-party system reachable from it.
+            </li>
+            <li>
+              We are required to do so by applicable law, court order, regulatory authority, or to
+              comply with the directions of a payment provider, infrastructure provider, or law
+              enforcement.
+            </li>
+            <li>
+              We need to investigate a suspected violation, security incident, or operational
+              anomaly.
+            </li>
+            <li>
+              You have made our continued service to you commercially or operationally unviable
+              through abusive, threatening, or harassing behaviour toward our staff, contractors, or
+              other users.
+            </li>
+          </ul>
+          <p>
+            Where reasonably practicable and not contrary to law or our security interests, we will
+            notify you of the reason for suspension and provide a path to remedy. We are not
+            required to provide notice in advance of suspension where we reasonably believe
+            immediate action is necessary to protect the Service, our users, our suppliers, our
+            staff, or to comply with law. Suspension does not, by itself, terminate your
+            subscription, and fees may continue to accrue during a suspension imposed for breach or
+            non-payment.
+          </p>
+
+          <h3 data-testid="terms-termination">6.3 Termination by MMPM</h3>
+          <p>
+            We may terminate your account, your subscription, or these Terms &mdash; in whole or in
+            part &mdash; immediately and without refund where:
+          </p>
+          <ul>
+            <li>
+              The grounds for suspension under Section&nbsp;6.2 persist or are not remedied within a
+              reasonable cure period (where a cure is offered).
+            </li>
+            <li>You commit a material or repeated breach of these Terms or the AUP.</li>
+            <li>
+              You engage in illegal activity, fraud, or willful misconduct in connection with the
+              Service.
+            </li>
+            <li>
+              You fail to pay any amount when due and the failure is not cured within 30 days.
+            </li>
+            <li>
+              We discontinue the Service or a tier of the Service in your region, in which case we
+              will use reasonable efforts to provide at least 30 days&rsquo; notice and a pro-rata
+              refund of any prepaid, unused fees.
+            </li>
+            <li>
+              Termination is required by law, court order, regulatory authority, or by direction of
+              a payment, infrastructure, or upstream service provider.
+            </li>
+          </ul>
+
+          <h3>6.4 Effect of Termination</h3>
+          <p>
+            On termination, your right to access the Service ends, your substrate may be
+            deprovisioned, and your data is subject to the deletion timelines in Section&nbsp;6.1
+            (cancellation) or Section&nbsp;9.3 (data deletion). For terminations for cause, we may
+            accelerate deletion to as little as 7 days&rsquo; notice, or immediate deletion where
+            required by law. Sections that by their nature should survive termination &mdash;
+            including Sections&nbsp;5.4 (Refunds), 7 (Disclaimers), 8 (Liability), 10 (Intellectual
+            Property), 13 (Governing Law), 14 (Indemnification), 15 (Force Majeure), and 17
+            (General) &mdash; survive termination.
+          </p>
+
+          <h3 data-testid="terms-no-refund-cause">6.5 No Refund on Termination for Cause</h3>
+          <p>
+            No refund or service credit will be issued for periods during which your account was
+            suspended or terminated for cause, including for breach of these Terms, AUP violations,
+            fraud, non-payment, or chargeback. Mandatory consumer protection rights in your
+            jurisdiction are unaffected.
           </p>
 
           <h2>7. Disclaimer of Warranties</h2>
@@ -363,7 +520,57 @@ export default async function TermsPage() {
             initiate.
           </p>
 
-          <h2>14. Changes to These Terms</h2>
+          <h2 data-testid="terms-indemnification">14. Indemnification</h2>
+          <p>
+            To the maximum extent permitted by law, you will defend, indemnify, and hold harmless
+            Parametric Memory Limited, its affiliates, and their respective officers, directors,
+            employees, and agents from and against any third-party claim, demand, loss, liability,
+            damage, fine, penalty, or expense (including reasonable legal fees) arising out of or
+            related to:
+          </p>
+          <ul>
+            <li>
+              Your data, content, or memory atoms stored, processed, or transmitted via the Service,
+              including claims that your data infringes intellectual property rights, violates
+              privacy or data-protection law, or is unlawful.
+            </li>
+            <li>Your use of the Service in breach of these Terms or the AUP.</li>
+            <li>
+              Your processing of personal data of end users where you act as the data controller,
+              including any failure to obtain a lawful basis, provide notices, or honor data subject
+              rights.
+            </li>
+            <li>
+              Your reliance on probabilistic memory outputs in any application, decision, or
+              product, including outputs that are inaccurate, inferred, or hallucinated.
+            </li>
+            <li>
+              Your violation of any law, regulation, or third-party right through your use of the
+              Service.
+            </li>
+          </ul>
+          <p>
+            We will promptly notify you of any claim subject to indemnification and reasonably
+            cooperate in the defense at your expense. We may participate in the defense with counsel
+            of our choosing. You may not settle any claim that imposes any obligation or liability
+            on us without our prior written consent. This section does not apply to consumers to the
+            extent that mandatory consumer protection law in your jurisdiction prohibits or limits
+            indemnities of this nature.
+          </p>
+
+          <h2 data-testid="terms-force-majeure">15. Force Majeure</h2>
+          <p>
+            Neither party will be liable for failure or delay in performing any obligation (other
+            than payment of fees due) caused by events beyond its reasonable control, including:
+            acts of God; natural disasters; pandemic or public health emergency; war, terrorism,
+            civil unrest, or sanctions; failures or outages of telecommunications, electricity, the
+            public internet, or upstream cloud, hosting, AI model, or payment providers;
+            cyberattacks or denial-of-service attacks; labor disputes; or government action. The
+            affected party will use reasonable efforts to mitigate the impact and resume
+            performance.
+          </p>
+
+          <h2>16. Changes to These Terms</h2>
           <p>
             We may update these Terms at any time. Material changes require 30 days&rsquo; prior
             written notice via email and a notice on our website. Your continued use after the
@@ -371,7 +578,7 @@ export default async function TermsPage() {
             your subscription without penalty before the new Terms take effect.
           </p>
 
-          <h2>15. General</h2>
+          <h2>17. General</h2>
           <p>
             <strong>Severability:</strong> If any provision is held invalid, it will be severed and
             the remainder of the Terms continues in full force.
@@ -385,7 +592,7 @@ export default async function TermsPage() {
             you and MMPM.
           </p>
 
-          <h2>16. Contact</h2>
+          <h2>18. Contact</h2>
           <ul>
             <li>
               <strong>General support:</strong>{" "}
@@ -411,6 +618,22 @@ export default async function TermsPage() {
                     ["Memory Atoms", "Probabilistic — may be inaccurate or inferred"],
                     ["Liability Cap", "12 months of fees paid (or $100 minimum)"],
                     ["Auto-Renewal", "Monthly; cancel anytime with 30-day wind-down"],
+                    [
+                      "Pricing Changes",
+                      "We may change prices for supplier-cost, operational, currency, tax, or fair-use reasons; 30-day notice for increases on existing subs",
+                    ],
+                    [
+                      "Suspension",
+                      "We may suspend, throttle, or limit at our reasonable discretion for AUP/Terms breach, fraud, abuse, non-payment, or operational risk",
+                    ],
+                    [
+                      "Indemnification",
+                      "Customer indemnifies MMPM for third-party claims arising from customer data, AUP violations, or downstream use of outputs",
+                    ],
+                    [
+                      "Force Majeure",
+                      "Neither party liable for events beyond reasonable control (upstream provider outages, cyberattacks, government action, etc.)",
+                    ],
                     [
                       "Data Deletion",
                       "30-day access removal; 90-day backup purge; no forensic guarantee",

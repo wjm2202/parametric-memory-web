@@ -41,7 +41,7 @@ export default async function AUPPage() {
             Acceptable Use Policy
           </h1>
           <p className="mt-3 text-sm text-white/50">
-            Effective Date: 5 April 2026 &nbsp;·&nbsp; Incorporated into Terms of Service
+            Effective Date: 26 April 2026 &nbsp;·&nbsp; Incorporated into Terms of Service
           </p>
         </div>
 
@@ -222,16 +222,76 @@ export default async function AUPPage() {
             authentication tokens if you suspect compromise.
           </p>
 
-          <h2>5. Enforcement</h2>
+          <h2 data-testid="aup-section-5">5. Enforcement</h2>
+
+          <h3 data-testid="aup-enforcement-actions">5.1 Range of Actions</h3>
           <p>
-            Parametric Memory reserves the right to immediately suspend or terminate your account
-            upon discovery of AUP violations, delete or quarantine non-compliant memory atoms
-            without prior notice, report illegal activity to law enforcement or regulatory
-            authorities, and refuse service to repeat violators.
+            Parametric Memory may take any one or more of the following actions, at our sole and
+            reasonable discretion, in response to suspected or confirmed violations of this AUP or
+            the <Link href="/terms">Terms of Service</Link>:
           </p>
+          <ul>
+            <li>
+              <strong>Warning</strong> &mdash; written notice with a request to remediate within a
+              reasonable period.
+            </li>
+            <li>
+              <strong>Quarantine</strong> &mdash; non-compliant memory atoms may be marked, hidden,
+              or quarantined without prior notice; quarantined atoms may be deleted permanently.
+            </li>
+            <li>
+              <strong>Throttling or rate-limiting</strong> &mdash; temporary reduction of API
+              throughput, query rate, or storage write rate.
+            </li>
+            <li>
+              <strong>Read-only mode</strong> &mdash; temporary suspension of write operations while
+              we investigate.
+            </li>
+            <li>
+              <strong>Account suspension</strong> &mdash; temporary suspension of all access pending
+              investigation or remediation.
+            </li>
+            <li>
+              <strong>Account termination</strong> &mdash; permanent termination of the account and
+              associated subscriptions, without refund where the termination is for cause.
+            </li>
+            <li>
+              <strong>Permanent ban</strong> &mdash; refusal of future service to the user, related
+              accounts, payment methods, or affiliated entities.
+            </li>
+            <li>
+              <strong>Reporting to authorities</strong> &mdash; reporting to law enforcement,
+              regulators, payment providers, or upstream infrastructure providers, including
+              disclosure of relevant account information.
+            </li>
+          </ul>
+
+          <h3 data-testid="aup-no-prior-notice">5.2 No Prior Notice for Severe Violations</h3>
           <p>
-            Deleted atoms will not be restored. Termination may be permanent and may prevent future
-            account creation.
+            We are not required to provide warning or a cure period before taking action where we
+            reasonably believe the violation is severe or ongoing. Severe violations include (but
+            are not limited to) child sexual abuse material; credential or token theft; active
+            attacks against the Service or third parties; fraud; payment chargeback abuse;
+            large-scale scraping; storage of stolen data; and any conduct that creates legal
+            exposure for MMPM, our suppliers, or other users.
+          </p>
+
+          <h3 data-testid="aup-discretion">5.3 Discretion and Finality</h3>
+          <p>
+            Enforcement decisions are made at our sole and reasonable discretion. Deleted or
+            quarantined atoms will not be restored. Termination may be permanent and may prevent
+            future account creation by the same individual, organization, payment method, or
+            affiliated entity. We may, but are not required to, allow an appeal in writing to{" "}
+            <a href="mailto:legal@parametric-memory.dev">legal@parametric-memory.dev</a> within 14
+            days of action. Mandatory consumer protection rights in your jurisdiction are
+            unaffected.
+          </p>
+
+          <h3 data-testid="aup-no-refund">5.4 No Refund on Enforcement Action</h3>
+          <p>
+            No refund or service credit will be issued for periods during which an account was
+            suspended, throttled, or terminated for cause under this AUP. See also Section&nbsp;6 of
+            the <Link href="/terms">Terms of Service</Link>.
           </p>
 
           <h2>6. Reporting Violations</h2>

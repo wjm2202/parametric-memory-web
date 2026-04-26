@@ -323,6 +323,29 @@ entry here **first**, before the PR that uses it.
 | `toast-rate-limit` | 429 rate-limit toast (F7) |
 | `toast-error-generic` | Generic error toast |
 
+### Legal pages — `src/app/{terms,aup}/page.tsx`
+
+Legal-page testids anchor the protective clauses (pricing changes,
+suspension, indemnification, force majeure, AUP enforcement). They are
+asserted by `src/app/__tests__/legal-clauses.test.ts` so accidental
+deletion of a clause fails CI.
+
+| testid | Element |
+|---|---|
+| `terms-section-5` | `<h2>` Section 5 (Subscription Plans & Payment) on `/terms` |
+| `terms-pricing-changes` | `<h3>` Section 5.3 (Right to Change Pricing) on `/terms` |
+| `terms-section-6` | `<h2>` Section 6 (Suspension, Cancellation & Termination) on `/terms` |
+| `terms-suspension` | `<h3>` Section 6.2 (Suspension by MMPM) on `/terms` |
+| `terms-termination` | `<h3>` Section 6.3 (Termination by MMPM) on `/terms` |
+| `terms-no-refund-cause` | `<h3>` Section 6.5 (No Refund on Termination for Cause) on `/terms` |
+| `terms-indemnification` | `<h2>` Section 14 (Indemnification) on `/terms` |
+| `terms-force-majeure` | `<h2>` Section 15 (Force Majeure) on `/terms` |
+| `aup-section-5` | `<h2>` Section 5 (Enforcement) on `/aup` |
+| `aup-enforcement-actions` | `<h3>` Section 5.1 (Range of Actions) on `/aup` |
+| `aup-no-prior-notice` | `<h3>` Section 5.2 (No Prior Notice for Severe Violations) on `/aup` |
+| `aup-discretion` | `<h3>` Section 5.3 (Discretion and Finality) on `/aup` |
+| `aup-no-refund` | `<h3>` Section 5.4 (No Refund on Enforcement Action) on `/aup` |
+
 ---
 
 ## `aria-label` patterns
