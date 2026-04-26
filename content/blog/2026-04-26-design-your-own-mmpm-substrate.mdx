@@ -1,0 +1,342 @@
+---
+title: "MMPM Is a Memory Grammar, Not a Schema: Design Your Own Atom Types for Any Domain"
+date: "2026-04-26"
+excerpt: "The seven atom types we shipped with were enough to run our SaaS. They are not the limit of what MMPM can hold. This post walks through designing a custom atom set for an AI security companion that watches for vulnerabilities in your stack — and shows the same five-move pattern you can use for any domain you care about."
+author: "Glen Osborne"
+tags: ["engineering", "memory-substrate", "extensibility", "atom-design", "security"]
+---
+
+# MMPM Is a Memory Grammar, Not a Schema: Design Your Own Atom Types for Any Domain
+
+Most "AI memory" products give you a notes app with a search bar. The question they
+answer is *what did the AI write down for me?* Parametric Memory answers a different
+question: *what does my domain's thinking actually look like, and how do I encode it
+so an AI can reason inside that shape?*
+
+When we shipped MMPM we included seven atom types — `fact`, `state`, `event`,
+`relation`, `procedure`, `domain`, `task` — and seven edge types — `supersedes`,
+`member_of`, `depends_on`, `constrains`, `references`, `derived_from`, `produced_by`.
+Those defaults are enough to run our own SaaS. They track sprints, store user
+corrections, anchor architecture decisions, hold deploy state.
+
+They are not a schema. They're a starter kit.
+
+The Markov-Merkle substrate underneath doesn't care what your atoms *mean*. It cares
+that they have stable names, that conflict detection works on the last underscore
+token, that decay is `weight × 0.5^(days/7)` unless you tune it, that edges connect
+nodes in a graph. Those primitives compose. That means you can extend the substrate
+with atom types and edge types that match *your* domain's ontology — and everything
+else (recall, conflict resolution, reinforcement, Merkle proof) just keeps working.
+
+This post is about the design pattern for doing that, walked end-to-end on one
+example, and then sketched on a half-dozen others to open the imagination.
+
+## The five design moves
+
+Designing a new atom set for a domain is roughly an afternoon of work once you've
+seen the moves. There are five of them.
+
+**1. List the domain's nouns.** Not the generic ones. The ones a domain expert would
+say in a sentence. A grower says "bed", not "location." A litigator says "motion",
+not "document." A security engineer says "CVE", "advisory", "exposure". Each becomes
+a candidate atom type. If two of them feel like the same thing under different
+names, collapse them.
+
+**2. List the domain's verbs.** This is the relational graph the expert is already
+running in their head. "Affects." "Patches." "Cites." "Repels." "Foreshadows." Each
+verb becomes a candidate edge type. Edges are where the substrate stops being
+storage and becomes a queryable model of how your domain thinks.
+
+**3. Map each atom type to a temporal rhythm.** Some atoms decay fast (last week's
+weather, today's exploit-in-the-wild status). Some decay slowly (a soil amendment, a
+software architecture choice). Some never decay (a customer's allergen, a published
+CVE, a protected source). Some don't decay at all — they accumulate evidence over
+time. MMPM's default decay is a global rule you can tune per type.
+
+**4. Identify the cluster anchors.** These are your hubs — the atoms everything else
+hangs off. Hubs keep recall coherent when the substrate gets dense. They also act as
+reactivation triggers: when you query the hub, every atom under it loads to working
+memory cheaply.
+
+**5. Identify the arcs worth reinforcing.** Markov reinforcement is how the substrate
+gets *fluent* in your domain. Common workflows get short paths. Rare-but-critical
+workflows survive decay through deliberate training passes. Pick the half-dozen arcs
+that matter and train them on purpose.
+
+Five moves. Now let me show them on a domain that looks nothing like a notes app.
+
+## Worked example: an AI security companion that watches your stack
+
+The use case is one most teams already wish they had. You have a project with a
+dependency tree. New CVEs land daily. Vendor advisories trickle in. Some of your
+deps are actively maintained; some haven't been touched in eighteen months. You want
+an AI that doesn't just dump a Dependabot list into your inbox but actually
+*reasons* about your security posture — across history, across your patch cadence,
+across the threat landscape, across the specific shape of your stack.
+
+Tools like Dependabot and Snyk tell you "package X version Y has CVE Z." That's
+useful, but it's storage. It doesn't compound. It doesn't remember that you patched
+a similar class of bug in a sibling package six weeks ago and the workaround
+applies. It doesn't know that one of your transitive deps was abandoned by its
+maintainer in 2024 and the threat actor pattern that targets it is rising again.
+It doesn't notice that your patch cadence on auth-adjacent packages is half what it
+is for everything else.
+
+A custom MMPM substrate can hold all of that. Walking the five moves:
+
+### Move 1: the nouns
+
+The default `fact` atom doesn't quite fit a CVE. A CVE is immutable history with a
+canonical ID — closer to an `event`, but with rich queryable structure. The default
+`state` atom fits a package version, but only loosely. Active exposures need their
+own type because they have a lifecycle (open → mitigated → patched → verified) that
+isn't quite a state and isn't quite an event. So:
+
+- `v1.cve.*` — a published vulnerability, immutable, identified by CVE-YYYY-NNNNN
+- `v1.advisory.*` — a vendor or upstream advisory, may supersede prior advisories
+- `v1.package.*` — a dependency in your project, with current version
+- `v1.exposure.*` — a finding that links a CVE to a package in *your* project
+- `v1.patch.*` — an immutable event when an exposure was closed
+- `v1.threat_actor.*` — a known adversary pattern (APT group, common malware family)
+- `v1.attack_vector.*` — an exploitation technique (SSRF, prototype pollution, etc.)
+- `v1.config_risk.*` — a misconfiguration finding (open S3 bucket, weak CSP, etc.)
+- `v1.audit_finding.*` — output from static or dynamic analysis tools
+
+That's nine new atom types, and every single one of them maps to a sentence a
+security engineer says out loud. "We have an exposure in the auth path." "There's
+a config risk on the staging bucket." "Patch v3.2.1 closes CVE-2026-1144." None of
+those sentences land cleanly on `fact` or `state`.
+
+### Move 2: the verbs
+
+The relational graph is where this design earns its keep. A security engineer's
+working query language is verbs.
+
+- `affects` — `cve` affects a `package` version range
+- `transitively_affects` — `cve` reaches your project through the dep tree
+- `patched_by` — `cve` is closed by a `patch` (or by upgrading to a `package` version)
+- `mitigated_by` — `cve` has a workaround that doesn't require upgrade
+- `exploited_by` — `cve` is being exploited by a `threat_actor` in the wild
+- `uses_vector` — `cve` uses an `attack_vector`
+- `bundles` — your `package` bundles another `package` (vendored deps)
+- `requires_action` — `exposure` blocks a release or a deploy
+- `superseded_by` — `advisory` v2 supersedes v1
+- `same_class_as` — `exposure` is structurally similar to a prior fixed `exposure`
+
+That last edge is the one Dependabot can never give you. `same_class_as` is what
+makes the substrate cumulative: when a new SSRF lands in a new package, the
+assistant pulls every prior SSRF you've fixed, surfaces the workaround you wrote
+last time, and short-circuits the investigation. That's the compounding effect. You
+fix a class of bug once and the substrate learns it.
+
+### Move 3: temporal rhythms
+
+This is where the per-type decay model matters.
+
+- `cve` atoms never decay. They are immutable history.
+- `package` atoms decay with version changes — tombstone the old version when the
+  new version atom is written.
+- `exposure` atoms stay hot until closed (no decay while status is open).
+- `patch` atoms are immutable events.
+- `threat_actor` atoms decay slowly — months, not days. APT groups linger.
+- `attack_vector` atoms barely decay at all. SSRF in 2026 is the same shape as SSRF
+  in 2018.
+- `config_risk` atoms decay on re-scan — if the next config audit doesn't see it,
+  it's gone.
+- `audit_finding` atoms decay fast unless they get linked to an `exposure`.
+
+A single global decay curve would either drown the substrate in stale audit noise or
+forget critical patch history within weeks. Per-type tuning is what makes the
+substrate *behave like security thinks*.
+
+### Move 4: hubs
+
+Hubs are the atoms everything else hangs off. For a security companion:
+
+- `hub_active_exposures` — current open vulnerabilities ranked by severity and
+  exploit-in-the-wild status
+- `hub_patch_history` — what you've fixed and when, with class signatures
+- `hub_threat_landscape` — current adversary patterns, refreshed weekly from feeds
+- `hub_compliance_posture` — for SOC2, ISO 27001, or whatever audit cycle you're in
+- `hub_dependency_health` — package activity, maintainer signal, abandonment risk
+
+Every new atom gets a `member_of` edge to a hub at write time. That's not optional.
+Hubs are what make recall fast and coherent at scale.
+
+### Move 5: arcs to reinforce
+
+Markov reinforcement is how the substrate becomes fluent. The arcs worth training
+in this domain:
+
+- `exposure` → `same_class_as` → prior `patch` → workaround text. (When a new
+  exposure lands, the assistant should reach the relevant prior fix in one hop.)
+- `cve` → `exploited_by` → `threat_actor` → priority bump. (Active exploitation
+  changes triage order; that path should be short.)
+- `package` → `bundles` → transitive `cve`. (Most teams forget about transitive
+  exposure; the substrate shouldn't.)
+
+Three arcs, three training passes each, and the assistant queries them
+automatically on session bootstrap.
+
+## The unlock query
+
+Here's what this design buys you.
+
+A typical morning. You sit down. The substrate has been ingesting CVE feeds and
+your dep tree for six months. You ask the assistant a single question:
+
+> "What's my smallest patch set tonight that closes my critical exposures, ranked
+> by exploit-in-the-wild status, and what's the rollback plan if any of them break?"
+
+That isn't a string match. It's a graph traversal. Every `exposure` in
+`hub_active_exposures` with severity ≥ critical, joined against `cve` atoms with
+active `exploited_by` edges, deduped by the smallest set of `package` upgrades
+that closes them, cross-referenced against `patch_history` for any prior breakage
+on the same packages, with rollback plans from the prior patches surfaced.
+
+Dependabot tells you twelve packages need updating. The substrate tells you which
+three to do tonight, why, what to watch for, and what worked the last time you
+upgraded the auth library.
+
+That's the difference between storage and a brain.
+
+## The shortcut: paste this post into your AI and let it interview you
+
+Here's the move I want everyone reading this to actually try. You don't need to
+design your atom set from a blank page. You can let your AI design it for you, by
+asking it the right kind of question.
+
+Open whatever AI assistant you use — Claude, ChatGPT, Cursor, Cline, anything
+MCP-compatible. Paste this entire blog post into the conversation. Then paste this
+prompt:
+
+> I want to design a custom MMPM atom set for my own use case, but I don't yet
+> know which atom types and edges I need. Interview me. Ask me about the
+> questions I want to be able to ask my AI in this domain, the information I'm
+> willing to expose from a single human-language query, and the rhythms and
+> stakes of my work. After enough questions to understand the shape of the
+> domain, propose a draft atom set: new atom types, new edge types, decay tuning,
+> hubs, and three Markov arcs worth reinforcing. Then walk me through one
+> representative query end-to-end so I can see whether the design actually
+> answers the kind of question I care about.
+
+The assistant will start by asking you what you wish you could ask it. That's the
+right place to start, because the design always falls out of the queries.
+
+Try it with the security example: tell it "I want to ask which packages I should
+patch tonight and why" and watch it walk you to the same atom set we just built.
+Then try it with something completely different.
+
+> "What customers are at risk of churn this week, what time of day are they
+> most likely to engage, and what offer should we email them — based on what's
+> worked for similar accounts in the past?"
+
+That's a different domain entirely. Customer success. The atom types are going
+to be `account`, `signal`, `engagement_window`, `offer`, `cohort`, `outcome`. The
+edges are going to be `triggered_by`, `responded_to`, `predicts_churn`,
+`offered_to`, `won_back`. The hubs are `hub_at_risk_accounts`,
+`hub_engagement_patterns`, `hub_offer_library`. The decay rhythms are: signals
+decay daily, engagement windows are seasonal, account history is cumulative.
+
+Same five moves. Different grammar. Same substrate underneath.
+
+## Other domains that snap into focus
+
+Once you see the pattern, every domain starts looking like a memory design problem
+you can solve in an afternoon.
+
+A **cellar master at a small winery** wants `vintage`, `barrel`, `blend`,
+`tasting_note`, `vineyard_block` atoms with edges like `aged_in`, `blended_into`,
+`tasted_against`, `harvested_from`. Tasting notes decay; vintages don't.
+
+An **investigative journalist** wants `source`, `lead`, `claim`, `verification`,
+`contradiction`, `redaction` atoms; edges like `corroborates`, `contradicts`,
+`traces_to`, `risks_exposure`. `hub_protected_sources` never decays and is never
+tombstoned — that's a safety property of the substrate, not a feature of any
+single atom.
+
+A **novelist** wants `character`, `scene`, `arc`, `motif`, `voice_rule`,
+`worldbuilding_fact` atoms; edges like `appears_in`, `foreshadows`, `mirrors`,
+`voice_violates`. Plot state decays between drafts. Character canon never does.
+The substrate becomes a series bible that argues back when you write something out
+of voice.
+
+A **permaculture grower** wants `bed`, `plant`, `varietal`, `pest`, `weather_year`,
+`harvest` atoms; edges like `companions_with`, `repels`, `succeeds_after`,
+`survived`. Weather decays in weeks. Soil decays in months. Varietal performance
+accumulates across years.
+
+A **litigator** wants `case`, `precedent`, `motion`, `deadline`,
+`opposing_counsel_pattern` atoms; edges like `cites`, `distinguishes`, `binds`.
+Discovery turns over weekly. Precedent lives forever. Deadlines have hard expiry
+— a property no current atom type encodes natively, but which is trivially
+additive.
+
+A **sous chef in a high-volume kitchen** wants `recipe`, `mise`, `service_pattern`,
+`allergen`, `customer_pref` atoms. Allergens never decay — that's a safety
+property indistinguishable from a hardware fuse. Customer preferences decay weekly.
+
+A **solo founder** wants `decision`, `hypothesis`, `metric`, `meeting_outcome`,
+`investor_signal`, `runway_state` atoms; edges like `validates_hypothesis`,
+`falsifies`, `commits_us_to`. Runway decays by definition. Decisions accumulate as
+a ledger.
+
+Each of those reads like a different product. They're all the same substrate.
+
+## How to test a design before you commit to it
+
+This is the part most schema-design articles skip and it's the thing that actually
+matters. Take ten representative questions from a working day in your domain — the
+real ones, the ones a fluent expert asks their AI when something matters. Trace
+each question through your draft atom set and edge set. Does the answer fall out
+as a natural graph traversal? Or do you have to bolt on glue, stuff things into
+`fact`, write a special-case query?
+
+If the design answers the ten queries naturally, ship it. If you find yourself
+forcing things, the design is wrong — usually because you missed a noun or named
+a verb badly. Iterate before you start writing atoms in earnest. The substrate is
+forgiving (you can add new types any time), but starting with a design that
+actually fits your domain saves you weeks.
+
+We do exactly this internally for every new atom type we add to our own substrate.
+A test is just a representative query and a path through the graph that should
+answer it. If the path exists, the design is good.
+
+## What this is really
+
+Parametric Memory is not a memory product in the way notes apps are memory
+products. It's a memory grammar. The seven atom types we shipped with were enough
+to run our SaaS — track sprints, store corrections, anchor architecture decisions.
+The grammar is what makes the substrate extensible. New atom types compose with
+the originals because they all live in the same Markov-Merkle structure. New edges
+compose with the originals because they all decay (or don't) under the same
+mathematical rules. Conflict detection still works because the naming convention
+still works. Reinforcement still works because the math doesn't care what your
+atoms mean. Merkle proofs still work because they verify structure, not semantics.
+
+That means you don't have to wait for us to ship a "security plugin" or a "winery
+plugin" or a "field journalism plugin." You inherit the substrate. You write your
+grammar. The substrate absorbs it.
+
+The seven atom types are a starter kit. Your domain's grammar is yours to write.
+
+## Try it
+
+Pick a domain you know well. Open your AI assistant. Paste this post and the
+prompt above. Let it interview you. Spend twenty minutes answering its questions
+about the queries you wish you could ask. Watch it propose an atom set. Sanity
+check it against ten real questions from your work. If it holds up, you have a
+memory design that thinks in your domain's first language — and you got there
+without writing a single line of code.
+
+Then point your assistant at a Parametric Memory substrate and start filling it
+in. Plans start at $3/month. Any MCP-compatible client (Claude, Cursor, Cline)
+plugs in directly. The Merkle layer is on by default — every atom comes back with
+a proof, so when the AI tells you which packages to patch tonight, you can verify
+the substrate isn't lying.
+
+The hardest part of this product was building the substrate. The most exciting
+part is watching what other people put into it.
+
+> [Get started](/pricing) — plans from $3/month. Or [reach out](/contact) if you
+> want to compare notes on the atom set you'd design for your own work.
