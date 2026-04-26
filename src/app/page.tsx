@@ -857,10 +857,16 @@ export default async function HomePage() {
               >
                 DPA
               </Link>
+              <Link
+                href="/copyright"
+                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
+              >
+                Copyright
+              </Link>
             </nav>
-            <p className="text-surface-400 font-mono text-xs">
-              © 2026 Parametric Memory · parametric-memory.dev
-            </p>
+            {/* The canonical site-wide copyright string is rendered by
+                <SiteFooter /> from src/app/layout.tsx so it appears on
+                every page. Removed from here to avoid duplication. */}
           </div>
         </div>
       </footer>

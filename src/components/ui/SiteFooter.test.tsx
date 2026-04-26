@@ -1,0 +1,46 @@
+/**
+ * SiteFooter unit tests.
+ *
+ * Why: this component carries the canonical copyright line that must
+ * appear on every page. If the wording, year, holder, or the link to
+ * /copyright ever drifts, every page on the site is affected. Lock the
+ * exact strings down here.
+ */
+import { render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+
+import SiteFooter, { COPYRIGHT_HOLDER, COPYRIGHT_LINE, COPYRIGHT_YEAR_RANGE } from "./SiteFooter";
+
+describe("SiteFooter — canonical copyright line", () => {
+  it("exposes a stable canonical copyright string", () => {
+    // These are read by the test for the /copyright page and by
+    // mobile-typography.test.tsx. They are the canonical wording.
+    expect(COPYRIGHT_HOLDER).toBe("G. Osborne");
+    expect(COPYRIGHT_YEAR_RANGE).toBe("2025–2026");
+    expect(COPYRIGHT_LINE).toBe(
+      "© 2025–2026 G. Osborne. All rights reserved. Authored in New Zealand.",
+    );
+  });
+
+  it("renders the canonical copyright string verbatim", () => {
+    render(<SiteFooter />);
+    // Use a regex against just the © prefix because the link follows
+    // the period; we want to confirm the leading legal sentence is intact.
+    expect(screen.getByTestId("site-footer-copyright").textContent ?? "").toContain(COPYRIGHT_LINE);
+  });
+
+  it("renders a link to /copyright", () => {
+    render(<SiteFooter />);
+    const link = screen.getByTestId("site-footer-copyright-link");
+    expect(link).toBeTruthy();
+    expect(link.getAttribute("href")).toBe("/copyright");
+    expect(link.textContent).toMatch(/copyright/i);
+  });
+
+  it("uses semantic <footer> with role=contentinfo", () => {
+    render(<SiteFooter />);
+    const el = screen.getByTestId("site-footer");
+    expect(el.tagName.toLowerCase()).toBe("footer");
+    expect(el.getAttribute("role")).toBe("contentinfo");
+  });
+});

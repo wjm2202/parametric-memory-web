@@ -673,6 +673,9 @@ export default async function TermsPage() {
             <Link href="/dpa" className="text-white/40 hover:text-white/70">
               Data Processing Agreement
             </Link>
+            <Link href="/copyright" className="text-white/40 hover:text-white/70">
+              Copyright
+            </Link>
           </div>
         </div>
       </main>
