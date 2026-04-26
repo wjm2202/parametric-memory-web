@@ -154,6 +154,11 @@ entry here **first**, before the PR that uses it.
 | `nav-hamburger` | Hamburger button (M5, visible `<md`) | "Open navigation menu" |
 | `nav-drawer` | Drawer container (M5) | (n/a — region with `role="dialog"`) |
 | `nav-drawer-close` | Drawer close button (M5) | "Close navigation menu" |
+| `nav-drawer-account` | Account section region in the drawer (sprint 2026-W17 — only rendered when the user is signed in; groups Dashboard/Billing/Security/Sign-out) | (n/a — labelled region) |
+| `nav-drawer-dashboard` | Dashboard link inside the drawer's account section (signed-in users) | (visible text "Dashboard") |
+| `nav-drawer-billing` | Billing-portal trigger inside the drawer's account section — opens Stripe portal in the same tab | (visible text "Billing") |
+| `nav-drawer-security` | Security link to `/admin/security` inside the drawer's account section | (visible text "Security") |
+| `nav-drawer-signout` | Sign-out button inside the drawer's account section — POSTs to `/api/auth/logout` then redirects to `/login` | (visible text "Sign out") |
 
 **Immersive variant (`/visualise`, `/knowledge`):**
 
@@ -166,10 +171,10 @@ entry here **first**, before the PR that uses it.
 
 | testid | Element |
 |---|---|
+| `hero-video` | Background video element on the landing-page hero (sprint 2026-W17 — replaced the static MemoryRing). Audio stripped at encode time + `muted` attribute set; decorative (`aria-hidden`); the slogan is in DOM via HeroAnimatedSequence. |
 | `landing-hero-cta-primary` | Primary "Get started" button |
 | `landing-hero-cta-secondary` | Secondary "View pricing" link |
 | `landing-section-features` | Features region |
-| `memory-ring-svg` | Decorative SVG memory diagram in hero (test hook only — `aria-hidden`) |
 | `waitlist-form` | Waitlist form element |
 | `waitlist-email` | Email input |
 | `waitlist-submit` | Submit button |
@@ -237,9 +242,11 @@ entry here **first**, before the PR that uses it.
 
 | testid | Element |
 |---|---|
+| `admin-back-to-dashboard` | "← Back to Dashboard" link in the admin page subheader (sprint 2026-W17 — moved out of the bespoke admin header into a breadcrumb when SiteNavbar replaced the custom navbar) |
 | `admin-substrate-header` | Header region with name + status |
 | `admin-copy-api-key` | Copy-to-clipboard button |
 | `admin-rotate-key` | Rotate-API-key button |
+| `admin-billing-label` | Section label (`<p>Billing</p>`) on the merged Billing+Status card; pinned with a testid so tests can disambiguate it from the `nav-drawer-billing` span in the SiteNavbar drawer that also reads "Billing" |
 | `admin-change-plan` | Change-plan button |
 | `admin-change-plan-sheet` | Change-plan sheet dialog |
 | `admin-change-plan-confirm` | Confirm-upgrade button in sheet |
@@ -295,6 +302,11 @@ entry here **first**, before the PR that uses it.
 | testid | Element |
 |---|---|
 | `knowledge-sidepanel` | Collapsible side-panel container on `/knowledge` (`role="complementary"`) |
+| `knowledge-overlay-toggle` | Top-right control panel that hides/shows the SearchBar and bottom-left controls (sprint 2026-W17 — added so the user can capture a clean substrate hero video) |
+| `knowledge-toggle-search` | Checkbox: hide/show the SearchBar overlay |
+| `knowledge-toggle-search-label` | The `<label>` wrapping the search checkbox (clickable text) |
+| `knowledge-toggle-weight` | Checkbox: hide/show the bottom-left DegreeSizeSlider + ViewToggle cluster |
+| `knowledge-toggle-weight-label` | The `<label>` wrapping the weight checkbox (clickable text) |
 
 ### Checkout + billing return
 

@@ -1,0 +1,235 @@
+---
+title: "Building Parametric Memory With Parametric Memory: Notes From a Solo Founder"
+date: "2026-04-26"
+excerpt: "I built our SaaS with the help of an AI pair programmer that had our own product plugged in as its long-term memory. Four real moments from the substrate that changed how I work — including one user correction I gave the AI that's still constraining its behaviour today."
+author: "Glen Osborne"
+tags: ["engineering", "memory-substrate", "founder", "ai-workflow"]
+---
+
+# Building Parametric Memory With Parametric Memory: Notes From a Solo Founder
+
+I'm a solo founder. The two main repos behind this product —
+**mmpm-compute** (the billing, provisioning, and DigitalOcean orchestration layer) and
+**mmpm-website** (the marketing site and customer dashboard you're reading this on) — were
+built almost entirely by me sitting next to an AI pair programmer.
+
+That part isn't unusual any more. What's unusual is that the AI had **our own product**
+plugged in as its long-term memory. Every architecture decision, every user correction,
+every painful root cause we ever recovered — atoms in a Merkle-verified substrate, queryable
+by name, available in every future session.
+
+I didn't plan it that way at first. I just got tired of starting every session by
+re-explaining things the AI had figured out the day before. So I wired up Parametric
+Memory as the persistent layer behind the assistant, and then I kept building.
+
+Eight or nine months later, the substrate has accumulated thousands of atoms about its
+own creation. This post is four real moments out of that history — pulled directly from
+memory, with the actual atom keys — about what working that way is like as the developer
+on the other side of the keyboard.
+
+## 1. The correction that's still constraining the AI's behaviour today
+
+On **11 April 2026** I caught the assistant guessing rather than asking. It had assumed
+a sprint ordering, picked a repo location, and started writing code, all without checking
+with me on something it didn't actually know. The work was wrong, and the way it was wrong
+was specifically *because* it had filled in absent information with a plausible-sounding
+guess.
+
+I told it that was the wrong default. I'd rather be over-asked than wrong-guessed at,
+because the cost of clarification is twenty seconds and the cost of a confident wrong
+direction is an afternoon. The assistant stored the correction as a memory atom in the
+same conversation:
+
+```
+v1.procedure.ask_first_over_guess_src_human
+  = "User correction 2026-04-11: The mistake on 2026-04-10 was guessing
+     state and intent rather than checking with the user. Going forward,
+     when a fact is absent from memory or not directly observed, the
+     correct behaviour is to ask the user rather than assume. Applies
+     across sprint ordering, repo locations, file paths, real-vs-test
+     data, machine context, and deletion safety. The user is a working
+     partner; over-asking is preferable to wrong-guessing."
+```
+
+It also wrote two graph edges: one `member_of` the corrections cluster, one `constrains`
+the behaviour I had corrected. Then it ran three reinforcement passes against the atom so
+it would survive the weekly decay schedule.
+
+That happened fifteen days ago. In every conversation since, that procedure has loaded on
+session bootstrap and changed how the assistant operates. It pauses to ask. It surfaces
+uncertainty. It picks "ask first" when it would otherwise have picked "infer and continue."
+This is the part of working with a memory-backed AI that I don't think people who haven't
+tried it appreciate yet: **corrections become durable**. You don't have to teach the same
+lesson on Monday and again on Friday. You teach it once, the substrate stores it, and
+the behaviour is bound forward.
+
+We've ended up with a small constellation of these. `we_work_as_a_team` is the parent
+team protocol; `user_manages_all_git_operations`, `never_commit_on_behalf`, and
+`always_specify_cmd_context` constrain it. They were all individual corrections at one
+point. Now they're a hierarchy the assistant queries on every relevant request.
+
+This is, in a quiet way, the most useful thing the substrate does for me.
+
+## 2. The crash loop I didn't have to debug twice
+
+Sometime late February, mmpm-compute fell into a crash loop on the production droplet.
+Service would come up, run for a while, and silently die. Nothing obvious in the logs —
+no panic, no uncaught exception, just an event loop that drained out and a process
+that exited clean.
+
+I spent about three hours on it with the assistant. Three hours of stack-trace reading,
+PM2 logs, `node --prof` runs, watching the timing of the crashes against deploys. The
+root cause wasn't one thing — it was three things in combination. The atom we wrote at
+the end captured exactly that:
+
+```
+v1.state.compute_server_crash_loop_fixed
+  = "Root cause: DB pool idle timeout (30s) + unref'd ops-observer timer
+     + no ref'd keepalive = event loop drain. Fix: ref'd setInterval
+     keepalive + registerShutdown for graceful cleanup. Deployed and
+     verified stable."
+```
+
+That's the moment I want to point at. It's not the bug fix that mattered most — it's
+the fact that the next time the assistant sees a service that exits cleanly with no
+trace and no exception, the FIRST thing it now considers is "is the event loop draining
+because something unref'd died." It doesn't have to spend the three hours again. The
+shape of that bug is encoded.
+
+A week later, when we hit `compute_server_crash_loop_fixed` was the third or fourth
+similar pattern (timer that needed ref'ing, pool needing ref'd keepalive), the assistant
+clustered them as a class. That's the substrate doing its job — not just storing a fact
+but making it retrievable next time the symptom appears.
+
+I've done a lot of solo debugging in my career. The hardest part has always been the
+forgetting. You solve a weird Postgres connection-handling problem, and three months later
+the same shape of problem comes back, and you can feel that you've seen this before but
+you can't reach the answer. The substrate eliminates that. Atoms don't forget.
+
+## 3. The migration that pretended to do something
+
+This one stings less but teaches more. Migration **027** in mmpm-compute was supposed to
+create the `destroy_queue` table. It used `CREATE TABLE IF NOT EXISTS`. That's the
+"defensive" form, the one you write because you're being careful.
+
+Migration **019** had already created `destroy_queue` six weeks earlier, with a different
+schema. So 027 was a silent no-op. We didn't notice, because the table was there.
+
+The bug only surfaced two weeks later when the substrate-DELETE path tried to insert into
+the queue. The schema was 019's, not 027's, and 019 didn't have the `account_id` and
+`droplet_id` NOT NULL constraints we now relied on. INSERTs failed. Deprovisioning quietly
+broke. The atom we wrote when we finally chased it down:
+
+```
+v1.fact.destroy_queue_schema_bug_root_cause
+  = "Migration 027 CREATE TABLE IF NOT EXISTS destroy_queue was no-op
+     (019 already created it). Substrate DELETE inserted without
+     account_id/droplet_id NOT NULL. Fixed in migration 028."
+```
+
+Two things changed permanently after that. The first is procedural — we now have a
+lint rule that scans for `CREATE TABLE IF NOT EXISTS` across the migrations folder and
+flags any name collision. The second is about how the assistant approaches new
+migrations: it now checks the migration history before suggesting a new `CREATE TABLE`,
+because it has the atom about why it matters.
+
+If I'd written that bug, fixed it, and not stored the cause, I would have re-derived the
+lesson the next time I generated a migration with an LLM in the loop. Probably the same
+month. Now the lesson is part of the assistant's working knowledge — not a generic
+"watch out for migration collisions" platitude, but the specific story about migration
+027 and what went wrong.
+
+## 4. The billing bug that left credits without entitlement
+
+Of all the moments in this post, this is the one where the substrate most directly
+saved a customer.
+
+Early in mmpm-compute we had a Stripe webhook handler that did three things on a
+successful payment: update the account balance, write a billing event for the audit log,
+and create the entitlement that actually grants product access. Each one was its own
+database call. They weren't wrapped in a transaction.
+
+You can guess what happened. A network blip during the second call meant we ended up with
+accounts that had credits on the balance and a billing event recorded — but no
+entitlement. The customer paid. The money was in our records. They couldn't use the
+product.
+
+The fix was straightforward once we'd seen the failure mode:
+
+```
+v1.fact.mmpm_compute_webhook_single_transaction
+  = "Stripe webhook now does balance update + billing event +
+     entitlement creation in a single PostgreSQL transaction. If any
+     step fails all roll back. No more partial state where credits
+     exist but entitlement does not."
+```
+
+What I want to flag is what *didn't* happen next. We had a similar pattern building up in
+the deprovisioning path a few weeks later — multiple writes that could half-succeed.
+The assistant noticed the structural similarity to the webhook bug, surfaced the atom
+during planning, and we wrote that one transactional from the start. No second
+production incident.
+
+That's a different kind of value than "the AI remembers things." It's "the AI's
+*experience of building this codebase* compounds." Every bug we've solved makes the
+next one slightly more likely to be caught at design time.
+
+## What this is actually like
+
+A few honest things, since I'm writing for developers who might do something similar.
+
+**It is not magic.** The substrate is only as good as what you put into it. Most of the
+discipline is on the human side — knowing what to ask the assistant to remember, calling
+out corrections clearly enough that they get stored as procedures, periodically tombstoning
+state atoms that no longer reflect reality. The assistant does the writing; you have to
+care about the curating.
+
+**The compounding shows up around month two.** For the first few weeks, working with
+persistent memory feels marginally better than working without it. Around the time the
+substrate has 200-300 atoms across your project, something flips. Sessions start with
+the assistant already knowing things you would otherwise have re-explained. Bugs surface
+prior incidents. Architecture decisions cite prior trade-offs. You stop noticing it as a
+feature, and start noticing the *absence* of it when you switch to a fresh assistant
+without it. That's the part that sold me.
+
+**The Merkle layer matters more than I thought it would.** I built it for compliance
+reasons (see the [Article 12 post](/blog/2026-04-26-eu-ai-act-article-12-cryptographic-records)
+from earlier today on what that's about). What I didn't expect is how often I just *trust*
+what comes out of recall now. Every atom comes back with a proof attached. If the
+substrate were lying to me — corrupted, tampered with, hallucinated — the proof would
+fail. It hasn't, in nearly a year of daily use. That confidence is hard to give up once
+you have it.
+
+**It changed how I write down what I learn.** Before this product existed, I wrote things
+down in scattered Notion docs that I never re-read. Now I write things down knowing the
+assistant will retrieve them at the moment I need them. The act of capturing a fact has
+become valuable in a way it wasn't before, because the cost of "I'll remember this" has
+become exposed.
+
+## How to try the same thing
+
+If you want to wire this up for yourself, there are two paths.
+
+The first is to use Parametric Memory directly. We ship an MCP server alongside the REST
+API, so any MCP-compatible AI client — Claude, Cursor, Cline — can plug in and gain
+persistent, Merkle-verified memory immediately. Plans start at $3/month. The 64% Markov
+hit-rate from our [launch post](/blog/2026-04-03-introducing-parametric-memory) is real
+and you'll notice the difference within a session.
+
+The second is to build the workflow yourself. Pick a small set of atom types — facts,
+states, procedures, events — give them a strict naming scheme, get your assistant to
+write them on every architecture decision and every user correction, and run a
+session-bootstrap query at the start of each new conversation. The technique works without
+us; the substrate just makes it cryptographic and fast.
+
+Either way, the thing I'd encourage you to try is the part I didn't expect to value:
+**store the corrections.** When you tell your assistant "no, do it this way instead," that
+moment is the most valuable signal in the entire conversation. If it lives only inside
+the current session window, you'll be teaching it again next week. If it lives in a
+substrate, you teach it once, and the discipline compounds.
+
+That's how this product got built. The assistant remembers. I do less repeating. The
+result is a SaaS that runs on the same memory it gives its customers.
+
+> [Get started](/pricing) — plans from $3/month. Or [reach out](/contact) if you want to
+> compare notes on what working this way actually looks like at your scale.

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Suspense, useEffect, useState, type FormEvent, type ReactNode } from "react";
 import { useSearchParams } from "next/navigation";
 import type { ProviderId } from "@/lib/auth/providers/types";
+import SiteNavbar from "@/components/ui/SiteNavbar";
 
 const ERROR_MESSAGES: Record<string, string> = {
   missing_token: "The sign-in link is missing a token. Please request a new one.",
@@ -274,7 +275,11 @@ function LoginForm() {
             type="email"
             required
             autoComplete="email"
-            autoFocus
+            // autoFocus intentionally removed — on mobile it pops the
+            // keyboard immediately and scrolls past the Google/GitHub OAuth
+            // buttons, which are the most-used returning-user path.
+            // Desktop users still tab into this field; the lost convenience
+            // on desktop is small relative to the mobile UX gain.
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             placeholder="you@example.com"
@@ -336,48 +341,51 @@ export interface LoginClientProps {
 
 export default function LoginClient({ oauthProviders = [] }: LoginClientProps = {}) {
   return (
-    <div className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-[#030712] px-4 py-12">
-      {/* Background glow */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute top-1/3 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
-      </div>
-
-      <div className="relative w-full max-w-sm">
-        {/* Brand */}
-        <div className="mb-8 text-center">
-          <Link
-            href="/"
-            className="inline-flex items-center gap-2 text-white/70 transition-colors hover:text-white"
-          >
-            <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text font-[family-name:var(--font-syne)] text-2xl font-bold text-transparent">
-              Parametric Memory
-            </span>
-          </Link>
+    <>
+      <SiteNavbar isLoggedIn={false} variant="standard" />
+      <div className="relative flex min-h-[100dvh] items-center justify-center overflow-x-hidden bg-[#030712] px-4 pt-24 pb-12 sm:pt-28">
+        {/* Background glow */}
+        <div className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div className="absolute top-1/3 left-1/2 h-[600px] w-[600px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-indigo-600/10 blur-[120px]" />
         </div>
 
-        <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-sm">
-          <Suspense>
-            <RedirectCookieSetter />
-          </Suspense>
-          {/* OAuth buttons render first — closest to a returning user's
+        <div className="relative w-full max-w-sm">
+          {/* Brand */}
+          <div className="mb-8 text-center">
+            <Link
+              href="/"
+              className="inline-flex items-center gap-2 text-white/70 transition-colors hover:text-white"
+            >
+              <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text font-[family-name:var(--font-syne)] text-2xl font-bold text-transparent">
+                Parametric Memory
+              </span>
+            </Link>
+          </div>
+
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-8 backdrop-blur-sm">
+            <Suspense>
+              <RedirectCookieSetter />
+            </Suspense>
+            {/* OAuth buttons render first — closest to a returning user's
               mental model of "the way I signed in last time". Wrapped
               in Suspense because `OauthButtons` uses `useSearchParams`. */}
-          <Suspense>
-            <OauthButtons providers={oauthProviders} />
-          </Suspense>
-          <LoginForm />
-        </div>
+            <Suspense>
+              <OauthButtons providers={oauthProviders} />
+            </Suspense>
+            <LoginForm />
+          </div>
 
-        <p className="mt-6 text-center text-xs text-white/40">
-          First time?{" "}
-          <Link
-            href="/signup"
-            className="-my-1 inline-block py-1 text-indigo-400 transition-colors hover:text-indigo-300"
-          >
-            Create an account
-          </Link>
-        </p>
+          <p className="mt-6 text-center text-xs text-white/40">
+            First time?{" "}
+            <Link
+              href="/signup"
+              className="-my-1 inline-block py-1 text-indigo-400 transition-colors hover:text-indigo-300"
+            >
+              Create an account
+            </Link>
+          </p>
+        </div>
       </div>
-    </div>
+    </>
   );
 }

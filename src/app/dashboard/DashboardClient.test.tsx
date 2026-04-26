@@ -11,6 +11,7 @@ import DashboardClient from "./DashboardClient";
 
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
+  usePathname: () => "/dashboard",
   useSearchParams: () => ({ get: () => null }),
 }));
 
@@ -354,38 +355,50 @@ describe("DashboardClient — read_only state (F-BILLING-2)", () => {
   });
 });
 
-// ── Dashboard top-nav links — regression guard (2026-04-19) ───────────────────
+// ── Dashboard top-nav Docs link — regression guard (2026-04-19) ──────────────
 //
-// Regression: the Docs link in the dashboard's top nav was a hardcoded
-// `<a href="https://mmpm.co.nz/docs" target="_blank">` — a leftover from before
-// the /docs route existed on parametric-memory.dev. Every other surface uses
-// a client-side `<Link href="/docs">`, so the dashboard was the odd one out
-// and kicked users out to a different domain.
+// Regression: the Docs link in the dashboard's old custom header was a
+// hardcoded `<a href="https://mmpm.co.nz/docs" target="_blank">` — a leftover
+// from before the /docs route existed on parametric-memory.dev.
 //
-// The fix swaps in `<Link href="/docs">`. These tests ensure a future refactor
-// doesn't re-introduce the external URL or open-in-new-tab behaviour.
+// Sprint 2026-W17 replaced the dashboard's custom header with the shared
+// SiteNavbar (so mobile users get the hamburger drawer). SiteNavbar exposes
+// the Docs link via `data-testid="nav-link-docs"` which is reused inside both
+// the desktop centre-nav and the mobile drawer (per DUAL-ACCESSIBILITY.md).
+//
+// We use `getAllByTestId(...)` and assert each rendered instance:
+//   - points at the internal /docs route,
+//   - never opens in a new tab,
+//   - never references mmpm.co.nz or any external scheme.
 
 describe("DashboardClient — top-nav Docs link (regression guard)", () => {
   stubFetch();
 
   it("Docs link points to the internal /docs route, not an external domain", () => {
     render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
-    const docsLink = screen.getByRole("link", { name: /^docs$/i });
-    expect(docsLink).toHaveAttribute("href", "/docs");
+    const docsLinks = screen.getAllByTestId("nav-link-docs");
+    expect(docsLinks.length).toBeGreaterThan(0);
+    for (const link of docsLinks) {
+      expect(link).toHaveAttribute("href", "/docs");
+    }
   });
 
   it("Docs link does not open in a new tab (stays in-app)", () => {
     render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
-    const docsLink = screen.getByRole("link", { name: /^docs$/i });
-    expect(docsLink).not.toHaveAttribute("target");
-    expect(docsLink).not.toHaveAttribute("rel", expect.stringMatching(/noopener/));
+    const docsLinks = screen.getAllByTestId("nav-link-docs");
+    for (const link of docsLinks) {
+      expect(link).not.toHaveAttribute("target");
+      expect(link).not.toHaveAttribute("rel", expect.stringMatching(/noopener/));
+    }
   });
 
   it("Docs link href never references mmpm.co.nz (external-domain regression)", () => {
     render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
-    const docsLink = screen.getByRole("link", { name: /^docs$/i });
-    const href = docsLink.getAttribute("href") ?? "";
-    expect(href).not.toMatch(/mmpm\.co\.nz/);
-    expect(href).not.toMatch(/^https?:\/\//);
+    const docsLinks = screen.getAllByTestId("nav-link-docs");
+    for (const link of docsLinks) {
+      const href = link.getAttribute("href") ?? "";
+      expect(href).not.toMatch(/mmpm\.co\.nz/);
+      expect(href).not.toMatch(/^https?:\/\//);
+    }
   });
 });

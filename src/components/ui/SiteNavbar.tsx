@@ -17,6 +17,11 @@
  *     - locks body scroll while open,
  *     - returns focus to the hamburger button on close.
  *
+ *   When the user is signed in, the drawer also includes an "Account"
+ *   section with Billing / Security / Sign-out so logged-in pages
+ *   (dashboard, admin, billing/success) get a single consistent menu
+ *   instead of bespoke per-page headers. See sprint 2026-W17.
+ *
  * testids + aria-labels follow docs/DUAL-ACCESSIBILITY.md (pre-registered).
  *
  * Auth:
@@ -30,6 +35,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { openBillingPortal, signOut } from "@/lib/account-actions";
 
 /* ─── Logomark ───────────────────────────────────────────────────────────── */
 
@@ -558,64 +564,127 @@ function MobileDrawer({ open, onClose, isActive, verified, email }: MobileDrawer
           </button>
         </div>
 
-        {/* Nav list */}
-        <nav aria-label="Mobile primary" className="flex flex-col gap-1 px-3 py-4">
-          {NAV_ITEMS.map((item) => (
+        {/* Scrollable nav body — locks the auth/account section to the bottom
+            even when the link list is long, while still scrolling cleanly on
+            short viewports. */}
+        <div className="flex flex-1 flex-col overflow-y-auto">
+          {/* Nav list */}
+          <nav aria-label="Mobile primary" className="flex flex-col gap-1 px-3 py-4">
+            {NAV_ITEMS.map((item) => (
+              <Link
+                key={item.href}
+                href={item.href}
+                data-testid={item.testid}
+                onClick={linkClose}
+                className={`rounded-lg px-4 py-3 text-base transition-colors ${
+                  isActive(item.href)
+                    ? "bg-surface-800/60 font-medium text-white"
+                    : "text-surface-300 hover:bg-surface-800/40 hover:text-white"
+                }`}
+              >
+                {item.label}
+              </Link>
+            ))}
+
+            {/* Knowledge Graph accent link */}
             <Link
-              key={item.href}
-              href={item.href}
-              data-testid={item.testid}
+              href="/knowledge"
+              data-testid="nav-link-knowledge"
               onClick={linkClose}
-              className={`rounded-lg px-4 py-3 text-base transition-colors ${
-                isActive(item.href)
-                  ? "bg-surface-800/60 font-medium text-white"
-                  : "text-surface-300 hover:bg-surface-800/40 hover:text-white"
+              className={`mt-1 inline-flex items-center gap-2 rounded-lg px-4 py-3 text-base font-medium ring-1 transition-all ${
+                isActive("/knowledge")
+                  ? "bg-violet-500/20 text-violet-300 ring-violet-500/50"
+                  : "bg-violet-500/10 text-violet-400 ring-violet-500/25 hover:bg-violet-500/20 hover:ring-violet-500/45"
               }`}
             >
-              {item.label}
+              <KnowledgeIcon />
+              Knowledge Graph
             </Link>
-          ))}
+          </nav>
 
-          {/* Knowledge Graph accent link */}
-          <Link
-            href="/knowledge"
-            data-testid="nav-link-knowledge"
-            onClick={linkClose}
-            className={`mt-1 inline-flex items-center gap-2 rounded-lg px-4 py-3 text-base font-medium ring-1 transition-all ${
-              isActive("/knowledge")
-                ? "bg-violet-500/20 text-violet-300 ring-violet-500/50"
-                : "bg-violet-500/10 text-violet-400 ring-violet-500/25 hover:bg-violet-500/20 hover:ring-violet-500/45"
-            }`}
-          >
-            <KnowledgeIcon />
-            Knowledge Graph
-          </Link>
-        </nav>
+          {/* Account section — only when signed in. Pinned at bottom of the
+              scroll body so primary nav stays at the top. */}
+          {verified && (
+            <div
+              data-testid="nav-drawer-account"
+              className="border-surface-800/60 mt-auto border-t px-3 pt-4 pb-2"
+            >
+              <p className="text-surface-500 px-4 pb-2 text-xs font-semibold tracking-wider uppercase">
+                Account
+              </p>
+              <Link
+                href="/dashboard"
+                data-testid="nav-drawer-dashboard"
+                onClick={linkClose}
+                className={`flex items-center justify-between rounded-lg px-4 py-3 text-base transition-colors ${
+                  isActive("/dashboard")
+                    ? "bg-surface-800/60 font-medium text-white"
+                    : "text-surface-300 hover:bg-surface-800/40 hover:text-white"
+                }`}
+              >
+                <span>Dashboard</span>
+                <UserIcon />
+              </Link>
+              <button
+                type="button"
+                data-testid="nav-drawer-billing"
+                onClick={() => {
+                  // Close the drawer first so the user sees the loading state
+                  // of their browser nav, not a fading drawer over a redirect.
+                  linkClose();
+                  void openBillingPortal();
+                }}
+                className="text-surface-300 hover:bg-surface-800/40 flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-base transition-colors hover:text-white"
+              >
+                <span>Billing</span>
+                <span aria-hidden="true" className="text-surface-500 text-xs">
+                  ↗
+                </span>
+              </button>
+              <Link
+                href="/admin/security"
+                data-testid="nav-drawer-security"
+                onClick={linkClose}
+                className={`flex items-center justify-between rounded-lg px-4 py-3 text-base transition-colors ${
+                  isActive("/admin/security")
+                    ? "bg-surface-800/60 font-medium text-white"
+                    : "text-surface-300 hover:bg-surface-800/40 hover:text-white"
+                }`}
+              >
+                <span>Security</span>
+              </Link>
+              <button
+                type="button"
+                data-testid="nav-drawer-signout"
+                onClick={() => {
+                  linkClose();
+                  void signOut();
+                }}
+                className="flex w-full items-center justify-between rounded-lg px-4 py-3 text-left text-base text-rose-300/80 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
+              >
+                <span>Sign out</span>
+              </button>
+              {email && (
+                <p className="text-surface-500 mt-1 truncate px-4 pt-1 pb-2 text-xs">
+                  Signed in as <span className="text-surface-300">{email}</span>
+                </p>
+              )}
+            </div>
+          )}
 
-        {/* Auth action pinned bottom */}
-        <div className="border-surface-800/60 mt-auto border-t px-5 py-4">
-          {verified ? (
-            <Link
-              href="/dashboard"
-              data-testid="nav-auth-dashboard"
-              aria-label="Open dashboard"
-              onClick={linkClose}
-              className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium ring-1 transition-all"
-            >
-              <UserIcon />
-              <span className="truncate">
-                {email ? (email.length > 26 ? email.slice(0, 24) + "…" : email) : "My Substrate"}
-              </span>
-            </Link>
-          ) : (
-            <Link
-              href="/login"
-              data-testid="nav-auth-signin"
-              onClick={linkClose}
-              className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium ring-1 transition-all"
-            >
-              Sign In
-            </Link>
+          {/* Auth action pinned bottom (only when signed OUT — the account
+              section above already covers the signed-in state). */}
+          {!verified && (
+            <div className="border-surface-800/60 mt-auto border-t px-5 py-4">
+              <Link
+                href="/login"
+                data-testid="nav-auth-signin"
+                onClick={linkClose}
+                className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-4 py-3 text-base font-medium ring-1 transition-all"
+              >
+                Sign In
+              </Link>
+            </div>
           )}
         </div>
       </aside>

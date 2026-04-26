@@ -14,8 +14,11 @@ const MerkleScene = dynamic(() => import("@/components/visualise/MerkleScene"), 
 
 function LoadingSkeleton() {
   return (
-    // M2: dvh with min-h-screen fallback — see KnowledgeClient for rationale.
-    <div className="flex min-h-[100dvh] min-h-screen w-full items-center justify-center bg-[#030712]">
+    // M2: see KnowledgeClient — definite h-screen + inline dvh override.
+    <div
+      className="flex h-screen w-full items-center justify-center bg-[#030712]"
+      style={{ height: "100dvh" }}
+    >
       <div className="text-center">
         <div className="mx-auto mb-6 h-16 w-16 animate-pulse rounded-2xl bg-cyan-500/10 ring-1 ring-cyan-500/20" />
         <div className="mb-2 font-mono text-sm tracking-widest text-cyan-400/60">
@@ -36,8 +39,11 @@ interface VisualiseClientProps {
 
 export default function VisualiseClient({ isLoggedIn }: VisualiseClientProps) {
   return (
-    // M2: dvh with min-h-screen fallback.
-    <div className="min-h-[100dvh] min-h-screen w-full overflow-hidden bg-[#030712]">
+    // M2: definite height (h-screen) + dvh upgrade via inline style so
+    // the immersive Canvas (MerkleScene) below renders full-bleed. With
+    // min-height alone the parent collapsed to content height and the
+    // canvas shrank to a thin strip.
+    <div className="h-screen w-full overflow-hidden bg-[#030712]" style={{ height: "100dvh" }}>
       <SiteNavbar
         isLoggedIn={isLoggedIn}
         variant="immersive"

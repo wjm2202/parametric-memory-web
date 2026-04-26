@@ -9,6 +9,7 @@ import { RotationStepper, type RotationStatus } from "@/components/ui/RotationSt
 import { UpdateInstructions } from "@/components/ui/UpdateInstructions";
 import { FormattedDate } from "@/components/FormattedDate";
 import { FormattedNumber } from "@/components/FormattedNumber";
+import SiteNavbar from "@/components/ui/SiteNavbar";
 import { useTierChangePoll } from "@/hooks/useTierChangePoll";
 import { TierChangeProgressBanner } from "./TierChangeProgressBanner";
 import { ChangePlanButton } from "./ChangePlanButton";
@@ -426,21 +427,22 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
         <div className="absolute top-0 right-1/4 h-[500px] w-[800px] rounded-full bg-indigo-600/5 blur-[160px]" />
       </div>
 
-      <header className="relative border-b border-white/5 px-6 py-4">
-        <div className="mx-auto flex max-w-5xl items-center justify-between">
+      {/* Shared SiteNavbar — gives the admin page mobile parity with the
+          rest of the site (hamburger + drawer for primary nav and account
+          actions). The "Back to Dashboard" breadcrumb stays in-page so
+          context is preserved when navigating back. */}
+      <SiteNavbar isLoggedIn={true} variant="standard" />
+
+      <header className="relative border-b border-white/5 px-4 pt-20 pb-4 sm:px-6 sm:pt-24">
+        <div className="mx-auto flex max-w-5xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
           <Link
-            href="/"
-            className="font-[family-name:var(--font-syne)] font-semibold text-white/60 transition-colors hover:text-white"
+            href="/dashboard"
+            data-testid="admin-back-to-dashboard"
+            className="text-sm text-indigo-400 transition-colors hover:text-indigo-300"
           >
-            Parametric Memory
+            ← Back to Dashboard
           </Link>
-          <div className="flex items-center gap-4">
-            <Link
-              href="/dashboard"
-              className="text-sm text-indigo-400 transition-colors hover:text-indigo-300"
-            >
-              ← Back to Dashboard
-            </Link>
+          <div className="hidden items-center gap-4 md:flex">
             <span className="text-sm text-white/40">{account.email}</span>
             <button
               onClick={handleLogout}
@@ -481,7 +483,12 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                   than compressing the badge / Change-plan button against the title. */}
               <div className="flex flex-wrap items-start justify-between gap-4">
                 <div>
-                  <p className="text-xs tracking-wider text-white/40 uppercase">Billing</p>
+                  <p
+                    data-testid="admin-billing-label"
+                    className="text-xs tracking-wider text-white/40 uppercase"
+                  >
+                    Billing
+                  </p>
                   <p className="mt-1 text-lg font-semibold text-white">
                     {getTierLabel(billingStatus?.tier ?? substrate.tier)}
                   </p>
