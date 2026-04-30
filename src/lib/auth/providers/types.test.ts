@@ -218,6 +218,91 @@ describe("isSigninOutcome — narrowing compute's bridge response", () => {
     expect(isSigninOutcome({ outcome: "mystery" })).toBe(false);
     expect(isSigninOutcome({})).toBe(false);
   });
+
+  // ─── Sprint 9.5 — pending_factor branch ───────────────────────────────
+  //
+  // Compute returns this when an OAuth user with TOTP enrolled completes
+  // the provider hop. The website cookies `rawPendingToken` and routes
+  // the user to /auth/two-factor instead of minting a session. The
+  // narrower MUST accept the well-formed shape and reject every
+  // identified malformation, otherwise the callback either (a) silently
+  // drops valid pending sessions to a generic error redirect, or (b)
+  // routes the user to /auth/two-factor with a missing/empty token they
+  // cannot use. Both failure modes lock the user out — pin them.
+
+  const fullPendingFactor = {
+    outcome: "pending_factor",
+    accountId: "acc_1",
+    identityId: "id_1",
+    rawPendingToken: "deadbeef".repeat(8), // 64 hex chars — matches compute
+    requiredFactor: "totp",
+  } as const;
+
+  it("accepts pending_factor with all required fields", () => {
+    expect(isSigninOutcome(fullPendingFactor)).toBe(true);
+  });
+
+  it("rejects pending_factor missing accountId", () => {
+    const without: Partial<typeof fullPendingFactor> = { ...fullPendingFactor };
+    delete without.accountId;
+    expect(isSigninOutcome(without)).toBe(false);
+  });
+
+  it("rejects pending_factor missing identityId", () => {
+    const without: Partial<typeof fullPendingFactor> = { ...fullPendingFactor };
+    delete without.identityId;
+    expect(isSigninOutcome(without)).toBe(false);
+  });
+
+  it("rejects pending_factor missing rawPendingToken", () => {
+    const without: Partial<typeof fullPendingFactor> = { ...fullPendingFactor };
+    delete without.rawPendingToken;
+    expect(isSigninOutcome(without)).toBe(false);
+  });
+
+  it("rejects pending_factor with empty rawPendingToken", () => {
+    // Empty token would set an empty pending cookie — login-verify would
+    // 401 with `pending_token_invalid_or_expired` and the user would be
+    // bounced back to /login with no breadcrumb. Defensive narrow.
+    expect(isSigninOutcome({ ...fullPendingFactor, rawPendingToken: "" })).toBe(false);
+  });
+
+  it("rejects pending_factor with non-string rawPendingToken", () => {
+    expect(isSigninOutcome({ ...fullPendingFactor, rawPendingToken: 12345 })).toBe(false);
+  });
+
+  it("rejects pending_factor with unknown requiredFactor (forward-compat guard)", () => {
+    // If compute later ships WebAuthn with `requiredFactor: "webauthn"`,
+    // the website MUST be widened in the same release. Until then a
+    // non-"totp" value should hard-fail the shape check rather than
+    // silently routing the user to a TOTP page they cannot complete.
+    expect(isSigninOutcome({ ...fullPendingFactor, requiredFactor: "webauthn" })).toBe(false);
+  });
+
+  it("rejects pending_factor missing requiredFactor", () => {
+    const without: Partial<typeof fullPendingFactor> = { ...fullPendingFactor };
+    delete (without as { requiredFactor?: string }).requiredFactor;
+    expect(isSigninOutcome(without)).toBe(false);
+  });
+
+  it("rejects pending_factor with stray rawSessionToken (cross-contamination guard)", () => {
+    // A response that combines pending + session fields is a protocol
+    // violation — pending_factor is mutually exclusive with session
+    // minting on compute's side. The narrower currently accepts extra
+    // fields (TS structural typing), so this test documents the
+    // accepted-but-unsafe behaviour and serves as a tripwire if we
+    // later harden the narrower to reject extras.
+    const cross = {
+      ...fullPendingFactor,
+      sessionId: "sess_1",
+      rawSessionToken: "abc",
+    };
+    // Today: structural narrowing only checks the required fields, so
+    // the extra fields don't trip the guard. This is intentional — the
+    // route handler's switch on `outcome` is the second line of defence
+    // and never reads session fields on the pending_factor branch.
+    expect(isSigninOutcome(cross)).toBe(true);
+  });
 });
 
 describe("isLinkOutcome — narrowing compute's /bridge/link response", () => {

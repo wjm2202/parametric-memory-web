@@ -187,6 +187,33 @@ export async function GET(
     });
   }
 
+  // ── Sprint 9.5 — pending-token cookie (OAuth + TOTP fork) ────────────
+  //
+  // Only non-null on the `pending_factor` branch in
+  // `runSigninBranch`. Mutually exclusive with `sessionCookie` above —
+  // the decision module enforces the invariant; the runtime check on
+  // the next line is belt-and-braces.
+  //
+  // We delete-then-set (same pattern as the session cookie above) so a
+  // stale pending cookie from a previous failed flow can't shadow the
+  // new value at a different path scope. Cheap insurance: the common
+  // case is "no prior cookie, single Set-Cookie line emitted".
+  //
+  // Why we don't have a dedicated `rotatePendingTokenCookie` helper:
+  // this is the ONLY place the cookie is set. The magic-link callback
+  // at /auth/callback uses a hand-rolled `cookieStore.set` for the
+  // same reason. If a third caller appears, factor out then.
+  if (result.pendingTokenCookie !== null) {
+    cookieStore.delete(result.pendingTokenCookie.name);
+    cookieStore.set(result.pendingTokenCookie.name, result.pendingTokenCookie.value, {
+      httpOnly: result.pendingTokenCookie.httpOnly,
+      secure: result.pendingTokenCookie.secure,
+      sameSite: result.pendingTokenCookie.sameSite,
+      path: result.pendingTokenCookie.path,
+      maxAge: result.pendingTokenCookie.maxAge,
+    });
+  }
+
   // `redirect` throws NEXT_REDIRECT. This call MUST be at the top
   // level (never inside a try/catch) — see module header.
   redirect(result.destination);

@@ -294,6 +294,7 @@ describe("GET /api/auth/oauth/:provider/callback — result translation", () => 
       kind: "redirect",
       destination: "/login?error=oauth_state",
       sessionCookie: null,
+      pendingTokenCookie: null,
       clearStateCookie: true,
       reason: "state_mismatch",
     });
@@ -329,6 +330,7 @@ describe("GET /api/auth/oauth/:provider/callback — result translation", () => 
         path: "/",
         maxAge: 2_592_000,
       },
+      pendingTokenCookie: null,
       clearStateCookie: true,
       reason: "ok_signin",
     });
@@ -381,6 +383,7 @@ describe("GET /api/auth/oauth/:provider/callback — result translation", () => 
         path: "/",
         maxAge: 2_592_000,
       },
+      pendingTokenCookie: null,
       clearStateCookie: true,
       reason: "ok_signin",
     });
@@ -411,6 +414,7 @@ describe("GET /api/auth/oauth/:provider/callback — result translation", () => 
       kind: "redirect",
       destination: "/admin/security",
       sessionCookie: null,
+      pendingTokenCookie: null,
       clearStateCookie: true,
       reason: "ok_link",
     });
@@ -436,6 +440,7 @@ describe("GET /api/auth/oauth/:provider/callback — result translation", () => 
       kind: "redirect",
       destination: "/admin/security",
       sessionCookie: null,
+      pendingTokenCookie: null,
       clearStateCookie: true,
       reason: "ok_link",
     });
@@ -469,6 +474,7 @@ describe("GET /api/auth/oauth/:provider/callback — result translation", () => 
       kind: "redirect",
       destination: "/login?error=oauth_state",
       sessionCookie: null,
+      pendingTokenCookie: null,
       clearStateCookie: true,
       reason: "state_mismatch",
     });
@@ -479,5 +485,209 @@ describe("GET /api/auth/oauth/:provider/callback — result translation", () => 
     });
     expect(err).toBeInstanceOf(RedirectSentinel);
     expect(order).toEqual([`delete:${STATE_COOKIE_NAME}`, "redirect-thrown"]);
+  });
+});
+
+// ─── Sprint 9.5 — pending-token cookie wiring ─────────────────────────────
+//
+// The decision module (oauth-callback.ts) decides WHETHER to set a
+// pending-token cookie; this route handler is responsible for the
+// actual `cookieStore.set(name, value, options)` call. These tests pin
+// the wiring: the descriptor fields go through verbatim, the cookie is
+// delete-then-set (session-fixation defense), and no rotateSessionCookie
+// call leaks through on this branch (which would mint a session before
+// the user has typed their TOTP code).
+
+describe("GET /api/auth/oauth/:provider/callback — pending-token cookie wiring", () => {
+  const PENDING_NAME = "mmpm_pending_token";
+  const PENDING_TOKEN = "abcd".repeat(16); // 64 hex chars
+
+  it("redirect + pendingTokenCookie → sets cookie with exact descriptor, clears state, redirects", async () => {
+    const store = makeCookieStore({
+      [STATE_COOKIE_NAME]: "state-to-clear",
+    });
+    mockCookies.mockResolvedValue(store);
+    h.handleOauthCallbackSpy.mockResolvedValue({
+      kind: "redirect",
+      destination: "/auth/two-factor",
+      sessionCookie: null,
+      pendingTokenCookie: {
+        name: PENDING_NAME,
+        value: PENDING_TOKEN,
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 600,
+      },
+      clearStateCookie: true,
+      reason: "ok_signin_pending_factor",
+    });
+
+    const err = await GET(makeRequest(), makeCtx("google")).catch((e: unknown) => e);
+    expect(err).toBeInstanceOf(RedirectSentinel);
+    expect((err as RedirectSentinel).url).toBe("/auth/two-factor");
+
+    // Session-fixation defense: cookie is deleted before set, even on
+    // the pending fork. Order of deletes: state, then pending.
+    expect(store.deletes).toEqual([STATE_COOKIE_NAME, PENDING_NAME]);
+
+    // The pending cookie was set with every descriptor attribute.
+    expect(store.sets).toHaveLength(1);
+    expect(store.sets[0]!).toEqual({
+      name: PENDING_NAME,
+      value: PENDING_TOKEN,
+      options: {
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 600,
+      },
+    });
+
+    // Critically, NO session was rotated — the user has not yet
+    // completed TOTP. A regression here is a permanent skip-2FA bug.
+    expect(h.rotateSessionCookieSpy).not.toHaveBeenCalled();
+    expect(h.clearSessionCookieSpy).not.toHaveBeenCalled();
+  });
+
+  it("redirect + pendingTokenCookie respects secure=false (dev / localhost)", async () => {
+    // The decision module is what decides secure based on hostname,
+    // but the route MUST forward whatever it receives without coercion.
+    // A false-positive `secure: true` over plain HTTP would silently
+    // drop the cookie and the user would see a dead 2FA prompt.
+    const store = makeCookieStore();
+    mockCookies.mockResolvedValue(store);
+    h.handleOauthCallbackSpy.mockResolvedValue({
+      kind: "redirect",
+      destination: "/auth/two-factor",
+      sessionCookie: null,
+      pendingTokenCookie: {
+        name: PENDING_NAME,
+        value: PENDING_TOKEN,
+        httpOnly: true,
+        secure: false,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 600,
+      },
+      clearStateCookie: true,
+      reason: "ok_signin_pending_factor",
+    });
+
+    await GET(makeRequest(), makeCtx("google")).catch(() => {
+      /* swallow RedirectSentinel */
+    });
+
+    expect(store.sets[0]!.options).toMatchObject({ secure: false });
+  });
+
+  it("redirect with sessionCookie AND no pendingTokenCookie → only session is set, pending is NOT touched", async () => {
+    // Mutual-exclusion guard: signin success path must not accidentally
+    // also set a pending cookie. (The decision module enforces the
+    // invariant, but this test pins the route's behaviour against a
+    // future refactor that might broaden the conditional.)
+    const store = makeCookieStore();
+    mockCookies.mockResolvedValue(store);
+    h.handleOauthCallbackSpy.mockResolvedValue({
+      kind: "redirect",
+      destination: "/admin",
+      sessionCookie: {
+        name: SESSION_COOKIE_NAME,
+        value: "fresh-session",
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 2_592_000,
+      },
+      pendingTokenCookie: null,
+      clearStateCookie: true,
+      reason: "ok_signin",
+    });
+
+    await GET(makeRequest(), makeCtx("google")).catch(() => {
+      /* swallow RedirectSentinel */
+    });
+
+    // No pending cookie set or deleted on this branch.
+    expect(store.sets).toHaveLength(0); // session cookie set is mocked away
+    expect(store.deletes).not.toContain(PENDING_NAME);
+  });
+
+  it("redirect with no session AND no pending → neither cookie touched", async () => {
+    // Error redirect branches (state mismatch, provider denied, etc.)
+    // must leave the pending cookie alone — clearing it on every error
+    // would invalidate a perfectly good in-flight TOTP login if the
+    // user happened to retry an OAuth flow on another tab.
+    const store = makeCookieStore({
+      [PENDING_NAME]: "still-valid-from-magic-link",
+    });
+    mockCookies.mockResolvedValue(store);
+    h.handleOauthCallbackSpy.mockResolvedValue({
+      kind: "redirect",
+      destination: "/login?error=oauth_state",
+      sessionCookie: null,
+      pendingTokenCookie: null,
+      clearStateCookie: true,
+      reason: "state_mismatch",
+    });
+
+    await GET(makeRequest(), makeCtx("google")).catch(() => {
+      /* swallow RedirectSentinel */
+    });
+
+    // The pre-existing pending cookie survives.
+    expect(store.deletes).not.toContain(PENDING_NAME);
+    expect(store.storage.get(PENDING_NAME)).toBe("still-valid-from-magic-link");
+    expect(store.sets).toHaveLength(0);
+  });
+
+  it("effect ordering: state delete → pending delete → pending set → redirect", async () => {
+    // Pin the relative order so a refactor that hoists redirect() above
+    // the cookie writes is caught. NEXT_REDIRECT short-circuits the
+    // function, so any cookie write below it never fires — the user
+    // would land on /auth/two-factor with no token set.
+    const order: string[] = [];
+    const store = {
+      get(name: string): CookieGet | undefined {
+        return name === STATE_COOKIE_NAME ? { value: "X" } : undefined;
+      },
+      set(name: string): void {
+        order.push(`set:${name}`);
+      },
+      delete(name: string): void {
+        order.push(`delete:${name}`);
+      },
+    };
+    mockCookies.mockResolvedValue(store);
+    h.handleOauthCallbackSpy.mockResolvedValue({
+      kind: "redirect",
+      destination: "/auth/two-factor",
+      sessionCookie: null,
+      pendingTokenCookie: {
+        name: PENDING_NAME,
+        value: PENDING_TOKEN,
+        httpOnly: true,
+        secure: true,
+        sameSite: "lax",
+        path: "/",
+        maxAge: 600,
+      },
+      clearStateCookie: true,
+      reason: "ok_signin_pending_factor",
+    });
+
+    await GET(makeRequest(), makeCtx("google")).catch((e: unknown) => {
+      if (e instanceof RedirectSentinel) order.push("redirect-thrown");
+    });
+
+    expect(order).toEqual([
+      `delete:${STATE_COOKIE_NAME}`,
+      `delete:${PENDING_NAME}`,
+      `set:${PENDING_NAME}`,
+      "redirect-thrown",
+    ]);
   });
 });

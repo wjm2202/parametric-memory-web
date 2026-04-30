@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import SiteNavbar from "@/components/ui/SiteNavbar";
+import { TwoFactorStatusCard } from "@/components/TwoFactorStatusCard";
 
 interface AccountInfo {
   id: string;
@@ -46,6 +47,40 @@ export default function SecurityClient({ account }: SecurityClientProps) {
             You sign in via magic link sent to{" "}
             <span className="break-all text-white/70">{account.email}</span>. No password is stored.
           </p>
+        </div>
+
+        {/* ── Two-factor authentication ──
+            TOTP enrolment status + manage CTA. The card owns its own /status
+            fetch so the page stays static-friendly for everyone who hasn't
+            yet looked at this section.
+
+            Sprint 8 of the TOTP rollout (docs/sprint-totp-implementation.md).
+            Future factor kinds (WebAuthn) will mount as additional cards
+            here; the layout is deliberately a single-column stack so a third
+            card slots in without reflow. */}
+        <div className="mt-4">
+          <TwoFactorStatusCard />
+        </div>
+
+        {/* ── Auth audit feed ──
+            Sprint 7 of the TOTP rollout (docs/sprint-totp-implementation.md).
+            Read-only feed of every auth-relevant event tied to the account.
+            Lives at /admin/security/audit because the page is recent-auth
+            gated — same security bar as the TOTP card above, same magic-link
+            round-trip on a stale window. */}
+        <div className="mt-4">
+          <Link
+            href="/admin/security/audit"
+            data-testid="auth-audit-card-link"
+            className="block rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:bg-white/[0.06] sm:p-6"
+          >
+            <h2 className="mb-0.5 font-semibold text-white">Recent activity</h2>
+            <p className="text-sm text-white/50">
+              See every sign-in, sign-out, and security setting change on your account. Useful for
+              spotting suspicious access — opens a recent-auth-gated audit page.
+            </p>
+            <p className="mt-2 text-sm text-white/70">View activity →</p>
+          </Link>
         </div>
       </div>
     </div>

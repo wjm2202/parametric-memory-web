@@ -279,6 +279,33 @@ function signinRejected(reason: string): BridgeResponse<unknown> {
   };
 }
 
+/**
+ * Sprint 9.5 — pending_factor bridge response. Mirror of compute's
+ * SigninResult.pending_factor. The default `rawPendingToken` is a
+ * 64-hex-char string so the narrower's "non-empty hex token" check
+ * passes; tests that need to pin malformations override.
+ */
+const PENDING_TOKEN_HEX_64 = "deadbeef".repeat(8);
+
+function signinPendingFactor(
+  overrides: Partial<{
+    accountId: string;
+    identityId: string;
+    rawPendingToken: string;
+    requiredFactor: "totp";
+  }> = {},
+): BridgeResponse<SigninOutcome> {
+  const outcome: SigninOutcome = {
+    outcome: "pending_factor",
+    accountId: "acc_1",
+    identityId: "id_1",
+    rawPendingToken: PENDING_TOKEN_HEX_64,
+    requiredFactor: "totp",
+    ...overrides,
+  } as SigninOutcome;
+  return { ok: true, status: 200, data: outcome, error: null };
+}
+
 function linkSuccess(): BridgeResponse<LinkOutcome> {
   return {
     ok: true,
@@ -787,6 +814,140 @@ describe("handleOauthCallback — signin branch success", () => {
     const result = await handleOauthCallback(deps, baseArgs({ hostname: "127.0.0.1" }));
     if (result.kind !== "redirect") throw new Error("expected redirect");
     expect(result.sessionCookie?.secure).toBe(false);
+  });
+});
+
+// ─── Sprint 9.5 — OAuth TOTP login fork ────────────────────────────────────
+//
+// Compute returns `outcome: "pending_factor"` when the user just signed
+// in via Google/GitHub but their account has TOTP enrolled. The website
+// must NOT mint a session — it must set the `mmpm_pending_token` cookie
+// and redirect to /auth/two-factor where the user types their 6-digit
+// code. The session is only minted by the BFF route at
+// /api/auth/factors/totp/login-verify after the code is verified.
+//
+// These tests pin every observable property of that branch — destination,
+// session-cookie absence, pending-cookie shape, state-cookie cleanup,
+// audit reason — because a regression here is a permanent lockout for
+// every OAuth user with TOTP enabled.
+
+describe("handleOauthCallback — signin branch pending_factor (Sprint 9.5)", () => {
+  it("pending_factor → redirect to /auth/two-factor with pending cookie set", async () => {
+    const { deps, store, bridgeClient } = makeDeps();
+    seedSigninFlow(store, { returnTo: "/admin" });
+    bridgeClient.script(signinPendingFactor());
+    const result = await handleOauthCallback(deps, baseArgs());
+    expect(result.kind).toBe("redirect");
+    if (result.kind !== "redirect") return;
+    expect(result.destination).toBe("/auth/two-factor");
+    expect(result.reason).toBe("ok_signin_pending_factor");
+    expect(result.clearStateCookie).toBe(true);
+  });
+
+  it("pending_factor → does NOT mint a session cookie", async () => {
+    // The single most important assertion in this file: a session
+    // cookie on this branch would skip TOTP entirely. Pin to null
+    // explicitly rather than relying on field-presence checks.
+    const { deps, store, bridgeClient } = makeDeps();
+    seedSigninFlow(store);
+    bridgeClient.script(signinPendingFactor());
+    const result = await handleOauthCallback(deps, baseArgs());
+    if (result.kind !== "redirect") throw new Error("expected redirect");
+    expect(result.sessionCookie).toBeNull();
+  });
+
+  it("pending_factor → pendingTokenCookie carries the raw token with full attribute set", async () => {
+    const { deps, store, bridgeClient } = makeDeps();
+    seedSigninFlow(store);
+    bridgeClient.script(signinPendingFactor({ rawPendingToken: PENDING_TOKEN_HEX_64 }));
+    const result = await handleOauthCallback(deps, baseArgs());
+    if (result.kind !== "redirect") throw new Error("expected redirect");
+    expect(result.pendingTokenCookie).toEqual({
+      name: "mmpm_pending_token",
+      value: PENDING_TOKEN_HEX_64,
+      httpOnly: true,
+      secure: true, // parametric-memory.dev is not localhost
+      sameSite: "lax",
+      path: "/",
+      maxAge: 10 * 60, // 10 min, mirrors compute's totp_pending_sessions row TTL
+    });
+  });
+
+  it("pending_factor → pending cookie secure=false on localhost (dev affordance)", async () => {
+    // Same isSecureHost rule that protects the session cookie on the
+    // success branch — without this, the browser silently drops the
+    // pending cookie over plain HTTP and /auth/two-factor's BFF route
+    // sees no token. Net effect: user lands on a dead 2FA prompt that
+    // can't submit.
+    const { deps, store, bridgeClient } = makeDeps();
+    seedSigninFlow(store);
+    bridgeClient.script(signinPendingFactor());
+    const result = await handleOauthCallback(deps, baseArgs({ hostname: HOSTNAME_DEV }));
+    if (result.kind !== "redirect") throw new Error("expected redirect");
+    expect(result.pendingTokenCookie?.secure).toBe(false);
+  });
+
+  it("pending_factor → pending cookie secure=false for 127.0.0.1", async () => {
+    const { deps, store, bridgeClient } = makeDeps();
+    seedSigninFlow(store);
+    bridgeClient.script(signinPendingFactor());
+    const result = await handleOauthCallback(deps, baseArgs({ hostname: "127.0.0.1" }));
+    if (result.kind !== "redirect") throw new Error("expected redirect");
+    expect(result.pendingTokenCookie?.secure).toBe(false);
+  });
+
+  it("pending_factor → bridge POST omits any session cookie, same as the success branch", async () => {
+    // The /bridge/signin contract is "unauthenticated request" — the
+    // pending fork must not change that, because compute's session
+    // middleware is intentionally absent on this route.
+    const { deps, store, bridgeClient } = makeDeps();
+    seedSigninFlow(store);
+    bridgeClient.script(signinPendingFactor());
+    await handleOauthCallback(deps, baseArgs({ sessionCookie: USER_SESSION_COOKIE }));
+    expect(bridgeClient.calls).toHaveLength(1);
+    expect(bridgeClient.calls[0]!.sessionCookie).toBeNull();
+  });
+
+  it("malformed pending_factor (empty rawPendingToken) → bridge_shape_invalid, not a broken redirect", async () => {
+    // isSigninOutcome rejects empty token; the route maps that to a
+    // generic server error redirect rather than setting an empty
+    // cookie. Without this guard, the browser would set
+    // `mmpm_pending_token=` and /auth/two-factor's BFF route would
+    // 401 with no breadcrumb.
+    const { deps, store, bridgeClient } = makeDeps();
+    seedSigninFlow(store);
+    bridgeClient.script(signinPendingFactor({ rawPendingToken: "" }));
+    const result = await handleOauthCallback(deps, baseArgs());
+    if (result.kind !== "redirect") throw new Error("expected redirect");
+    expect(result.reason).toBe("bridge_shape_invalid");
+    expect(result.sessionCookie).toBeNull();
+    expect(result.pendingTokenCookie).toBeNull();
+  });
+
+  it("malformed pending_factor (unknown requiredFactor) → bridge_shape_invalid", async () => {
+    // Forward-compat guard: if compute later adds WebAuthn and the
+    // website hasn't been widened in lockstep, fail loudly rather than
+    // silently routing the user to a TOTP page they cannot complete.
+    const { deps, store, bridgeClient } = makeDeps();
+    seedSigninFlow(store);
+    // Bypass the function-level type by going through the unknown
+    // bridge channel — this is exactly the wire-level mismatch the
+    // narrower defends against.
+    bridgeClient.script({
+      ok: true,
+      status: 200,
+      data: {
+        outcome: "pending_factor",
+        accountId: "acc_1",
+        identityId: "id_1",
+        rawPendingToken: PENDING_TOKEN_HEX_64,
+        requiredFactor: "webauthn", // not a SigninOutcome literal
+      },
+      error: null,
+    } as BridgeResponse<unknown> as BridgeResponse<SigninOutcome>);
+    const result = await handleOauthCallback(deps, baseArgs());
+    if (result.kind !== "redirect") throw new Error("expected redirect");
+    expect(result.reason).toBe("bridge_shape_invalid");
   });
 });
 
