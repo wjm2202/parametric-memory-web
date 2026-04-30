@@ -12,6 +12,12 @@ const ERROR_MESSAGES: Record<string, string> = {
     "This sign-in link has expired or has already been used. Please request a new one.",
   server_error: "Something went wrong on our end. Please try again.",
   session_expired: "Your session has expired. Please sign in again.",
+  // Sprint 9 — login-time TOTP challenge expired or pending-token cookie was
+  // missing/expired. Surfaces from /auth/two-factor and the
+  // /api/auth/factors/totp/login-verify route handler when the
+  // mmpm_pending_token cookie is gone (10-min TTL) or compute reports
+  // pending_token_invalid_or_expired. The user needs a fresh magic link.
+  pending_expired: "Your sign-in attempt timed out. Please request a new sign-in link.",
   // OAuth failure codes emitted by /api/auth/oauth/[provider]/callback.
   // Kept in sync with the ERROR_CODES table in oauth-callback.ts —
   // missing codes fall through to the generic "An error occurred".

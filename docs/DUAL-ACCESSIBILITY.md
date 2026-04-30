@@ -103,9 +103,13 @@ kebab-case, all lower-case. No dots, no underscores, no slashes.
 **Admin subflow aliases.** Some admin-scoped components register names without
 the `admin-` prefix where the component itself is only ever rendered inside
 `/admin/*` and the extra prefix would be pure noise: `change-plan-*`,
-`confirm-upgrade-*`, `proration-*`, `tier-change-*`, `dedicated-migration-*`.
-These are still admin-only; the short prefix is a convention for
-in-component testids, not a new surface.
+`confirm-upgrade-*`, `proration-*`, `tier-change-*`, `dedicated-migration-*`,
+`two-factor-*`, `two-factor-status-card-*`, `recent-auth-gate-*`, `enrol-*`,
+`manage-*`, `backup-codes-*`, `six-digit-input-*`. These are still admin-only;
+the short prefix is a convention for in-component testids, not a new surface.
+The `enrol-*` and `manage-*` prefixes specifically scope to the two sub-flows
+inside `/admin/security/two-factor` (enrolment vs management); they never
+appear outside that page.
 
 ### Verb-object rules
 
@@ -296,6 +300,140 @@ entry here **first**, before the PR that uses it.
 | `tier-change-banner` | Root banner shown while a tier-change migration is in flight (`role="status"`) |
 | `tier-change-phase-list` | Ordered list of migration phases |
 | `tier-change-retry-counter` | Retry-count detail shown when a phase is retrying |
+
+### Security — `src/app/admin/security/*`
+
+Two-factor (TOTP) enrolment, management, disable, and regenerate-backup-codes flows. Sprint 8 of the TOTP rollout (`docs/sprint-totp-implementation.md`). The status card lives on `/admin/security`; the wizard + management flows live on `/admin/security/two-factor`. Sub-flows (enrolment vs management) are mounted inside the same client component with an in-memory state machine — the testids let tests target each step without separate URLs.
+
+**Status card on `/admin/security` — `src/components/TwoFactorStatusCard.tsx`:**
+
+| testid | Element |
+|---|---|
+| `two-factor-status-card-loading` | Skeleton card while the initial `/status` fetch is in flight |
+| `two-factor-status-card-error` | Soft-fallback card shown when `/status` returns an error or null body |
+| `two-factor-status-card-cta-fallback` | "Open settings" link inside the error card |
+| `two-factor-status-card-not-enrolled` | Card body for the "Off" state |
+| `two-factor-status-card-enable` | "Set up two-factor authentication" CTA inside the not-enrolled card |
+| `two-factor-status-card-enrolled` | Card body for the "On" state |
+| `two-factor-status-card-last-used` | Last-used-at value inside the enrolled card |
+| `two-factor-status-card-backup-count` | "X of 10 remaining" backup-codes value |
+| `two-factor-status-card-manage` | "Manage" CTA inside the enrolled card |
+
+**Wizard chrome — `src/app/admin/security/two-factor/TwoFactorClient.tsx`:**
+
+| testid | Element |
+|---|---|
+| `two-factor-loading` | Skeleton card on the wizard page while `/status` is fetched |
+| `two-factor-error` | Network-error retry card on the wizard page (`role="alert"`) |
+| `two-factor-breadcrumb-back` | "← Security" link in the breadcrumb |
+
+**Recent-auth gate — `src/components/RecentAuthGate.tsx`:**
+
+The gate wraps any TOTP-mutating UI. Renders children when `recentAuthFresh: true`; otherwise renders the re-verify UX described below.
+
+| testid | Element |
+|---|---|
+| `recent-auth-gate-loading` | Skeleton card during initial `/status` fetch |
+| `recent-auth-gate-error` | Network-error fallback card (`role="alert"`) |
+| `recent-auth-gate-retry` | "Try again" button inside the error card |
+| `recent-auth-gate-stale` | Re-verify card body when recent-auth is stale |
+| `recent-auth-gate-error-message` | Inline error after a failed magic-link request |
+| `recent-auth-gate-send-email` | "Email me a sign-in link" button on the stale card |
+| `recent-auth-gate-email-sent` | "Check your email" card after a successful send |
+| `recent-auth-gate-resend` | "resend" link inside the email-sent card |
+| `recent-auth-gate-recheck` | "I clicked the link" button — manual refetch fallback when `visibilitychange` doesn't fire (mobile) |
+
+**Enrolment sub-flow — wizard steps for `not-enrolled → enrolled`:**
+
+| testid | Element |
+|---|---|
+| `enrol-step-intro` | Step 1 card body — explainer + Continue + Cancel |
+| `enrol-step-intro-continue` | "Continue" button → triggers `/setup-init` |
+| `enrol-step-intro-cancel` | "Cancel" link → `/admin/security` |
+| `enrol-error` | Inline error on the intro step (e.g. `/setup-init` failed) |
+| `enrol-step-scan` | Step 2 card body — QR + manual key + Continue |
+| `enrol-qr-svg` | Server-rendered QR SVG container (innerHTML injected) |
+| `enrol-manual-key` | Monospace block with the base32 secret for manual entry |
+| `enrol-step-scan-continue` | "I scanned the code" button → advances to verify step |
+| `enrol-step-scan-cancel` | "Cancel" button → resets wizard via startOver |
+| `enrol-step-verify` | Step 3 card body — six-digit input + submit |
+| `enrol-verify-error` | Inline error after a failed `/setup-verify` (wrong code, etc.) |
+| `enrol-step-verify-submit` | "Confirm" button (auto-submit also fires from `SixDigitInput.onComplete`) |
+| `enrol-step-codes` | Step 4 card body — the 10 backup codes + acknowledge + finish |
+| `enrol-backup-codes` | `<ul>` listing the 10 codes |
+| `enrol-backup-code-<idx>` | One `<li>` per backup code (`idx = 0..9`) |
+| `enrol-acknowledge` | "I've saved these" checkbox |
+| `enrol-step-codes-finish` | "Done" button → returns to `/admin/security` |
+| `enrol-fallback` | Defensive fallback rendered if the state machine reaches an unexpected state |
+
+**Management sub-flow — wizard steps for `enrolled → disable | regenerate`:**
+
+| testid | Element |
+|---|---|
+| `manage-step-overview` | Top card showing on-state + last-used + backup count |
+| `manage-go-disable` | "Disable 2FA" button → opens the disable step |
+| `manage-go-regenerate` | "Regenerate codes" button → opens the regenerate step |
+| `manage-step-disable` | Disable step card body |
+| `manage-disable-input` | Single-line input accepting EITHER 6-digit code OR `xxxx-xxxx` backup code |
+| `manage-disable-submit` | "Disable 2FA" submit button |
+| `manage-disable-cancel` | "Cancel" button → returns to overview step |
+| `manage-disable-error` | Inline error after a failed `/disable` |
+| `manage-step-regenerate` | Regenerate step card body (TOTP code only — backup codes rejected) |
+| `manage-regenerate-submit` | "Regenerate" submit button (auto-submit also fires from `SixDigitInput.onComplete`) |
+| `manage-regenerate-cancel` | "Cancel" button → returns to overview step |
+| `manage-regenerate-error` | Inline error after a failed `/regenerate-backup-codes` |
+| `manage-step-codes` | New-codes display step after regenerate |
+| `manage-backup-codes` | `<ul>` listing the 10 newly-issued codes |
+| `manage-backup-code-<idx>` | One `<li>` per backup code (`idx = 0..9`) |
+| `manage-acknowledge` | "I've saved these new codes" checkbox |
+| `manage-codes-finish` | "Done" button → returns to `/admin/security` with toast |
+
+**Cross-flow — `src/app/admin/security/two-factor/TwoFactorClient.tsx`:**
+
+| testid | Element |
+|---|---|
+| `backup-codes-download` | "Download as .txt" anchor; in-memory blob URL revoked on unmount. Used by both `enrol-step-codes` and `manage-step-codes`. |
+
+**Six-digit input — `src/components/SixDigitInput.tsx`:**
+
+Used in the enrolment verify step and the regenerate step. Default `dataTestId` is `"six-digit-input"`; a parent component can override via the `dataTestId` prop.
+
+| testid | Element |
+|---|---|
+| `six-digit-input` | Wrapper `<div role="group">` containing the six inputs |
+| `six-digit-input-<idx>` | One single-character `<input>` per digit (`idx = 0..5`) |
+
+### Login challenge (Sprint 9) — `src/app/auth/two-factor/*`
+
+Login-time TOTP prompt. Routed here from /auth/callback when compute returns requiresFactor: 'totp' (Sprint 5 fork). The pending token lives in the mmpm_pending_token httpOnly cookie set by /auth/callback; this page POSTs the user-provided code to /api/auth/factors/totp/login-verify which reads the cookie server-side and forwards to compute.
+
+| testid | Element |
+|---|---|
+| `two-factor-challenge` | Card body for the default state (TOTP or backup-code prompt + submit) |
+| `two-factor-challenge-locked` | Lockout card when the pending row is locked (5 wrong codes) |
+| `two-factor-challenge-back-to-login` | "Request a new sign-in link" CTA inside the lockout card |
+| `two-factor-challenge-error` | Inline error after a failed code (carries attempts-remaining text) |
+| `two-factor-challenge-backup-input` | Single-line input for xxxx-xxxx backup codes (alternative to the SixDigitInput) |
+| `two-factor-challenge-submit` | "Sign in" button — only rendered in backup-code mode (TOTP mode auto-submits via SixDigitInput.onComplete) |
+| `two-factor-challenge-toggle-mode` | Toggle between 6-digit and backup-code inputs |
+
+### Auth audit (Sprint 7) — `src/app/admin/security/audit/*`
+
+Read-only audit feed of every auth-relevant event tied to the signed-in account. Recent-auth gated — same security bar as the TOTP card on `/admin/security`. Reached via the "Recent activity" card on `/admin/security`. Lists events with cursor pagination + a kind filter; each row shows the formatted label, parsed UA, IP, and ISO timestamp.
+
+| testid | Element |
+|---|---|
+| `auth-audit-card-link` | The "Recent activity" card on `/admin/security` that links to the audit page |
+| `auth-audit-feed` | Outer container of the feed (rendered after RecentAuthGate passes) |
+| `auth-audit-back-to-security` | "← Back to security" link in the page header |
+| `auth-audit-kind-filter` | `<select>` for narrowing the feed by event-kind group |
+| `auth-audit-list` | `<ul>` containing the per-event rows |
+| `auth-audit-item` | One `<li>` per event. Carries `data-event-kind="<kind>"` for targeted assertions |
+| `auth-audit-load-more` | "Load older events" button — only rendered when `nextCursor` is non-null |
+| `auth-audit-loading` | Skeleton paragraph shown while the first page is in flight |
+| `auth-audit-empty` | Empty-state copy when the feed has no rows |
+| `auth-audit-error` | Inline error region (network failure, 401, malformed response) |
+| `auth-audit-retry` | Retry button inside the error region |
 
 ### Knowledge — `src/components/knowledge/*`
 

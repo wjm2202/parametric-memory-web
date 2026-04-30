@@ -124,6 +124,35 @@ import {
 const LOGIN_PATH = "/login";
 
 /**
+ * Sprint 9.5 — destination for the OAuth pending-factor fork. Mirror
+ * of the magic-link callback at `src/app/auth/callback/route.ts` — the
+ * user lands on /auth/two-factor, types a 6-digit code (or backup
+ * code), and the BFF route at /api/auth/factors/totp/login-verify
+ * reads the cookie set on this redirect to complete the exchange.
+ */
+const TWO_FACTOR_PATH = "/auth/two-factor";
+
+/**
+ * Sprint 9.5 — pending-token cookie shared with the magic-link
+ * callback. Hard-coded here rather than imported because (a) the
+ * magic-link route file is a Next.js route handler we'd rather not
+ * tangle into a pure decision module, and (b) the constant is short
+ * and the cost of a mismatch is a security-relevant cookie name —
+ * keeping it duplicated forces the reviewer to eyeball both files
+ * when the name ever has to change.
+ */
+const PENDING_TOKEN_COOKIE_NAME = "mmpm_pending_token";
+
+/**
+ * 10 minutes — must match compute's `totp_pending_sessions` row TTL
+ * exactly. A cookie outliving the row is wasted entropy (the row is
+ * already gone server-side); a cookie expiring before the row leaves
+ * orphan rows in the DB until the cleanup cron sweeps them. Sprint 6
+ * (cleanup cron) is the long-term backstop; for now, mirror the TTL.
+ */
+const PENDING_TOKEN_MAX_AGE_SECONDS = 10 * 60;
+
+/**
  * Error codes we emit on `?error=`. The login page owns the copy —
  * keep the codes stable, the copy can change without touching this
  * file.
@@ -238,6 +267,30 @@ export interface SessionCookieDescriptor {
 }
 
 /**
+ * Sprint 9.5 — pending-token cookie descriptor. Same shape as
+ * `SessionCookieDescriptor` but with the pending-token cookie name
+ * pinned at the type level so the route handler cannot accidentally
+ * cross-wire it with the session cookie. The `value` field is the
+ * raw 64-hex-char pending token from compute; the BFF route at
+ * /api/auth/factors/totp/login-verify reads it server-side and
+ * forwards it to compute as part of the verify body.
+ *
+ * Unlike `SessionCookieDescriptor`, `maxAge` is fixed at 10 minutes
+ * (the compute-side row TTL). It is exposed on the descriptor so
+ * tests can pin the value, but the only call site builds it with
+ * `PENDING_TOKEN_MAX_AGE_SECONDS`.
+ */
+export interface PendingTokenCookieDescriptor {
+  name: typeof PENDING_TOKEN_COOKIE_NAME;
+  value: string;
+  httpOnly: true;
+  secure: boolean;
+  sameSite: "lax";
+  path: "/";
+  maxAge: number;
+}
+
+/**
  * Discriminated result — the route handler switches on `kind`.
  *
  *   • `not-found`: the request looks indistinguishable from a request
@@ -264,8 +317,26 @@ export type CallbackResult =
        * user is already signed in; linking does not rotate). Non-null
        * only on signin success — route rotates `mmpm_session` to this
        * value.
+       *
+       * Mutually exclusive with `pendingTokenCookie`: a single response
+       * either mints a session OR sets a pending token, never both.
        */
       sessionCookie: SessionCookieDescriptor | null;
+      /**
+       * Sprint 9.5 — non-null ONLY on the OAuth `pending_factor`
+       * branch. Route sets `mmpm_pending_token` to this value (httpOnly,
+       * 10-min TTL) and redirects to /auth/two-factor.
+       *
+       * Always `null` on every other branch — including signin success,
+       * which sets `sessionCookie` instead, and every error branch,
+       * which sets neither. The route handler's switch reads this
+       * field's null/non-null distinction as the "pending vs session"
+       * discriminator, so a mistake here would either silently drop the
+       * fork (user bounced to /login) or leave a stray cookie alongside
+       * an active session (no behavioural problem, but unbounded cookie
+       * growth).
+       */
+      pendingTokenCookie: PendingTokenCookieDescriptor | null;
       /**
        * Always `true` except on `not-found`. The state cookie is
        * cleared at the end of every concluded flow (success or error)
@@ -310,7 +381,14 @@ export type CallbackReason =
   | "bridge_rejected"
   | "bridge_shape_invalid"
   | "link_reauth_required"
-  | "link_no_session";
+  | "link_no_session"
+  /**
+   * Sprint 9.5 — OAuth signin succeeded at the identity layer but the
+   * resolved account has TOTP enrolled, so compute returned a pending
+   * token instead of a session. The route sets `mmpm_pending_token`
+   * and 302s to /auth/two-factor.
+   */
+  | "ok_signin_pending_factor";
 
 /**
  * Decide what the callback route should do. See module header for the
@@ -443,6 +521,7 @@ function redirectError(
     kind: "redirect",
     destination: `${LOGIN_PATH}?error=${code}`,
     sessionCookie: null,
+    pendingTokenCookie: null,
     clearStateCookie: true,
     reason,
   };
@@ -459,6 +538,7 @@ function redirectRejected(reason: string): CallbackResult {
     kind: "redirect",
     destination: `${LOGIN_PATH}?error=${CALLBACK_ERROR_CODES.rejected}&reason=${encoded}`,
     sessionCookie: null,
+    pendingTokenCookie: null,
     clearStateCookie: true,
     reason: "bridge_rejected",
   };
@@ -476,6 +556,7 @@ function redirectReauth(returnTo: string): CallbackResult {
     kind: "redirect",
     destination: `${LOGIN_PATH}?error=${CALLBACK_ERROR_CODES.state}&returnTo=${encoded}&reauth=1`,
     sessionCookie: null,
+    pendingTokenCookie: null,
     clearStateCookie: true,
     reason: "link_reauth_required",
   };
@@ -564,12 +645,52 @@ async function runSigninBranch(
     return redirectRejected(outcome.reason);
   }
 
+  if (outcome.outcome === "pending_factor") {
+    // Sprint 9.5 — TOTP login fork for OAuth. The identity is committed
+    // and a pending row was minted on compute. We do NOT mint a session
+    // cookie here — the session is only created after the user completes
+    // the TOTP challenge and the BFF route at
+    // /api/auth/factors/totp/login-verify exchanges the pending token.
+    //
+    // The user's intended `flow.returnTo` is preserved via the
+    // `mmpm_redirect` cookie (set by /login at flow start), which the
+    // /auth/two-factor success handler honours. We deliberately route
+    // to /auth/two-factor here, NOT to flow.returnTo, because flow.returnTo
+    // is typically /admin and /admin requires a session cookie that
+    // doesn't exist yet — the user would land on a redirect loop or
+    // the login wall.
+    //
+    // TypeScript's discriminated-union narrowing means `outcome` here is
+    // exactly the `pending_factor` shape; the `requiredFactor === "totp"`
+    // narrowing is enforced by the type itself, so no runtime check is
+    // needed. If compute later adds a non-TOTP factor, the union widens
+    // and this branch must be split — the TS error at that point is the
+    // intended forcing function.
+    return {
+      kind: "redirect",
+      destination: TWO_FACTOR_PATH,
+      // No session cookie — the whole point of this branch.
+      sessionCookie: null,
+      pendingTokenCookie: buildPendingTokenCookieDescriptor(outcome.rawPendingToken, args.hostname),
+      clearStateCookie: true,
+      reason: "ok_signin_pending_factor",
+    };
+  }
+
   // Success — rotate session cookie, redirect to the validated
   // returnTo stored with the flow.
+  //
+  // After the two short-circuits above, TypeScript narrows `outcome` to
+  // the three session-bearing variants (`signed_in_existing`,
+  // `auto_linked`, `new_account_created`), so `outcome.rawSessionToken`
+  // typechecks without any cast.
   return {
     kind: "redirect",
     destination: flow.returnTo,
     sessionCookie: buildSessionCookieDescriptor(outcome.rawSessionToken, args.hostname),
+    // Mutually exclusive with sessionCookie above — signin success does
+    // NOT set a pending-token cookie.
+    pendingTokenCookie: null,
     clearStateCookie: true,
     reason: "ok_signin",
   };
@@ -598,6 +719,7 @@ async function runLinkBranch(
       kind: "redirect",
       destination: `${LOGIN_PATH}?error=${CALLBACK_ERROR_CODES.state}&returnTo=${encodeURIComponent(flow.returnTo)}`,
       sessionCookie: null,
+      pendingTokenCookie: null,
       clearStateCookie: true,
       reason: "link_no_session",
     };
@@ -654,6 +776,7 @@ async function runLinkBranch(
     kind: "redirect",
     destination: flow.returnTo,
     sessionCookie: null,
+    pendingTokenCookie: null,
     clearStateCookie: true,
     reason: "ok_link",
   };
@@ -675,6 +798,27 @@ function buildSessionCookieDescriptor(
     sameSite: "lax",
     path: "/",
     maxAge: DEFAULT_SESSION_MAX_AGE_SECONDS,
+  };
+}
+
+/**
+ * Sprint 9.5 — pending-token cookie descriptor. Same attribute set
+ * as the magic-link callback at `src/app/auth/callback/route.ts`:
+ * httpOnly, lax SameSite, path "/", secure-on-non-localhost, and
+ * 10-min TTL matching compute's `totp_pending_sessions` row TTL.
+ */
+function buildPendingTokenCookieDescriptor(
+  rawPendingToken: string,
+  hostname: string,
+): PendingTokenCookieDescriptor {
+  return {
+    name: PENDING_TOKEN_COOKIE_NAME,
+    value: rawPendingToken,
+    httpOnly: true,
+    secure: isSecureHost(hostname),
+    sameSite: "lax",
+    path: "/",
+    maxAge: PENDING_TOKEN_MAX_AGE_SECONDS,
   };
 }
 

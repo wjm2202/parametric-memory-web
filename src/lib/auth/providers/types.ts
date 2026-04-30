@@ -466,13 +466,22 @@ export function isRejectionReason(x: unknown): x is RejectionReason {
  * `parametric-memory-compute/src/services/oauth-service.ts`.
  * `'rejected'` carries a `RejectionReason`.
  *
- * **Session fields (T7a contract)**: every non-rejected outcome also
- * carries `sessionId` and `rawSessionToken`. Compute mints the session
- * inside the same transaction as the identity row — there is no
- * reachable "identity created, session missing" half-state — so the
+ * **Session fields (T7a contract)**: the three session-bearing
+ * outcomes (`signed_in_existing`, `auto_linked`, `new_account_created`)
+ * each carry `sessionId` and `rawSessionToken`. Compute mints the
+ * session inside the same transaction as the identity row — there is
+ * no reachable "identity created, session missing" half-state — so the
  * callback route can always cookie `rawSessionToken` without a second
  * round trip. `sessionId` is exposed for observability only; only
  * `rawSessionToken` goes in the `mmpm_session` cookie.
+ *
+ * **Sprint 9.5 — pending_factor**: when the resolved account has TOTP
+ * (or another factor) enrolled, compute returns `pending_factor` with
+ * `rawPendingToken` + `requiredFactor` and NO session fields. This
+ * variant is mutually exclusive with the three session-bearing ones —
+ * `isSigninOutcome` enforces the absence of `rawSessionToken` on this
+ * branch, so the route handler cannot accidentally cookie an empty
+ * session value.
  */
 export type SigninOutcome =
   | {
@@ -495,6 +504,50 @@ export type SigninOutcome =
       identityId: string;
       sessionId: string;
       rawSessionToken: string;
+    }
+  | {
+      // Sprint 9.5 — TOTP login fork for OAuth. Mirror of compute's
+      // `SigninResult.pending_factor` variant in
+      // `parametric-memory-compute/src/services/oauth-service.ts`.
+      //
+      // Compute returns this when the resolved account has at least one
+      // active second factor (TOTP today; WebAuthn future). The identity
+      // row + the totp_pending_sessions row both committed inside the
+      // same transaction, but NO session was minted — the website must
+      // exchange `rawPendingToken` for a real session by collecting a
+      // factor code from the user via the /auth/two-factor challenge
+      // page.
+      //
+      // CRITICAL: `rawSessionToken` is deliberately ABSENT here.
+      // `isSigninOutcome` enforces that absence so the route handler
+      // cannot accidentally cookie a non-existent session token if a
+      // future refactor introduces a half-merged shape.
+      //
+      // Only `signed_in_existing` and `auto_linked` can produce this
+      // outcome — `new_account_created` cannot, because a brand-new
+      // account has no factors enrolled yet.
+      outcome: "pending_factor";
+      accountId: string;
+      identityId: string;
+      /**
+       * Raw 64-hex-char pending token. SHA-256-hashed on storage in
+       * compute. The website sets this verbatim as the
+       * `mmpm_pending_token` httpOnly cookie (10-min TTL, mirrors the
+       * row TTL); the cookie is consumed by the BFF route at
+       * `/api/auth/factors/totp/login-verify`.
+       */
+      rawPendingToken: string;
+      /**
+       * Which factor must produce a code to exchange the pending
+       * token. Mirror of compute's `FactorKind`. Only `"totp"` ships
+       * today — widen this union in lockstep with compute when
+       * WebAuthn (or anything else) lands. The narrower below pins
+       * the literal so a divergent compute response (e.g.
+       * `requiredFactor: "webauthn"`) fails the shape check and the
+       * route falls back to a generic error rather than silently
+       * silently routing the user to a TOTP page they cannot use.
+       */
+      requiredFactor: "totp";
     }
   | { outcome: "rejected"; reason: RejectionReason };
 
@@ -531,6 +584,23 @@ export function isSigninOutcome(x: unknown): x is SigninOutcome {
         typeof rec.sessionId === "string" &&
         typeof rec.rawSessionToken === "string" &&
         rec.rawSessionToken.length > 0
+      );
+    case "pending_factor":
+      // Sprint 9.5 — OAuth TOTP fork. accountId + identityId are
+      // committed and required. rawPendingToken must be a non-empty
+      // string (compute hashes it to storage; an empty string here
+      // would mean "we minted a row whose token is the empty string"
+      // — impossible from compute, defensive against MITM). Pin
+      // requiredFactor to the literal "totp" — any other value is a
+      // protocol mismatch we'd rather see as `bridge_shape_invalid`
+      // than silently route the user to a 2FA page they cannot
+      // complete.
+      return (
+        typeof rec.accountId === "string" &&
+        typeof rec.identityId === "string" &&
+        typeof rec.rawPendingToken === "string" &&
+        rec.rawPendingToken.length > 0 &&
+        rec.requiredFactor === "totp"
       );
     case "rejected":
       return isRejectionReason(rec.reason);
