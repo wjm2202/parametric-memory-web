@@ -60,8 +60,17 @@ export const metadata: Metadata = {
   },
   manifest: "/site.webmanifest",
   description:
-    "Persistent, verifiable memory for AI agents. Dedicated instances from $3/mo with cryptographic Merkle proofs, Markov prediction, and MCP-native integration.",
+    "Persistent, verifiable AI memory with Merkle proofs + Markov prediction. Dedicated instances from $3/mo, MCP-native, 14-day free trial.",
   metadataBase: new URL("https://parametric-memory.dev"),
+  // ── E-E-A-T + SEO-extension surface (Sprint 2026-W18 SEO audit) ────────
+  // Next.js renders these as <meta name="publisher">, <meta name="author">,
+  // <meta name="creator">, <meta name="application-name"> — picked up by
+  // Google E-E-A-T scoring and SEO crawlers (Lighthouse, SEO-Pro, Ahrefs).
+  publisher: "Parametric Memory",
+  authors: [{ name: "Parametric Memory", url: "https://parametric-memory.dev/about" }],
+  creator: "Parametric Memory",
+  applicationName: "Parametric Memory",
+  category: "AI Memory Infrastructure",
   openGraph: {
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
     description:
@@ -85,7 +94,7 @@ export const metadata: Metadata = {
     creator: "@parametricmem",
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
     description:
-      "Enterprise-grade AI memory with cryptographic Merkle proofs. Dedicated instances from $3/mo.",
+      "Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. From $3/mo. 14-day free trial.",
     images: ["https://parametric-memory.dev/brand/og.png"],
   },
   robots: {

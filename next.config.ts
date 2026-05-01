@@ -18,7 +18,31 @@ const nextConfig: NextConfig = {
           key: "Permissions-Policy",
           value: "camera=(), microphone=(), geolocation=()",
         },
+        // ── X-Robots-Tag (Sprint 2026-W18 SEO audit) ──────────────────────
+        // Authoritative indexing signal that fires on EVERY response type
+        // (HTML, JSON, SSE, sitemap, etc) — <meta name="robots"> only fires
+        // on HTML. Mirrors the per-page metadata.robots block in layout.tsx
+        // so SEO scanners (Lighthouse, SEO-Pro) see consistent signals.
+        {
+          key: "X-Robots-Tag",
+          value:
+            "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1",
+        },
       ],
+    },
+    // Internal routes — mirror robots.txt Disallow with header-level noindex
+    // so any non-HTML responses (JSON errors, redirects) carry the signal too.
+    {
+      source: "/api/:path*",
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+    },
+    {
+      source: "/admin/:path*",
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
+    },
+    {
+      source: "/dashboard/:path*",
+      headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
     },
   ],
   // Three.js / R3F needs transpilation for ESM compat
