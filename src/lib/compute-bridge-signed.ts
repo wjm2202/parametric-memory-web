@@ -128,6 +128,27 @@ export interface BridgeRequestOptions {
    * client received in the browser request (e.g. `mmpm_session=…`).
    */
   sessionCookie?: string;
+  /**
+   * SPRINT-11.M5 (2026-04-30): opt-in runtime narrower for the parsed
+   * body. When provided, `call<T>` calls `validate(parsed)` after JSON
+   * parsing — if the predicate returns `false`, the response collapses
+   * to `{ ok: false, error: "shape_invalid", data: null }` instead of
+   * the otherwise-uncheckable `parsed as T` cast.
+   *
+   * Why opt-in instead of mandatory: existing callers (the OAuth
+   * callback site at `lib/auth/oauth-callback.ts`) already narrow via
+   * dedicated `isSigninOutcome` / `isLinkOutcome` / `isUnlinkOutcome`
+   * helpers right after `call<...>(...)` returns. Forcing validate
+   * everywhere would duplicate work. Future callers that haven't yet
+   * written a narrower can pass it inline here and skip the post-call
+   * narrow, with the same defence-in-depth.
+   *
+   * The predicate runs ONLY on success. Non-2xx responses skip
+   * validation — the body shape on errors is the route's error
+   * envelope, not the `T` shape, and validating it against `T` would
+   * always fail.
+   */
+  validate?: (parsed: unknown) => parsed is object;
 }
 
 /**
@@ -318,6 +339,25 @@ export function createBridgeClient(deps: BridgeClientDeps) {
         typeof (parsed as { error: unknown }).error === "string"
           ? (parsed as { error: string }).error
           : null;
+
+      // SPRINT-11.M5 (2026-04-30): if the caller passed a runtime
+      // narrower AND the response was 2xx, validate the body shape.
+      // A failed validation is reported as `shape_invalid` — same
+      // failure mode as a non-JSON response, since both indicate the
+      // body doesn't match what the caller requested.
+      if (ok && opts.validate !== undefined) {
+        if (!opts.validate(parsed)) {
+          console.warn(
+            `[bridge-signed] ${method} ${opts.path} — response failed caller validation; status=${res.status}.`,
+          );
+          return {
+            ok: false,
+            status: res.status,
+            data: null,
+            error: "shape_invalid",
+          };
+        }
+      }
 
       return {
         ok,

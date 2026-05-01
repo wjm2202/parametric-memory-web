@@ -1170,10 +1170,16 @@ describe("handleOauthCallback — link branch failures", () => {
     expect(bridgeClient.calls).toHaveLength(0);
   });
 
-  it("link rejected → /login?error=oauth_rejected&reason=already_linked", async () => {
+  it("link rejected → /login?error=oauth_rejected&reason=provider_already_linked_to_this_account", async () => {
+    // SPRINT-11.H3 (2026-04-30): the wire reason `already_linked` was
+    // removed from REJECTION_REASONS — it was never emitted by compute
+    // on the rejected path (it was an audit-row label on the success
+    // path of an idempotent re-link). The canonical link-flow rejection
+    // is now `provider_already_linked_to_this_account`. Test reuses
+    // the same branch (link → outcome=rejected) with a real reason.
     const { deps, store, bridgeClient } = makeDeps();
     store.seed(VALID_STATE, baseFlow({ intent: "link" }));
-    bridgeClient.script(linkRejected("already_linked"));
+    bridgeClient.script(linkRejected("provider_already_linked_to_this_account"));
     const result = await handleOauthCallback(
       deps,
       baseArgs({ sessionCookie: USER_SESSION_COOKIE }),
@@ -1181,7 +1187,7 @@ describe("handleOauthCallback — link branch failures", () => {
     expect(result.kind).toBe("redirect");
     if (result.kind !== "redirect") return;
     expect(result.destination).toBe(
-      `/login?error=${CALLBACK_ERROR_CODES.rejected}&reason=already_linked`,
+      `/login?error=${CALLBACK_ERROR_CODES.rejected}&reason=provider_already_linked_to_this_account`,
     );
     expect(result.reason).toBe("bridge_rejected");
     expect(result.sessionCookie).toBeNull();

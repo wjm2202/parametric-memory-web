@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import type { NextRequest } from "next/server";
+import { validateReturnTo } from "@/lib/auth/return-to";
 
 const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
 
@@ -130,18 +131,20 @@ export async function GET(request: NextRequest): Promise<Response> {
   console.info(`[auth/callback] Session set for account ${accountId}`);
 
   // Check for a post-login redirect destination (set by /login page as a cookie).
-  // Only allow relative paths starting with / to prevent open redirect attacks.
+  // SPRINT-11.M2 (2026-04-30): replaced the inline `startsWith("/")` check
+  // with `validateReturnTo`. The inline check rejected `//` but accepted
+  // backslash tricks (`/\evil.com`) and control chars (CRLF for header
+  // smuggling), which the OAuth path's `validateReturnTo` already screens
+  // for. Reusing the same helper means both auth paths share one
+  // open-redirect screen with one set of tests (`return-to.test.ts`).
   const rawRedirect = cookieStore.get("mmpm_redirect")?.value;
   const postLoginRedirect = rawRedirect ? decodeURIComponent(rawRedirect) : null;
+  const safeRedirect = validateReturnTo(postLoginRedirect);
   let destination = "/admin";
 
-  if (
-    postLoginRedirect &&
-    postLoginRedirect.startsWith("/") &&
-    !postLoginRedirect.startsWith("//")
-  ) {
-    destination = postLoginRedirect;
-    // Clear the redirect cookie — it's single-use
+  if (safeRedirect !== null) {
+    destination = safeRedirect;
+    // Clear the redirect cookie — it's single-use.
     cookieStore.delete("mmpm_redirect");
   }
 

@@ -374,3 +374,124 @@ describe("bridgeClient.call — defensive guards", () => {
     ).rejects.toThrow(/signingKey is empty/);
   });
 });
+
+// ─── SPRINT-11.M5 — opt-in `validate?` runtime narrower ────────────────────
+//
+// Pre-Sprint-11 the bridge client returned `data: parsed as T | null` —
+// an unchecked cast. Callers that didn't narrow afterwards via a
+// type-guard helper got compile-time `T` with whatever shape the
+// server happened to return at runtime. SPRINT-11.M5 adds an opt-in
+// `validate?: (parsed: unknown) => parsed is object` predicate that
+// gates the cast at runtime; failed validation collapses the response
+// to `{ ok: false, error: "shape_invalid", data: null }`.
+//
+// Existing call sites (oauth-callback.ts, etc.) don't pass `validate`
+// and continue working — they narrow via `isSigninOutcome` /
+// `isLinkOutcome` immediately after the call. The opt-in shape lets
+// future callers skip the post-call narrow with the same defence.
+
+describe("SPRINT-11.M5 — opt-in validate? predicate", () => {
+  const FIXED_NOW_MS = 1_760_000_000_000;
+
+  function buildClient(canned?: { status: number; jsonBody: unknown }) {
+    const stub = stubFetch(canned);
+    const client = createBridgeClient({
+      baseUrl: BASE_URL,
+      signingKey: SIGNING_KEY,
+      now: () => FIXED_NOW_MS,
+      fetchImpl: stub.fn,
+    });
+    return { client, calls: stub.calls };
+  }
+
+  it("validate returning true: response carries `data` normally", async () => {
+    interface Expected {
+      ok: true;
+      foo: string;
+    }
+    const isExpected = (x: unknown): x is Expected =>
+      typeof x === "object" && x !== null && (x as Expected).foo === "bar";
+
+    const { client } = buildClient({ status: 200, jsonBody: { ok: true, foo: "bar" } });
+
+    const r = await client.call<Expected>({
+      method: "POST",
+      path: "/api/v1/auth/oauth/bridge/signin",
+      body: {},
+      validate: isExpected,
+    });
+
+    expect(r.ok).toBe(true);
+    expect(r.data).toEqual({ ok: true, foo: "bar" });
+    expect(r.error).toBeNull();
+  });
+
+  it("validate returning false: collapses to { ok: false, error: 'shape_invalid' }", async () => {
+    // The compute side returned a 200 with a body that's structurally
+    // wrong for what the caller asked for. The opt-in narrower catches
+    // this BEFORE the route handler downstream tries to use the cast
+    // value. Without M5, the cast would silently yield `data` of the
+    // wrong shape and downstream code would fail in unpredictable ways.
+    const { client } = buildClient({ status: 200, jsonBody: { ok: true, foo: "WRONG" } });
+
+    interface Expected {
+      ok: true;
+      foo: string;
+    }
+    const isExpected = (x: unknown): x is Expected =>
+      typeof x === "object" && x !== null && (x as Expected).foo === "bar";
+
+    const r = await client.call<Expected>({
+      method: "POST",
+      path: "/api/v1/auth/oauth/bridge/signin",
+      body: {},
+      validate: isExpected,
+    });
+
+    expect(r.ok).toBe(false);
+    expect(r.data).toBeNull();
+    expect(r.error).toBe("shape_invalid");
+    expect(r.status).toBe(200); // status from the (technically successful) HTTP layer is preserved
+  });
+
+  it("no validate parameter: existing callers keep working (back-compat)", async () => {
+    // The opt-in is opt-in. A call without `validate` returns the
+    // pre-M5 shape: `data: parsed as T | null` cast, no shape check.
+    const { client } = buildClient({ status: 200, jsonBody: { weird: "shape" } });
+
+    const r = await client.call<{ weird: string }>({
+      method: "POST",
+      path: "/api/v1/auth/oauth/bridge/signin",
+      body: {},
+    });
+
+    expect(r.ok).toBe(true);
+    expect(r.data).toEqual({ weird: "shape" });
+    expect(r.error).toBeNull();
+  });
+
+  it("validate is NOT invoked on a non-2xx response", async () => {
+    // Error responses carry the route's error envelope, not the T
+    // shape the caller asked for. Validating the error envelope
+    // against `T` would always fail and obscure the real error code.
+    // Pin the contract: validate runs only on success.
+    let validateCalls = 0;
+    const isExpected = (_: unknown): _ is { foo: string } => {
+      validateCalls += 1;
+      return false;
+    };
+    const { client } = buildClient({ status: 401, jsonBody: { error: "auth_required" } });
+
+    const r = await client.call<{ foo: string }>({
+      method: "POST",
+      path: "/api/v1/auth/oauth/bridge/signin",
+      body: {},
+      validate: isExpected,
+    });
+
+    expect(validateCalls).toBe(0);
+    expect(r.ok).toBe(false);
+    // Error code from the body wins, not "shape_invalid".
+    expect(r.error).toBe("auth_required");
+  });
+});

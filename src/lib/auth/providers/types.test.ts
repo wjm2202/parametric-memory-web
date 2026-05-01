@@ -126,13 +126,20 @@ describe("isRejectionReason — type guard", () => {
 });
 
 describe("REJECTION_REASONS — parity with compute's oauth-service.ts", () => {
-  it("contains the seven reasons compute currently emits", () => {
-    // If compute adds or removes one, update here AND audit route
-    // handlers for the new branch. The list is frozen here as a
-    // tripwire — it's not derived from compute at runtime.
+  // SPRINT-11.H3 (2026-04-30): the previous version of this test froze
+  // a 7-element list including "already_linked", which compute does NOT
+  // emit as a wire rejection (it's an audit-row metadata field on a
+  // SUCCESSFUL idempotent re-link path — see `oauth-service.ts:788`
+  // returning `{ outcome: 'linked' }`, never 'rejected'). Compute's
+  // wire-rejected set is the seven below. The companion parity test on
+  // the compute side (`tests/unit/oauth-rejection-reasons-parity.test.ts`)
+  // grep-extracts every `outcome: 'rejected', reason: '<x>'` literal
+  // from oauth-service.ts and asserts that source matches the same set.
+  // Both sides are independently locked down — drift on either fails its
+  // own preflight.
+  it("contains exactly the wire rejections compute emits", () => {
     expect([...REJECTION_REASONS].sort()).toEqual(
       [
-        "already_linked",
         "ambiguous_email_match",
         // H2: distinct from `unverified_email`. Triggered when the
         // provider-evidence re-verification on compute fails (bad
@@ -141,6 +148,11 @@ describe("REJECTION_REASONS — parity with compute's oauth-service.ts", () => {
         "evidence_invalid",
         "identity_not_found",
         "identity_taken_by_another_account",
+        // SPRINT-11.H3: compute's RejectionCode union declares this for
+        // the unlink-last-method guard. Forward-compat: shipping the
+        // website's narrower with this reason accepted now means
+        // compute can ship the runtime check without lockstep redeploys.
+        "last_auth_method",
         "provider_already_linked_to_this_account",
         "unverified_email",
       ].sort(),
@@ -311,7 +323,11 @@ describe("isLinkOutcome — narrowing compute's /bridge/link response", () => {
   });
 
   it("accepts rejected with a known reason", () => {
-    expect(isLinkOutcome({ outcome: "rejected", reason: "already_linked" })).toBe(true);
+    // SPRINT-11.H3 (2026-04-30): use a reason actually in REJECTION_REASONS
+    // — `already_linked` was removed (see types.ts:456 historical note).
+    expect(
+      isLinkOutcome({ outcome: "rejected", reason: "provider_already_linked_to_this_account" }),
+    ).toBe(true);
   });
 
   it("rejects linked missing identityId", () => {
@@ -337,5 +353,43 @@ describe("isUnlinkOutcome — narrowing compute's /bridge/unlink response", () =
     expect(isUnlinkOutcome({ outcome: "linked", identityId: "x" })).toBe(false);
     expect(isUnlinkOutcome(null)).toBe(false);
     expect(isUnlinkOutcome({})).toBe(false);
+  });
+});
+
+// ─── SPRINT-11.M6 — TODO marker tripwires ────────────────────────────────
+//
+// `requiredFactor: "totp"` is pinned to a literal at two sites in
+// `providers/types.ts` (the `pending_factor` variant of `SigninOutcome`,
+// and the `isSigninOutcome` runtime narrower). Both pins MUST widen
+// when WebAuthn lands — see compute's `FactorKind` for the upstream
+// declaration. SPRINT-11.M6 (2026-04-30) added explicit
+// `TODO(webauthn-sprint):` markers above each pin so that a future
+// WebAuthn-sprint contributor finds them via grep and updates them in
+// lockstep.
+//
+// This test is the tripwire: it fails if either marker is removed
+// without doing the actual widening work. If the WebAuthn sprint runs
+// and the literals widen, this test should be deleted alongside the
+// markers — it has served its purpose.
+
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+
+describe("SPRINT-11.M6 — webauthn-sprint TODO markers in providers/types.ts", () => {
+  // Resolve relative to this test file. `__dirname` is the working
+  // pattern used by other source-grep tests in this repo (see
+  // `src/app/signup/SignupClient.m7.test.ts` and
+  // `src/app/__tests__/mobile-typography.test.tsx`). Vitest provides
+  // it as an ESM shim. `import.meta.url` was tried first but Vite's
+  // transform pipeline doesn't always emit a `file:` scheme, so
+  // `fileURLToPath` blew up at suite-load.
+  const sourcePath = join(__dirname, "types.ts");
+
+  it("both pin sites carry a TODO(webauthn-sprint) marker", () => {
+    const src = readFileSync(sourcePath, "utf8");
+    const matches = src.match(/TODO\(webauthn-sprint\)/g) ?? [];
+    // Two pins → at least two markers. Allow more (a future contributor
+    // adding a third pin should also tag it).
+    expect(matches.length).toBeGreaterThanOrEqual(2);
   });
 });

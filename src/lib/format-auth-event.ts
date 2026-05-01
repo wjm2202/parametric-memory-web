@@ -46,14 +46,22 @@
  * site. The switch is verbose but the verbosity is the documentation.
  */
 
+import { isAuthEventKind, type AuthEventKind } from "./auth-event-kinds";
+
 /**
  * The raw event shape returned by GET /api/auth/audit. Mirror of the
  * compute-side `AuditEventResponse` interface in `audit-routes.ts`.
+ *
+ * `eventKind` is typed as `AuthEventKind | string` (widening allowed for
+ * forward-compat — compute may add a kind before the website redeploys).
+ * The `formatAuthEvent` entrypoint narrows via `isAuthEventKind` so the
+ * literal-union switch can be exhaustively checked at compile time while
+ * still accepting unknown wire payloads at runtime.
  */
 export interface AuthEvent {
   id: string;
   occurredAt: string;
-  eventKind: string;
+  eventKind: AuthEventKind | string;
   actorIp: string | null;
   actorUa: string | null;
   details: Record<string, unknown>;
@@ -62,8 +70,27 @@ export interface AuthEvent {
 /**
  * Map an event to a single-line user label. Never throws; unknown kinds
  * fall through to a technical-but-readable fallback.
+ *
+ * SPRINT-11.M4 (2026-04-30): the public entrypoint narrows via
+ * `isAuthEventKind` so the inner switch can run against the typed
+ * literal union. The `default: never` arm in `formatKnownAuthEvent`
+ * makes the TypeScript compiler refuse to build if a kind is added
+ * to `AuthEventKind` but not handled in the switch — exactly what
+ * caused the original `event_kind: string` switch to drift silently.
  */
 export function formatAuthEvent(event: AuthEvent): string {
+  if (isAuthEventKind(event.eventKind)) {
+    return formatKnownAuthEvent(event as AuthEvent & { eventKind: AuthEventKind });
+  }
+  return formatUnknownEvent(event.eventKind);
+}
+
+/**
+ * Inner switch — operates on the narrowed `AuthEventKind` literal
+ * union. The `default: const _exhaustive: never = ...` arm is the
+ * compile-time exhaustiveness gate.
+ */
+function formatKnownAuthEvent(event: AuthEvent & { eventKind: AuthEventKind }): string {
   const d = event.details;
 
   switch (event.eventKind) {
@@ -73,12 +100,18 @@ export function formatAuthEvent(event: AuthEvent): string {
     case "magic_link_verified":
       return "Signed in via email link";
     case "magic_link_failed": {
-      // details.rate_limited is 'ip' | 'email' on this kind.
+      // details.rate_limited is 'ip' | 'email' | 'db_error' on this kind.
+      // 'db_error' is SPRINT-11.M1 (2026-04-30) — the limiter's PG
+      // backend threw and the middleware failed OPEN. The user's
+      // request actually succeeded (no 429); the audit row exists so
+      // operators can spot the brief unbounded-rate window.
       const bucket = pickString(d.rate_limited);
       if (bucket === "ip")
         return "Sign-in attempt rate-limited (too many requests from your network)";
       if (bucket === "email")
         return "Sign-in attempt rate-limited (too many requests for this email)";
+      if (bucket === "db_error")
+        return "Rate-limit database unreachable — request allowed (operational signal)";
       return "Sign-in attempt rate-limited";
     }
 
@@ -127,7 +160,31 @@ export function formatAuthEvent(event: AuthEvent): string {
       if (reason === "totp_locked" || reason === "locked_out") {
         return "Locked out after too many incorrect codes";
       }
+      // SPRINT-11.L1 (2026-04-30): distinct rendering for replay and
+      // invalid_input. Pre-L1, every wrong attempt rendered as
+      // "Incorrect two-factor code" — a user who triggered the
+      // replay-protection branch (typed a correct code that was already
+      // used, e.g. browser autofill) saw the same copy as someone who
+      // typed pure gibberish. Now they're distinguished:
+      //   - 'replay'        → "Two-factor code already used"
+      //   - 'invalid_input' → "Two-factor code in wrong format"
+      // Both still surface attempts_remaining if present.
       const remaining = pickNumber(d.attempts_remaining);
+      if (reason === "replay") {
+        if (remaining !== null) {
+          const word = remaining === 1 ? "attempt" : "attempts";
+          return `Two-factor code already used (${remaining} ${word} remaining)`;
+        }
+        return "Two-factor code already used (replay rejected)";
+      }
+      if (reason === "invalid_input") {
+        if (remaining !== null) {
+          const word = remaining === 1 ? "attempt" : "attempts";
+          return `Two-factor code in wrong format (${remaining} ${word} remaining)`;
+        }
+        return "Two-factor code in wrong format";
+      }
+      // Default: 'wrong_code' or any unknown reason value.
       if (remaining !== null) {
         const word = remaining === 1 ? "attempt" : "attempts";
         return `Incorrect two-factor code (${remaining} ${word} remaining)`;
@@ -160,9 +217,16 @@ export function formatAuthEvent(event: AuthEvent): string {
     case "account_deleted":
       return "Deleted account";
 
-    // ─── Unknown kind — graceful fallback ──────────────────────────
-    default:
-      return formatUnknownEvent(event.eventKind);
+    // SPRINT-11.M4 (2026-04-30): exhaustiveness gate. If a future
+    // addition to `AuthEventKind` lands without a matching `case`
+    // here, the compiler will refuse to assign `event.eventKind`
+    // to `never` and the build fails. The runtime arm below is
+    // unreachable — the outer `formatAuthEvent` already routes
+    // unknown wire kinds to `formatUnknownEvent`.
+    default: {
+      const _exhaustive: never = event.eventKind;
+      return formatUnknownEvent(_exhaustive);
+    }
   }
 }
 
@@ -234,6 +298,13 @@ function humaniseRejectReason(reason: string): string {
       return "the provider's response failed verification";
     case "identity_not_found":
       return "no matching identity was found";
+    // SPRINT-11.H3 (2026-04-30): forward-compatible — compute's
+    // RejectionCode union declares this for the unlink-last-method
+    // guard, even though the runtime check is still pending. Adding
+    // the user copy now means a future compute deploy ships
+    // user-friendly text without a lockstep website deploy.
+    case "last_auth_method":
+      return "you can't remove your last way to sign in";
     default:
       return reason;
   }

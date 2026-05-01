@@ -157,6 +157,48 @@ describe("TwoFactorChallengeClient — happy paths", () => {
     }
     await waitFor(() => expect(locationAssignSpy).toHaveBeenCalledWith("/admin"));
   });
+
+  // ─── SPRINT-11.M2 regression guards ───────────────────────────────────
+  //
+  // Pre-M2 the inline check was `startsWith("/") && !startsWith("//")` — it
+  // accepted backslash and control-character payloads which some browsers
+  // normalise (`\` → `/`) or use to smuggle CRLF into the Location header.
+  // Post-M2 the cookie is validated by `validateReturnTo`, the same helper
+  // the OAuth path uses. These two cases prove the cutover happened — they
+  // would have FAILED before M2 (the user would have been redirected to
+  // the malicious destination) and PASS now (fall back to /admin).
+
+  it("SPRINT-11.M2: rejects backslash trick (`/\\evil.com`) — falls back to /admin", async () => {
+    // Browsers (Chrome / Safari) normalise `\` to `/` in Location headers,
+    // so `/\evil.com` would silently redirect to `//evil.com/...`. The
+    // inline pre-M2 check did NOT reject backslash; validateReturnTo does.
+    document.cookie = "mmpm_redirect=" + encodeURIComponent("/\\evil.com/x") + ";path=/";
+    stubFetchOnce(jsonResponse(200, { ok: true, accountId: "acct-1" }));
+    render(<TwoFactorChallengeClient />);
+    for (let i = 0; i < 6; i++) {
+      fireEvent.change(screen.getByTestId(`six-digit-input-${i}`), {
+        target: { value: String(i + 1) },
+      });
+    }
+    await waitFor(() => expect(locationAssignSpy).toHaveBeenCalledWith("/admin"));
+  });
+
+  it("SPRINT-11.M2: rejects out-of-allowlist path — falls back to /admin", async () => {
+    // `/login` looks superficially safe (starts with `/`, no `//`), so the
+    // inline pre-M2 check accepted it. validateReturnTo is path-allowlist
+    // only — `/login` is not under `/`, `/dashboard`, or `/admin`, so it's
+    // rejected. This is a behaviour TIGHTENING that matches the OAuth
+    // flow's screen — both auth paths now share one allowlist.
+    document.cookie = "mmpm_redirect=" + encodeURIComponent("/login") + ";path=/";
+    stubFetchOnce(jsonResponse(200, { ok: true, accountId: "acct-1" }));
+    render(<TwoFactorChallengeClient />);
+    for (let i = 0; i < 6; i++) {
+      fireEvent.change(screen.getByTestId(`six-digit-input-${i}`), {
+        target: { value: String(i + 1) },
+      });
+    }
+    await waitFor(() => expect(locationAssignSpy).toHaveBeenCalledWith("/admin"));
+  });
 });
 
 // ─── 4. Failure paths ────────────────────────────────────────────────────────

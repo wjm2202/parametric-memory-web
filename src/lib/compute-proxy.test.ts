@@ -245,3 +245,157 @@ describe("computeProxy — Content-Type invariant", () => {
     });
   }
 });
+
+// ── SPRINT-11.H1: X-Forwarded-For pass-through ───────────────────────────────
+
+describe("computeProxy — X-Forwarded-For forwarding (SPRINT-11.H1)", () => {
+  /**
+   * Build a minimal stand-in for `NextRequest` shaped just enough for
+   * computeProxy to read the inbound XFF / X-Real-IP. Using a real Headers
+   * object keeps the contract honest — Headers#get is the only surface the
+   * proxy is allowed to touch.
+   */
+  function inboundWith(headers: Record<string, string>): { headers: Headers } {
+    return { headers: new Headers(headers) };
+  }
+
+  it("forwards the inbound X-Forwarded-For chain verbatim", async () => {
+    fetchSpy.mockResolvedValueOnce(fakeResponse(JSON.stringify({ ok: true })));
+
+    await computeProxy("api/auth/request-link", {
+      method: "POST",
+      body: { email: "user@example.com" },
+      inbound: inboundWith({ "x-forwarded-for": "203.0.113.7, 10.0.0.1" }),
+    });
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect(init.headers).toMatchObject({
+      "X-Forwarded-For": "203.0.113.7, 10.0.0.1",
+    });
+  });
+
+  it("falls back to X-Real-IP when X-Forwarded-For is absent", async () => {
+    fetchSpy.mockResolvedValueOnce(fakeResponse(JSON.stringify({ ok: true })));
+
+    await computeProxy("api/auth/request-link", {
+      method: "POST",
+      inbound: inboundWith({ "x-real-ip": "203.0.113.42" }),
+    });
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect(init.headers).toMatchObject({
+      "X-Forwarded-For": "203.0.113.42",
+      "X-Real-IP": "203.0.113.42",
+    });
+  });
+
+  it("does NOT overwrite an existing X-Forwarded-For chain with X-Real-IP", async () => {
+    fetchSpy.mockResolvedValueOnce(fakeResponse(JSON.stringify({ ok: true })));
+
+    await computeProxy("api/auth/request-link", {
+      method: "POST",
+      inbound: inboundWith({
+        "x-forwarded-for": "203.0.113.7, 10.0.0.1",
+        "x-real-ip": "10.0.0.99",
+      }),
+    });
+
+    const [, init] = fetchSpy.mock.calls[0];
+    // The chain wins over X-Real-IP — nginx already authored the chain we trust.
+    expect(init.headers["X-Forwarded-For"]).toBe("203.0.113.7, 10.0.0.1");
+    // X-Real-IP is still passed through unchanged so compute can correlate
+    // logs, but it must NOT replace the chain.
+    expect(init.headers["X-Real-IP"]).toBe("10.0.0.99");
+  });
+
+  it("omits X-Forwarded-For entirely when neither inbound header is present", async () => {
+    fetchSpy.mockResolvedValueOnce(fakeResponse(JSON.stringify({ ok: true })));
+
+    await computeProxy("api/auth/request-link", {
+      method: "POST",
+      inbound: inboundWith({}),
+    });
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect(init.headers).not.toHaveProperty("X-Forwarded-For");
+    expect(init.headers).not.toHaveProperty("X-Real-IP");
+  });
+
+  it("omits X-Forwarded-For when no inbound request is supplied (back-compat)", async () => {
+    // Existing callers that don't pass `inbound` MUST keep working — we
+    // don't want to break every non-auth route that proxies to compute.
+    fetchSpy.mockResolvedValueOnce(fakeResponse(JSON.stringify({ ok: true })));
+
+    await computeProxy("api/v1/billing/status");
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect(init.headers).not.toHaveProperty("X-Forwarded-For");
+    expect(init.headers).not.toHaveProperty("X-Real-IP");
+  });
+
+  it("explicit `headers` opts override forwarded XFF (caller-final wins)", async () => {
+    fetchSpy.mockResolvedValueOnce(fakeResponse(JSON.stringify({ ok: true })));
+
+    await computeProxy("api/auth/request-link", {
+      method: "POST",
+      inbound: inboundWith({ "x-forwarded-for": "203.0.113.7" }),
+      // Last-write-wins semantics in the spread inside computeProxy. This
+      // pins that contract — a future refactor flipping the order would be
+      // a real behavioural change and should fail this test.
+      headers: { "X-Forwarded-For": "0.0.0.0" },
+    });
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect(init.headers["X-Forwarded-For"]).toBe("0.0.0.0");
+  });
+
+  // ─── SPRINT-11.L2: Sec-Fetch-Site forwarding ────────────────────────────
+  //
+  // Compute uses `Sec-Fetch-Site: same-origin` to gate `attemptsRemaining`
+  // disclosure on TOTP login-verify failures. The BFF must forward the
+  // header verbatim so a browser-initiated request reaches compute with
+  // the value preserved; non-browser callers (curl, scripts) don't set
+  // the header, so compute sees nothing and omits the field.
+
+  it("SPRINT-11.L2: forwards inbound Sec-Fetch-Site verbatim", async () => {
+    fetchSpy.mockResolvedValueOnce(fakeResponse(JSON.stringify({ ok: true })));
+
+    await computeProxy("api/auth/factors/totp/login-verify", {
+      method: "POST",
+      body: { pendingToken: "x", code: "000000" },
+      inbound: inboundWith({ "sec-fetch-site": "same-origin" }),
+    });
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect(init.headers["Sec-Fetch-Site"]).toBe("same-origin");
+  });
+
+  it("SPRINT-11.L2: forwards non-same-origin values unchanged (no whitelisting at the BFF)", async () => {
+    // The BFF is dumb-pipe — it doesn't decide which values are 'safe'.
+    // Compute owns the same-origin gate. The BFF's job is forward-verbatim
+    // so a hypothetical cross-site call from a misconfigured embed would
+    // STILL reach compute as "cross-site", which compute then refuses to
+    // unlock attemptsRemaining for. Pinning the verbatim contract.
+    fetchSpy.mockResolvedValueOnce(fakeResponse(JSON.stringify({ ok: true })));
+
+    await computeProxy("api/auth/factors/totp/login-verify", {
+      method: "POST",
+      inbound: inboundWith({ "sec-fetch-site": "cross-site" }),
+    });
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect(init.headers["Sec-Fetch-Site"]).toBe("cross-site");
+  });
+
+  it("SPRINT-11.L2: omits Sec-Fetch-Site when inbound has none", async () => {
+    fetchSpy.mockResolvedValueOnce(fakeResponse(JSON.stringify({ ok: true })));
+
+    await computeProxy("api/auth/factors/totp/login-verify", {
+      method: "POST",
+      inbound: inboundWith({}),
+    });
+
+    const [, init] = fetchSpy.mock.calls[0];
+    expect(init.headers).not.toHaveProperty("Sec-Fetch-Site");
+  });
+});

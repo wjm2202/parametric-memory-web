@@ -24,7 +24,7 @@ async function getSessionToken(): Promise<string | undefined> {
 }
 
 export async function GET(
-  _request: NextRequest,
+  request: NextRequest,
   { params }: { params: Promise<{ path: string[] }> },
 ): Promise<NextResponse> {
   const { path } = await params;
@@ -34,6 +34,9 @@ export async function GET(
   const { response } = await computeProxy(`api/auth/${subPath}`, {
     method: "GET",
     headers: authHeaders(sessionToken),
+    // SPRINT-11.H1: forward inbound XFF / X-Real-IP so compute's per-IP
+    // rate limiter sees the real client IP, not the BFF's outbound hop.
+    inbound: request,
     label: `auth/${subPath}`,
   });
 
@@ -62,6 +65,8 @@ export async function POST(
     method: "POST",
     body,
     headers: authHeaders(sessionToken),
+    // SPRINT-11.H1: forward inbound XFF / X-Real-IP for IP rate limiter.
+    inbound: request,
     label: `auth/${subPath}`,
     forwardHeaders: ["X-RateLimit-Limit", "X-RateLimit-Remaining", "X-RateLimit-Reset"],
   });
@@ -105,6 +110,8 @@ export async function DELETE(
     method: "DELETE",
     body,
     headers: authHeaders(sessionToken),
+    // SPRINT-11.H1: forward inbound XFF / X-Real-IP for IP rate limiter.
+    inbound: request,
     label: `auth/${subPath}`,
   });
 
