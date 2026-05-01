@@ -48,6 +48,19 @@ export interface ComputeProxyOptions {
    * copied from the upstream response if present.
    */
   forwardHeaders?: string[];
+
+  /**
+   * Inbound request whose `X-Forwarded-For` / `X-Real-IP` headers should be
+   * forwarded verbatim to compute (SPRINT-11.H1). When present, compute's
+   * `trust proxy: 2` setting treats the leftmost IP in the forwarded chain
+   * as the real client, restoring per-IP rate limiting through the BFF.
+   *
+   * Pass the `NextRequest` (or any object with a Headers-shaped `headers`).
+   * If omitted, no XFF is sent and compute sees the BFF's outbound IP only —
+   * which collapses the IP rate limit to a single global bucket. Always pass
+   * this from `/api/auth/*` route handlers.
+   */
+  inbound?: { headers: Pick<Headers, "get"> };
 }
 
 export interface ComputeProxyResult {
@@ -79,6 +92,7 @@ export interface ComputeProxyResult {
  * ```ts
  * const { response } = await computeProxy("api/v1/billing/status", {
  *   headers: { Authorization: `Bearer ${token}` },
+ *   inbound: request,
  *   label: "billing/status",
  * });
  * return response;
@@ -88,16 +102,58 @@ export async function computeProxy(
   path: string,
   opts: ComputeProxyOptions = {},
 ): Promise<ComputeProxyResult> {
-  const { method = "GET", headers = {}, body, label = path, forwardHeaders = [] } = opts;
+  const { method = "GET", headers = {}, body, label = path, forwardHeaders = [], inbound } = opts;
 
   const url = `${COMPUTE_URL}/${path}`;
+
+  // ── Build forwarded headers ──────────────────────────────────────────────
+  // SPRINT-11.H1: Forward the inbound XFF chain verbatim. Compute trusts 2
+  // hops (nginx + this BFF), so the leftmost entry is the real client IP and
+  // becomes the rate-limiter key on compute. We never overwrite an existing
+  // chain — nginx already set it correctly. If the inbound request has no
+  // XFF (e.g. local dev hitting the website directly), we fall back to the
+  // X-Real-IP single value as a one-hop chain.
+  //
+  // SPRINT-11.L2 (2026-04-30): also forward `Sec-Fetch-Site` so compute
+  // can distinguish browser-initiated requests (same-origin) from
+  // non-browser server-to-server callers (no header). Used by the TOTP
+  // login-verify route to gate `attemptsRemaining` disclosure — a
+  // leaked pending token + a non-browser client should not see the
+  // brute-force counter on every wrong attempt.
+  const forwardedHeaders: Record<string, string> = {};
+  if (inbound) {
+    const xff = inbound.headers.get("x-forwarded-for");
+    if (xff) {
+      forwardedHeaders["X-Forwarded-For"] = xff;
+    } else {
+      const realIp = inbound.headers.get("x-real-ip");
+      if (realIp) {
+        forwardedHeaders["X-Forwarded-For"] = realIp;
+      }
+    }
+    const xRealIp = inbound.headers.get("x-real-ip");
+    if (xRealIp) {
+      forwardedHeaders["X-Real-IP"] = xRealIp;
+    }
+    // Sec-Fetch-Site is browser-set and carries values like
+    // 'same-origin' / 'same-site' / 'cross-site' / 'none'. We forward
+    // verbatim — compute decides which values unlock which fields.
+    const secFetchSite = inbound.headers.get("sec-fetch-site");
+    if (secFetchSite) {
+      forwardedHeaders["Sec-Fetch-Site"] = secFetchSite;
+    }
+  }
 
   // ── Fetch ────────────────────────────────────────────────────────────────
   let res: Response;
   try {
     const init: RequestInit = {
       method,
-      headers: { "Content-Type": "application/json", ...headers },
+      headers: {
+        "Content-Type": "application/json",
+        ...forwardedHeaders,
+        ...headers,
+      },
       cache: "no-store",
     };
     if (body !== undefined && method !== "GET") {

@@ -10,6 +10,7 @@
 
 import { describe, it, expect } from "vitest";
 import { formatAuthEvent, formatActorIp, type AuthEvent } from "./format-auth-event";
+import { isAuthEventKind, type AuthEventKind } from "./auth-event-kinds";
 
 function event(eventKind: string, details: Record<string, unknown> = {}): AuthEvent {
   return {
@@ -42,6 +43,20 @@ describe("formatAuthEvent — magic-link kinds", () => {
     expect(formatAuthEvent(event("magic_link_failed", { rate_limited: "email" }))).toMatch(
       /email/i,
     );
+  });
+
+  // ─── SPRINT-11.M1 ─────────────────────────────────────────────────────
+  //
+  // The 'db_error' bucket was added in 2026-04-30 to surface fail-open
+  // events from `pgEmailRateLimit`. The user's request was actually
+  // ALLOWED (the limiter threw before deciding); the audit row exists
+  // for ops to spot brief unbounded-rate windows. Copy emphasises
+  // "operational signal" so it isn't mistaken for a user-facing throttle.
+  it("magic_link_failed with rate_limited='db_error' renders the operational copy", () => {
+    const label = formatAuthEvent(event("magic_link_failed", { rate_limited: "db_error" }));
+    expect(label).toMatch(/Rate-limit database unreachable/i);
+    expect(label).toMatch(/request allowed/i);
+    expect(label).toMatch(/operational signal/i);
   });
 });
 
@@ -125,7 +140,57 @@ describe("formatAuthEvent — factor lifecycle", () => {
       formatAuthEvent(event("factor_failed", { reason: "totp_locked", attempts_remaining: 0 })),
     ).toBe("Locked out after too many incorrect codes");
   });
-  it("factor_failed without details still renders", () => {
+
+  // ─── SPRINT-11.L1 — replay + invalid_input cases ─────────────────────
+  //
+  // Pre-L1, every wrong attempt rendered as "Incorrect two-factor code".
+  // Now reasons are distinguished:
+  //   - 'replay'        — user typed a correct-but-already-used code
+  //                       (browser autofill is the typical cause).
+  //   - 'invalid_input' — user typed something that didn't match either
+  //                       6-digit or xxxx-xxxx format (no real attempt).
+  //   - 'wrong_code' (default) — pure mistype, code didn't validate.
+  //
+  // Both new reasons surface attempts_remaining if present so the user
+  // sees their lockout-window state regardless of the precise failure.
+
+  it("factor_failed with reason='replay' renders 'already used'", () => {
+    const label = formatAuthEvent(
+      event("factor_failed", { reason: "replay", attempts_remaining: 3 }),
+    );
+    expect(label).toMatch(/already used/i);
+    expect(label).toMatch(/3 attempts remaining/);
+  });
+
+  it("factor_failed with reason='replay' singular for attempts_remaining=1", () => {
+    const label = formatAuthEvent(
+      event("factor_failed", { reason: "replay", attempts_remaining: 1 }),
+    );
+    expect(label).toMatch(/1 attempt remaining/);
+    expect(label).not.toMatch(/attempts remaining/);
+  });
+
+  it("factor_failed with reason='replay' and no attempts_remaining renders standalone", () => {
+    expect(formatAuthEvent(event("factor_failed", { reason: "replay" }))).toBe(
+      "Two-factor code already used (replay rejected)",
+    );
+  });
+
+  it("factor_failed with reason='invalid_input' renders 'wrong format'", () => {
+    const label = formatAuthEvent(
+      event("factor_failed", { reason: "invalid_input", attempts_remaining: 4 }),
+    );
+    expect(label).toMatch(/wrong format/i);
+    expect(label).toMatch(/4 attempts remaining/);
+  });
+
+  it("factor_failed with reason='invalid_input' and no attempts_remaining renders standalone", () => {
+    expect(formatAuthEvent(event("factor_failed", { reason: "invalid_input" }))).toBe(
+      "Two-factor code in wrong format",
+    );
+  });
+
+  it("factor_failed without details still renders (default 'wrong_code' fallthrough)", () => {
     expect(formatAuthEvent(event("factor_failed"))).toBe("Incorrect two-factor code");
   });
   it("backup_code_used with code_index", () => {
@@ -177,6 +242,71 @@ describe("formatAuthEvent — graceful fallback", () => {
       }),
     );
     expect(backfilled).toBe(fresh);
+  });
+});
+
+describe("SPRINT-11.M4 — AuthEventKind exhaustiveness", () => {
+  // The 19 declared kinds — alphabetised, mirrors auth-event-kinds.ts.
+  // If this list drifts from the union, the cross-repo parity test on
+  // the compute side fails; the loop below is the website-side
+  // counterpart that asserts the formatter handles every literal.
+  const ALL_KINDS: readonly AuthEventKind[] = [
+    "account_deleted",
+    "backup_code_used",
+    "backup_codes_regenerated",
+    "factor_disabled",
+    "factor_enrolled",
+    "factor_failed",
+    "factor_verified",
+    "magic_link_failed",
+    "magic_link_requested",
+    "magic_link_verified",
+    "oauth_auto_link",
+    "oauth_link",
+    "oauth_rejected",
+    "oauth_signin",
+    "oauth_unlink",
+    "oauth_verify",
+    "recent_auth_stamped",
+    "session_created",
+    "session_revoked",
+  ];
+
+  it("formats every known AuthEventKind without throwing or returning the unknown-kind fallback", () => {
+    for (const kind of ALL_KINDS) {
+      const label = formatAuthEvent(event(kind));
+      // Sanity: every known kind has its own case branch — none should
+      // hit the "Unknown event (kind)" fallback.
+      expect(label).not.toMatch(/^Unknown event \(/);
+      expect(typeof label).toBe("string");
+      expect(label.length).toBeGreaterThan(0);
+    }
+  });
+
+  it("an unknown wire kind still falls through to formatUnknownEvent", () => {
+    // Forward-compat: compute may ship a new kind before the website
+    // redeploys. The narrower rejects it and the formatter renders
+    // a graceful unknown-kind row.
+    expect(formatAuthEvent(event("future_unknown_kind"))).toBe(
+      "Unknown event (future_unknown_kind)",
+    );
+  });
+
+  it("isAuthEventKind accepts every declared kind", () => {
+    for (const kind of ALL_KINDS) {
+      expect(isAuthEventKind(kind)).toBe(true);
+    }
+  });
+
+  it("isAuthEventKind rejects strings and non-strings outside the union", () => {
+    expect(isAuthEventKind("future_unknown_kind")).toBe(false);
+    expect(isAuthEventKind("")).toBe(false);
+    expect(isAuthEventKind(null)).toBe(false);
+    expect(isAuthEventKind(undefined)).toBe(false);
+    expect(isAuthEventKind(42)).toBe(false);
+    expect(isAuthEventKind({})).toBe(false);
+    // Trailing whitespace must not pass — the wire shape is exact.
+    expect(isAuthEventKind("oauth_signin ")).toBe(false);
   });
 });
 

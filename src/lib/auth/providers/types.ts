@@ -436,7 +436,14 @@ export const REJECTION_REASONS = [
   "ambiguous_email_match",
   "identity_taken_by_another_account",
   "provider_already_linked_to_this_account",
-  "already_linked",
+  // SPRINT-11.H3 (2026-04-30): added — compute's `RejectionCode` type
+  // (`oauth-service.ts:183`) declares this as an unlink-flow rejection
+  // for the "would leave account with zero auth paths" guard. The
+  // runtime check is forward-looking (per `features/oauth.ts:488` —
+  // "fires correctly once future features allow deleting the email")
+  // but the wire union accepts it now so a future compute deploy that
+  // ships the check doesn't need a lockstep website deploy.
+  "last_auth_method",
   "identity_not_found",
   // H2 (ADR-003 S2 hardening, 2026-04-20): compute's re-verification of
   // the raw provider evidence (id_token for Google, access_token for
@@ -446,6 +453,12 @@ export const REJECTION_REASONS = [
   // `unverified_email` so ops can tell "provider said not verified"
   // from "we couldn't independently re-verify the claims".
   "evidence_invalid",
+  // SPRINT-11.H3 (2026-04-30) historical note: `already_linked` was
+  // here pre-Sprint-11 but is NOT a wire rejection. It appears in
+  // compute as an audit-row `reason` field on the SUCCESS path of an
+  // idempotent re-link (`oauth-service.ts:788` returns
+  // { outcome: 'linked' }, never 'rejected'). Removed from the union
+  // so the narrower stops accepting strings compute never emits.
 ] as const;
 
 /** Union of all rejection reason strings. */
@@ -546,6 +559,14 @@ export type SigninOutcome =
        * `requiredFactor: "webauthn"`) fails the shape check and the
        * route falls back to a generic error rather than silently
        * silently routing the user to a TOTP page they cannot use.
+       *
+       * TODO(webauthn-sprint): widen this literal to `FactorKind` (or
+       * the union of currently-supported kinds) when WebAuthn ships in
+       * compute. Compute's `oauth-service.ts` `pending_factor` outcome
+       * already declares `requiredFactor: FactorKind`; the website
+       * pin here exists only because TOTP is the lone implementation
+       * today. When the union widens on compute, update both this
+       * literal AND the runtime narrower check below in the same PR.
        */
       requiredFactor: "totp";
     }
@@ -595,6 +616,12 @@ export function isSigninOutcome(x: unknown): x is SigninOutcome {
       // protocol mismatch we'd rather see as `bridge_shape_invalid`
       // than silently route the user to a 2FA page they cannot
       // complete.
+      //
+      // TODO(webauthn-sprint): widen this check in lockstep with the
+      // type literal above. Suggested replacement when WebAuthn lands:
+      //   (rec.requiredFactor === "totp" || rec.requiredFactor === "webauthn")
+      // Update SAME PR as the type widening; do not relax this check
+      // before compute is actually shipping the new factor.
       return (
         typeof rec.accountId === "string" &&
         typeof rec.identityId === "string" &&

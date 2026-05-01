@@ -48,6 +48,7 @@ import Link from "next/link";
 import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { SixDigitInput } from "@/components/SixDigitInput";
+import { validateReturnTo } from "@/lib/auth/return-to";
 
 interface ApiError {
   code: string;
@@ -58,20 +59,27 @@ interface ApiError {
 
 type Mode = "totp" | "backup";
 
-/** Read mmpm_redirect cookie from document.cookie (it's not httpOnly). */
+/**
+ * Read mmpm_redirect cookie from document.cookie (it's not httpOnly).
+ *
+ * SPRINT-11.M2 (2026-04-30): replaced the inline `startsWith("/")` /
+ * `!startsWith("//")` check with `validateReturnTo`. The previous
+ * version was permissive about backslash tricks (`/\evil.com`) and
+ * control chars (CRLF for header smuggling); `validateReturnTo` is the
+ * canonical open-redirect screen used by the OAuth path and now by the
+ * magic-link / TOTP-challenge paths too. One screen, one test suite,
+ * no surface drift between flows.
+ */
 function readRedirectCookie(): string {
   if (typeof document === "undefined") return "/admin";
   const match = document.cookie.match(/(?:^|;\s*)mmpm_redirect=([^;]+)/);
   if (!match) return "/admin";
   try {
     const decoded = decodeURIComponent(match[1]);
-    // Only honour relative paths starting with single `/` to prevent
-    // open-redirect via `//evil.com`. Same logic /auth/callback applies.
-    if (decoded.startsWith("/") && !decoded.startsWith("//")) return decoded;
+    return validateReturnTo(decoded) ?? "/admin";
   } catch {
-    /* fall through */
+    return "/admin";
   }
-  return "/admin";
 }
 
 export default function TwoFactorChallengeClient() {

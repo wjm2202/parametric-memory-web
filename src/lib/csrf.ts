@@ -89,15 +89,21 @@ export function verifyCsrfOrigin(request: NextRequest): NextResponse | null {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Neither Origin nor Referer present on a mutating request.
-  // This can happen in legitimate server-side calls (e.g. our own proxies).
-  // Check for an internal forwarding header set by our proxy routes.
-  const internalHeader = request.headers.get("x-mmpm-internal");
-  if (internalHeader === "1") {
-    return null; // Internal server-side proxy — allow
-  }
-
-  // No provenance at all — deny as a safety default.
+  // Neither Origin nor Referer present on a mutating request — deny.
+  //
+  // SPRINT-11.H2 (2026-04-30): the previous version of this function had
+  // an `x-mmpm-internal: 1` bypass intended for "legitimate server-side
+  // calls (our own proxies)". Grep confirmed zero callers ever attached
+  // that header — but its presence was a latent risk: any future server-
+  // side fetch helper, leaked dev tool, or browser extension that sets
+  // the header would silently skip the CSRF check on every mutating
+  // /api/auth/* route in the no-provenance branch.
+  //
+  // Server-to-server callers that need to mutate auth state should use
+  // the bridge HMAC scheme in compute (`src/middleware/bridge-auth.ts`)
+  // — that's what it exists for. Browsers always send Origin on mutating
+  // fetch / XHR requests, so the legitimate-no-Origin case is rare in
+  // practice; legitimate ones can include the Origin header explicitly.
   console.warn(
     `[csrf] Blocked: No Origin or Referer on mutating request ` +
       `method=${request.method} path=${requestUrl.pathname}`,
