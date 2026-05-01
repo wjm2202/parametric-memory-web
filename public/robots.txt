@@ -38,6 +38,23 @@ Allow: /
 User-agent: YouBot
 Allow: /
 
+# ── New AI answer engines (Sprint 2026-W18 SEO audit) ──────────────────────
+# Apple Intelligence — powers Siri, Spotlight, Apple News answer surfaces.
+User-agent: Applebot-Extended
+Allow: /
+
+# Mistral / Le Chat — growing answer engine, EU citation traffic.
+User-agent: MistralAI-User
+Allow: /
+
+# Meta AI — answers in WhatsApp, Instagram, Messenger.
+User-agent: Meta-ExternalAgent
+Allow: /
+
+# DuckDuckGo AI Chat (Duck.ai).
+User-agent: DuckAssistBot
+Allow: /
+
 # ── OpenAI / Google AI — product pages yes, content no ────────────────────
 # Allow discovery of product and marketing pages.
 # Protect blog and docs from bulk training data use.

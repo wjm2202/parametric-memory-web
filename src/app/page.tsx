@@ -9,26 +9,35 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 export const metadata: Metadata = {
   title: "Parametric Memory — Persistent, Verifiable Memory for AI",
   description:
-    "Stop re-explaining. Give your AI a second brain with cryptographic Merkle proofs, Markov-chain prediction, and sub-millisecond recall. Dedicated instances from $3/mo.",
+    "Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. Dedicated instances from $3/mo. 14-day free trial.",
   alternates: { canonical: "https://parametric-memory.dev" },
   keywords: [
-    "AI memory",
-    "persistent AI memory",
-    "Merkle proof memory",
-    "AI agent memory",
-    "Claude memory",
-    "MCP memory server",
+    // Hot commercial intent — Mem0/Zep comparison SERPs
+    "Mem0 alternative",
+    "Zep alternative",
+    // Uncontested differentiators (zero commercial competition for these terms)
     "verifiable AI memory",
+    "Merkle proof memory",
+    "RFC 6962 Merkle proof",
+    "tamper-evident agent memory",
+    "single-tenant AI memory",
+    "anticipatory recall",
+    // Owned positioning
+    "MCP memory server",
+    "MCP-native memory",
+    "AI memory for Claude Code",
     "parametric memory",
-    "MMPM",
     "Markov prediction",
     "AI memory substrate",
-    "cryptographic memory",
+    // Table stakes — must appear, but won't out-rank Mem0/Anthropic
+    "persistent AI memory",
+    "AI agent memory",
+    "Claude memory",
   ],
   openGraph: {
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
     description:
-      "Stop re-explaining. Give your AI a second brain with cryptographic Merkle proofs, Markov-chain prediction, and sub-millisecond recall. Dedicated instances from $3/mo.",
+      "Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. Dedicated instances from $3/mo. 14-day free trial.",
     url: "https://parametric-memory.dev",
     siteName: "Parametric Memory",
     images: [
