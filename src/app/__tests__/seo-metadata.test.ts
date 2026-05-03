@@ -31,6 +31,14 @@ vi.mock("next/font/google", () => {
 
 import { metadata as rootMetadata } from "../layout";
 import { metadata as homeMetadata } from "../page";
+import { TIERS } from "@/config/tiers";
+
+// Cheapest publicly-sold tier price — derived from src/config/tiers.ts so the
+// test stays valid through any pricing model change. If you change tier
+// prices, this number recomputes and the description assertion still passes
+// as long as the description was rebuilt via @/lib/pricing helpers.
+const CHEAPEST_PUBLIC_PRICE = Math.min(...TIERS.filter((t) => t.publiclySold).map((t) => t.price));
+const PRICE_HOOK_RE = new RegExp(`\\$${CHEAPEST_PUBLIC_PRICE}\\/mo`);
 
 // ── Description length bounds ──────────────────────────────────────────────
 // Google truncates at ~160 chars desktop / ~120 mobile. We require all
@@ -51,9 +59,11 @@ describe("SEO meta — home page (src/app/page.tsx)", () => {
     expect(homeMetadata.openGraph?.description).toBe(homeMetadata.description);
   });
 
-  it("description includes the price hook ($3/mo) — survives Google snippet truncation", () => {
+  it("description includes the cheapest tier's price hook — survives Google snippet truncation", () => {
+    // Pulled from src/config/tiers.ts at test time so the test follows
+    // whatever pricing model is active. No literal $3/mo coupling.
     const desc = homeMetadata.description!;
-    expect(desc).toMatch(/\$3\/mo/);
+    expect(desc).toMatch(PRICE_HOOK_RE);
   });
 
   it("description includes the free-trial CTA", () => {
@@ -128,11 +138,12 @@ describe("SEO meta — root layout (src/app/layout.tsx)", () => {
     expect(desc.length).toBeLessThanOrEqual(MAX_DESC);
   });
 
-  it("Twitter description fits 200-char hard limit and includes price hook", () => {
+  it("Twitter description fits 200-char hard limit and includes the cheapest price hook", () => {
     const tw = rootMetadata.twitter as { description?: string };
     expect(tw.description).toBeDefined();
     expect(tw.description!.length).toBeLessThanOrEqual(200);
-    expect(tw.description).toMatch(/\$3\/mo/);
+    // Derived price — tracks tiers.ts. Doesn't hardcode $3/mo.
+    expect(tw.description).toMatch(PRICE_HOOK_RE);
   });
 
   it("robots.index is true and follow is true (we want to rank)", () => {

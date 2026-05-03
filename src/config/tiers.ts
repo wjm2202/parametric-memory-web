@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from "./site";
 /**
  * Canonical tier registry — single source of truth for all layers.
  *
@@ -39,6 +40,22 @@ export interface TierFeature {
   included: boolean;
 }
 
+/**
+ * Infrastructure deployment model for a tier.
+ *
+ * "shared"    → runs in a multi-tenant cluster (~10-20 customers per droplet).
+ *               Lower per-customer cost; lower price ceilings.
+ *               Used by Starter and Solo as of 2026-05-01 viability decision.
+ * "dedicated" → runs on its own droplet, isolated PostgreSQL + Merkle tree.
+ *               Brand promise for Pro/Team/Enterprise tiers.
+ *
+ * COMPUTE-SIDE NOTE: When this field flips for a tier, mmpm-compute must
+ * support the new deployment model before the marketing change goes live.
+ * As of 2026-05-01 compute provisions dedicated droplets only — shared
+ * cluster support is the gating work for honouring "$3/mo shared".
+ */
+export type TierDeployment = "shared" | "dedicated";
+
 export interface Tier {
   /** Canonical ID used in compute DB, Stripe metadata, and API. */
   id: TierId;
@@ -52,6 +69,10 @@ export interface Tier {
   badge: string | null;
   /** Pricing page CTA button label. */
   cta: string;
+  /** Whether this tier is publicly purchasable (false hides it from /pricing + JSON-LD). */
+  publiclySold: boolean;
+  /** Infrastructure deployment model — see TierDeployment. */
+  deployment: TierDeployment;
   /** Compute-side resource limits. Must match CONTAINER_LIMITS in mmpm-compute. */
   limits: TierLimits;
   /** Pricing page feature checklist. */
@@ -75,6 +96,8 @@ export const TIERS: Tier[] = [
     description: "Post-trial fallback tier. Not publicly sold.",
     badge: null,
     cta: "Get Started",
+    publiclySold: false,
+    deployment: "shared",
     limits: {
       maxAtoms: 500,
       maxBootstrapsPerMonth: 100,
@@ -103,6 +126,8 @@ export const TIERS: Tier[] = [
     description: "Experience persistent memory. $3/month, 30-day money-back guarantee.",
     badge: null,
     cta: "Start Building",
+    publiclySold: true,
+    deployment: "shared",
     limits: {
       maxAtoms: 1_000,
       maxBootstrapsPerMonth: 200,
@@ -133,6 +158,8 @@ export const TIERS: Tier[] = [
     description: "For individual developers building with persistent memory.",
     badge: null,
     cta: "Get Solo",
+    publiclySold: true,
+    deployment: "shared",
     limits: {
       maxAtoms: 10_000,
       maxBootstrapsPerMonth: 1_000,
@@ -161,6 +188,8 @@ export const TIERS: Tier[] = [
     description: "For power users with large knowledge bases.",
     badge: "Most Popular",
     cta: "Get Professional",
+    publiclySold: true,
+    deployment: "dedicated",
     limits: {
       maxAtoms: 100_000,
       maxBootstrapsPerMonth: 10_000,
@@ -190,6 +219,8 @@ export const TIERS: Tier[] = [
     description: "For teams that need shared memory across agents.",
     badge: null,
     cta: "Get Team",
+    publiclySold: true,
+    deployment: "dedicated",
     limits: {
       maxAtoms: 500_000,
       maxBootstrapsPerMonth: -1,
@@ -293,7 +324,7 @@ export const ENTERPRISE_TIERS: EnterpriseTier[] = [
     description: "For mission-critical AI systems.",
     badge: null,
     cta: "Contact Sales",
-    ctaLink: "mailto:entityone22@gmail.com?subject=Enterprise%20Cloud%20Inquiry",
+    ctaLink: `mailto:${SUPPORT_EMAIL}?subject=Enterprise%20Cloud%20Inquiry`,
     features: [
       { name: "Unlimited atoms", included: true },
       { name: "Unlimited bootstraps", included: true },
@@ -315,7 +346,7 @@ export const ENTERPRISE_TIERS: EnterpriseTier[] = [
     description: "Complete control and sovereignty.",
     badge: null,
     cta: "Contact Sales",
-    ctaLink: "mailto:entityone22@gmail.com?subject=Enterprise%20Self-Hosted%20Inquiry",
+    ctaLink: `mailto:${SUPPORT_EMAIL}?subject=Enterprise%20Self-Hosted%20Inquiry`,
     features: [
       { name: "Full source code + commercial license", included: true },
       { name: "Deploy on your own cloud", included: true },

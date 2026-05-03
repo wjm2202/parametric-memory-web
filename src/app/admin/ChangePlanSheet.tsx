@@ -175,7 +175,7 @@ export function ChangePlanSheet({
         aria-modal="true"
         aria-labelledby="change-plan-sheet-title"
         data-testid="change-plan-sheet"
-        className="fixed inset-0 z-40 flex justify-end"
+        className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-30 flex justify-end"
       >
         {/* Backdrop — click closes, disabled while ConfirmUpgradeDialog is up. */}
         <div
@@ -242,6 +242,14 @@ export function ChangePlanSheet({
           option={selectedOption}
           nextBillingDate={nextBillingDate}
           onClose={handleDialogClose}
+          // Successful upgrade → close BOTH the dialog AND this sheet so the
+          // admin view re-shows. `useTierChangePoll` (mounted on the admin
+          // page) will pick up the in-flight tier-change row on its next
+          // tick and the progress banner takes over from here.
+          onUpgradeStarted={() => {
+            handleDialogClose();
+            onClose();
+          }}
         />
       )}
     </>

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { isValidTierId } from "@/config/tiers";
 import { WaitlistForm } from "./WaitlistForm";
 
+import { mailto } from "@/config/site";
 type CapacityStatus = "open" | "waitlist" | "paused";
 
 interface TierCapacity {
@@ -92,9 +93,7 @@ export function PricingCTA({
     return (
       <div className="mb-8">
         <a
-          href={
-            ctaLink ?? "mailto:entityone22@gmail.com?subject=Enterprise%20Self-Hosted%20Inquiry"
-          }
+          href={ctaLink ?? mailto("Enterprise Self-Hosted Inquiry")}
           className="bg-surface-800 text-surface-200 hover:bg-surface-700 ring-surface-200/10 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold ring-1 transition-all"
         >
           Contact Sales
@@ -108,7 +107,7 @@ export function PricingCTA({
     return (
       <div className="mb-8">
         <a
-          href="mailto:entityone22@gmail.com?subject=Enterprise%20Cloud%20Inquiry"
+          href={mailto("Enterprise Cloud Inquiry")}
           className="bg-surface-800 text-surface-200 hover:bg-surface-700 ring-surface-200/10 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold ring-1 transition-all"
         >
           Contact Sales

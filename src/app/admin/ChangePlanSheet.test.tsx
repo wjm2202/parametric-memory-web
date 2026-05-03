@@ -44,6 +44,7 @@ vi.mock("./ConfirmUpgradeDialog", async () => {
       option: UpgradeOption;
       nextBillingDate: Date | null;
       onClose: () => void;
+      onUpgradeStarted: () => void;
     }) => {
       // Record the props per render so assertions can inspect them.
       mockConfirmDialog(props);
@@ -52,6 +53,12 @@ vi.mock("./ConfirmUpgradeDialog", async () => {
           <span data-testid="mock-confirm-option-tier">{props.option.tier}</span>
           <button data-testid="mock-confirm-close" onClick={() => props.onClose()}>
             close dialog
+          </button>
+          <button
+            data-testid="mock-confirm-upgrade-started"
+            onClick={() => props.onUpgradeStarted()}
+          >
+            upgrade started
           </button>
         </div>
       );
@@ -360,6 +367,28 @@ describe("ChangePlanSheet — Select opens ConfirmUpgradeDialog", () => {
     // sheet sets selectedOption back to null.
     fireEvent.click(screen.getByTestId("mock-confirm-close"));
     expect(screen.queryByTestId("mock-confirm-upgrade-dialog")).toBeNull();
+  });
+
+  it("closes BOTH the dialog AND the sheet when onUpgradeStarted fires", async () => {
+    // The new in-place upgrade flow (May 2026) replaces the Stripe Checkout
+    // redirect. On 2xx the dialog calls onUpgradeStarted; the sheet closes
+    // itself so the admin view re-shows and the in-flight banner takes over.
+    resolveWith(200, { currentTier: "indie", options: [PRO_OPTION] });
+
+    const onClose = vi.fn();
+    renderSheet({ onClose });
+    await flush();
+
+    fireEvent.click(screen.getByTestId("change-plan-option-pro-select"));
+    expect(screen.getByTestId("mock-confirm-upgrade-dialog")).toBeInTheDocument();
+
+    // Fire the stubbed dialog's onUpgradeStarted hook.
+    fireEvent.click(screen.getByTestId("mock-confirm-upgrade-started"));
+
+    // Dialog unmounts (selectedOption → null) AND the sheet's own onClose
+    // fired so the parent dismisses it.
+    expect(screen.queryByTestId("mock-confirm-upgrade-dialog")).toBeNull();
+    expect(onClose).toHaveBeenCalledOnce();
   });
 });
 

@@ -5,11 +5,11 @@ import Image from "next/image";
 import { HeroSceneWrapper } from "@/components/landing/HeroSceneWrapper";
 import { HeroAnimatedSequence } from "@/components/landing/HeroAnimatedSequence";
 import SiteNavbar from "@/components/ui/SiteNavbar";
+import { getHomeMetaDescription, getAggregateOfferData } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Parametric Memory — Persistent, Verifiable Memory for AI",
-  description:
-    "Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. Dedicated instances from $3/mo. 14-day free trial.",
+  description: getHomeMetaDescription(),
   alternates: { canonical: "https://parametric-memory.dev" },
   keywords: [
     // Hot commercial intent — Mem0/Zep comparison SERPs
@@ -36,8 +36,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
-    description:
-      "Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. Dedicated instances from $3/mo. 14-day free trial.",
+    description: getHomeMetaDescription(),
     url: "https://parametric-memory.dev",
     siteName: "Parametric Memory",
     images: [
@@ -96,10 +95,7 @@ const landingJsonLd = {
     },
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: "3",
-      highPrice: "499",
-      priceCurrency: "USD",
-      offerCount: "6",
+      ...getAggregateOfferData(),
     },
   },
 };

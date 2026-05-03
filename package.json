@@ -22,7 +22,7 @@
     "format:check": "prettier --check \"src/**/*.{ts,tsx,css,json}\"",
     "guard:testids": "node scripts/check-testids.mjs --quiet",
     "guard:actions": "node scripts/check-actions-manifest.mjs --quiet",
-    "guard:all": "npm run guard:testids && npm run guard:actions",
+    "guard:all": "npm run guard:testids && npm run guard:actions && npm run guard:llms-txt",
     "preflight": "npm run format && npm run lint && npm run typecheck && npm run guard:all && npm run test && npm run build",
     "e2e": "playwright test",
     "e2e:smoke": "playwright test --project=public",
@@ -32,7 +32,9 @@
     "e2e:debug": "PWDEBUG=1 playwright test",
     "e2e:ui": "playwright test --ui",
     "e2e:report": "playwright show-report",
-    "e2e:local": "E2E_BASE_URL=http://localhost:3000 playwright test"
+    "e2e:local": "E2E_BASE_URL=http://localhost:3000 playwright test",
+    "build:llms-txt": "tsx scripts/build-llms-txt.ts",
+    "guard:llms-txt": "tsx scripts/build-llms-txt.ts --check"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

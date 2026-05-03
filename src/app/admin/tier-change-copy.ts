@@ -11,7 +11,7 @@
 
 // ─── Tier-change state phases ────────────────────────────────────────────────
 //
-// These mirror the backend's response shape from GET /api/v1/billing/tier-change/:slug.
+// These mirror the backend's response shape from GET /api/v1/substrates/:slug/upgrade/status.
 // `state` + `phase` together determine which copy the banner renders.
 
 /**
@@ -150,9 +150,14 @@ export const SHEET_SUBTITLE_ERROR = "We couldn't load your upgrade options. Plea
 export const DIALOG_TITLE = "Confirm upgrade";
 export const DIALOG_CANCEL_LABEL = "Cancel";
 export const DIALOG_CONFIRM_LABEL = "Upgrade";
-export const DIALOG_CONFIRM_LABEL_SUBMITTING = "Redirecting to checkout…";
+export const DIALOG_CONFIRM_LABEL_SUBMITTING = "Starting upgrade…";
 
-// ─── Query-param toasts (shown on return from Stripe Checkout) ───────────────
+// ─── Upgrade lifecycle toasts ────────────────────────────────────────────────
+//
+// Used by ConfirmUpgradeDialog (info toast on a successful in-place upgrade —
+// "we accepted the request, the banner will pick it up") and historically by
+// the Stripe Checkout return path (cancelled / pending). The Checkout flow is
+// retired but the cancelled copy still applies if a future flow needs it.
 
 export const TOAST_PENDING_TITLE = "Processing your upgrade…";
 export const TOAST_PENDING_BODY =
@@ -167,7 +172,7 @@ export const TOAST_CANCELLED_BODY = "No charge was made. You can try again whene
  */
 export const TOAST_SUBMIT_ERROR_TITLE = "Upgrade couldn't start";
 export const TOAST_SUBMIT_ERROR_BODY =
-  "We couldn't create a checkout session. Please try again or contact support.";
+  "We couldn't start your upgrade. Please try again or contact support.";
 
 // ─── Button labels ───────────────────────────────────────────────────────────
 

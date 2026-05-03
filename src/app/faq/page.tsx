@@ -4,6 +4,7 @@ import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { FAQAccordion, type FAQItem } from "./FAQClient";
 
+import { getMarketingPriceLine } from "@/lib/pricing";
 export const metadata: Metadata = {
   title: "FAQ — Parametric Memory",
   description:
@@ -375,7 +376,7 @@ export default async function FAQPage() {
                 { value: "0.045ms", label: "Recall p50" },
                 { value: "64%", label: "Markov hit rate" },
                 { value: "RFC 6962", label: "Merkle proofs" },
-                { value: "From $3/mo", label: "Dedicated instance" },
+                { value: getMarketingPriceLine(), label: "Hosted memory substrate" },
               ].map((stat) => (
                 <div
                   key={stat.label}

@@ -197,14 +197,16 @@ describe("DashboardClient — cancel subscription flow", () => {
   });
 
   it("closes modal when backdrop is clicked", () => {
-    const { container } = render(
-      <DashboardClient account={baseAccount} substrates={[deprovisionedSubstrate]} />,
-    );
+    render(<DashboardClient account={baseAccount} substrates={[deprovisionedSubstrate]} />);
     fireEvent.click(screen.getByRole("button", { name: /cancel subscription/i }));
-    // Click the backdrop (fixed inset-0 overlay)
-    const backdrop = container.querySelector(".fixed.inset-0");
+    // Click the backdrop. We target by data-testid rather than the
+    // className signature so changes to the layout (e.g. the site-nav-h
+    // top inset migration) don't break this test silently — there are
+    // multiple `.fixed` elements on the page (decorative blur blobs)
+    // that would otherwise satisfy a className-based selector.
+    const backdrop = screen.getByTestId("cancel-substrate-modal-backdrop");
     expect(backdrop).toBeInTheDocument();
-    fireEvent.click(backdrop!);
+    fireEvent.click(backdrop);
     expect(screen.queryByText(/cancel subscription for ashen-north/i)).not.toBeInTheDocument();
   });
 });

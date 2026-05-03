@@ -6,7 +6,9 @@ import Link from "next/link";
 import { getTierLabel } from "@/config/tiers";
 import SubstrateStateBanner from "@/components/ui/SubstrateStateBanner";
 import SiteNavbar from "@/components/ui/SiteNavbar";
+import { readReauthFlag, redirectToReauth } from "@/lib/reauth";
 
+import { mailto } from "@/config/site";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface AccountInfo {
@@ -65,6 +67,20 @@ async function openBillingPortal() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
+  // Compute's recent-auth middleware returns 401 with
+  // `code: "reauth_required"` when the recent-auth window has expired
+  // (factor-aware as of migration 083: 10 min for magic-link / OAuth,
+  // 30 min for TOTP). See src/lib/reauth.ts for the full contract. The
+  // user gets a clear reason via the alert and a single-click hop to
+  // /login; after sign-in they land back on this dashboard with a fresh
+  // last_reauth_at + last_reauth_factor and the next click works.
+  if (await readReauthFlag(res)) {
+    alert(
+      "Sign in again to open the billing portal. For your security, this action requires you to have signed in recently. Click OK to sign in.",
+    );
+    redirectToReauth();
+    return;
+  }
   if (res.status === 422) {
     alert("No billing account found. Please subscribe first.");
     return;
@@ -195,7 +211,7 @@ function BillingWidget({
               Reactivate →
             </Link>
             <a
-              href="mailto:entityone22@gmail.com?subject=Account%20help"
+              href={mailto("Account help")}
               className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-medium text-white/50 transition hover:text-white"
             >
               Contact support
@@ -320,7 +336,8 @@ function CancelWarningModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+      className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+      data-testid="cancel-substrate-modal-backdrop"
       onClick={onDismiss}
     >
       <div

@@ -49,6 +49,7 @@
 
 import React, { useState } from "react";
 
+import { SUPPORT_EMAIL } from "@/config/site";
 export interface SubstrateStateBannerProps {
   slug: string;
   status: string;
@@ -59,7 +60,7 @@ export interface SubstrateStateBannerProps {
   supportEmail?: string;
 }
 
-const DEFAULT_SUPPORT_EMAIL = "entityone22@gmail.com";
+const DEFAULT_SUPPORT_EMAIL = SUPPORT_EMAIL;
 
 export default function SubstrateStateBanner({
   slug,

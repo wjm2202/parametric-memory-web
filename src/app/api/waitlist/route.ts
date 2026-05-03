@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
+import { SUPPORT_EMAIL } from "@/config/site";
 /** Simple email validation */
 const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
@@ -20,7 +21,7 @@ export async function POST(req: NextRequest) {
     // 1. Notify us — internal waitlist notification
     await resend.emails.send({
       from: "Parametric Memory <noreply@send.parametric-memory.dev>",
-      to: ["entityone22@gmail.com"],
+      to: [SUPPORT_EMAIL],
       subject: `[Waitlist] New signup: ${email}`,
       text: [
         "New waitlist signup",
