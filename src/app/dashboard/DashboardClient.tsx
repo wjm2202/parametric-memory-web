@@ -9,6 +9,7 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 import { readReauthFlag, redirectToReauth } from "@/lib/reauth";
 
 import { mailto } from "@/config/site";
+import { GRACE_PERIOD_DAYS } from "@/config/lifecycle";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface AccountInfo {
@@ -134,7 +135,7 @@ function StatusBadge({ status }: { status: string }) {
     provisioning: "Your substrate is being created. Usually takes 1–2 minutes.",
     pending_payment: "Payment hasn't completed yet. Finish checkout to activate.",
     read_only: "Writes are paused. Reads still work. Check billing to resume writes.",
-    cancelled: "Subscription cancelled. Memory preserved for 90 days.",
+    cancelled: `Subscription cancelled. Memory preserved for ${GRACE_PERIOD_DAYS} days.`,
     suspended: "Account suspended after failed payment attempts.",
     deprovisioned: "This substrate has been deprovisioned and its data removed.",
     destroyed: "This substrate has been destroyed.",
@@ -231,7 +232,7 @@ function BillingWidget({
               <span className="text-zinc-600">○</span> No active subscription
             </p>
             <p className="mt-1 text-sm text-white/50">
-              Your plan was cancelled. Memory is preserved for 90 days.
+              Your plan was cancelled. Memory is preserved for {GRACE_PERIOD_DAYS} days.
             </p>
           </div>
           <Link
@@ -265,9 +266,7 @@ function BillingWidget({
             <span className={`h-2 w-2 rounded-full ${dotColor}`} />
             <span className="text-sm font-semibold text-white capitalize">
               {tierDisplay.name} plan &middot;{" "}
-              <span className="font-normal text-zinc-400">
-                {status === "trialing" ? "Trial" : "Active"}
-              </span>
+              <span className="font-normal text-zinc-400">{"Active"}</span>
             </span>
           </div>
           <p className="text-xs text-white/50">{statusLabel}</p>

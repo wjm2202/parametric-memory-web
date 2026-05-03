@@ -45,6 +45,13 @@ const nextConfig: NextConfig = {
       headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
     },
   ],
+  redirects: async () => [
+    {
+      source: "/docs/plans-and-trial",
+      destination: "/docs/plans",
+      permanent: false,
+    },
+  ],
   // Three.js / R3F needs transpilation for ESM compat
   transpilePackages: ["three"],
 };

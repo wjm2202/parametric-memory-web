@@ -39,8 +39,8 @@ export const metadata: Metadata = {
   },
 };
 
-// ── Display tiers — free tier not publicly sold; filtered out ─────────────────
-// The 'free' tier exists only as an expired-trial fallback state in the system.
+// ── Display tiers — internal expired-subscription tier filtered out ───────────
+// The 'free' tier is an internal fallback state; not publicly sold.
 // Publicly we show starter, indie, pro, and team. Team uses a contact-sales flow.
 const DISPLAY_TIERS = TIERS.filter((t) => t.id !== "free");
 

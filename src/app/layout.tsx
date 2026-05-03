@@ -245,9 +245,9 @@ const webApplicationJsonLd = {
  *   - 1 critical: Missing field "image"  (per Offer)
  *   - 2 warnings: Missing "shippingDetails" + "hasMerchantReturnPolicy"
  * For digital SaaS the canonical pattern is zero-cost instant delivery and
- * a finite return window matching the 14-day free trial. Hoisted as
+ * a finite return window matching the 30-day money-back guarantee. Hoisted as
  * constants so every Offer references the same policy — single source of
- * truth, single line to update if the trial length changes.
+ * truth, single line to update if the return window changes.
  */
 const PRODUCT_IMAGE_URL = "https://parametric-memory.dev/brand/og.png";
 
@@ -310,7 +310,7 @@ const softwareApplicationJsonLd = {
     "Dedicated instances — zero shared infrastructure",
     "OAuth2 and Bearer token authentication",
     "Knowledge graph edges with semantic relationships",
-    "14-day free trial on all paid plans",
+    "30-day money-back guarantee on all paid plans",
     "Docker Compose deployment (DigitalOcean + nginx + Let's Encrypt)",
   ],
   publisher: {

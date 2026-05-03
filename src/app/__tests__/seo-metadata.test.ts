@@ -42,8 +42,8 @@ const PRICE_HOOK_RE = new RegExp(`\\$${CHEAPEST_PUBLIC_PRICE}\\/mo`);
 
 // ── Description length bounds ──────────────────────────────────────────────
 // Google truncates at ~160 chars desktop / ~120 mobile. We require all
-// descriptions to fit the desktop snippet so the price hook + free-trial CTA
-// survive truncation.
+// descriptions to fit the desktop snippet so the price hook
+// survives truncation.
 const MAX_DESC = 160;
 const MIN_DESC = 100; // anything shorter signals weak SEO content
 
@@ -66,8 +66,9 @@ describe("SEO meta — home page (src/app/page.tsx)", () => {
     expect(desc).toMatch(PRICE_HOOK_RE);
   });
 
-  it("description includes the free-trial CTA", () => {
-    expect(homeMetadata.description).toMatch(/14-day free trial/i);
+  it("description does NOT include trial copy (D11: no trial advertising)", () => {
+    expect(homeMetadata.description).not.toMatch(/14-day free trial/i);
+    expect(homeMetadata.description).not.toMatch(/trial/i);
   });
 
   it("keywords contain the hot commercial-intent terms (Mem0 + Zep alternative)", () => {

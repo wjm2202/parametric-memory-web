@@ -56,9 +56,7 @@ describe("POST /api/billing/upgrade", () => {
   it("returns 401 when no session cookie is present — never calls compute", async () => {
     mockCookies.mockResolvedValue(makeCookieStore());
 
-    const res = await POST(
-      makeReq({ substrateSlug: "bold-junction", targetTier: "pro" }),
-    );
+    const res = await POST(makeReq({ substrateSlug: "bold-junction", targetTier: "pro" }));
     const body = await res.json();
 
     expect(res.status).toBe(401);
@@ -147,9 +145,7 @@ describe("POST /api/billing/upgrade", () => {
       text: () => Promise.resolve(JSON.stringify({ accepted: true })),
     });
 
-    await POST(
-      makeReq({ substrateSlug: "weird slug/with?chars", targetTier: "pro" }),
-    );
+    await POST(makeReq({ substrateSlug: "weird slug/with?chars", targetTier: "pro" }));
 
     expect(mockFetch).toHaveBeenCalledWith(
       expect.stringContaining("/api/v1/substrates/weird%20slug%2Fwith%3Fchars/upgrade"),
@@ -164,9 +160,7 @@ describe("POST /api/billing/upgrade", () => {
       text: () => Promise.resolve(JSON.stringify({ error: "upgrade_in_progress" })),
     });
 
-    const res = await POST(
-      makeReq({ substrateSlug: "bold-junction", targetTier: "pro" }),
-    );
+    const res = await POST(makeReq({ substrateSlug: "bold-junction", targetTier: "pro" }));
     const body = await res.json();
 
     expect(res.status).toBe(409);
@@ -183,9 +177,7 @@ describe("POST /api/billing/upgrade", () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
 
-    const res = await POST(
-      makeReq({ substrateSlug: "bold-junction", targetTier: "pro" }),
-    );
+    const res = await POST(makeReq({ substrateSlug: "bold-junction", targetTier: "pro" }));
     const body = await res.json();
 
     expect(res.status).toBe(502);

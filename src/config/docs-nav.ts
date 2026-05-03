@@ -25,7 +25,7 @@ export const docsNav: DocNavSection[] = [
     title: "Getting Started",
     items: [
       { title: "What is Parametric Memory?", slug: "introduction" },
-      { title: "Plans & Trial", slug: "plans-and-trial" },
+      { title: "Plans", slug: "plans" },
       { title: "Your Instance & API Key", slug: "your-instance" },
       { title: "Customer Lifecycle", slug: "customer-lifecycle" },
       {

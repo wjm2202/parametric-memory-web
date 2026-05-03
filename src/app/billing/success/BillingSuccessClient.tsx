@@ -54,9 +54,9 @@ function CopyBlock({ value }: { value: string }) {
 /**
  * Post-checkout success page.
  *
- * The user just paid (or started a trial) — this is the highest-motivation moment.
+ * The user just paid — this is the highest-motivation moment.
  * We show:
- *   1. Tier confirmation + trial/renewal dates
+ *   1. Tier confirmation + renewal dates
  *   2. 3-step Claude Desktop setup instructions
  *   3. Polling for the MCP endpoint (provisioning may take up to 60s)
  *
@@ -146,12 +146,9 @@ export default function BillingSuccessClient() {
 
             {isTrialing && billing?.trialEndsAt && (
               <div className="mt-3 space-y-0.5 text-sm">
-                <p className="text-surface-400">
-                  Trial period: 14 days free, then $
-                  {billing.tier === "indie" ? "9" : billing.tier === "pro" ? "29" : "79"}/month
-                </p>
+                <p className="text-surface-400">Subscription active.</p>
                 <p className="text-surface-500 text-xs">
-                  First charge: {formatDate(billing.trialEndsAt)}
+                  Renews: {formatDate(billing.trialEndsAt)}
                 </p>
               </div>
             )}

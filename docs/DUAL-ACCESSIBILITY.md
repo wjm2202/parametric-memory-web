@@ -241,6 +241,7 @@ entry here **first**, before the PR that uses it.
 | `billing-payment-failure-retry-cta` | "Update card" CTA inside banner (F2) |
 | `billing-invoice-upcoming` | Renews-on banner (F5) |
 | `billing-portal-cta` | Open Stripe portal |
+| `cancel-substrate-modal-backdrop` | Modal backdrop for the cancel-substrate confirmation in the Dashboard substrate-list flow; click-to-dismiss target (sibling of the inner card whose `onClick={(e) => e.stopPropagation()}` keeps clicks inside the modal from bubbling) |
 
 ### Admin — `src/app/admin/*`, `src/app/admin/[slug]/*`
 
@@ -264,6 +265,8 @@ entry here **first**, before the PR that uses it.
 | `keyrot-status` | Key-rotation status region (F6) |
 | `keyrot-status-error` | Error-reason detail (F6) |
 | `keyrot-restart` | Restart-rotation button (F6) |
+| `keyrot-status-reauth` | Re-auth-required alert banner shown inside `keyrot-status` when the rotation flow needs the user to re-authenticate before continuing (F6) |
+| `keyrot-reauth-cta` | "Re-authenticate" link/button inside `keyrot-status-reauth`; navigates to the re-auth flow (F6) |
 
 **Change-plan subflow — `src/app/admin/ChangePlanButton.tsx`, `ChangePlanSheet.tsx`:**
 
@@ -286,6 +289,7 @@ entry here **first**, before the PR that uses it.
 |---|---|
 | `confirm-upgrade-dialog` | Confirmation dialog container (`role="dialog"`) |
 | `confirm-upgrade-backdrop` | Modal backdrop |
+| `confirm-upgrade-close-icon` | "×" close icon in the dialog top-right; dismisses without confirming (sibling of `confirm-upgrade-cancel`; provided so agents/tests can target the icon variant separately from the textual Cancel button) |
 | `confirm-upgrade-cancel` | Cancel button |
 | `confirm-upgrade-confirm` | Confirm-and-charge button |
 | `proration-charge` | "Charge today" amount line |

@@ -61,7 +61,7 @@ export interface Tier {
   id: TierId;
   /** Marketing display name shown in UI. */
   name: string;
-  /** Monthly price in USD (0 for free tier). */
+  /** Monthly price in USD (0 for internal expired-subscription state). */
   price: number;
   /** Short description shown under tier name on pricing page. */
   description: string;
@@ -79,7 +79,7 @@ export interface Tier {
   features: TierFeature[];
   /**
    * env var key for the Stripe monthly price ID: process.env[stripePriceEnvKey]
-   * All tiers (including free at $1/mo) have a Stripe price.
+   * All tiers (including internal expired state) have a Stripe price.
    */
   stripePriceEnvKey: string;
   /**

@@ -143,7 +143,7 @@ const homeFaqJsonLd = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Four plans: Starter at $3/month (1,000 memories, up to 6 Claude sessions/day), Solo at $9/month (10,000 memories, up to 33 sessions/day), Professional at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month. All paid plans include a 14-day free trial — no charge until day 15.",
+        text: "Four plans: Starter at $3/month (1,000 memories, up to 6 Claude sessions/day), Solo at $9/month (10,000 memories, up to 33 sessions/day), Professional at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month.",
       },
     },
     {
@@ -151,7 +151,7 @@ const homeFaqJsonLd = {
       name: "How long does setup take?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Under 60 seconds. Sign up, receive your instance credentials by email, add one config block to your MCP client, and your AI has persistent memory. No Docker, no self-hosting, no infrastructure work required.",
+        text: "In minutes. Sign up, receive your instance credentials by email, add one config block to your MCP client, and your AI has persistent memory. No Docker, no self-hosting, no infrastructure work required.",
       },
     },
   ],
@@ -738,7 +738,7 @@ export default async function HomePage() {
               className="font-display mb-5 text-4xl font-extrabold text-white lg:text-5xl"
               style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
             >
-              Start in 60 seconds.
+              Start in minutes.
               <br />
               <span
                 style={{
@@ -779,7 +779,7 @@ export default async function HomePage() {
 
             {/* Microcopy — removes friction */}
             <p className="text-surface-400 text-sm">
-              Starting at $3/month · 14-day free trial · Cancel before day 15, pay nothing
+              Starting at $3/month · 30-day money-back guarantee · Cancel anytime
             </p>
 
             {/* Tier hint */}

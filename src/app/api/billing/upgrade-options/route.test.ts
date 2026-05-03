@@ -103,7 +103,15 @@ describe("GET /api/billing/upgrade-options", () => {
     };
 
     mockFetch.mockResolvedValue({
+      // `ok: true` is required because computeProxy gates the transform path
+      // on `res.ok` (lib/compute-proxy.ts → ComputeProxyResult.ok). On a real
+      // Response this is a getter computed from status; on a plain mock it
+      // must be set explicitly or computeProxy returns ok:false and the
+      // route's early-return forwards the raw upstream JSON without
+      // transforming. (Caught 2026-05-03 during S0.3 preflight green-up.)
+      ok: true,
       status: 200,
+      headers: new Headers(),
       text: () => Promise.resolve(JSON.stringify(upstream)),
     });
 

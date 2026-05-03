@@ -959,7 +959,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                         Cancel Subscription
                       </button>
                     )}
-                  {/* Deprovision available for free tier only here — provision_failed uses the callout above */}
+                  {/* Deprovision available for internal free/expired state only — provision_failed uses the callout above */}
                   {substrate.tier === "free" && substrate.status !== "provision_failed" && (
                     <button
                       onClick={() => setDeprovisionModalOpen(true)}

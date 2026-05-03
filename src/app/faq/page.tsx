@@ -116,7 +116,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "why",
     question: "Why is Parametric Memory better than Letta / MemGPT?",
     answer:
-      "Letta and MemGPT are research projects that require self-hosting and significant infrastructure investment. Parametric Memory is a production SaaS: managed hosting, SSL per instance, Prometheus monitoring, OAuth2 auth, and full commercial support from $3/month. Letta provides no cryptographic verification. Parametric Memory provides RFC 6962 Merkle proofs. Letta requires running your own server — Parametric Memory is operational in under 60 seconds with one config block.",
+      "Letta and MemGPT are research projects that require self-hosting and significant infrastructure investment. Parametric Memory is a production SaaS: managed hosting, SSL per instance, Prometheus monitoring, OAuth2 auth, and full commercial support from $3/month. Letta provides no cryptographic verification. Parametric Memory provides RFC 6962 Merkle proofs. Letta requires running your own server — Parametric Memory is operational in minutes with one config block.",
   },
   {
     category: "why",
@@ -200,7 +200,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "setup",
     question: "How long does setup take?",
     answer:
-      "Under 60 seconds. Sign up at parametric-memory.dev, receive your credentials by email, add one JSON config block to your MCP client (Claude Desktop, Claude Code, Cowork, Cursor). Your AI immediately has access to 25+ memory tools. No Docker. No self-hosting. No infrastructure work. No code changes to your AI application.",
+      "In minutes. Sign up at parametric-memory.dev, receive your credentials by email, add one JSON config block to your MCP client (Claude Desktop, Claude Code, Cowork, Cursor). Your AI immediately has access to 25+ memory tools. No Docker. No self-hosting. No infrastructure work. No code changes to your AI application.",
   },
   {
     category: "setup",
@@ -212,7 +212,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "setup",
     question: "How much does Parametric Memory cost?",
     answer:
-      "Starter: $3/month — 1,000 atoms, up to 6 Claude sessions per day, 30-day money-back guarantee. Solo: $9/month — 10,000 atoms, up to 33 Claude sessions per day, email support. Professional: $29/month — 100,000 atoms, up to 333 Claude sessions per day, knowledge graph edges, priority support. Team: $79/month — 500,000 atoms, unlimited bootstraps, dedicated support. Enterprise Cloud: $299/month — 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML. Enterprise Self-Hosted: $499/month — commercial license, deploy on AWS/GCP/Azure. All paid plans include a 14-day free trial. No charge until day 15. Cancel anytime before day 15 and pay nothing.",
+      "Starter: $3/month — 1,000 atoms, up to 6 Claude sessions per day, 30-day money-back guarantee. Solo: $9/month — 10,000 atoms, up to 33 Claude sessions per day, email support. Professional: $29/month — 100,000 atoms, up to 333 Claude sessions per day, knowledge graph edges, priority support. Team: $79/month — 500,000 atoms, unlimited bootstraps, dedicated support. Enterprise Cloud: $299/month — 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML. Enterprise Self-Hosted: $499/month — commercial license, deploy on AWS/GCP/Azure.",
   },
   {
     category: "setup",
@@ -222,9 +222,9 @@ const ALL_FAQS: FAQItem[] = [
   },
   {
     category: "setup",
-    question: "Is there a free plan?",
+    question: "Do you offer a no-cost tier?",
     answer:
-      "There is no free plan. There is a 14-day free trial on all paid plans — card required, no charge until day 15. Cancel before day 15 and pay nothing. The reason there is no free tier is that every customer gets a dedicated instance with real infrastructure — a free tier would mean subsidising real server costs indefinitely. The trial gives you full paid access for two weeks to verify the product genuinely works for your use case before committing.",
+      "No. Every customer gets a dedicated instance with real infrastructure — a no-cost tier would mean subsidising real server costs indefinitely. All paid plans come with a 30-day money-back guarantee if Parametric Memory does not work for your use case.",
   },
 
   // ── SECURITY ──────────────────────────────────────────────────────────────
@@ -289,7 +289,7 @@ const CATEGORIES = [
   {
     id: "setup",
     label: "Setup & pricing",
-    description: "60-second setup, plan details, trial, data portability",
+    description: "60-second setup, plan details, pricing, data portability",
   },
   {
     id: "security",
@@ -413,15 +413,15 @@ export default async function FAQPage() {
                 Ready to give your AI a memory that proves itself?
               </h2>
               <p className="text-surface-200/60 mx-auto mb-6 max-w-lg">
-                14-day free trial. Dedicated instance. Under 60 seconds to first memory. No
-                infrastructure. No per-query costs. No shared databases.
+                Dedicated instance. In minutes to first memory. No infrastructure. No per-query
+                costs. No shared databases.
               </p>
               <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
                 <Link
                   href="/signup"
                   className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-6 py-3 text-sm font-semibold text-white shadow-lg shadow-indigo-500/25 transition-all hover:bg-indigo-500 hover:shadow-indigo-500/40"
                 >
-                  Start free trial
+                  Get started
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                     <path
                       strokeLinecap="round"

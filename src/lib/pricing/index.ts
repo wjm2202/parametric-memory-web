@@ -116,26 +116,26 @@ export function getMetaPriceHook(): string {
  * Compose the full home-page meta description with the price hook.
  *
  * Format: "<hook>. Merkle proofs, Markov prediction, sub-ms recall.
- *          <price line>. 14-day free trial."
+ *          <price line>."
  *
  * Length-bounded by Google's 160-char snippet — see the
  * seo-metadata.test.ts assertion `MAX_DESC = 160`.
  */
 export function getHomeMetaDescription(): string {
   const priceLine = getMarketingPriceLine();
-  return `Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. ${priceLine}. 14-day free trial.`;
+  return `Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. ${priceLine}.`;
 }
 
 /** Layout-level fallback description (used when a page doesn't override). */
 export function getLayoutMetaDescription(): string {
   const priceLine = getMarketingPriceLine();
-  return `Persistent, verifiable AI memory with Merkle proofs + Markov prediction. ${priceLine}, MCP-native, 14-day free trial.`;
+  return `Persistent, verifiable AI memory with Merkle proofs + Markov prediction. ${priceLine}, MCP-native, 30-day money-back guarantee.`;
 }
 
 /** Twitter-card description — same shape as home meta but trimmed. */
 export function getTwitterDescription(): string {
   const priceLine = getMarketingPriceLine();
-  return `Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. ${priceLine}. 14-day free trial.`;
+  return `Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. ${priceLine}.`;
 }
 
 // ── JSON-LD offers (used by layout.tsx softwareApplicationJsonLd) ──────────

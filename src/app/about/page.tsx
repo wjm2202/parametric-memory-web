@@ -410,7 +410,7 @@ export default async function AboutPage() {
                 },
                 {
                   term: "Memory substrate",
-                  def: "We run alongside your existing setup — a dedicated layer your AI connects to over MCP, the protocol that Claude, GPT, and every major AI platform is converging on. One config line. Your agent has memory in 60 seconds.",
+                  def: "We run alongside your existing setup — a dedicated layer your AI connects to over MCP, the protocol that Claude, GPT, and every major AI platform is converging on. One config line. Your agent has memory in minutes.",
                 },
               ].map(({ term, def }) => (
                 <div key={term} className="rounded-xl border border-[#2a2a3d] bg-[#12121a] p-6">
@@ -890,9 +890,7 @@ export default async function AboutPage() {
             <p className="font-syne mb-3 text-lg font-semibold text-[#e8e8f0]">
               Your AI has been waiting to remember you.
             </p>
-            <p className="mb-8 text-sm text-[#8888aa]">
-              14-day free trial. No credit card required.
-            </p>
+            <p className="mb-8 text-sm text-[#8888aa]">30-day money-back guarantee.</p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"
