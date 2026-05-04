@@ -1,0 +1,206 @@
+---
+title: "Connect Parametric Memory to VS Code on Mac in 60 Seconds"
+date: "2026-05-04"
+excerpt: "A copy-paste quickstart for wiring your MMPM substrate into VS Code's native MCP support on macOS. Five clicks, one config block, and your AI gets persistent, Merkle-verified memory across every session."
+author: "Glen Osborne"
+tags: ["quickstart", "vscode", "mcp", "integration", "getting-started"]
+---
+
+# Connect Parametric Memory to VS Code on Mac in 60 Seconds
+
+VS Code 1.102 added native MCP support, which means any AI extension running inside
+your editor can talk to a remote MCP server — including your Parametric Memory
+substrate. Once it's wired up, every conversation in the editor starts with the
+context your AI has built up across every previous session.
+
+This post is the click-by-click setup for macOS. Total time: about a minute, assuming
+you already have an MMPM instance and an API key. If you don't, [grab a plan](/pricing)
+first — even the $5 tier is enough to follow along.
+
+## What you'll need
+
+Before you start, have these two values from your [Dashboard](/docs/your-instance) in
+your clipboard or somewhere you can paste from:
+
+- **Your MCP endpoint URL** — looks like `https://your-instance.droplet-mcp.nz/mcp`
+- **Your API key** — starts with `mmk_`
+
+You'll also need [Node.js](https://nodejs.org) installed, because the `mcp-remote`
+shim we use runs through `npx`. If `which node` returns a path, you're set.
+
+## Step 1 — Open the MCP configuration file
+
+In VS Code, press `⌘ + ⇧ + P` to open the Command Palette.
+
+Paste **`MCP: Open Remote User Configuration`** and hit `Return`.
+
+> _Image placeholder: Command Palette open in VS Code with `MCP: Open Remote User Configuration` highlighted._
+
+VS Code opens `~/Library/Application Support/Code/User/mcp.json` — your remote MCP
+config file. If you've never used MCP before, the file will be mostly empty with a
+top-level `"servers": {}` object.
+
+## Step 2 — Add the Parametric Memory server block
+
+Inside the `servers` object, add this entry — replacing the URL and the bearer token
+with your own values:
+
+```json
+{
+  "servers": {
+    "Memory-mcp": {
+      "command": "npx",
+      "args": [
+        "-y",
+        "mcp-remote",
+        "https://your-instance.droplet-mcp.nz/mcp",
+        "--header",
+        "Authorization: Bearer mmk_your_key_here"
+      ]
+    }
+  }
+}
+```
+
+> _Image placeholder: VS Code editor showing `mcp.json` with the Memory-mcp block in
+> place and the `▷ Start | N tools | More...` lens visible above it._
+
+A couple of notes on what's happening here:
+
+- **Top-level key is `servers`, not `mcpServers`.** That's a real footgun if you've
+  copied a config from Claude Desktop, which uses the `mcpServers` shape. VS Code's
+  MCP file uses `servers`. Same idea, different key name.
+- **Why `mcp-remote`?** VS Code's MCP integration speaks the stdio transport. Your
+  MMPM substrate speaks the newer Streamable HTTP transport. The `mcp-remote` package
+  is a tiny shim that translates between them. It's installed on demand by `npx -y` so
+  there's nothing for you to set up globally.
+- **Why a Bearer token in the args?** This is how `mcp-remote` forwards auth to your
+  substrate. It's the same `mmk_` key you'd use against the REST API.
+- **Don't commit this file to git.** Your token authenticates every call to your
+  substrate. Treat it like an SSH key. If you ever need to rotate it, the
+  [your-instance docs](/docs/your-instance) walk through the safe rotation flow.
+
+Save the file (`⌘ + S`).
+
+## Step 3 — Click Start to launch the server
+
+This is the step most people miss the first time. As soon as you save, VS Code
+renders a small lens above the `Memory-mcp` block that reads **`▷ Start | N tools |
+More...`**. The server is configured but not running.
+
+Click **Start**. Within a second or two the lens flips to **`✓ Running | Stop |
+Restart | 10 tools | More...`** — that "10 tools" is your confirmation that
+Parametric Memory is live and exposing the full toolset to your AI.
+
+> _Image placeholder: The same `mcp.json` block, now showing the green
+> `✓ Running | 10 tools` lens._
+
+If the lens stays on `Start` after you click it, jump to the troubleshooting section
+below.
+
+## Step 4 — Verify the connection
+
+In your AI chat panel, ask:
+
+> _Call `memory_session_bootstrap` with objective: "test connection" and tell me what
+> it returns._
+
+If everything is wired correctly, your AI will respond with the bootstrap payload —
+likely empty on a fresh substrate, but the call will succeed and the proof metadata
+will be present. That's your green light.
+
+> _Image placeholder: AI chat panel in VS Code showing a successful bootstrap response._
+
+From this point on, every conversation in VS Code has access to:
+
+- `memory_session_bootstrap` — load relevant context at the start of each task
+- `session_checkpoint` — store atoms, edges, and Markov training in one call
+- `memory_search` — semantic search across your stored knowledge
+- `memory_train` — reinforce the arcs that matter
+
+See the [MCP Tool Reference](/docs/mcp/tools) for the full list.
+
+## Bonus — give your AI a tools reference
+
+Most AI extensions discover MCP tools at runtime, but they don't always _explain_ what
+those tools are for. Pasting a short reference into your AI's instructions file (your
+`.cursor/rules`, your `CLAUDE.md`, your Continue system prompt — whatever your client
+uses) is a 30-second move that meaningfully sharpens how the assistant chooses tools.
+
+Here's the one we use. Drop it in verbatim:
+
+```md
+# MCP Memory Skill Reference
+
+This section documents the core MCP memory tools available for use in VS Code. These
+tools enable advanced memory operations, context management, and knowledge persistence
+for collaborative workflows.
+
+## Core MCP Tools
+
+- **memory_session_bootstrap** — Loads relevant context at the start of a session.
+  Use to initialize with prior knowledge and goals.
+- **session_checkpoint** — Persists atoms (facts, states, procedures, tasks) and
+  their relationships. Call as new knowledge forms.
+- **memory_search** — Searches for atoms by keyword or semantic query. Use to find
+  relevant facts or states.
+- **memory_access** — Retrieves a specific atom by its exact key. Use for direct
+  lookups.
+- **memory_train** — Reinforces memory arcs (Markov transitions) for better recall.
+  Use after corrections or successful workflows.
+- **memory_context** — Gets all relationships (edges) for one or more atoms. Use to
+  understand dependencies and structure.
+- **memory_associate** — Finds cross-domain connections between recently stored
+  atoms. Use for discovering unexpected relationships.
+- **memory_list_atoms** — Lists all atoms stored, with optional filtering. Use to
+  enumerate or audit memory contents.
+
+Each tool maps to an API operation on your MCP instance. For details or usage
+examples for any specific tool, refer to the official documentation:
+https://parametric-memory.dev/docs/mcp/tools
+```
+
+The behavioural difference is small but real. Without this, the AI knows the tools
+exist but tends to default to whichever it called most recently. With it, you'll see
+`memory_search` and `memory_context` get reached for at the right moments — and
+`session_checkpoint` get called proactively when something durable is learned, instead
+of only when you remember to nudge it.
+
+## Common issues
+
+**"Server failed to start" / `mcp-remote` errors.** Open the integrated terminal and
+run `npx -y mcp-remote --version`. If `npx` itself errors, Node.js isn't on your PATH —
+check your shell config (`~/.zshrc` or `~/.bash_profile`). If `mcp-remote` fails to
+install, you may be behind a corporate proxy — set `HTTPS_PROXY` and try again.
+
+**401 Unauthorized.** Your bearer token is wrong, expired, or has a stray space in
+the JSON. Double-check the value against your dashboard. The header line must read
+exactly `Authorization: Bearer mmk_...` — case-sensitive, single space after `Bearer`.
+
+**The Start lens didn't flip to Running.** Click `More...` next to the Start lens to
+see the server's stderr. The two most common causes are a malformed JSON header
+(stray comma, missing quote) or a typo in the URL. Fix, save, and click Start again —
+no full reload required.
+
+**Tools don't show up in your AI panel.** Some AI extensions cache the MCP server
+list at extension load. After your first server start, restart your AI extension (or
+quit VS Code completely with `⌘ + Q` and relaunch) so it re-enumerates the available
+tools.
+
+If you see something the troubleshooting list doesn't cover, the
+[Claude integration docs](/docs/mcp/claude#troubleshooting) have a deeper section that
+applies to any MCP client.
+
+## What about Windows and Linux?
+
+The exact same flow works — only the keyboard shortcut changes. Use `Ctrl + Shift + P`
+to open the Command Palette and the rest of the steps are identical. The
+`mcp.json` config is portable across platforms.
+
+---
+
+That's the whole setup. One config block, one click on Start, and your AI in VS Code
+remembers across sessions — Merkle-verified, conflict-detected, ready to compound.
+
+> [Get a substrate](/pricing) from $5/month, or [check out the docs](/docs/quick-start)
+> for a deeper walkthrough.
