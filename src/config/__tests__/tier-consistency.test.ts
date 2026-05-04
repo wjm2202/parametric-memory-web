@@ -297,9 +297,9 @@ describe("cross-project — compute Stripe product names align with website", ()
 // ── 6. FAQ answers reference correct plan names ───────────────────────────────
 
 describe("pricing/PricingClient.tsx — FAQ uses canonical plan names", () => {
-  it("references 'Starter' plan (canonical $3/mo tier)", () => {
+  it("references 'Starter' plan (canonical $5/mo tier — D16)", () => {
     const src = readSrc("app/pricing/PricingClient.tsx");
-    // Starter at $3/mo is a canonical billing tier
+    // Starter at $5/mo is a canonical billing tier (D16; was $3 pre-S0.4 unit-econ spike)
     expect(src).toMatch(/Starter/);
   });
 

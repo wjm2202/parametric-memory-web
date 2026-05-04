@@ -8,9 +8,9 @@ import { CapacityInquiryForm } from "./CapacityInquiryForm";
 import CompetitorComparison from "./CompetitorComparison";
 
 export const metadata: Metadata = {
-  title: "Pricing — Plans from $3/mo",
+  title: "Pricing — Plans from $5/mo",
   description:
-    "Claude remembers everything. Persistent AI memory for developers — flat monthly subscription, no per-query costs. Starter $3/mo, Solo $9/mo, Professional $29/mo, Team $79/mo.",
+    "Claude remembers everything. Persistent AI memory for developers — flat monthly subscription, no per-query costs. Starter $5/mo, Solo $9/mo, Professional $29/mo, Team $79/mo.",
   alternates: {
     canonical: "https://parametric-memory.dev/pricing",
   },
@@ -24,9 +24,9 @@ export const metadata: Metadata = {
     "verifiable memory pricing",
   ],
   openGraph: {
-    title: "Parametric Memory Pricing — Plans from $3/mo",
+    title: "Parametric Memory Pricing — Plans from $5/mo",
     description:
-      "Persistent AI memory from $3/month. Flat rate subscription — no per-query costs, no credits. Starter, Solo, Professional, and Team plans. Merkle proofs, Markov prediction, MCP native.",
+      "Persistent AI memory from $5/month. Flat rate subscription — no per-query costs, no credits. Starter, Solo, Professional, and Team plans. Merkle proofs, Markov prediction, MCP native.",
     url: "https://parametric-memory.dev/pricing",
     images: [
       {
@@ -108,7 +108,7 @@ const faqSchema = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Four plans: Starter at $3/month (1,000 memories, up to 6 Claude sessions/day, 30-day money-back guarantee), Solo at $9/month (10,000 memories, up to 33 Claude sessions/day), Professional at $29/month (100,000 memories, up to 333 Claude sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). All plans billed monthly, cancel anytime, no contracts.",
+        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day, 30-day money-back guarantee), Solo at $9/month (10,000 memories, up to 33 Claude sessions/day), Professional at $29/month (100,000 memories, up to 333 Claude sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). All plans billed monthly, cancel anytime, no contracts.",
       },
     },
     {

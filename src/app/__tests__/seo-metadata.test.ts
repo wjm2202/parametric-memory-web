@@ -61,7 +61,7 @@ describe("SEO meta — home page (src/app/page.tsx)", () => {
 
   it("description includes the cheapest tier's price hook — survives Google snippet truncation", () => {
     // Pulled from src/config/tiers.ts at test time so the test follows
-    // whatever pricing model is active. No literal $3/mo coupling.
+    // whatever pricing model is active. No literal $5/mo coupling (was $3 pre-D16).
     const desc = homeMetadata.description!;
     expect(desc).toMatch(PRICE_HOOK_RE);
   });
@@ -143,7 +143,7 @@ describe("SEO meta — root layout (src/app/layout.tsx)", () => {
     const tw = rootMetadata.twitter as { description?: string };
     expect(tw.description).toBeDefined();
     expect(tw.description!.length).toBeLessThanOrEqual(200);
-    // Derived price — tracks tiers.ts. Doesn't hardcode $3/mo.
+    // Derived price — tracks tiers.ts. Doesn't hardcode $5/mo (or whatever current price).
     expect(tw.description).toMatch(PRICE_HOOK_RE);
   });
 

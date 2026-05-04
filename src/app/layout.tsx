@@ -222,7 +222,7 @@ const webApplicationJsonLd = {
     "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond access (0.045ms p50). Self-hosted on dedicated instances.",
   offers: {
     "@type": "AggregateOffer",
-    lowPrice: "3",
+    lowPrice: "5",
     highPrice: "499",
     priceCurrency: "USD",
     offerCount: "6",

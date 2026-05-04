@@ -83,9 +83,9 @@ export function getHighestPublicPrice(): number {
  * Headline marketing line that adapts to the current tiering model.
  *
  * Examples:
- *   - shared+dedicated:  "Dedicated from $29/mo, shared from $3/mo"
+ *   - shared+dedicated:  "Dedicated from $29/mo, shared from $5/mo"
  *   - dedicated only:    "Dedicated instances from $29/mo"
- *   - shared only:       "From $3/mo"
+ *   - shared only:       "From $5/mo"
  */
 export function getMarketingPriceLine(): string {
   const dedicated = getCheapestDedicatedPrice();
@@ -213,7 +213,7 @@ export function getOffersJsonLd(inputs: OfferJsonLdInputs): OfferJsonLd[] {
 
 export interface PricingTableRow {
   name: string;
-  priceLabel: string; // "$3/mo" or "Custom"
+  priceLabel: string; // "$5/mo" or "Custom"
   atomsLabel: string; // "1,000" or "Unlimited"
   retentionLabel: string; // "12 months", "36 months", "Unlimited"
   deployment: TierDeployment | "self-hosted";
