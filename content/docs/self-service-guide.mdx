@@ -13,7 +13,7 @@ This page walks through every action you can take as a Parametric Memory custome
 
 Your path through Parametric Memory typically follows these phases:
 
-1. **Sign up and provision** — create your account, start your trial, get your first memory instance running
+1. **Sign up and provision** — create your account, subscribe to a plan, get your first memory instance running
 2. **Day-to-day usage** — store atoms, run bootstraps, monitor your usage against tier limits
 3. **Scale up or down** — change tiers as your needs grow, add substrates on higher plans
 4. **Manage billing** — understand spend caps, handle payment issues, add credits
@@ -41,11 +41,9 @@ If provisioning takes longer than expected, the system will retry automatically.
 
 Once running, your instance is available at `https://{your-slug}.droplet-mcp.nz/mcp`. This is the URL you will paste into Claude Desktop, Cowork, or any other MCP client. For shared tiers, this URL stays the same even if you upgrade between Starter, Solo, and Professional. It only changes if you move to or from Team tier (because Team uses a different server).
 
-### Trial period
+### Subscription activation
 
-Your 14-day trial starts the moment you subscribe. Your card is not charged until day 15. During the trial, you have full access to your chosen tier's limits. If you cancel before day 15, nothing is charged and your instance is immediately deprovisioned (no 30-day grace period for trial cancellations).
-
-You can upgrade your tier during a trial and the trial clock keeps running on the new tier. You can also downgrade during the trial, and unlike paid downgrades, trial downgrades take effect immediately rather than waiting for the next billing cycle.
+Your subscription is active the moment Stripe confirms your payment. You have full access to your chosen tier's limits immediately. You can upgrade or downgrade at any time from the Dashboard.
 
 ---
 
@@ -117,7 +115,7 @@ Every tier has a platform spending ceiling that cannot be removed. This protects
 
 | Tier | Monthly ceiling |
 |---|---|
-| Starter | $5 |
+| Starter | $9 |
 | Solo | $15 |
 | Professional | $50 |
 | Team | $120 |
@@ -128,7 +126,7 @@ You can also set a custom spend cap below the platform ceiling. Both your subscr
 
 While paused, API requests return a 503 error with a "cap_paused" message. To resume, either wait for your billing cycle to reset (caps reset on your billing date), raise your custom cap, or upgrade to a tier with a higher ceiling.
 
-**Practical example:** On Starter ($3/month subscription, $5 ceiling), you have $2 of headroom for overages. At $0.001 per excess atom, that is 2,000 atoms above your tier limit before hitting the ceiling.
+**Practical example:** On Starter ($5/month subscription, $9 ceiling), you have $4 of headroom for overages. At $0.001 per excess atom, that is 4,000 atoms above your tier limit before hitting the ceiling.
 
 ### Low balance warnings
 

@@ -31,11 +31,19 @@ vi.mock("next/font/google", () => {
 
 import { metadata as rootMetadata } from "../layout";
 import { metadata as homeMetadata } from "../page";
+import { TIERS } from "@/config/tiers";
+
+// Cheapest publicly-sold tier price — derived from src/config/tiers.ts so the
+// test stays valid through any pricing model change. If you change tier
+// prices, this number recomputes and the description assertion still passes
+// as long as the description was rebuilt via @/lib/pricing helpers.
+const CHEAPEST_PUBLIC_PRICE = Math.min(...TIERS.filter((t) => t.publiclySold).map((t) => t.price));
+const PRICE_HOOK_RE = new RegExp(`\\$${CHEAPEST_PUBLIC_PRICE}\\/mo`);
 
 // ── Description length bounds ──────────────────────────────────────────────
 // Google truncates at ~160 chars desktop / ~120 mobile. We require all
-// descriptions to fit the desktop snippet so the price hook + free-trial CTA
-// survive truncation.
+// descriptions to fit the desktop snippet so the price hook
+// survives truncation.
 const MAX_DESC = 160;
 const MIN_DESC = 100; // anything shorter signals weak SEO content
 
@@ -51,13 +59,16 @@ describe("SEO meta — home page (src/app/page.tsx)", () => {
     expect(homeMetadata.openGraph?.description).toBe(homeMetadata.description);
   });
 
-  it("description includes the price hook ($3/mo) — survives Google snippet truncation", () => {
+  it("description includes the cheapest tier's price hook — survives Google snippet truncation", () => {
+    // Pulled from src/config/tiers.ts at test time so the test follows
+    // whatever pricing model is active. No literal $5/mo coupling (was $3 pre-D16).
     const desc = homeMetadata.description!;
-    expect(desc).toMatch(/\$3\/mo/);
+    expect(desc).toMatch(PRICE_HOOK_RE);
   });
 
-  it("description includes the free-trial CTA", () => {
-    expect(homeMetadata.description).toMatch(/14-day free trial/i);
+  it("description does NOT include trial copy (D11: no trial advertising)", () => {
+    expect(homeMetadata.description).not.toMatch(/14-day free trial/i);
+    expect(homeMetadata.description).not.toMatch(/trial/i);
   });
 
   it("keywords contain the hot commercial-intent terms (Mem0 + Zep alternative)", () => {
@@ -128,11 +139,12 @@ describe("SEO meta — root layout (src/app/layout.tsx)", () => {
     expect(desc.length).toBeLessThanOrEqual(MAX_DESC);
   });
 
-  it("Twitter description fits 200-char hard limit and includes price hook", () => {
+  it("Twitter description fits 200-char hard limit and includes the cheapest price hook", () => {
     const tw = rootMetadata.twitter as { description?: string };
     expect(tw.description).toBeDefined();
     expect(tw.description!.length).toBeLessThanOrEqual(200);
-    expect(tw.description).toMatch(/\$3\/mo/);
+    // Derived price — tracks tiers.ts. Doesn't hardcode $5/mo (or whatever current price).
+    expect(tw.description).toMatch(PRICE_HOOK_RE);
   });
 
   it("robots.index is true and follow is true (we want to rank)", () => {

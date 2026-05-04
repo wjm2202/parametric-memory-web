@@ -1,0 +1,158 @@
+---
+title: "How We Use Parametric Memory: A Practitioner's Playbook"
+date: "2026-05-04"
+excerpt: "We built MMPM to be the persistent memory behind a working AI pair programmer. This is the playbook we actually run — the workflow, the mental model behind atoms and edges, why this isn't a RAG, and how to set up your own substrate so it pays you back from week one."
+author: "Glen Osborne"
+tags: ["engineering", "memory-substrate", "ai-workflow", "playbook"]
+---
+
+# How We Use Parametric Memory: A Practitioner's Playbook
+
+We get asked a version of the same question almost every week: _what's it actually like
+to work with persistent AI memory? How do you set it up so it earns its keep?_
+
+This post is the answer. It's the playbook we run every day — Glen at the keyboard,
+Claude as the pair programmer, MMPM as the substrate connecting every session to every
+other session that came before it. It's the workflow that turned a stateless assistant
+into a working partner that compounds.
+
+We're going to be specific about the mental model, deliberate about the contrast with
+RAG, and concrete about how to set it up so you start getting value in week one rather
+than month three.
+
+## This is not a RAG. Saying it out loud matters.
+
+Retrieval-augmented generation answers a fuzzy question — _what passages from this
+corpus look semantically similar to the user's prompt?_ — and stuffs the top-k chunks
+into the context window. It's a search engine wearing a costume. It's stateless between
+turns, lossy across sessions, and it has no opinion about whether the things it
+retrieves are still true.
+
+Parametric Memory answers a different question: _what does this project actually know,
+right now, about the thing the user is working on?_
+
+That sentence has three loaded words. **Actually**, because every recall returns a
+Merkle proof — if the substrate is lying to you, the cryptography catches it.
+**Right now**, because atoms have lifecycle: state atoms get tombstoned when the world
+moves on, conflicting facts are detected by the substrate before they collide in your
+context. **Knows**, because the unit of storage is a typed, named claim with structural
+edges to other claims — not an unmoored chunk of text.
+
+The practical difference shows up immediately. RAG hands you yesterday's notes in a
+new outfit. MMPM hands you a working model of your project that improves with every
+correction you give it. You stop teaching the same lesson on Monday and again on Friday.
+
+## The mental model: atoms are claims, edges are skeleton
+
+This is the part most teams get wrong on day one and then have to unlearn. So we'll
+say it carefully.
+
+**The eight atom types are a thinking aid, not bookkeeping overhead.** Forcing a claim
+into `fact` / `state` / `event` / `procedure` / `relation` / `domain` / `task` /
+`other` _before_ you store it makes you commit to its epistemic stance. Is this a
+stable truth (`fact`)? A mutable working context (`state`)? A dated milestone that
+will never change (`event`)? A rule that constrains future behaviour (`procedure`)?
+
+Get the type wrong and three things misfire downstream: conflict detection can't tell
+that two atoms disagree, decay either kicks in too fast or never, and bootstrap
+scoring weights the wrong things on the next session. Get the type right and the
+substrate does the rest of the work for you.
+
+**Edges are the skeleton. Markov arcs are the heatmap. Atoms are the proteins.**
+Atoms without edges are a heap. Atoms with edges are a graph that can be reasoned
+across — _this procedure constrains that behaviour; that bug derived from this root
+cause; that decision depends on this fact._ Every checkpoint that adds atoms must
+add edges, minimum a `member_of` to a hub. Skip the edges and you lose 80% of the
+substrate's value. Keep them and you get a working model of your project.
+
+We enforce this on ourselves with one rule: **no orphan atoms.** If we can't think of
+which hub an atom belongs to at write time, it's a sign we haven't really decided
+what we just learned.
+
+## The workflow we run
+
+Four moves, in this order, every session.
+
+**1. Bootstrap on objective.** First message of every non-trivial session, the
+assistant calls `memory_session_bootstrap` with the user's objective and the active
+domain. It comes back with the most relevant atoms, surfaced contradictions, and the
+graph neighbourhood around what we're about to do. This is the "remembering the room
+you walked into" step. Cost: ~1500 tokens. Value: skipping this is what makes AI
+assistants feel goldfish-shaped.
+
+**2. Capture as we go, not at the end.** The instinct is to dump everything at session
+end. Don't. Sessions die, contexts compact, the meeting interrupts you. The rule is
+_memory first, files second_ — when a fact crystallises, when a correction lands, when
+a bug's root cause becomes legible, that's when it goes into the substrate. We use
+`session_checkpoint` for this. One call writes atoms, edges, tombstones, and Markov
+training in a single transaction.
+
+**3. Tombstone aggressively.** State changes. The deploy that was pending yesterday is
+live today. The migration count moves. The architecture decision gets superseded. If
+your substrate is full of stale state atoms, recall starts dragging in noise. We
+tombstone in the same checkpoint that writes the new state, every time. State atoms
+die; event atoms are immutable. That distinction is doing a lot of work.
+
+**4. Train the arcs that matter.** Markov reinforcement is how the substrate gets
+_fluent_ in your project. Three passes on user corrections (they're the highest-value
+signal you'll ever give the assistant), two on proven workflows, one on routine.
+Decay is `weight × 0.5^(days/7)`, so a corrected behaviour with three training passes
+still has weight 1.5 a week later — strong enough to surface on the next relevant
+session.
+
+That's it. Bootstrap, capture, tombstone, train. None of these moves take more than a
+few seconds. The compounding shows up around week three.
+
+## Setting up your substrate so it pays you back fast
+
+If you're starting cold, here's the order of operations we'd give a friend.
+
+**Decide on a domain atom and a hub structure first.** Before you write a single
+fact atom, write `v1.domain.<your_project>` and three or four hub atoms
+(`v1.other.hub_<area>`). Hubs are the anchors that keep the graph navigable as it
+grows. We run with eight hubs across two repos and a website; for a single project
+you'll typically want three to five.
+
+**Adopt a strict naming convention.** `v1.<type>.<concise_snake_case_identifier>`.
+Short, keyword-dense, under ten tokens. The conflict detector keys on the last
+underscore token, so `v1.fact.payment_mode_live` and `v1.fact.payment_mode_test`
+correctly clash. Long names dilute the Jaccard similarity that bootstrap uses to
+score relevance — the assistant won't find your beautifully descriptive atom because
+no one's objective will overlap a 30-token name.
+
+**Store corrections as procedures, immediately.** When you correct your assistant
+("no, run this in staging first" / "ask before deleting" / "we use `pnpm` not `npm`"),
+that's the most valuable signal of the entire session. Capture it as a `procedure`
+atom in the same conversation, edge it `constrains` the corrected behaviour and
+`member_of` your corrections hub, and run three training passes. Done in under a
+minute. Pays out forever.
+
+**Run a weekly consolidation pass.** A reflective sweep that merges duplicates,
+fixes stale facts, and prunes the index. We run ours overnight on Sundays. It keeps
+the substrate honest as it grows past a few thousand atoms.
+
+**Don't store secrets.** This sounds obvious; it isn't. The substrate refuses them
+on input (the API returns 422 on anything that smells like a credential), but more
+importantly, secrets don't belong in a shared knowledge layer. Code references to
+which env vars exist are fine. The values themselves live in your password manager.
+
+## What we get back
+
+We can be precise about the payoff because we measure it. Sessions start ~1200 tokens
+heavier than they would otherwise — the cost of bootstrap. They end thousands of
+tokens lighter, because the assistant isn't re-deriving the same facts on every turn.
+Across our own internal usage, the Markov layer hits about 64% of the time on
+predicted-next workflows, which translates directly into fewer round trips to figure
+out what the user is trying to do.
+
+The qualitative payoff is bigger than the quantitative one. Bugs we've seen before
+get caught at design time. User corrections stick. The architecture decisions we made
+in March still constrain the code we write in May, without anyone re-explaining why.
+
+This is what "memory" means in our workflow. Not a search index over old transcripts,
+not a vector database with a chat wrapper. A typed, edged, reinforced, cryptographically
+verifiable model of your project that gets sharper every week.
+
+> Want to wire this up for yourself? [Pricing starts at $5/month](/pricing) and any
+> MCP-compatible client can plug in. Or [reach out](/contact) and we'll compare notes
+> on what working this way looks like at your scale.

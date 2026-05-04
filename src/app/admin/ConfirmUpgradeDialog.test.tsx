@@ -10,14 +10,21 @@
  *      transitionKind === "shared_to_dedicated".
  *   4. Cancel button fires onClose; backdrop click fires onClose.
  *   5. Happy path: Upgrade button POSTs to /api/billing/upgrade with
- *      substrateSlug, targetTier, and an idempotencyKey, then navigates the
- *      browser to the returned checkoutUrl.
- *   6. Submitting state: button label swaps to "Redirecting to checkout…"
- *      and Cancel is disabled.
- *   7. Error path (non-ok response): toast.error is fired, the dialog stays
- *      open, Upgrade button re-enables so the user can retry.
+ *      substrateSlug, targetTier, idempotencyKey; on 2xx the dialog fires
+ *      `onUpgradeStarted` (NOT onClose) and emits the "Processing your
+ *      upgrade…" toast — no window.location redirect.
+ *   6. Submitting state: button label swaps to "Starting upgrade…" and
+ *      Cancel is disabled.
+ *   7. Error path (non-ok response): toast.error fires, the dialog stays
+ *      open, Upgrade re-enables so the user can retry, onUpgradeStarted is
+ *      NOT called.
  *   8. Error path (network failure): same as above.
  *   9. Esc key closes the dialog (when not submitting).
+ *
+ * Architectural note: as of May 2026 the upgrade flow is in-place
+ * (`stripe.subscriptions.update`), not Stripe Checkout. The dialog no
+ * longer redirects the browser; it hands off to `useTierChangePoll` via
+ * the `onUpgradeStarted` callback.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
@@ -31,31 +38,18 @@ import { ConfirmUpgradeDialog, type UpgradeOption } from "./ConfirmUpgradeDialog
 
 // sonner — every import of `toast` in the SUT resolves to these vi.fn() spies.
 const mockToastError = vi.fn();
+const mockToastInfo = vi.fn();
 vi.mock("sonner", () => ({
   toast: {
     error: (...args: unknown[]) => mockToastError(...args),
     success: vi.fn(),
-    info: vi.fn(),
+    info: (...args: unknown[]) => mockToastInfo(...args),
   },
 }));
 
 // Global fetch — each test arranges its own resolved/rejected mock.
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
-
-// jsdom's `window.location` is read-only. Replace it with a plain writable
-// object so we can inspect what the SUT assigned to `.href`.
-//
-// We do this fresh before each test to keep assertions independent.
-function installMockLocation() {
-  const mockLocation = { href: "" } as unknown as Location;
-  Object.defineProperty(window, "location", {
-    value: mockLocation,
-    writable: true,
-    configurable: true,
-  });
-  return mockLocation;
-}
 
 // ─── Test fixtures ────────────────────────────────────────────────────────────
 
@@ -92,16 +86,18 @@ const SLOW_PATH_OPTION: UpgradeOption = {
 // depending on the environment offset. Month is 0-indexed → 4 = May.
 const NEXT_BILLING = new Date(2026, 4, 17);
 
-function renderDialog(
-  overrides: {
-    option?: UpgradeOption;
-    currentTier?: string;
-    nextBillingDate?: Date | null;
-    substrateSlug?: string;
-    onClose?: () => void;
-  } = {},
-) {
+interface RenderOverrides {
+  option?: UpgradeOption;
+  currentTier?: string;
+  nextBillingDate?: Date | null;
+  substrateSlug?: string;
+  onClose?: () => void;
+  onUpgradeStarted?: () => void;
+}
+
+function renderDialog(overrides: RenderOverrides = {}) {
   const onClose = overrides.onClose ?? vi.fn();
+  const onUpgradeStarted = overrides.onUpgradeStarted ?? vi.fn();
   const utils = render(
     <ConfirmUpgradeDialog
       substrateSlug={overrides.substrateSlug ?? "bold-junction"}
@@ -111,15 +107,16 @@ function renderDialog(
         overrides.nextBillingDate === undefined ? NEXT_BILLING : overrides.nextBillingDate
       }
       onClose={onClose}
+      onUpgradeStarted={onUpgradeStarted}
     />,
   );
-  return { ...utils, onClose };
+  return { ...utils, onClose, onUpgradeStarted };
 }
 
 beforeEach(() => {
   vi.clearAllMocks();
   mockToastError.mockClear();
-  installMockLocation();
+  mockToastInfo.mockClear();
 });
 
 // ─── Header restatement ───────────────────────────────────────────────────────
@@ -199,6 +196,44 @@ describe("ConfirmUpgradeDialog — close behaviour", () => {
     expect(onClose).toHaveBeenCalledOnce();
   });
 
+  it("× close icon button fires onClose", () => {
+    // The icon button is a discoverability affordance — Cancel is the
+    // semantic close, but users scan for the canonical ×. Both must work.
+    const onClose = vi.fn();
+    renderDialog({ onClose });
+    fireEvent.click(screen.getByTestId("confirm-upgrade-close-icon"));
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("× close icon button is disabled while submitting", async () => {
+    // Mid-submit the parent must NOT receive onClose — that would unmount
+    // the dialog while a network request is still in flight, leaving
+    // submitting state stranded.
+    let resolveFetch: (v: unknown) => void = () => {};
+    mockFetch.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveFetch = resolve;
+        }),
+    );
+
+    const onClose = vi.fn();
+    renderDialog({ onClose });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
+    });
+
+    expect(screen.getByTestId("confirm-upgrade-close-icon")).toBeDisabled();
+    fireEvent.click(screen.getByTestId("confirm-upgrade-close-icon"));
+    expect(onClose).not.toHaveBeenCalled();
+
+    // Drain the pending fetch so vitest doesn't flag a hanging promise.
+    await act(async () => {
+      resolveFetch({ ok: true, json: () => Promise.resolve({ accepted: true }) });
+    });
+  });
+
   it("backdrop click fires onClose", () => {
     const onClose = vi.fn();
     renderDialog({ onClose });
@@ -222,22 +257,41 @@ describe("ConfirmUpgradeDialog — close behaviour", () => {
   });
 });
 
-// ─── Happy path — POST + redirect ─────────────────────────────────────────────
+// ─── Happy path — POST + onUpgradeStarted handoff ─────────────────────────────
 
 describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
   it("POSTs to /api/billing/upgrade with slug + targetTier + idempotencyKey", async () => {
-    const location = installMockLocation();
+    // Compute's UpgradeCommitResponse — accepted in-place. Body fields
+    // are unused client-side; only the 2xx status matters.
     mockFetch.mockResolvedValue({
       ok: true,
-      json: () => Promise.resolve({ checkoutUrl: "https://checkout.stripe.com/c/xyz" }),
+      json: () =>
+        Promise.resolve({
+          accepted: true,
+          currentTier: "indie",
+          targetTier: "pro",
+          transitionType: "shared_to_shared",
+          stripeSubscriptionId: "sub_test_abc",
+          prorationCents: 200,
+        }),
     });
 
-    renderDialog({ substrateSlug: "bold-junction", option: FAST_PATH_OPTION });
+    const onClose = vi.fn();
+    const onUpgradeStarted = vi.fn();
+    renderDialog({
+      substrateSlug: "bold-junction",
+      option: FAST_PATH_OPTION,
+      onClose,
+      onUpgradeStarted,
+    });
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
     });
 
+    // Request shape: BFF expects substrateSlug + targetTier + idempotencyKey.
+    // The BFF unwraps slug into the path and renames targetTier→tier on its
+    // way to compute; the dialog stays on the documented BFF contract.
     expect(mockFetch).toHaveBeenCalledOnce();
     const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
     expect(url).toBe("/api/billing/upgrade");
@@ -246,18 +300,46 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
     const body = JSON.parse(init.body as string);
     expect(body.substrateSlug).toBe("bold-junction");
     expect(body.targetTier).toBe("pro");
-    // idempotencyKey should be non-empty and stable across retries in the
-    // same dialog mount — at minimum it's present.
     expect(typeof body.idempotencyKey).toBe("string");
     expect(body.idempotencyKey.length).toBeGreaterThan(0);
 
-    // Redirect fired.
-    expect(location.href).toBe("https://checkout.stripe.com/c/xyz");
+    // Handoff: onUpgradeStarted fires; onClose does NOT (Cancel/Esc owns
+    // that callback — success goes through onUpgradeStarted so the parent
+    // can distinguish "user cancelled" from "upgrade accepted").
+    expect(onUpgradeStarted).toHaveBeenCalledOnce();
+    expect(onClose).not.toHaveBeenCalled();
+
+    // User feedback: pending toast fires (poller is on a 3 s tick — too
+    // slow to be the only confirmation signal).
+    expect(mockToastInfo).toHaveBeenCalledOnce();
+    expect(mockToastInfo).toHaveBeenCalledWith(
+      expect.stringMatching(/Processing your upgrade/i),
+      expect.objectContaining({ description: expect.any(String) }),
+    );
     // No error toast.
     expect(mockToastError).not.toHaveBeenCalled();
   });
 
-  it("swaps the button label to 'Redirecting to checkout…' while submitting", async () => {
+  it("ignores body shape on 2xx — no checkoutUrl read, no redirect", async () => {
+    // Defensive: even an empty body is fine. The dialog must not assume any
+    // particular field on success — only the status code.
+    mockFetch.mockResolvedValue({
+      ok: true,
+      json: () => Promise.resolve({}),
+    });
+
+    const onUpgradeStarted = vi.fn();
+    renderDialog({ onUpgradeStarted });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
+    });
+
+    expect(onUpgradeStarted).toHaveBeenCalledOnce();
+    expect(mockToastError).not.toHaveBeenCalled();
+  });
+
+  it("swaps the button label to 'Starting upgrade…' while submitting", async () => {
     // Never resolve — we want to observe the pending state.
     let resolveFetch: (v: unknown) => void = () => {};
     mockFetch.mockImplementation(
@@ -274,7 +356,7 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
     });
 
     const confirmBtn = screen.getByTestId("confirm-upgrade-confirm");
-    expect(confirmBtn).toHaveTextContent(/redirecting to checkout/i);
+    expect(confirmBtn).toHaveTextContent(/starting upgrade/i);
     expect(confirmBtn).toBeDisabled();
     // Cancel disabled during submit too.
     expect(screen.getByTestId("confirm-upgrade-cancel")).toBeDisabled();
@@ -283,7 +365,7 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
     await act(async () => {
       resolveFetch({
         ok: true,
-        json: () => Promise.resolve({ checkoutUrl: "https://checkout.stripe.com/c/xyz" }),
+        json: () => Promise.resolve({ accepted: true }),
       });
     });
   });
@@ -310,7 +392,7 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
     await act(async () => {
       resolveFetch({
         ok: true,
-        json: () => Promise.resolve({ checkoutUrl: "https://x" }),
+        json: () => Promise.resolve({ accepted: true }),
       });
     });
   });
@@ -323,10 +405,11 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
     mockFetch.mockResolvedValue({
       ok: false,
       status: 409,
-      json: () => Promise.resolve({ error: "tier_change_in_flight" }),
+      json: () => Promise.resolve({ error: "upgrade_in_progress" }),
     });
 
-    renderDialog();
+    const onUpgradeStarted = vi.fn();
+    renderDialog({ onUpgradeStarted });
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
@@ -338,12 +421,15 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
     // Button re-enabled so the user can retry or cancel.
     expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
     expect(screen.getByTestId("confirm-upgrade-cancel")).not.toBeDisabled();
+    // Parent must NOT think the upgrade started.
+    expect(onUpgradeStarted).not.toHaveBeenCalled();
   });
 
   it("fires toast.error when fetch rejects (network failure)", async () => {
     mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
 
-    renderDialog();
+    const onUpgradeStarted = vi.fn();
+    renderDialog({ onUpgradeStarted });
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
@@ -352,24 +438,7 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
     expect(mockToastError).toHaveBeenCalledOnce();
     expect(screen.getByTestId("confirm-upgrade-dialog")).toBeInTheDocument();
     expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
-  });
-
-  it("fires toast.error when the response body is missing checkoutUrl", async () => {
-    // 200 OK but malformed body — defensive path. Backend should never do this
-    // but we don't want to crash the client on a shape surprise.
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({ notCheckout: "wat" }),
-    });
-
-    renderDialog();
-
-    await act(async () => {
-      fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
-    });
-
-    expect(mockToastError).toHaveBeenCalledOnce();
-    expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
+    expect(onUpgradeStarted).not.toHaveBeenCalled();
   });
 
   it("does NOT double-submit when Upgrade is clicked again while in flight", async () => {
@@ -405,7 +474,7 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
     await act(async () => {
       resolveFetch({
         ok: true,
-        json: () => Promise.resolve({ checkoutUrl: "https://x" }),
+        json: () => Promise.resolve({ accepted: true }),
       });
     });
   });

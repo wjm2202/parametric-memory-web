@@ -1,3 +1,4 @@
+import { SUPPORT_EMAIL } from "./site";
 /**
  * Canonical tier registry — single source of truth for all layers.
  *
@@ -39,12 +40,29 @@ export interface TierFeature {
   included: boolean;
 }
 
+/**
+ * Infrastructure deployment model for a tier.
+ *
+ * "shared"    → runs in a multi-tenant cluster (~10-20 customers per droplet).
+ *               Lower per-customer cost; lower price ceilings.
+ *               Used by Starter and Solo as of 2026-05-01 viability decision.
+ * "dedicated" → runs on its own droplet, isolated PostgreSQL + Merkle tree.
+ *               Brand promise for Pro/Team/Enterprise tiers.
+ *
+ * COMPUTE-SIDE NOTE: When this field flips for a tier, mmpm-compute must
+ * support the new deployment model before the marketing change goes live.
+ * As of 2026-05-01 compute provisions dedicated droplets only — shared
+ * cluster support is the gating work for honouring "$5/mo shared" (Starter; price
+ * raised from $3 to $5 per D16, S0.4 unit-economics spike).
+ */
+export type TierDeployment = "shared" | "dedicated";
+
 export interface Tier {
   /** Canonical ID used in compute DB, Stripe metadata, and API. */
   id: TierId;
   /** Marketing display name shown in UI. */
   name: string;
-  /** Monthly price in USD (0 for free tier). */
+  /** Monthly price in USD (0 for internal expired-subscription state). */
   price: number;
   /** Short description shown under tier name on pricing page. */
   description: string;
@@ -52,13 +70,17 @@ export interface Tier {
   badge: string | null;
   /** Pricing page CTA button label. */
   cta: string;
+  /** Whether this tier is publicly purchasable (false hides it from /pricing + JSON-LD). */
+  publiclySold: boolean;
+  /** Infrastructure deployment model — see TierDeployment. */
+  deployment: TierDeployment;
   /** Compute-side resource limits. Must match CONTAINER_LIMITS in mmpm-compute. */
   limits: TierLimits;
   /** Pricing page feature checklist. */
   features: TierFeature[];
   /**
    * env var key for the Stripe monthly price ID: process.env[stripePriceEnvKey]
-   * All tiers (including free at $1/mo) have a Stripe price.
+   * All tiers (including internal expired state) have a Stripe price.
    */
   stripePriceEnvKey: string;
   /**
@@ -75,6 +97,8 @@ export const TIERS: Tier[] = [
     description: "Post-trial fallback tier. Not publicly sold.",
     badge: null,
     cta: "Get Started",
+    publiclySold: false,
+    deployment: "shared",
     limits: {
       maxAtoms: 500,
       maxBootstrapsPerMonth: 100,
@@ -99,15 +123,17 @@ export const TIERS: Tier[] = [
   {
     id: "starter",
     name: "Starter",
-    price: 3,
-    description: "Experience persistent memory. $3/month, 30-day money-back guarantee.",
+    price: 5, // was 3 — D16 (S0.4 unit-econ)
+    description: "Experience persistent memory. $5/month, 30-day money-back guarantee.",
     badge: null,
     cta: "Start Building",
+    publiclySold: true,
+    deployment: "shared",
     limits: {
       maxAtoms: 1_000,
       maxBootstrapsPerMonth: 200,
       maxStorageMB: 100,
-      maxMonthlyCents: 500,
+      maxMonthlyCents: 900, // $9 cap — D16 raised sub $3→$5; cap raised proportionally to preserve overage headroom
       maxSubstrates: 1,
     },
     stripePriceEnvKey: "STRIPE_PRICE_STARTER_MONTHLY",
@@ -117,7 +143,7 @@ export const TIERS: Tier[] = [
       { name: "200 bootstraps / month", included: true },
       { name: "100 MB storage", included: true },
       { name: "1 substrate", included: true },
-      { name: "$5/mo spend cap", included: true },
+      { name: "$9/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
       { name: "Knowledge graph edges", included: true },
@@ -133,6 +159,8 @@ export const TIERS: Tier[] = [
     description: "For individual developers building with persistent memory.",
     badge: null,
     cta: "Get Solo",
+    publiclySold: true,
+    deployment: "shared",
     limits: {
       maxAtoms: 10_000,
       maxBootstrapsPerMonth: 1_000,
@@ -161,6 +189,8 @@ export const TIERS: Tier[] = [
     description: "For power users with large knowledge bases.",
     badge: "Most Popular",
     cta: "Get Professional",
+    publiclySold: true,
+    deployment: "dedicated",
     limits: {
       maxAtoms: 100_000,
       maxBootstrapsPerMonth: 10_000,
@@ -190,6 +220,8 @@ export const TIERS: Tier[] = [
     description: "For teams that need shared memory across agents.",
     badge: null,
     cta: "Get Team",
+    publiclySold: true,
+    deployment: "dedicated",
     limits: {
       maxAtoms: 500_000,
       maxBootstrapsPerMonth: -1,
@@ -293,7 +325,7 @@ export const ENTERPRISE_TIERS: EnterpriseTier[] = [
     description: "For mission-critical AI systems.",
     badge: null,
     cta: "Contact Sales",
-    ctaLink: "mailto:entityone22@gmail.com?subject=Enterprise%20Cloud%20Inquiry",
+    ctaLink: `mailto:${SUPPORT_EMAIL}?subject=Enterprise%20Cloud%20Inquiry`,
     features: [
       { name: "Unlimited atoms", included: true },
       { name: "Unlimited bootstraps", included: true },
@@ -315,7 +347,7 @@ export const ENTERPRISE_TIERS: EnterpriseTier[] = [
     description: "Complete control and sovereignty.",
     badge: null,
     cta: "Contact Sales",
-    ctaLink: "mailto:entityone22@gmail.com?subject=Enterprise%20Self-Hosted%20Inquiry",
+    ctaLink: `mailto:${SUPPORT_EMAIL}?subject=Enterprise%20Self-Hosted%20Inquiry`,
     features: [
       { name: "Full source code + commercial license", included: true },
       { name: "Deploy on your own cloud", included: true },

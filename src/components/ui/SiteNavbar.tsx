@@ -329,15 +329,23 @@ export default function SiteNavbar({
       <>
         <nav
           aria-label="Primary"
-          className="border-surface-800/60 bg-surface-950/70 fixed top-0 right-0 left-0 z-50 border-b backdrop-blur-xl"
+          // Locked to --site-nav-h (defined in globals.css). Every overlay
+          // across the site uses the same variable for its top inset so
+          // the navbar always paints above the dim. Touching this height
+          // means updating the variable, not editing this className.
+          className="border-surface-800/60 bg-surface-950/70 fixed top-0 right-0 left-0 z-50 h-[var(--site-nav-h)] border-b backdrop-blur-xl"
         >
           {/*
            * Three-column layout: logo | nav links | auth button + hamburger
            * Desktop (≥ md): centre nav links absolutely centred; auth on right.
            * Mobile  (< md): centre nav hidden; hamburger replaces it visually;
            *                 auth remains on the right for one-tap sign-in.
+           *
+           * Row uses h-full so it fills the nav's locked outer height
+           * without re-stating it; padding is x-only because vertical
+           * sizing is now the variable's job.
            */}
-          <div className="relative mx-auto flex max-w-6xl items-center px-4 py-3 sm:px-6 sm:py-4">
+          <div className="relative mx-auto flex h-full max-w-6xl items-center px-4 sm:px-6">
             {/* ── Left: Logo (static anchor) ─────────────────────────────── */}
             <Link
               href="/"

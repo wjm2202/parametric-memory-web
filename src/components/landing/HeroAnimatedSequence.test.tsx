@@ -27,7 +27,7 @@ describe("HeroAnimatedSequence — static hero (LCP-friendly)", () => {
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
     const h1 = screen.getByRole("heading", { level: 1 });
     expect(h1.textContent).toContain("Your AI's second brain.");
-    expect(h1.textContent).toContain("Ready in 60 seconds.");
+    expect(h1.textContent).toContain("Ready in minutes.");
   });
 
   it("renders both CTAs with canonical testids", () => {

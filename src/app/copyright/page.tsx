@@ -19,6 +19,7 @@ import Link from "next/link";
 import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 
+import { SUPPORT_EMAIL } from "@/config/site";
 export const metadata: Metadata = {
   title: "Copyright & Licensing — Parametric Memory",
   description:
@@ -198,7 +199,7 @@ export default async function CopyrightPage() {
           <h2>7. Contact</h2>
           <p>
             Licensing enquiries, attribution disputes, and takedown requests:&nbsp;
-            <a href="mailto:entityone22@gmail.com">entityone22@gmail.com</a>.
+            <a href={`mailto:${SUPPORT_EMAIL}`}>{SUPPORT_EMAIL}</a>.
           </p>
 
           <h2>8. Not Legal Advice</h2>
@@ -214,8 +215,8 @@ export default async function CopyrightPage() {
         <div className="mt-16 border-t border-white/10 pt-8">
           <p className="text-sm text-white/40">
             G. Osborne · New Zealand ·{" "}
-            <a href="mailto:entityone22@gmail.com" className="text-white/60 hover:text-white">
-              entityone22@gmail.com
+            <a href={`mailto:${SUPPORT_EMAIL}`} className="text-white/60 hover:text-white">
+              {SUPPORT_EMAIL}
             </a>
           </p>
           <div className="mt-4 flex flex-wrap gap-4 text-sm">

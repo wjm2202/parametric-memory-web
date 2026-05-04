@@ -64,9 +64,6 @@ To resubscribe, go to the Dashboard and complete a new Stripe Checkout. Note tha
 
 If your account has been suspended due to failed payments and you want to reactivate without resubscribing, you can add credits to bring your balance positive. Credit additions are processed atomically — the balance update and billing event are recorded together, so credits cannot be lost or double-counted. Each credit is tracked by its Stripe payment intent ID, making the operation safe to retry.
 
-## Payment failures during trial
-
-If your first charge on day 15 fails, Stripe begins its normal retry schedule. Your instance continues running during retries. If all retries fail, the trial subscription is cancelled and your instance enters the standard 30-day read-only grace period.
 
 ## Preventing payment failures
 

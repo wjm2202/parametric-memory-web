@@ -7,7 +7,7 @@ order: 3
 
 # Your Instance & API Key
 
-Once your subscription is active (or your trial has started), your memory substrate is provisioned automatically. You do not need to do anything to start it — by the time you reach the Dashboard, it is running and ready.
+Once your subscription is active, your memory substrate is provisioned automatically. You do not need to do anything to start it — by the time you reach the Dashboard, it is running and ready.
 
 ## Finding your instance details
 
@@ -58,17 +58,27 @@ This block is what you paste into Claude Desktop, Claude Cowork, Cursor, or any 
 
 ## Rotating your API key
 
-Self-service key rotation is not yet available in the Dashboard. To rotate your key, contact support and we will issue a new one for you.
+You can rotate your API key at any time from your substrate's admin page in the
+[dashboard](/dashboard) — use the **Rotate API key** button. Rotation runs a
+multi-step process: a new key is generated, deployed to your substrate
+containers, and made available for you to claim.
 
-When a key is rotated, your old key enters a **24-hour grace period** — it keeps working while you update your configs, then expires automatically. This means there is no forced downtime during a rotation.
+**Your old key stays active until you claim the new key and update your client
+configuration** — there is no forced cutover and no time-based grace window.
 
-Once you receive your new key:
+After claiming the new key from the dashboard:
 
-1. Update the `Authorization` header in every AI client config where you use this key
-2. Clear any MCP auth cache on your machine (e.g. `~/.mcp-auth/` on macOS/Linux)
-3. Your old key will stop working after 24 hours
+1. Update the `Authorization` header in every AI client config where you use
+   this key (Claude Desktop, Cowork, Cursor, Claude Code, etc.).
+2. Clear any MCP auth cache on your machine (e.g. `~/.mcp-auth/` on
+   macOS/Linux).
+3. The old key is revoked once the new key is claimed and in place.
 
-> **If your key is actively compromised**, flag this when contacting support and we can revoke the old key immediately (0-hour grace).
+For the full rotation lifecycle (states, error recovery, multi-substrate
+considerations), see the [API authentication reference](/docs/api/authentication#key-rotation).
+
+> **If your key is actively compromised**, revoke it immediately from the
+> dashboard's security tab — no support ticket required.
 
 ## Security notes
 

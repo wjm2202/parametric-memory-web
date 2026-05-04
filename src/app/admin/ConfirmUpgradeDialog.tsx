@@ -1,6 +1,6 @@
 /**
- * ConfirmUpgradeDialog — final "are you sure?" step before we bounce the
- * customer to Stripe Checkout.
+ * ConfirmUpgradeDialog — final "are you sure?" step before we kick off an
+ * in-place tier change.
  *
  * Rendered by ChangePlanSheet when the user clicks Select on an upgrade row.
  * Responsibilities:
@@ -8,10 +8,21 @@
  *     month, next-billing-date).
  *   - Surface the shared_to_dedicated warning panel inline so the customer
  *     sees it one more time before committing.
- *   - On Upgrade click, POST /api/billing/upgrade { substrateSlug, targetTier,
- *     idempotencyKey } and redirect to the returned checkoutUrl.
- *   - On error: toast via sonner; keep the dialog open so the user can retry
- *     or cancel.
+ *   - On Upgrade click, POST /api/billing/upgrade with
+ *     `{ substrateSlug, targetTier, idempotencyKey }`. Compute applies the
+ *     change in-place via Stripe `subscriptions.update` and inserts a
+ *     `substrate_tier_changes` row; the dashboard's `useTierChangePoll`
+ *     picks the row up on its next 3 s tick and renders the in-flight
+ *     banner. Behavioural contract:
+ *       - 2xx → toast "Processing your upgrade…", call `onUpgradeStarted`,
+ *         do NOT reset `submitting` (parent will unmount the dialog).
+ *       - non-2xx or thrown fetch → toast.error, re-enable buttons,
+ *         leave the dialog open so the user can retry.
+ *
+ * Historical note: the previous implementation expected `{ checkoutUrl }`
+ * in the response body and redirected the whole window to Stripe Checkout.
+ * That flow was replaced with in-place subscription mutation; the dialog
+ * was updated alongside the BFF path fix (A1, May 2026).
  *
  * Copy lives in tier-change-copy.ts — no inline strings.
  *
@@ -29,6 +40,8 @@ import {
   DIALOG_CONFIRM_LABEL,
   DIALOG_CONFIRM_LABEL_SUBMITTING,
   DIALOG_TITLE,
+  TOAST_PENDING_BODY,
+  TOAST_PENDING_TITLE,
   TOAST_SUBMIT_ERROR_BODY,
   TOAST_SUBMIT_ERROR_TITLE,
   formatUsdCents,
@@ -82,11 +95,23 @@ interface Props {
    */
   nextBillingDate: Date | null;
   /**
-   * Called on Cancel button, backdrop click, or Esc key. Does NOT fire on
-   * successful Upgrade — the success path navigates the whole page via
-   * window.location.href.
+   * Called on Cancel button, backdrop click, or Esc key. Does NOT fire on a
+   * successful Upgrade — that path uses {@link Props.onUpgradeStarted}.
    */
   onClose: () => void;
+  /**
+   * Fires when compute accepts the upgrade (2xx) and the in-flight
+   * tier-change row has been written. The parent should:
+   *   - unmount this dialog (so the Stripe spinner stops)
+   *   - close the surrounding `ChangePlanSheet` so the underlying admin
+   *     view re-shows
+   *   - allow `useTierChangePoll` to detect the new row and render the
+   *     `TierChangeProgressBanner`
+   *
+   * The dialog has already toasted "Processing your upgrade…" by the time
+   * this fires, so callers do not need to surface their own confirmation.
+   */
+  onUpgradeStarted: () => void;
 }
 
 /**
@@ -108,6 +133,7 @@ export function ConfirmUpgradeDialog({
   option,
   nextBillingDate,
   onClose,
+  onUpgradeStarted,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
@@ -160,17 +186,23 @@ export function ConfirmUpgradeDialog({
         return;
       }
 
-      const body = (await res.json()) as { checkoutUrl?: string };
-      if (!body.checkoutUrl) {
-        toast.error(TOAST_SUBMIT_ERROR_TITLE, { description: TOAST_SUBMIT_ERROR_BODY });
-        setSubmitting(false);
-        return;
-      }
+      // 2xx — compute accepted the change and wrote the substrate_tier_changes
+      // row. We no longer parse the body: the response shape is
+      // `{ accepted, currentTier, targetTier, transitionType, ... }` and we
+      // don't need any of it client-side. The poller will pick up the row
+      // and the banner will render.
+      //
+      // Surface a transient "Processing your upgrade…" toast so the user
+      // sees something change immediately — `useTierChangePoll` runs on a
+      // 3 s interval, which is too slow for a button click without
+      // confirmation feedback.
+      toast.info(TOAST_PENDING_TITLE, { description: TOAST_PENDING_BODY });
 
-      // Hand off to Stripe. Deliberately don't reset `submitting` — leaving
-      // the button in "Redirecting…" state while the navigation lands keeps
-      // the customer from clicking again during the tab flicker.
-      window.location.href = body.checkoutUrl;
+      // Hand control back to the parent. Deliberately do NOT reset
+      // `submitting`: the parent unmounts this dialog as part of its own
+      // cleanup, and a brief disabled-spinner state during that frame is
+      // preferable to flickering back to "Upgrade" before unmount.
+      onUpgradeStarted();
     } catch {
       toast.error(TOAST_SUBMIT_ERROR_TITLE, { description: TOAST_SUBMIT_ERROR_BODY });
       setSubmitting(false);
@@ -183,11 +215,12 @@ export function ConfirmUpgradeDialog({
       aria-modal="true"
       aria-labelledby="confirm-upgrade-title"
       data-testid="confirm-upgrade-dialog"
-      className="fixed inset-0 z-50 flex items-center justify-center px-4"
+      className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4"
     >
       <div
         // Backdrop click closes the dialog. Disabled during submit so a stray
-        // click during the Stripe redirect doesn't pop a blank admin page.
+        // click during the in-flight POST doesn't strand the user with a
+        // spinner that has no parent to dismiss it.
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={() => {
           if (!submitting) onClose();
@@ -196,6 +229,30 @@ export function ConfirmUpgradeDialog({
       />
 
       <div className="relative w-full max-w-md rounded-2xl border border-indigo-500/30 bg-[#0d0d14] p-6 shadow-2xl">
+        {/* × close button — top-right of the panel. Same handler as Cancel
+            (parent's onClose), disabled mid-submit so a stray click during
+            the in-flight POST doesn't strand the user with a spinner that
+            has no parent to dismiss it. The button sits absolute over the
+            panel's padding so it doesn't reflow the header content. */}
+        <button
+          type="button"
+          onClick={onClose}
+          disabled={submitting}
+          aria-label="Close"
+          data-testid="confirm-upgrade-close-icon"
+          className="absolute top-3 right-3 inline-flex h-7 w-7 items-center justify-center rounded-md text-white/40 transition-colors hover:bg-white/5 hover:text-white/80 disabled:opacity-30"
+        >
+          <svg
+            xmlns="http://www.w3.org/2000/svg"
+            viewBox="0 0 20 20"
+            fill="currentColor"
+            className="h-4 w-4"
+            aria-hidden="true"
+          >
+            <path d="M5.22 5.22a.75.75 0 0 1 1.06 0L10 8.94l3.72-3.72a.75.75 0 1 1 1.06 1.06L11.06 10l3.72 3.72a.75.75 0 1 1-1.06 1.06L10 11.06l-3.72 3.72a.75.75 0 0 1-1.06-1.06L8.94 10 5.22 6.28a.75.75 0 0 1 0-1.06Z" />
+          </svg>
+        </button>
+
         {/* Header */}
         <div className="mb-5">
           <h2

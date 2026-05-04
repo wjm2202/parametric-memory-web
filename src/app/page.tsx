@@ -5,11 +5,11 @@ import Image from "next/image";
 import { HeroSceneWrapper } from "@/components/landing/HeroSceneWrapper";
 import { HeroAnimatedSequence } from "@/components/landing/HeroAnimatedSequence";
 import SiteNavbar from "@/components/ui/SiteNavbar";
+import { getHomeMetaDescription, getAggregateOfferData } from "@/lib/pricing";
 
 export const metadata: Metadata = {
   title: "Parametric Memory — Persistent, Verifiable Memory for AI",
-  description:
-    "Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. Dedicated instances from $3/mo. 14-day free trial.",
+  description: getHomeMetaDescription(),
   alternates: { canonical: "https://parametric-memory.dev" },
   keywords: [
     // Hot commercial intent — Mem0/Zep comparison SERPs
@@ -36,8 +36,7 @@ export const metadata: Metadata = {
   ],
   openGraph: {
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
-    description:
-      "Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. Dedicated instances from $3/mo. 14-day free trial.",
+    description: getHomeMetaDescription(),
     url: "https://parametric-memory.dev",
     siteName: "Parametric Memory",
     images: [
@@ -60,7 +59,7 @@ const landingJsonLd = {
   name: "Parametric Memory — Home",
   url: "https://parametric-memory.dev",
   description:
-    "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances from $3/mo.",
+    "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances from $5/mo.",
   datePublished: "2025-01-01",
   dateModified: new Date().toISOString().split("T")[0],
   inLanguage: "en-US",
@@ -96,10 +95,7 @@ const landingJsonLd = {
     },
     offers: {
       "@type": "AggregateOffer",
-      lowPrice: "3",
-      highPrice: "499",
-      priceCurrency: "USD",
-      offerCount: "6",
+      ...getAggregateOfferData(),
     },
   },
 };
@@ -115,7 +111,7 @@ const homeFaqJsonLd = {
       name: "What is Parametric Memory?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Parametric Memory (MMPM) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as named atoms in a SHA-256 Merkle tree, provides RFC 6962 consistency proofs on every read, and uses a Markov chain prediction layer to pre-fetch context before you ask for it. Dedicated instances from $3/month.",
+        text: "Parametric Memory (MMPM) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as named atoms in a SHA-256 Merkle tree, provides RFC 6962 consistency proofs on every read, and uses a Markov chain prediction layer to pre-fetch context before you ask for it. Dedicated instances from $5/month.",
       },
     },
     {
@@ -147,7 +143,7 @@ const homeFaqJsonLd = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Four plans: Starter at $3/month (1,000 memories, up to 6 Claude sessions/day), Solo at $9/month (10,000 memories, up to 33 sessions/day), Professional at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month. All paid plans include a 14-day free trial — no charge until day 15.",
+        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day), Solo at $9/month (10,000 memories, up to 33 sessions/day), Professional at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month.",
       },
     },
     {
@@ -155,7 +151,7 @@ const homeFaqJsonLd = {
       name: "How long does setup take?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Under 60 seconds. Sign up, receive your instance credentials by email, add one config block to your MCP client, and your AI has persistent memory. No Docker, no self-hosting, no infrastructure work required.",
+        text: "In minutes. Sign up, receive your instance credentials by email, add one config block to your MCP client, and your AI has persistent memory. No Docker, no self-hosting, no infrastructure work required.",
       },
     },
   ],
@@ -314,7 +310,7 @@ const stats = [
   { value: "0.045ms", label: "p50 recall latency" },
   { value: "64%", label: "Markov hit rate" },
   { value: "37%", label: "token savings (compact proofs)" },
-  { value: "$3/mo", label: "dedicated instance, starting" },
+  { value: "$5/mo", label: "dedicated instance, starting" },
   { value: "<60s", label: "instance setup time" },
 ];
 
@@ -742,7 +738,7 @@ export default async function HomePage() {
               className="font-display mb-5 text-4xl font-extrabold text-white lg:text-5xl"
               style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
             >
-              Start in 60 seconds.
+              Start in minutes.
               <br />
               <span
                 style={{
@@ -783,12 +779,12 @@ export default async function HomePage() {
 
             {/* Microcopy — removes friction */}
             <p className="text-surface-400 text-sm">
-              Starting at $3/month · 14-day free trial · Cancel before day 15, pay nothing
+              Starting at $5/month · 30-day money-back guarantee · Cancel anytime
             </p>
 
             {/* Tier hint */}
             <p className="text-surface-400 mt-3 font-mono text-xs">
-              Starter $3 · Solo $9 · Professional $29 · Team $79 · Enterprise Cloud $299 ·
+              Starter $5 · Solo $9 · Professional $29 · Team $79 · Enterprise Cloud $299 ·
               Self-Hosted $499
             </p>
           </div>

@@ -1,15 +1,20 @@
 /**
  * Tests for GET /api/billing/upgrade-options — session-auth proxy to
- *   compute:/api/v1/billing/upgrade-options?substrateSlug=<slug>
+ *   compute:/api/v1/substrates/:slug/upgrade/tiers
  *
  * Covers:
  *   1. No session cookie → 401, never calls compute.
- *   2. Happy path → 200 list of upgrade options forwarded transparently.
- *   3. substrateSlug query param is forwarded to compute verbatim.
- *   4. No substrateSlug query — compute returns 400, proxy forwards it.
- *   5. Compute 401 (session expired) → forwarded as 401.
- *   6. Compute 404 (substrate not found) → forwarded as 404.
- *   7. Compute unreachable → 502.
+ *   2. No substrateSlug → 400, never calls compute (slug is part of path).
+ *   3. Happy path → compute's response is TRANSFORMED to the dashboard's
+ *      legacy shape (availableUpgrades→options, transitionType→
+ *      transitionKind, snake-case limits → camelCase limits, prorations
+ *      zeroed because they come from a separate /upgrade/preview call).
+ *   4. substrateSlug is URL-encoded into the path segment.
+ *   5. Malformed compute body (missing fields) → forward verbatim, the
+ *      dashboard's error path renders "couldn't load options".
+ *   6. Compute 401 (session expired) → forwarded as 401.
+ *   7. Compute 404 (substrate not found) → forwarded as 404.
+ *   8. Compute unreachable → 502.
  *
  * Pattern mirrors src/app/api/billing/status/route.test.ts so the two proxy
  * tests look alike for anyone reading them side-by-side.
@@ -36,11 +41,6 @@ function makeCookieStore(token?: string) {
   };
 }
 
-/**
- * Minimal NextRequest stand-in. The route only reads
- * `request.nextUrl.searchParams.get("substrateSlug")`, so we only need that
- * shape.
- */
 function makeReq(substrateSlug?: string): NextRequest {
   const params = new URLSearchParams();
   if (substrateSlug) params.set("substrateSlug", substrateSlug);
@@ -63,37 +63,55 @@ describe("GET /api/billing/upgrade-options", () => {
     expect(mockFetch).not.toHaveBeenCalled();
   });
 
-  it("proxies to compute and returns the upgrade-options list", async () => {
+  it("returns 400 directly when substrateSlug is missing — never calls compute", async () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
 
+    const res = await GET(makeReq(/* no slug */));
+    const body = await res.json();
+
+    expect(res.status).toBe(400);
+    expect(body.error).toBe("substrateSlug_required");
+    expect(mockFetch).not.toHaveBeenCalled();
+  });
+
+  it("transforms compute's response to the dashboard's shape", async () => {
+    mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
+
+    // Compute's canonical shape (src/api/substrates/upgrade-handlers.ts).
     const upstream = {
       currentTier: "starter",
-      options: [
+      availableUpgrades: [
         {
           tier: "indie",
-          displayName: "Solo",
-          monthlyCents: 900,
-          prorationCents: 200,
-          nextBillingDate: "2026-05-17T00:00:00Z",
-          transitionKind: "shared_to_shared",
-          warnings: [],
+          name: "Solo",
+          description: "For solo developers",
+          amountCents: 900,
+          hostingModel: "shared",
+          limits: { maxAtoms: 10000, maxBootstrapsPerMonth: 1000, maxStorageMB: 500 },
+          transitionType: "shared_to_shared",
         },
         {
           tier: "pro",
-          displayName: "Professional",
-          monthlyCents: 2900,
-          prorationCents: 633,
-          nextBillingDate: "2026-05-17T00:00:00Z",
-          transitionKind: "shared_to_dedicated",
-          warnings: [
-            { code: "dedicated_migration", message: "We'll provision a private droplet…" },
-          ],
+          name: "Professional",
+          description: "Dedicated tier",
+          amountCents: 2900,
+          hostingModel: "dedicated",
+          limits: { maxAtoms: 100000, maxBootstrapsPerMonth: 10000, maxStorageMB: 5000 },
+          transitionType: "shared_to_dedicated",
         },
       ],
     };
 
     mockFetch.mockResolvedValue({
+      // `ok: true` is required because computeProxy gates the transform path
+      // on `res.ok` (lib/compute-proxy.ts → ComputeProxyResult.ok). On a real
+      // Response this is a getter computed from status; on a plain mock it
+      // must be set explicitly or computeProxy returns ok:false and the
+      // route's early-return forwards the raw upstream JSON without
+      // transforming. (Caught 2026-05-03 during S0.3 preflight green-up.)
+      ok: true,
       status: 200,
+      headers: new Headers(),
       text: () => Promise.resolve(JSON.stringify(upstream)),
     });
 
@@ -101,12 +119,33 @@ describe("GET /api/billing/upgrade-options", () => {
     const body = await res.json();
 
     expect(res.status).toBe(200);
-    expect(body.currentTier).toBe("starter");
-    expect(body.options).toHaveLength(2);
-    expect(body.options[1].warnings[0].code).toBe("dedicated_migration");
+    expect(body).toEqual({
+      currentTier: "starter",
+      options: [
+        {
+          tier: "indie",
+          name: "Solo",
+          amountCents: 900,
+          hostingModel: "shared",
+          transitionKind: "shared_to_shared",
+          estimatedProrationCents: 0,
+          limits: { maxAtoms: 10000, maxBootstrapsMonth: 1000, maxStorageMb: 500 },
+        },
+        {
+          tier: "pro",
+          name: "Professional",
+          amountCents: 2900,
+          hostingModel: "dedicated",
+          transitionKind: "shared_to_dedicated",
+          estimatedProrationCents: 0,
+          limits: { maxAtoms: 100000, maxBootstrapsMonth: 10000, maxStorageMb: 5000 },
+        },
+      ],
+    });
 
+    // Path: slug-scoped substrate route, not the legacy /api/v1/billing path.
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("/api/v1/billing/upgrade-options?substrateSlug=bold-junction"),
+      expect.stringContaining("/api/v1/substrates/bold-junction/upgrade/tiers"),
       expect.objectContaining({
         headers: expect.objectContaining({ Authorization: "Bearer sess_abc123" }),
         cache: "no-store",
@@ -114,39 +153,37 @@ describe("GET /api/billing/upgrade-options", () => {
     );
   });
 
-  it("URL-encodes unusual substrateSlug values", async () => {
-    // Substrate slugs should be kebab-case but defend against odd inputs.
+  it("URL-encodes unusual substrateSlug values into the path segment", async () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockResolvedValue({
       status: 200,
-      text: () => Promise.resolve(JSON.stringify({ currentTier: "free", options: [] })),
+      text: () => Promise.resolve(JSON.stringify({ currentTier: "free", availableUpgrades: [] })),
     });
 
     await GET(makeReq("weird slug/with?chars"));
 
     expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringContaining("substrateSlug=weird%20slug%2Fwith%3Fchars"),
+      expect.stringContaining("/api/v1/substrates/weird%20slug%2Fwith%3Fchars/upgrade/tiers"),
       expect.any(Object),
     );
   });
 
-  it("forwards compute's 400 when substrateSlug is missing", async () => {
+  it("forwards a malformed compute body verbatim — no transform", async () => {
+    // Defensive: if compute drops `availableUpgrades` (e.g. shape drift from
+    // a future refactor), we don't synthesize a fake `options: []` because
+    // that masks the regression. The dashboard's error branch will fire.
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockResolvedValue({
-      status: 400,
-      text: () => Promise.resolve(JSON.stringify({ error: "substrateSlug_required" })),
+      status: 200,
+      text: () => Promise.resolve(JSON.stringify({ currentTier: "starter" })),
     });
 
-    const res = await GET(makeReq(/* no slug */));
+    const res = await GET(makeReq("bold-junction"));
     const body = await res.json();
 
-    expect(res.status).toBe(400);
-    expect(body.error).toBe("substrateSlug_required");
-    // When slug is missing we don't append the query string — compute decides.
-    expect(mockFetch).toHaveBeenCalledWith(
-      expect.stringMatching(/\/api\/v1\/billing\/upgrade-options$/),
-      expect.any(Object),
-    );
+    // Pass-through, not transformed.
+    expect(body).not.toHaveProperty("options");
+    expect(body).toEqual({ currentTier: "starter" });
   });
 
   it("forwards 401 when compute rejects the session as expired", async () => {
@@ -176,9 +213,9 @@ describe("GET /api/billing/upgrade-options", () => {
 
   it("returns 502 when compute is unreachable", async () => {
     // compute-proxy.ts logs a diagnostic console.error on network failure —
-    // that's intended ops signal in prod. In tests the log leaks into vitest
-    // output and clutters `npm run preflight` logs, so silence it here while
-    // still verifying the alarm fired.
+    // that's intended ops signal in prod. Silence it here so `npm run
+    // preflight` doesn't paint its output amber while still asserting the
+    // alarm actually fired.
     const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
 
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
@@ -189,8 +226,6 @@ describe("GET /api/billing/upgrade-options", () => {
 
     expect(res.status).toBe(502);
     expect(body.error).toBe("upstream_error");
-    // Prove compute-proxy raised its network-error alarm (swallowed-silently
-    // would be a worse bug than log noise).
     expect(errSpy).toHaveBeenCalledWith(
       expect.stringContaining("[compute-proxy]"),
       expect.any(Error),

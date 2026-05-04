@@ -55,3 +55,28 @@ jobs:
 
       - name: Check public/.well-known/actions.json structural invariants
         run: node scripts/check-actions-manifest.mjs
+
+  llms-txt-sync:
+    name: llms.txt sync
+    # Why: public/llms.txt is generated from src/config/tiers.ts by
+    # scripts/build-llms-txt.ts. If tiers.ts changes (price, name, deployment
+    # model, etc.) the committed llms.txt must be regenerated to match.
+    # This job runs `npm run guard:llms-txt`, which calls the script with
+    # --check and exits 1 if the file is stale.
+    #
+    # Unlike the other two guards above, this one needs `npm ci` because
+    # tsx must resolve TypeScript path aliases (@/config/tiers, @/lib/pricing)
+    # from the project's tsconfig.json, which is bundled with node_modules.
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - run: npm ci
+
+      - name: Check public/llms.txt is in sync with tiers.ts
+        run: npm run guard:llms-txt

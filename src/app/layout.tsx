@@ -4,7 +4,15 @@ import { Toaster } from "sonner";
 import "./globals.css";
 import { BetaBanner } from "@/components/ui/BetaBanner";
 import SiteFooter from "@/components/ui/SiteFooter";
+import {
+  getLayoutMetaDescription,
+  getTwitterDescription,
+  getOffersJsonLd,
+  getOgImageAltText,
+  defaultPriceValidUntil,
+} from "@/lib/pricing";
 
+import { SUPPORT_EMAIL } from "@/config/site";
 const syne = Syne({
   subsets: ["latin"],
   variable: "--font-syne",
@@ -59,8 +67,7 @@ export const metadata: Metadata = {
     other: [{ rel: "mask-icon", url: "/brand/favicon-32x32.png" }],
   },
   manifest: "/site.webmanifest",
-  description:
-    "Persistent, verifiable AI memory with Merkle proofs + Markov prediction. Dedicated instances from $3/mo, MCP-native, 14-day free trial.",
+  description: getLayoutMetaDescription(),
   metadataBase: new URL("https://parametric-memory.dev"),
   // ── E-E-A-T + SEO-extension surface (Sprint 2026-W18 SEO audit) ────────
   // Next.js renders these as <meta name="publisher">, <meta name="author">,
@@ -73,8 +80,7 @@ export const metadata: Metadata = {
   category: "AI Memory Infrastructure",
   openGraph: {
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
-    description:
-      "Enterprise-grade AI memory with cryptographic Merkle proofs, Markov-chain prediction, and sub-millisecond recall. Dedicated instances from $3/mo.",
+    description: getLayoutMetaDescription(),
     url: "https://parametric-memory.dev",
     siteName: "Parametric Memory",
     locale: "en_US",
@@ -84,7 +90,7 @@ export const metadata: Metadata = {
         url: "https://parametric-memory.dev/brand/og.png",
         width: 1200,
         height: 630,
-        alt: "Parametric Memory — Persistent, verifiable AI memory. 0.045ms recall · 64% Markov hit rate · From $3/mo.",
+        alt: getOgImageAltText(),
       },
     ],
   },
@@ -93,8 +99,7 @@ export const metadata: Metadata = {
     site: "@parametricmem",
     creator: "@parametricmem",
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
-    description:
-      "Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. From $3/mo. 14-day free trial.",
+    description: getTwitterDescription(),
     images: ["https://parametric-memory.dev/brand/og.png"],
   },
   robots: {
@@ -135,13 +140,13 @@ const organizationJsonLd = {
   contactPoint: [
     {
       "@type": "ContactPoint",
-      email: "entityone22@gmail.com",
+      email: SUPPORT_EMAIL,
       contactType: "sales",
       availableLanguage: "English",
     },
     {
       "@type": "ContactPoint",
-      email: "entityone22@gmail.com",
+      email: SUPPORT_EMAIL,
       contactType: "technical support",
       availableLanguage: "English",
     },
@@ -217,7 +222,7 @@ const webApplicationJsonLd = {
     "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond access (0.045ms p50). Self-hosted on dedicated instances.",
   offers: {
     "@type": "AggregateOffer",
-    lowPrice: "3",
+    lowPrice: "5",
     highPrice: "499",
     priceCurrency: "USD",
     offerCount: "6",
@@ -235,6 +240,45 @@ const webApplicationJsonLd = {
   ],
 };
 
+/* ── Merchant-listings schema fragments (Sprint 2026-W18 GSC fix) ───────────
+ * Google Search Console flagged 5 invalid merchant listings on /pricing:
+ *   - 1 critical: Missing field "image"  (per Offer)
+ *   - 2 warnings: Missing "shippingDetails" + "hasMerchantReturnPolicy"
+ * For digital SaaS the canonical pattern is zero-cost instant delivery and
+ * a finite return window matching the 30-day money-back guarantee. Hoisted as
+ * constants so every Offer references the same policy — single source of
+ * truth, single line to update if the return window changes.
+ */
+const PRODUCT_IMAGE_URL = "https://parametric-memory.dev/brand/og.png";
+
+const DIGITAL_SHIPPING_DETAILS = {
+  "@type": "OfferShippingDetails",
+  shippingRate: {
+    "@type": "MonetaryAmount",
+    value: "0",
+    currency: "USD",
+  },
+  shippingDestination: {
+    "@type": "DefinedRegion",
+    geoMidpoint: { "@type": "GeoCoordinates", latitude: 0, longitude: 0 },
+    name: "Worldwide",
+  },
+  deliveryTime: {
+    "@type": "ShippingDeliveryTime",
+    handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
+    transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
+  },
+};
+
+const FREE_TRIAL_RETURN_POLICY = {
+  "@type": "MerchantReturnPolicy",
+  applicableCountry: "US",
+  returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
+  merchantReturnDays: 14,
+  returnMethod: "https://schema.org/ReturnByMail",
+  returnFees: "https://schema.org/FreeReturn",
+};
+
 /* ── SoftwareApplication — richer schema for AI search engines ──────────────
  * Separate from WebApplication. Google AI Mode, Perplexity, and ChatGPT use
  * SoftwareApplication + Offer arrays to surface pricing and feature data in
@@ -250,6 +294,7 @@ const softwareApplicationJsonLd = {
   applicationCategory: "DeveloperApplication",
   applicationSubCategory: "AI Memory Infrastructure",
   softwareVersion: "1.0",
+  image: PRODUCT_IMAGE_URL,
   operatingSystem: "Linux, Docker, Any (SaaS)",
   inLanguage: "en",
   description:
@@ -265,7 +310,7 @@ const softwareApplicationJsonLd = {
     "Dedicated instances — zero shared infrastructure",
     "OAuth2 and Bearer token authentication",
     "Knowledge graph edges with semantic relationships",
-    "14-day free trial on all paid plans",
+    "30-day money-back guarantee on all paid plans",
     "Docker Compose deployment (DigitalOcean + nginx + Let's Encrypt)",
   ],
   publisher: {
@@ -273,107 +318,13 @@ const softwareApplicationJsonLd = {
     name: "Parametric Memory",
     url: "https://parametric-memory.dev",
   },
-  offers: [
-    {
-      "@type": "Offer",
-      name: "Starter",
-      description: "Experience persistent memory. 1,000 atoms, up to 6 Claude sessions/day.",
-      price: "3",
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: "3",
-        priceCurrency: "USD",
-        billingDuration: "P1M",
-        unitCode: "MON",
-      },
-      availability: "https://schema.org/InStock",
-      url: "https://parametric-memory.dev/pricing#starter",
-    },
-    {
-      "@type": "Offer",
-      name: "Solo",
-      description: "Your personal AI memory. 10,000 atoms, up to 33 Claude sessions/day.",
-      price: "9",
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: "9",
-        priceCurrency: "USD",
-        billingDuration: "P1M",
-        unitCode: "MON",
-      },
-      availability: "https://schema.org/InStock",
-      url: "https://parametric-memory.dev/pricing#indie",
-    },
-    {
-      "@type": "Offer",
-      name: "Professional",
-      description:
-        "For serious daily AI development. 100,000 atoms, up to 333 Claude sessions/day.",
-      price: "29",
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: "29",
-        priceCurrency: "USD",
-        billingDuration: "P1M",
-        unitCode: "MON",
-      },
-      availability: "https://schema.org/InStock",
-      url: "https://parametric-memory.dev/pricing#pro",
-    },
-    {
-      "@type": "Offer",
-      name: "Team",
-      description: "Your team's shared institutional memory. 500,000 atoms, unlimited bootstraps.",
-      price: "79",
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: "79",
-        priceCurrency: "USD",
-        billingDuration: "P1M",
-        unitCode: "MON",
-      },
-      availability: "https://schema.org/InStock",
-      url: "https://parametric-memory.dev/pricing#team",
-    },
-    {
-      "@type": "Offer",
-      name: "Enterprise Cloud",
-      description:
-        "Managed enterprise tier. 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML, SOC 2 artifacts.",
-      price: "299",
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: "299",
-        priceCurrency: "USD",
-        billingDuration: "P1M",
-        unitCode: "MON",
-      },
-      availability: "https://schema.org/InStock",
-      url: "https://parametric-memory.dev/pricing",
-    },
-    {
-      "@type": "Offer",
-      name: "Enterprise Self-Hosted",
-      description:
-        "Commercial license. Deploy on your own cloud (AWS/GCP/Azure). Full source access, architecture review.",
-      price: "499",
-      priceCurrency: "USD",
-      priceSpecification: {
-        "@type": "UnitPriceSpecification",
-        price: "499",
-        priceCurrency: "USD",
-        billingDuration: "P1M",
-        unitCode: "MON",
-      },
-      availability: "https://schema.org/InStock",
-      url: "https://parametric-memory.dev/pricing",
-    },
-  ],
+  offers: getOffersJsonLd({
+    baseUrl: "https://parametric-memory.dev",
+    imageUrl: PRODUCT_IMAGE_URL,
+    shippingDetails: DIGITAL_SHIPPING_DETAILS,
+    returnPolicy: FREE_TRIAL_RETURN_POLICY,
+    priceValidUntil: defaultPriceValidUntil(),
+  }),
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

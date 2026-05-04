@@ -772,4 +772,66 @@ describe("AdminClient — F6 key-rotation failure (handleRotateKey path)", () =>
     expect(retry).toBeInTheDocument();
     expect(retry).toHaveAttribute("aria-label", "Retry key rotation");
   });
+
+  it("renders the reauth-required panel + Sign-in CTA when rotate-key returns 401 reauth_required", async () => {
+    // Compute's recent-auth middleware returns 401 + a structured
+    // `code: "reauth_required"` body when the recent-auth window has
+    // expired (10 min single-factor / 30 min TOTP — migration 083). The dashboard must surface this with clear copy + a
+    // one-click path to /login (with redirect=<here>) instead of
+    // leaving the user staring at a generic "HTTP 401".
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("/rotate-key")) {
+        return Promise.resolve({
+          ok: false,
+          status: 401,
+          // The route uses res.clone().json() — supply a Response-like
+          // object that supports clone() returning an object with .json().
+          clone: () => ({
+            json: () =>
+              Promise.resolve({
+                error: "This action requires you to sign in again",
+                code: "reauth_required",
+                reauthAgeSeconds: 612,
+              }),
+          }),
+          json: () =>
+            Promise.resolve({
+              error: "This action requires you to sign in again",
+              code: "reauth_required",
+              reauthAgeSeconds: 612,
+            }),
+        });
+      }
+      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+    });
+
+    renderAdmin({ status: "running", mcpEndpoint: "https://example.com/mcp" });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("admin-rotate-key"));
+    });
+
+    // Reauth panel takes the place of the generic error panel.
+    await waitFor(() => {
+      expect(screen.getByTestId("keyrot-status-reauth")).toBeInTheDocument();
+    });
+    // The generic error panel must NOT also render (would be a double
+    // surface and would confuse screen readers with two role=alert).
+    expect(screen.queryByTestId("keyrot-status-error")).not.toBeInTheDocument();
+
+    const reauthPanel = screen.getByTestId("keyrot-status-reauth");
+    expect(reauthPanel).toHaveAttribute("role", "alert");
+    // The body copy must explain WHY ("for your security") so users
+    // don't misread the panel as a transient server error. The exact
+    // window length is no longer hard-coded — it's factor-aware on the
+    // server side (migration 083): 10 min single-factor, 30 min TOTP.
+    expect(reauthPanel.textContent?.toLowerCase()).toContain("for your security");
+
+    // Sign-in CTA is a real anchor (not a button) so middle-click /
+    // open-in-new-tab work — and so the redirect can persist through
+    // the magic-link round-trip via the URL query string.
+    const cta = screen.getByTestId("keyrot-reauth-cta");
+    expect(cta.tagName).toBe("A");
+    expect(cta.getAttribute("href")).toMatch(/^\/login\?redirect=/);
+  });
 });

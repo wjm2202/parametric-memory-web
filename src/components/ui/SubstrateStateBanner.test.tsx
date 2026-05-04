@@ -12,6 +12,7 @@ import { describe, it, expect, vi } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import SubstrateStateBanner from "./SubstrateStateBanner";
 
+import { SUPPORT_EMAIL } from "@/config/site";
 describe("SubstrateStateBanner — null-rendering contract", () => {
   it("renders nothing for running", () => {
     const { container } = render(<SubstrateStateBanner slug="ok-one" status="running" />);
@@ -106,7 +107,7 @@ describe("SubstrateStateBanner — provision_failed (F-PROV-1)", () => {
     const link = screen.getByRole("link", { name: /Contact support/i });
     const href = link.getAttribute("href") ?? "";
     expect(href.startsWith("mailto:")).toBe(true);
-    expect(href).toContain("entityone22@gmail.com");
+    expect(href).toContain(SUPPORT_EMAIL);
     // Subject must contain the slug so support can triage immediately.
     expect(decodeURIComponent(href)).toContain("Provisioning failed for doomed-slug");
   });
@@ -122,7 +123,7 @@ describe("SubstrateStateBanner — provision_failed (F-PROV-1)", () => {
 
     const link = screen.getByRole("link", { name: /Contact support/i });
     expect(link.getAttribute("href")).toContain("ops@example.com");
-    expect(link.getAttribute("href")).not.toContain("entityone22@gmail.com");
+    expect(link.getAttribute("href")).not.toContain(SUPPORT_EMAIL);
   });
 
   it("does NOT render a dismiss button — this is a hard error", () => {

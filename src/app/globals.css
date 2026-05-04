@@ -38,6 +38,33 @@
   --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
 }
 
+/* ─── Layout constants ────────────────────────────────────────────────────
+ *
+ * --site-nav-h is the EXACT height of <SiteNavbar variant="standard"> at
+ * the viewport's current breakpoint. Single source of truth for:
+ *   - SiteNavbar's own `h-[var(--site-nav-h)]`
+ *   - every full-screen overlay's top inset (modals, sheets, drawers) so
+ *     the navbar paints *above* the dim and stays clickable
+ *   - every page's top spacer when content needs to sit below the nav
+ *
+ * Why two values: at <640px the nav uses py-3 + Logomark(26px), measuring
+ * ~51px including the 1px border. At ≥640px py-4 + same content ~59px.
+ * 4rem (64px) and 5rem (80px) leave ~13px / 21px of optical breathing
+ * room without the nav looking too tall on small phones.
+ *
+ * If the SiteNavbar's internal sizing ever changes (taller logo, extra
+ * row, etc), update these two values — every overlay across the site
+ * picks up the new offset automatically.
+ */
+:root {
+  --site-nav-h: 4rem;
+}
+@media (min-width: 640px) {
+  :root {
+    --site-nav-h: 5rem;
+  }
+}
+
 @layer base {
   html {
     scroll-behavior: smooth;

@@ -3,6 +3,7 @@ import Link from "next/link";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { cookies } from "next/headers";
 
+import { getPricingTableRows } from "@/lib/pricing";
 export const metadata: Metadata = {
   title: "Terms of Service — Parametric Memory",
   description:
@@ -118,42 +119,14 @@ export default async function TermsPage() {
                 </tr>
               </thead>
               <tbody>
-                <tr>
-                  <td>Starter</td>
-                  <td>$3/mo</td>
-                  <td>1,000</td>
-                  <td>12 months</td>
-                </tr>
-                <tr>
-                  <td>Solo</td>
-                  <td>$9/mo</td>
-                  <td>10,000</td>
-                  <td>12 months</td>
-                </tr>
-                <tr>
-                  <td>Professional</td>
-                  <td>$29/mo</td>
-                  <td>100,000</td>
-                  <td>24 months</td>
-                </tr>
-                <tr>
-                  <td>Team</td>
-                  <td>$79/mo</td>
-                  <td>500,000</td>
-                  <td>36 months</td>
-                </tr>
-                <tr>
-                  <td>Enterprise Cloud</td>
-                  <td>$299/mo</td>
-                  <td>Unlimited</td>
-                  <td>36 months</td>
-                </tr>
-                <tr>
-                  <td>Enterprise Self-Hosted</td>
-                  <td>$499/mo</td>
-                  <td>Unlimited</td>
-                  <td>Unlimited</td>
-                </tr>
+                {getPricingTableRows().map((row) => (
+                  <tr key={row.name}>
+                    <td>{row.name}</td>
+                    <td>{row.priceLabel}</td>
+                    <td>{row.atomsLabel}</td>
+                    <td>{row.retentionLabel}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

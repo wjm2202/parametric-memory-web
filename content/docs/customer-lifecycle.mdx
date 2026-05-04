@@ -24,7 +24,7 @@ The diagram below shows every state your account and memory instance can be in, 
 | State | Meaning |
 |---|---|
 | `pending_payment` | Checkout started but not yet completed. Instance not yet provisioned. |
-| `active` | Subscription active (paying or in trial). Instance is `running`. |
+| `active` | Subscription active and paying. Instance is `running`. |
 | `past_due` | Payment failed. Stripe is retrying. Instance stays running during retries. |
 | `suspended` | Payment failed after all retries exhausted. Instance paused. |
 | `cancelled` | Subscription cancelled. Instance enters 30-day grace period (read-only). |

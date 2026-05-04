@@ -6,7 +6,10 @@ import Link from "next/link";
 import { getTierLabel } from "@/config/tiers";
 import SubstrateStateBanner from "@/components/ui/SubstrateStateBanner";
 import SiteNavbar from "@/components/ui/SiteNavbar";
+import { readReauthFlag, redirectToReauth } from "@/lib/reauth";
 
+import { mailto } from "@/config/site";
+import { GRACE_PERIOD_DAYS } from "@/config/lifecycle";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface AccountInfo {
@@ -65,6 +68,20 @@ async function openBillingPortal() {
     method: "POST",
     headers: { "Content-Type": "application/json" },
   });
+  // Compute's recent-auth middleware returns 401 with
+  // `code: "reauth_required"` when the recent-auth window has expired
+  // (factor-aware as of migration 083: 10 min for magic-link / OAuth,
+  // 30 min for TOTP). See src/lib/reauth.ts for the full contract. The
+  // user gets a clear reason via the alert and a single-click hop to
+  // /login; after sign-in they land back on this dashboard with a fresh
+  // last_reauth_at + last_reauth_factor and the next click works.
+  if (await readReauthFlag(res)) {
+    alert(
+      "Sign in again to open the billing portal. For your security, this action requires you to have signed in recently. Click OK to sign in.",
+    );
+    redirectToReauth();
+    return;
+  }
   if (res.status === 422) {
     alert("No billing account found. Please subscribe first.");
     return;
@@ -118,7 +135,7 @@ function StatusBadge({ status }: { status: string }) {
     provisioning: "Your substrate is being created. Usually takes 1–2 minutes.",
     pending_payment: "Payment hasn't completed yet. Finish checkout to activate.",
     read_only: "Writes are paused. Reads still work. Check billing to resume writes.",
-    cancelled: "Subscription cancelled. Memory preserved for 90 days.",
+    cancelled: `Subscription cancelled. Memory preserved for ${GRACE_PERIOD_DAYS} days.`,
     suspended: "Account suspended after failed payment attempts.",
     deprovisioned: "This substrate has been deprovisioned and its data removed.",
     destroyed: "This substrate has been destroyed.",
@@ -195,7 +212,7 @@ function BillingWidget({
               Reactivate →
             </Link>
             <a
-              href="mailto:entityone22@gmail.com?subject=Account%20help"
+              href={mailto("Account help")}
               className="rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-medium text-white/50 transition hover:text-white"
             >
               Contact support
@@ -215,7 +232,7 @@ function BillingWidget({
               <span className="text-zinc-600">○</span> No active subscription
             </p>
             <p className="mt-1 text-sm text-white/50">
-              Your plan was cancelled. Memory is preserved for 90 days.
+              Your plan was cancelled. Memory is preserved for {GRACE_PERIOD_DAYS} days.
             </p>
           </div>
           <Link
@@ -249,9 +266,7 @@ function BillingWidget({
             <span className={`h-2 w-2 rounded-full ${dotColor}`} />
             <span className="text-sm font-semibold text-white capitalize">
               {tierDisplay.name} plan &middot;{" "}
-              <span className="font-normal text-zinc-400">
-                {status === "trialing" ? "Trial" : "Active"}
-              </span>
+              <span className="font-normal text-zinc-400">{"Active"}</span>
             </span>
           </div>
           <p className="text-xs text-white/50">{statusLabel}</p>
@@ -320,7 +335,8 @@ function CancelWarningModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+      className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center bg-black/70 px-4 backdrop-blur-sm"
+      data-testid="cancel-substrate-modal-backdrop"
       onClick={onDismiss}
     >
       <div

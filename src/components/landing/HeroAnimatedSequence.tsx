@@ -40,7 +40,7 @@ export function HeroAnimatedSequence() {
       >
         Your AI&apos;s second brain.
         <br />
-        <span style={gradStyle}>Ready in 60 seconds.</span>
+        <span style={gradStyle}>Ready in minutes.</span>
       </h1>
 
       {/* Subtitle */}

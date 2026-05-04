@@ -6,6 +6,13 @@ import Link from "next/link";
 import { toast } from "sonner";
 import { getTierLabel } from "@/config/tiers";
 import { RotationStepper, type RotationStatus } from "@/components/ui/RotationStepper";
+import {
+  REAUTH_REQUIRED_BODY,
+  REAUTH_REQUIRED_CTA,
+  REAUTH_REQUIRED_TITLE,
+  buildReauthUrl,
+  readReauthFlag,
+} from "@/lib/reauth";
 import { UpdateInstructions } from "@/components/ui/UpdateInstructions";
 import { FormattedDate } from "@/components/FormattedDate";
 import { FormattedNumber } from "@/components/FormattedNumber";
@@ -21,6 +28,7 @@ import {
   TOAST_CANCELLED_BODY,
 } from "./tier-change-copy";
 
+import { mailto } from "@/config/site";
 interface AccountInfo {
   id: string;
   email: string;
@@ -163,6 +171,14 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   // F6: capture errorMessage from /api/substrates/[slug]/key-rotation/status
   // so the user sees *why* a rotation failed + can restart it.
   const [rotationError, setRotationError] = useState<string | null>(null);
+  /**
+   * True when the last rotate-key attempt failed with a 401 +
+   * `code: "reauth_required"` from compute's recent-auth middleware.
+   * Drives a dedicated failure panel (separate from the generic
+   * `rotationError` text) that shows the reauth copy + a "Sign in again"
+   * CTA. Cleared on the next rotate-key attempt.
+   */
+  const [rotationNeedsReauth, setRotationNeedsReauth] = useState(false);
   const [keyRotating, setKeyRotating] = useState(false);
   const [showKeyReveal, setShowKeyReveal] = useState(false);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
@@ -334,6 +350,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   async function handleRotateKey() {
     // F6: clear any stale error from a prior failed attempt before starting.
     setRotationError(null);
+    setRotationNeedsReauth(false);
     setKeyRotating(true);
     setRotationStatus("pending");
     try {
@@ -341,6 +358,18 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
         method: "POST",
       });
       if (!res.ok) {
+        // Compute's recent-auth middleware returns 401 + a structured
+        // `code: "reauth_required"` body when the recent-auth window (10 min single-factor, 30 min TOTP — migration 083) has
+        // expired (see src/lib/reauth.ts for the contract). Detecting it
+        // here lets us swap to a dedicated "sign in again" surface
+        // instead of leaving the user staring at a bare HTTP 401.
+        if (await readReauthFlag(res)) {
+          setRotationStatus("failed");
+          setRotationNeedsReauth(true);
+          setRotationError(null);
+          setKeyRotating(false);
+          return;
+        }
         setRotationStatus("failed");
         setRotationError(
           `Could not start rotation (HTTP ${res.status}). Please try again or contact support.`,
@@ -835,6 +864,32 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                       </p>
                     )}
                   </div>
+                ) : rotationStatus === "failed" && rotationNeedsReauth ? (
+                  /* Reauth-required panel — shown when compute's recent-auth
+                     middleware (factor-aware window: 10 min single-factor, 30 min TOTP — migration 083) refused the request. Gives
+                     the user a clear reason and a one-click path to /login
+                     with a redirect back to this admin page. */
+                  <div className="space-y-3" data-testid="keyrot-status">
+                    <div
+                      role="alert"
+                      data-testid="keyrot-status-reauth"
+                      className="rounded-lg border border-amber-500/30 bg-amber-500/10 p-4"
+                    >
+                      <p className="mb-1 text-xs font-semibold tracking-wider text-amber-300 uppercase">
+                        {REAUTH_REQUIRED_TITLE}
+                      </p>
+                      <p className="text-sm text-amber-200/90">{REAUTH_REQUIRED_BODY}</p>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <a
+                        href={buildReauthUrl()}
+                        data-testid="keyrot-reauth-cta"
+                        className="rounded-lg bg-indigo-600 px-4 py-2 text-sm text-white transition-colors hover:bg-indigo-500"
+                      >
+                        {REAUTH_REQUIRED_CTA}
+                      </a>
+                    </div>
+                  </div>
                 ) : rotationStatus === "failed" ? (
                   /* F6: failed-state panel — shows error_reason + restart CTA.
                      Uses the pre-registered testids from docs/DUAL-ACCESSIBILITY.md. */
@@ -862,7 +917,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                         Retry rotation
                       </button>
                       <a
-                        href="mailto:entityone22@gmail.com?subject=Key%20rotation%20failed"
+                        href={mailto("Key rotation failed")}
                         className="rounded-lg border border-white/10 px-4 py-2 text-sm text-white/70 transition-colors hover:text-white"
                       >
                         Contact support
@@ -904,7 +959,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                         Cancel Subscription
                       </button>
                     )}
-                  {/* Deprovision available for free tier only here — provision_failed uses the callout above */}
+                  {/* Deprovision available for internal free/expired state only — provision_failed uses the callout above */}
                   {substrate.tier === "free" && substrate.status !== "provision_failed" && (
                     <button
                       onClick={() => setDeprovisionModalOpen(true)}
@@ -961,7 +1016,7 @@ function CancelModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-[#0d0d14] p-6 shadow-2xl">
         <div className="mb-4 flex items-start gap-3">
@@ -1035,7 +1090,7 @@ function DeprovisionModal({ onClose, onConfirm }: { onClose: () => void; onConfi
   }
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+    <div className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4">
       <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
       <div className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-[#0d0d14] p-6 shadow-2xl">
         <div className="mb-4 flex items-start gap-3">
