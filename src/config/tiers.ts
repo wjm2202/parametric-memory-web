@@ -52,7 +52,8 @@ export interface TierFeature {
  * COMPUTE-SIDE NOTE: When this field flips for a tier, mmpm-compute must
  * support the new deployment model before the marketing change goes live.
  * As of 2026-05-01 compute provisions dedicated droplets only — shared
- * cluster support is the gating work for honouring "$3/mo shared".
+ * cluster support is the gating work for honouring "$5/mo shared" (Starter; price
+ * raised from $3 to $5 per D16, S0.4 unit-economics spike).
  */
 export type TierDeployment = "shared" | "dedicated";
 
@@ -122,8 +123,8 @@ export const TIERS: Tier[] = [
   {
     id: "starter",
     name: "Starter",
-    price: 3,
-    description: "Experience persistent memory. $3/month, 30-day money-back guarantee.",
+    price: 5, // was 3 — D16 (S0.4 unit-econ)
+    description: "Experience persistent memory. $5/month, 30-day money-back guarantee.",
     badge: null,
     cta: "Start Building",
     publiclySold: true,
@@ -132,7 +133,7 @@ export const TIERS: Tier[] = [
       maxAtoms: 1_000,
       maxBootstrapsPerMonth: 200,
       maxStorageMB: 100,
-      maxMonthlyCents: 500,
+      maxMonthlyCents: 900, // $9 cap — D16 raised sub $3→$5; cap raised proportionally to preserve overage headroom
       maxSubstrates: 1,
     },
     stripePriceEnvKey: "STRIPE_PRICE_STARTER_MONTHLY",
@@ -142,7 +143,7 @@ export const TIERS: Tier[] = [
       { name: "200 bootstraps / month", included: true },
       { name: "100 MB storage", included: true },
       { name: "1 substrate", included: true },
-      { name: "$5/mo spend cap", included: true },
+      { name: "$9/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
       { name: "Knowledge graph edges", included: true },

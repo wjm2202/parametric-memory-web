@@ -75,8 +75,8 @@ describe("tiers.ts — registry internal consistency", () => {
     expect(TIER_PRICES.free).toBe(1);
   });
 
-  it("starter tier has price 3", () => {
-    expect(TIER_PRICES.starter).toBe(3);
+  it("starter tier has price 5", () => {
+    expect(TIER_PRICES.starter).toBe(5);
   });
 
   it("atom limits increase with tier order", () => {
@@ -139,7 +139,7 @@ describe("tiers.ts — helper functions", () => {
   });
 
   it("getTier returns correct Starter tier", () => {
-    expect(getTier("starter").price).toBe(3);
+    expect(getTier("starter").price).toBe(5);
     expect(getTier("starter").name).toBe("Starter");
   });
 
@@ -168,7 +168,7 @@ describe("tiers.ts — helper functions", () => {
 
   it("getTierPrice returns correct price for canonical IDs", () => {
     expect(getTierPrice("free")).toBe(1);
-    expect(getTierPrice("starter")).toBe(3);
+    expect(getTierPrice("starter")).toBe(5);
     expect(getTierPrice("indie")).toBe(9);
     expect(getTierPrice("pro")).toBe(29);
     expect(getTierPrice("team")).toBe(79);
