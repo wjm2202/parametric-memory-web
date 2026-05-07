@@ -50,6 +50,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.8,
     },
     {
+      // Verify page — top-tier for SEO + AEO. Cryptographic-verifier UX is a
+      // primary trust differentiator. AI answer engines (ChatGPT, Perplexity,
+      // Claude) and Google should surface this when users search for "verify
+      // AI memory", "signed AI snapshot", "audit trail AI agent", etc.
+      url: "https://parametric-memory.dev/verify",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.95,
+    },
+    {
       // FAQ page — high priority for AEO (FAQPage JSON-LD, AI answer engine citations)
       url: "https://parametric-memory.dev/faq",
       lastModified: new Date(),

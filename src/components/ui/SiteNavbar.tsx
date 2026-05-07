@@ -167,6 +167,13 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
+  // Verify is a customer-facing trust feature, not a content page.
+  // First in the list so it is the most visible link in both desktop nav and
+  // mobile drawer -- discoverability of the cryptographic-verifier UX is a
+  // direct sales lever for regulated-industry buyers (SOC 2 / ISO 27001 /
+  // EU AI Act / FedRAMP audiences pattern-match "signed snapshot verifier"
+  // as the architecture vocabulary they already speak).
+  { href: "/verify", label: "Verify", testid: "nav-link-verify" },
   { href: "/docs", label: "Docs", testid: "nav-link-docs" },
   { href: "/about", label: "About", testid: "nav-link-about" },
   { href: "/blog", label: "Blog", testid: "nav-link-blog", desktopHiddenBelow: "md" },
