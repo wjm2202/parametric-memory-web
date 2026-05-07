@@ -1,49 +1,61 @@
 # Dependencies
+
 node_modules/
 
 # Build output
+
 .next/
 out/
 dist/
 build/
 
 # Environment files — NEVER include in image
+
 .env
-.env.*
+.env.\*
 !.env.example
 
 # Git
+
 .git/
 .gitignore
 
 # IDE
+
 .vscode/
 .idea/
 
 # OS
+
 .DS_Store
 Thumbs.db
 
 # Tests & dev
+
 coverage/
-*.test.ts
-*.test.tsx
-*.spec.ts
-*.spec.tsx
+_.test.ts
+_.test.tsx
+_.spec.ts
+_.spec.tsx
 vitest.config.ts
 
 # Documentation source
+
+/docs/
 content/blog/drafts/
 
 # Docker
+
 Dockerfile
-docker-compose*.yml
+docker-compose\*.yml
 .dockerignore
 
 # CI/CD
+
 .github/
 
 # Misc
+
 README.md
 LICENSE
-*.md
+\*.md
