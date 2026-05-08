@@ -443,18 +443,17 @@ export async function verifySnapshot(snap: SnapshotV1): Promise<VerifyResult> {
     detail: "Snapshot format version compatibility",
   };
 
-  const [signature, edgesRoot, shardRoots, auditLogRoot, hubAtoms, tombstones] =
-    await Promise.all([
-      verifySignature(snap).catch((err) => ({
-        ok: false,
-        detail: `Signature check threw: ${err instanceof Error ? err.message : String(err)}`,
-      })),
-      verifyEdgesRoot(snap),
-      verifyShardRoots(snap),
-      verifyAuditLogRoot(snap),
-      verifyHubAtoms(snap),
-      verifyTombstoneInvariants(snap),
-    ]);
+  const [signature, edgesRoot, shardRoots, auditLogRoot, hubAtoms, tombstones] = await Promise.all([
+    verifySignature(snap).catch((err) => ({
+      ok: false,
+      detail: `Signature check threw: ${err instanceof Error ? err.message : String(err)}`,
+    })),
+    verifyEdgesRoot(snap),
+    verifyShardRoots(snap),
+    verifyAuditLogRoot(snap),
+    verifyHubAtoms(snap),
+    verifyTombstoneInvariants(snap),
+  ]);
 
   const overallOk =
     formatVersion.ok &&
@@ -478,5 +477,15 @@ export async function verifySnapshot(snap: SnapshotV1): Promise<VerifyResult> {
     ? `Verified: ${snap.atoms.length} atoms, ${snap.edges.length} edges, master root ${snap.tree.masterRoot.slice(0, 12)}... -- all checks passed.`
     : `FAILED: ${failed.join(", ")} did not pass.`;
 
-  return { overallOk, formatVersion, signature, edgesRoot, shardRoots, auditLogRoot, hubAtoms, tombstones, summary };
+  return {
+    overallOk,
+    formatVersion,
+    signature,
+    edgesRoot,
+    shardRoots,
+    auditLogRoot,
+    hubAtoms,
+    tombstones,
+    summary,
+  };
 }

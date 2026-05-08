@@ -170,24 +170,22 @@ export default async function VerifyPage() {
               />
             </svg>
             <div>
-              <div className="font-semibold text-white">
-                Public keys published independently
-              </div>
+              <div className="font-semibold text-white">Public keys published independently</div>
               <p className="mt-1 text-white/60">
-                Our Ed25519 signing public keys are published in standard JWKS
-                format at{" "}
+                Our Ed25519 signing public keys are published in standard JWKS format at{" "}
                 <a
                   href="/.well-known/jwks.json"
                   className="font-mono text-emerald-300 hover:text-emerald-200 hover:underline"
                 >
                   /.well-known/jwks.json
-                </a>
-                {" "} &mdash; the same publication pattern OAuth providers and
-                OIDC issuers use. Fetch it any time to cross-check the public
-                key embedded in any snapshot against the one we&apos;ve published.
-                If a snapshot&apos;s embedded key doesn&apos;t match the JWKS entry
-                for its{" "}
-                <code className="rounded bg-surface-900/60 px-1 py-0.5 text-[11px] text-white/70">kid</code>
+                </a>{" "}
+                &mdash; the same publication pattern OAuth providers and OIDC issuers use. Fetch it
+                any time to cross-check the public key embedded in any snapshot against the one
+                we&apos;ve published. If a snapshot&apos;s embedded key doesn&apos;t match the JWKS
+                entry for its{" "}
+                <code className="bg-surface-900/60 rounded px-1 py-0.5 text-[11px] text-white/70">
+                  kid
+                </code>
                 , the snapshot is rejected.
               </p>
             </div>

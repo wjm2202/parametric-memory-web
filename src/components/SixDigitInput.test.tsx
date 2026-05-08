@@ -341,4 +341,3 @@ describe("SixDigitInput — autoFocus", () => {
     expect(document.activeElement).not.toBe(first);
   });
 });
-
