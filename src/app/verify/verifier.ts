@@ -46,6 +46,10 @@ export interface SnapshotV1 {
     valuePresent: boolean;
     value?: string;
   }>;
+  hubAtoms: Array<{
+    key: string;
+    memberCount: number;
+  }>;
   edges: Array<{
     source: string;
     target: string;
@@ -89,6 +93,8 @@ export interface VerifyResult {
   edgesRoot: CheckResult;
   shardRoots: { ok: boolean; perShard: Array<CheckResult & { shardId: number }> };
   auditLogRoot: CheckResult;
+  hubAtoms: CheckResult;
+  tombstones: CheckResult;
   summary: string;
 }
 
@@ -256,10 +262,8 @@ async function verifyShardRoots(snap: SnapshotV1): Promise<VerifyResult["shardRo
 
 async function verifyAuditLogRoot(snap: SnapshotV1): Promise<CheckResult> {
   // Audit log is OPTIONAL in a snapshot. When absent (operator exported
-  // with includeAudit:false, or this is a redacted demo snapshot), we
-  // still render the check card -- just with a neutral "not present"
-  // badge instead of hiding it. Hiding would make verifiers wonder if
-  // the check was silently skipped.
+  // with includeAudit:false, or this is a redacted demo snapshot), the
+  // card still renders with a neutral "not present" badge.
   if (!snap.auditLogExcerpt || !snap.tree.auditLogRoot) {
     return {
       ok: true,
@@ -267,16 +271,106 @@ async function verifyAuditLogRoot(snap: SnapshotV1): Promise<CheckResult> {
       detail: "No audit log included in this snapshot (includeAudit:false at export, or redacted).",
     };
   }
-  // Substrate computes auditLogRoot as SHA-256(canonicalize(entries)) per
-  // exporter.ts. NOT a Merkle tree -- single-shot canonical hash.
-  const canon = canonicalize(snap.auditLogExcerpt.entries);
-  const computed = hex(await sha256(canon));
+  // PRE-FREEZE 2026-05-08: auditLogRoot is now a SHA-256 Merkle root over
+  // per-entry leaf hashes. Each entry hashes to: SHA-256(canonicalize(entry)).
+  // The Merkle tree of those leaf hashes is built with the same algorithm
+  // as substrate shard roots (see SPEC §6.5; algorithm in src/merkle.ts).
+  //
+  // PROPERTY: a verifier holding only a single audit entry plus a log2(N)-
+  //           depth audit path can prove inclusion in this snapshot's signed
+  //           commitment without holding the entire entries array.
+  // CITATION: Laurie et al., RFC 6962 "Certificate Transparency" §2.1
+  //           uses the same per-entry-leaf-hash + Merkle-root pattern.
+  const entryLeafHashes: Uint8Array[] = [];
+  for (const entry of snap.auditLogExcerpt.entries) {
+    const canon = canonicalize(entry);
+    entryLeafHashes.push(await sha256(canon));
+  }
+  const computed = await rootOfHashes(entryLeafHashes);
   const expected = snap.tree.auditLogRoot;
   return {
     ok: computed === expected,
     expected,
     computed,
-    detail: "SHA-256 of canonicalize(auditLogExcerpt.entries)",
+    detail: "Merkle root of SHA-256(canonicalize(entry)) per audit entry",
+  };
+}
+
+async function verifyHubAtoms(snap: SnapshotV1): Promise<CheckResult> {
+  // PRE-FREEZE 2026-05-08: snap.hubAtoms is DERIVED data computed by the
+  // substrate's classifyHubAtoms() function from snap.atoms and snap.edges.
+  // The Merkle commitment over the snapshot body covers hubAtoms (so a
+  // tampered memberCount changes the master root and breaks the signature),
+  // BUT a verifier that reads snap.hubAtoms blindly without recomputing is
+  // accepting derived data without an integrity check.
+  //
+  // PROPERTY: tamper any memberCount, the recomputed value won't match.
+  // CITATION: classification of hub atoms is defined at SPEC §3.5.
+  //           Reference impl: substrate/src/snapshot/exporter.ts
+  //           function classifyHubAtoms.
+  // ALGO:     identify atoms whose key matches /^v1\.other\.hub_/ and
+  //           count incoming member_of edges that target each.
+  const HUB_KEY_RE = /^v1\.other\.hub_/;
+  const memberCounts = new Map<string, number>();
+  for (const a of snap.atoms) {
+    if (HUB_KEY_RE.test(a.key)) memberCounts.set(a.key, 0);
+  }
+  for (const e of snap.edges) {
+    if (e.type === "member_of" && memberCounts.has(e.target)) {
+      memberCounts.set(e.target, (memberCounts.get(e.target) ?? 0) + 1);
+    }
+  }
+  const recomputed: Array<{ key: string; memberCount: number }> = [];
+  for (const [key, memberCount] of memberCounts) {
+    recomputed.push({ key, memberCount });
+  }
+  const claimed = snap.hubAtoms ?? [];
+  const claimedCanon = canonicalize(claimed);
+  const recomputedCanon = canonicalize(recomputed);
+  return {
+    ok: claimedCanon === recomputedCanon,
+    expected: claimedCanon.slice(0, 64) + (claimedCanon.length > 64 ? "..." : ""),
+    computed: recomputedCanon.slice(0, 64) + (recomputedCanon.length > 64 ? "..." : ""),
+    detail: `Recomputed ${recomputed.length} hub atoms from atoms+edges (regex + member_of edge counting)`,
+  };
+}
+
+async function verifyTombstoneInvariants(snap: SnapshotV1): Promise<CheckResult> {
+  // PRE-FREEZE 2026-05-08 (SPEC §2.5, gap #8):
+  // The all-zero hex string '00'*64 (TOMBSTONE_HASH) is a reserved sentinel.
+  // It marks tombstoned positions in the substrate's Merkle tree so other
+  // atoms keep their leafIndex stable. Two invariants MUST hold:
+  //
+  //   I1. atoms[i].tombstoned == true   =>  leafHash == '00'*64
+  //   I2. atoms[i].tombstoned == false  =>  leafHash != '00'*64
+  //
+  // I1 prevents a tombstoned atom from carrying its old SHA-256 (which would
+  // let a verifier re-derive the original key from a leaked rainbow-table).
+  // I2 prevents an active atom from being mis-identified as tombstoned (or
+  // vice versa) at verification time. The reservation is valid even though
+  // SHA-256('any string') == '00'*64 has probability 2^-256 -- spec MUST
+  // forbid the value rather than rely on collision improbability.
+  //
+  // CITATION: RFC 6962 §2.1 reserves d_0 = SHA-256(0x00 || leaf) for leaves
+  // and d_n = SHA-256(0x01 || left || right) for internals; we don't use
+  // domain-separation prefix bytes (see §2.3) so we instead reserve
+  // '00'*64 explicitly and forbid it for active leaves.
+  const SENTINEL = "0".repeat(64);
+  const violations: string[] = [];
+  for (const a of snap.atoms) {
+    if (a.tombstoned && a.leafHash !== SENTINEL) {
+      violations.push(`${a.key}: tombstoned but leafHash != sentinel`);
+    }
+    if (!a.tombstoned && a.leafHash === SENTINEL) {
+      violations.push(`${a.key}: active but leafHash == sentinel`);
+    }
+  }
+  return {
+    ok: violations.length === 0,
+    detail:
+      violations.length === 0
+        ? `All ${snap.atoms.length} atoms satisfy tombstone-sentinel invariants (I1, I2)`
+        : `${violations.length} violation(s): ${violations.slice(0, 3).join("; ")}${violations.length > 3 ? "..." : ""}`,
   };
 }
 
@@ -349,18 +443,27 @@ export async function verifySnapshot(snap: SnapshotV1): Promise<VerifyResult> {
     detail: "Snapshot format version compatibility",
   };
 
-  const [signature, edgesRoot, shardRoots, auditLogRoot] = await Promise.all([
-    verifySignature(snap).catch((err) => ({
-      ok: false,
-      detail: `Signature check threw: ${err instanceof Error ? err.message : String(err)}`,
-    })),
-    verifyEdgesRoot(snap),
-    verifyShardRoots(snap),
-    verifyAuditLogRoot(snap),
-  ]);
+  const [signature, edgesRoot, shardRoots, auditLogRoot, hubAtoms, tombstones] =
+    await Promise.all([
+      verifySignature(snap).catch((err) => ({
+        ok: false,
+        detail: `Signature check threw: ${err instanceof Error ? err.message : String(err)}`,
+      })),
+      verifyEdgesRoot(snap),
+      verifyShardRoots(snap),
+      verifyAuditLogRoot(snap),
+      verifyHubAtoms(snap),
+      verifyTombstoneInvariants(snap),
+    ]);
 
   const overallOk =
-    formatVersion.ok && signature.ok && edgesRoot.ok && shardRoots.ok && auditLogRoot.ok;
+    formatVersion.ok &&
+    signature.ok &&
+    edgesRoot.ok &&
+    shardRoots.ok &&
+    auditLogRoot.ok &&
+    hubAtoms.ok &&
+    tombstones.ok;
 
   const failed: string[] = [];
   if (!formatVersion.ok) failed.push("formatVersion");
@@ -368,10 +471,12 @@ export async function verifySnapshot(snap: SnapshotV1): Promise<VerifyResult> {
   if (!edgesRoot.ok) failed.push("edgesRoot");
   if (!shardRoots.ok) failed.push("shardRoots");
   if (!auditLogRoot.ok) failed.push("auditLogRoot");
+  if (!hubAtoms.ok) failed.push("hubAtoms");
+  if (!tombstones.ok) failed.push("tombstones");
 
   const summary = overallOk
     ? `Verified: ${snap.atoms.length} atoms, ${snap.edges.length} edges, master root ${snap.tree.masterRoot.slice(0, 12)}... -- all checks passed.`
     : `FAILED: ${failed.join(", ")} did not pass.`;
 
-  return { overallOk, formatVersion, signature, edgesRoot, shardRoots, auditLogRoot, summary };
+  return { overallOk, formatVersion, signature, edgesRoot, shardRoots, auditLogRoot, hubAtoms, tombstones, summary };
 }

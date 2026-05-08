@@ -1,0 +1,14 @@
+{
+  "keys": [
+    {
+      "kid": "mmpm-snapshot-signing-v1",
+      "kty": "OKP",
+      "crv": "Ed25519",
+      "alg": "Ed25519",
+      "use": "sig",
+      "x": "-ABAfQGCc9rlstNujpDBdICYMlUPp4FhvzeLwdJpbvI",
+      "notBefore": 1778146376965,
+      "x5t#S256": "8d207c72721f8c1aa240f79b50914ad30b44ac5e8cd24db0354f523ec78d095f"
+    }
+  ]
+}

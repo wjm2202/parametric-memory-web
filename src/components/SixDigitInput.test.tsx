@@ -39,12 +39,14 @@ function Harness({
   describedBy,
   onChange,
   onComplete,
+  autoFocus,
 }: {
   initial?: string;
   disabled?: boolean;
   describedBy?: string;
   onChange?: (next: string) => void;
   onComplete?: (full: string) => void;
+  autoFocus?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   return (
@@ -57,6 +59,7 @@ function Harness({
       onComplete={onComplete}
       disabled={disabled}
       describedBy={describedBy}
+      autoFocus={autoFocus}
     />
   );
 }
@@ -316,3 +319,26 @@ describe("SixDigitInput — disabled and a11y", () => {
     }
   });
 });
+
+// ─── 9. autoFocus ────────────────────────────────────────────────────────────
+
+describe("SixDigitInput — autoFocus", () => {
+  it("does NOT focus the first cell when autoFocus is unset (default)", () => {
+    render(<Harness />);
+    const first = screen.getByTestId("six-digit-input-0");
+    expect(document.activeElement).not.toBe(first);
+  });
+
+  it("focuses the first cell on mount when autoFocus is true", () => {
+    render(<Harness autoFocus />);
+    const first = screen.getByTestId("six-digit-input-0");
+    expect(document.activeElement).toBe(first);
+  });
+
+  it("does not steal focus when autoFocus is true but disabled is true", () => {
+    render(<Harness autoFocus disabled />);
+    const first = screen.getByTestId("six-digit-input-0");
+    expect(document.activeElement).not.toBe(first);
+  });
+});
+
