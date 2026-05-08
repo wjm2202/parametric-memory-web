@@ -44,6 +44,7 @@
 
 import {
   useCallback,
+  useEffect,
   useMemo,
   useRef,
   type ChangeEvent,
@@ -73,6 +74,13 @@ export interface SixDigitInputProps {
    * Defaults to "six-digit-input".
    */
   dataTestId?: string;
+  /**
+   * If true, focus the first input on mount (and on disabled→enabled transition).
+   * Default false so existing call sites (enrolment wizards that mount with a
+   * QR code visible) don't yank focus to the input. Set true on screens where
+   * the input is the user's first action — e.g. the TOTP login challenge.
+   */
+  autoFocus?: boolean;
 }
 
 const FIELDS = [0, 1, 2, 3, 4, 5] as const;
@@ -91,8 +99,18 @@ export function SixDigitInput({
   describedBy,
   ariaLabel = "Six-digit verification code",
   dataTestId = "six-digit-input",
+  autoFocus = false,
 }: SixDigitInputProps) {
   const refs = useRef<Array<HTMLInputElement | null>>(Array(6).fill(null));
+
+  // Auto-focus the first cell on mount and when the component transitions
+  // out of the disabled state. The challenge screen passes autoFocus={true};
+  // enrolment wizards leave it false so QR-code mount doesn't steal focus.
+  useEffect(() => {
+    if (autoFocus && !disabled) {
+      refs.current[0]?.focus();
+    }
+  }, [autoFocus, disabled]);
 
   // Pad to 6 for rendering — the controlled value can be 0..6 chars; we
   // expand to 6 fields so the layout doesn't shift as the user types.

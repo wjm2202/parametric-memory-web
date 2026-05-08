@@ -203,6 +203,7 @@ export default function TwoFactorChallengeClient() {
               onComplete={(full) => void submitCode(full)}
               disabled={submitting}
               describedBy={error ? "two-factor-challenge-error" : undefined}
+              autoFocus
             />
           ) : (
             <input
@@ -212,6 +213,7 @@ export default function TwoFactorChallengeClient() {
               placeholder="xxxx-xxxx"
               disabled={submitting}
               autoComplete="one-time-code"
+              autoFocus
               data-testid="two-factor-challenge-backup-input"
               aria-describedby={error ? "two-factor-challenge-error" : undefined}
               className="w-full max-w-xs rounded-lg border border-white/10 bg-white/[0.03] px-3 py-2 font-mono text-base text-white transition-colors outline-none focus:border-white/30 focus:bg-white/[0.06] disabled:opacity-50"

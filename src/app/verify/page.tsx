@@ -150,7 +150,49 @@ export default async function VerifyPage() {
 
         <VerifyClient />
 
-        <details className="border-surface-200/10 bg-surface-900/30 mt-10 rounded-xl border p-5 text-sm">
+        {/* JWKS pointer -- small, one-line, with a clickable link to the
+            actual public-key publication. Auditors expect to see this;
+            customers can pin the key fingerprint into their own CI. */}
+        <div className="border-surface-200/10 bg-surface-900/30 mt-8 rounded-xl border p-5 text-sm">
+          <div className="flex items-start gap-3">
+            <svg
+              className="mt-0.5 h-4 w-4 flex-shrink-0 text-emerald-300"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+              aria-hidden="true"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={1.7}
+                d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"
+              />
+            </svg>
+            <div>
+              <div className="font-semibold text-white">Public keys published independently</div>
+              <p className="mt-1 text-white/60">
+                Our Ed25519 signing public keys are published in standard JWKS format at{" "}
+                <a
+                  href="/.well-known/jwks.json"
+                  className="font-mono text-emerald-300 hover:text-emerald-200 hover:underline"
+                >
+                  /.well-known/jwks.json
+                </a>{" "}
+                &mdash; the same publication pattern OAuth providers and OIDC issuers use. Fetch it
+                any time to cross-check the public key embedded in any snapshot against the one
+                we&apos;ve published. If a snapshot&apos;s embedded key doesn&apos;t match the JWKS
+                entry for its{" "}
+                <code className="bg-surface-900/60 rounded px-1 py-0.5 text-[11px] text-white/70">
+                  kid
+                </code>
+                , the snapshot is rejected.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <details className="border-surface-200/10 bg-surface-900/30 mt-6 rounded-xl border p-5 text-sm">
           <summary className="cursor-pointer text-white/70">
             How does the verification actually work?
           </summary>
