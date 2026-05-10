@@ -280,7 +280,7 @@ export async function verifyMasterRoot(snap: SnapshotV1): Promise<CheckResult> {
     expected,
     computed,
     detail: ok
-      ? `master root over ${shardRootBufs.length} shard root${shardRootBufs.length === 1 ? '' : 's'} matches`
+      ? `master root over ${shardRootBufs.length} shard root${shardRootBufs.length === 1 ? "" : "s"} matches`
       : `masterRoot mismatch: stored=${expected.slice(0, 12)}... computed=${computed.slice(0, 12)}...`,
   };
 }
@@ -291,19 +291,25 @@ export async function verifyMasterRoot(snap: SnapshotV1): Promise<CheckResult> {
 async function verifyAtomValueBind(snap: SnapshotV1): Promise<CheckResult> {
   for (let i = 0; i < snap.atoms.length; i++) {
     const a = snap.atoms[i] as SnapshotV1["atoms"][number] & { value?: string };
-    const hasValueField = Object.prototype.hasOwnProperty.call(a, 'value') && a.value !== undefined;
+    const hasValueField = Object.prototype.hasOwnProperty.call(a, "value") && a.value !== undefined;
     if (a.tombstoned) {
       if (a.valuePresent) {
         return { ok: false, detail: `atoms[${i}] tombstoned but valuePresent=true (key=${a.key})` };
       }
       if (hasValueField) {
-        return { ok: false, detail: `atoms[${i}] tombstoned but value field present (key=${a.key})` };
+        return {
+          ok: false,
+          detail: `atoms[${i}] tombstoned but value field present (key=${a.key})`,
+        };
       }
       continue;
     }
     if (a.valuePresent) {
       if (!hasValueField) {
-        return { ok: false, detail: `atoms[${i}] valuePresent=true but value field missing (key=${a.key})` };
+        return {
+          ok: false,
+          detail: `atoms[${i}] valuePresent=true but value field missing (key=${a.key})`,
+        };
       }
       const recomputed = hex(await sha256(new TextEncoder().encode(a.value!)));
       if (recomputed !== a.leafHash) {
@@ -315,7 +321,10 @@ async function verifyAtomValueBind(snap: SnapshotV1): Promise<CheckResult> {
       continue;
     }
     if (hasValueField) {
-      return { ok: false, detail: `atoms[${i}] valuePresent=false (redacted) but value field present (key=${a.key})` };
+      return {
+        ok: false,
+        detail: `atoms[${i}] valuePresent=false (redacted) but value field present (key=${a.key})`,
+      };
     }
   }
   return { ok: true, detail: `${snap.atoms.length} atoms checked; value-bind invariants hold` };
@@ -323,21 +332,38 @@ async function verifyAtomValueBind(snap: SnapshotV1): Promise<CheckResult> {
 
 // Spec §6.4 Check G — Consistency proof recompute (guarded; only when present).
 async function verifyConsistencyProof(snap: SnapshotV1): Promise<CheckResult> {
-  const cp = (snap as { consistencyProof?: {
-    fromShardRoots: string[]; toShardRoots: string[]; fromRoot: string; toRoot: string;
-    fromVersion: number; toVersion: number;
-  } }).consistencyProof;
-  if (!cp) return { ok: true, absent: true, detail: 'absent — single-version snapshot' };
+  const cp = (
+    snap as {
+      consistencyProof?: {
+        fromShardRoots: string[];
+        toShardRoots: string[];
+        fromRoot: string;
+        toRoot: string;
+        fromVersion: number;
+        toVersion: number;
+      };
+    }
+  ).consistencyProof;
+  if (!cp) return { ok: true, absent: true, detail: "absent — single-version snapshot" };
   if (cp.toShardRoots.length !== snap.tree.shardRoots.length) {
-    return { ok: false, detail: `toShardRoots length mismatch: cp=${cp.toShardRoots.length} tree=${snap.tree.shardRoots.length}` };
+    return {
+      ok: false,
+      detail: `toShardRoots length mismatch: cp=${cp.toShardRoots.length} tree=${snap.tree.shardRoots.length}`,
+    };
   }
   for (let i = 0; i < cp.toShardRoots.length; i++) {
     if (cp.toShardRoots[i] !== snap.tree.shardRoots[i]) {
-      return { ok: false, detail: `toShardRoots[${i}] mismatch: cp=${cp.toShardRoots[i].slice(0, 12)}... tree=${snap.tree.shardRoots[i].slice(0, 12)}...` };
+      return {
+        ok: false,
+        detail: `toShardRoots[${i}] mismatch: cp=${cp.toShardRoots[i].slice(0, 12)}... tree=${snap.tree.shardRoots[i].slice(0, 12)}...`,
+      };
     }
   }
   if (cp.toRoot !== snap.tree.masterRoot) {
-    return { ok: false, detail: `toRoot mismatch: cp=${cp.toRoot.slice(0, 12)}... tree=${snap.tree.masterRoot.slice(0, 12)}...` };
+    return {
+      ok: false,
+      detail: `toRoot mismatch: cp=${cp.toRoot.slice(0, 12)}... tree=${snap.tree.masterRoot.slice(0, 12)}...`,
+    };
   }
   const fromBufs = cp.fromShardRoots.map(fromHex);
   const recomputedFromRoot = await rootOfHashes(fromBufs);
@@ -347,52 +373,76 @@ async function verifyConsistencyProof(snap: SnapshotV1): Promise<CheckResult> {
       detail: `fromRoot mismatch: stored=${cp.fromRoot.slice(0, 12)}... computed=${recomputedFromRoot.slice(0, 12)}...`,
     };
   }
-  return { ok: true, detail: `version ${cp.fromVersion} → ${cp.toVersion}; consistency proof verified` };
+  return {
+    ok: true,
+    detail: `version ${cp.fromVersion} → ${cp.toVersion}; consistency proof verified`,
+  };
 }
 
 // Spec §6.4 Check H — Audit-entry conformance (guarded; only when auditLogExcerpt present).
 // Four sub-checks: shape, window bounds, eventId uniqueness, ordering.
 function verifyAuditEntries(snap: SnapshotV1): CheckResult {
-  const ale = (snap as { auditLogExcerpt?: {
-    windowStartMs: number; windowEndMs: number; entries: Array<Record<string, unknown>>;
-  } }).auditLogExcerpt;
+  const ale = (
+    snap as {
+      auditLogExcerpt?: {
+        windowStartMs: number;
+        windowEndMs: number;
+        entries: Array<Record<string, unknown>>;
+      };
+    }
+  ).auditLogExcerpt;
   if (!ale || !Array.isArray(ale.entries)) {
-    return { ok: true, absent: true, detail: 'absent — no auditLogExcerpt in snapshot' };
+    return { ok: true, absent: true, detail: "absent — no auditLogExcerpt in snapshot" };
   }
   const entries = ale.entries;
   const seenEventIds = new Map<string, number>();
   for (let i = 0; i < entries.length; i++) {
     const e = entries[i];
-    if (typeof e.eventId !== 'string' || (e.eventId as string).length === 0) {
+    if (typeof e.eventId !== "string" || (e.eventId as string).length === 0) {
       return { ok: false, detail: `entries[${i}] missing required field eventId` };
     }
-    if (typeof e.recordedAtMs !== 'number' || !Number.isInteger(e.recordedAtMs)) {
+    if (typeof e.recordedAtMs !== "number" || !Number.isInteger(e.recordedAtMs)) {
       return { ok: false, detail: `entries[${i}] missing required field recordedAtMs (integer)` };
     }
-    if (typeof e.kind !== 'string' || (e.kind as string).length === 0) {
+    if (typeof e.kind !== "string" || (e.kind as string).length === 0) {
       return { ok: false, detail: `entries[${i}] missing required field kind` };
     }
     const recordedAtMs = e.recordedAtMs as number;
     if (recordedAtMs < ale.windowStartMs || recordedAtMs >= ale.windowEndMs) {
-      return { ok: false, detail: `entries[${i}] recordedAtMs=${recordedAtMs} out of window [${ale.windowStartMs}, ${ale.windowEndMs})` };
+      return {
+        ok: false,
+        detail: `entries[${i}] recordedAtMs=${recordedAtMs} out of window [${ale.windowStartMs}, ${ale.windowEndMs})`,
+      };
     }
     const eventId = e.eventId as string;
     if (seenEventIds.has(eventId)) {
-      return { ok: false, detail: `duplicate audit entry eventId at indices ${seenEventIds.get(eventId)} and ${i}` };
+      return {
+        ok: false,
+        detail: `duplicate audit entry eventId at indices ${seenEventIds.get(eventId)} and ${i}`,
+      };
     }
     seenEventIds.set(eventId, i);
     if (i > 0) {
       const prev = entries[i - 1];
       const prevAt = prev.recordedAtMs as number;
       if (recordedAtMs < prevAt) {
-        return { ok: false, detail: `entries[${i}] out of order: recordedAtMs=${recordedAtMs} < previous=${prevAt}` };
+        return {
+          ok: false,
+          detail: `entries[${i}] out of order: recordedAtMs=${recordedAtMs} < previous=${prevAt}`,
+        };
       }
       if (recordedAtMs === prevAt && eventId < (prev.eventId as string)) {
-        return { ok: false, detail: `entries[${i}] tie-break violated: eventId=${eventId} < previous=${prev.eventId}` };
+        return {
+          ok: false,
+          detail: `entries[${i}] tie-break violated: eventId=${eventId} < previous=${prev.eventId}`,
+        };
       }
     }
   }
-  return { ok: true, detail: `${entries.length} entries; shape, window, uniqueness, ordering all valid` };
+  return {
+    ok: true,
+    detail: `${entries.length} entries; shape, window, uniqueness, ordering all valid`,
+  };
 }
 
 async function verifyAuditLogRoot(snap: SnapshotV1): Promise<CheckResult> {
@@ -518,13 +568,18 @@ async function verifyTombstoneInvariants(snap: SnapshotV1): Promise<CheckResult>
 //   case (c) — kid absent from a reachable JWKS → REJECT (no fallback)
 
 type JwksFetchOutcome =
-  | { kind: 'http'; status: number; body: unknown }
-  | { kind: 'transport-error'; reason: string };
+  | { kind: "http"; status: number; body: unknown }
+  | { kind: "transport-error"; reason: string };
 
 type JwksFetcher = (keyUri: string) => Promise<JwksFetchOutcome>;
 
 type KeyResolution =
-  | { ok: true; key: CryptoKey; keySource: 'jwks' | 'embedded-fallback-jwks-unreachable'; detail: string }
+  | {
+      ok: true;
+      key: CryptoKey;
+      keySource: "jwks" | "embedded-fallback-jwks-unreachable";
+      detail: string;
+    }
   | { ok: false; error: string; detail: string };
 
 const JWKS_FETCH_TIMEOUT_MS = 5_000;
@@ -536,11 +591,15 @@ async function defaultJwksFetcher(keyUri: string): Promise<JwksFetchOutcome> {
     const res = await fetch(keyUri, { signal: ctl.signal });
     const text = await res.text();
     let body: unknown = text;
-    try { body = JSON.parse(text); } catch { /* keep raw */ }
-    return { kind: 'http', status: res.status, body };
+    try {
+      body = JSON.parse(text);
+    } catch {
+      /* keep raw */
+    }
+    return { kind: "http", status: res.status, body };
   } catch (e) {
     // CORS, DNS, abort — all map to case (a) per spec §6.4 Check A
-    return { kind: 'transport-error', reason: e instanceof Error ? e.message : String(e) };
+    return { kind: "transport-error", reason: e instanceof Error ? e.message : String(e) };
   } finally {
     clearTimeout(t);
   }
@@ -550,63 +609,80 @@ async function importEmbeddedKey(b64: string): Promise<CryptoKey> {
   // Spec §3.9: raw 32-byte OR DER SPKI. Discriminator: post-decode length.
   const bytes = fromBase64(b64);
   if (bytes.length === 32) {
-    return crypto.subtle.importKey('raw', bytes as BufferSource, 'Ed25519', false, ['verify']);
+    return crypto.subtle.importKey("raw", bytes as BufferSource, "Ed25519", false, ["verify"]);
   }
-  return crypto.subtle.importKey('spki', bytes as BufferSource, 'Ed25519', false, ['verify']);
+  return crypto.subtle.importKey("spki", bytes as BufferSource, "Ed25519", false, ["verify"]);
 }
 
 async function importJwkKey(xBase64Url: string): Promise<CryptoKey> {
   return crypto.subtle.importKey(
-    'jwk',
-    { kty: 'OKP', crv: 'Ed25519', x: xBase64Url, ext: true } as JsonWebKey,
-    'Ed25519',
+    "jwk",
+    { kty: "OKP", crv: "Ed25519", x: xBase64Url, ext: true } as JsonWebKey,
+    "Ed25519",
     false,
-    ['verify'],
+    ["verify"],
   );
 }
 
 async function resolveSignatureKey(
-  sig: SnapshotV1['signature'],
+  sig: SnapshotV1["signature"],
   fetcher: JwksFetcher = defaultJwksFetcher,
 ): Promise<KeyResolution> {
   let outcome: JwksFetchOutcome;
-  try { outcome = await fetcher(sig.keyUri); }
-  catch (e) { outcome = { kind: 'transport-error', reason: e instanceof Error ? e.message : String(e) }; }
+  try {
+    outcome = await fetcher(sig.keyUri);
+  } catch (e) {
+    outcome = { kind: "transport-error", reason: e instanceof Error ? e.message : String(e) };
+  }
 
   const isCaseA =
-    outcome.kind === 'transport-error' ||
-    (outcome.kind === 'http' && (outcome.status < 200 || outcome.status >= 300)) ||
-    (outcome.kind === 'http' && (outcome.body === null || typeof outcome.body !== 'object'));
+    outcome.kind === "transport-error" ||
+    (outcome.kind === "http" && (outcome.status < 200 || outcome.status >= 300)) ||
+    (outcome.kind === "http" && (outcome.body === null || typeof outcome.body !== "object"));
 
   if (isCaseA) {
     try {
       const key = await importEmbeddedKey(sig.publicKey);
       const reason =
-        outcome.kind === 'transport-error' ? `transport: ${outcome.reason}` :
-        outcome.kind === 'http' && (outcome.status < 200 || outcome.status >= 300) ? `HTTP ${outcome.status}` :
-        'JWKS body not parseable';
+        outcome.kind === "transport-error"
+          ? `transport: ${outcome.reason}`
+          : outcome.kind === "http" && (outcome.status < 200 || outcome.status >= 300)
+            ? `HTTP ${outcome.status}`
+            : "JWKS body not parseable";
       return {
-        ok: true, key,
-        keySource: 'embedded-fallback-jwks-unreachable',
+        ok: true,
+        key,
+        keySource: "embedded-fallback-jwks-unreachable",
         detail: `JWKS unreachable (${reason}); fell back to embedded publicKey (kid=${sig.kid})`,
       };
     } catch (e) {
-      return { ok: false, error: 'embedded publicKey unparseable', detail: e instanceof Error ? e.message : String(e) };
+      return {
+        ok: false,
+        error: "embedded publicKey unparseable",
+        detail: e instanceof Error ? e.message : String(e),
+      };
     }
   }
 
-  const httpOutcome = outcome as { kind: 'http'; status: number; body: unknown };
-  const jwks = httpOutcome.body as { keys?: Array<{ kid?: string; x?: string; revoked?: boolean }> } | null;
+  const httpOutcome = outcome as { kind: "http"; status: number; body: unknown };
+  const jwks = httpOutcome.body as {
+    keys?: Array<{ kid?: string; x?: string; revoked?: boolean }>;
+  } | null;
   if (!jwks || !Array.isArray(jwks.keys)) {
     try {
       const key = await importEmbeddedKey(sig.publicKey);
       return {
-        ok: true, key,
-        keySource: 'embedded-fallback-jwks-unreachable',
+        ok: true,
+        key,
+        keySource: "embedded-fallback-jwks-unreachable",
         detail: `JWKS body not a JWKS document; fell back to embedded (kid=${sig.kid})`,
       };
     } catch (e) {
-      return { ok: false, error: 'JWKS malformed AND embedded unparseable', detail: e instanceof Error ? e.message : String(e) };
+      return {
+        ok: false,
+        error: "JWKS malformed AND embedded unparseable",
+        detail: e instanceof Error ? e.message : String(e),
+      };
     }
   }
 
@@ -614,33 +690,45 @@ async function resolveSignatureKey(
   if (!jwk) {
     return {
       ok: false,
-      error: 'kid not in JWKS',
+      error: "kid not in JWKS",
       detail: `kid=${sig.kid} absent from JWKS at ${sig.keyUri}; ${jwks.keys.length} key(s) present, none matching`,
     };
   }
   if (jwk.revoked === true) {
-    return { ok: false, error: 'key revoked in JWKS', detail: `JWK kid=${sig.kid} carries revoked:true` };
+    return {
+      ok: false,
+      error: "key revoked in JWKS",
+      detail: `JWK kid=${sig.kid} carries revoked:true`,
+    };
   }
-  if (typeof jwk.x !== 'string') {
-    return { ok: false, error: 'JWK missing x field', detail: `JWK kid=${sig.kid} has no x` };
+  if (typeof jwk.x !== "string") {
+    return { ok: false, error: "JWK missing x field", detail: `JWK kid=${sig.kid} has no x` };
   }
 
   let jwkKey: CryptoKey;
-  try { jwkKey = await importJwkKey(jwk.x); }
-  catch (e) { return { ok: false, error: 'JWK parse failed', detail: e instanceof Error ? e.message : String(e) }; }
+  try {
+    jwkKey = await importJwkKey(jwk.x);
+  } catch (e) {
+    return {
+      ok: false,
+      error: "JWK parse failed",
+      detail: e instanceof Error ? e.message : String(e),
+    };
+  }
 
   // Cross-source disagreement check
   if (sig.publicKey && sig.publicKey.length > 0) {
     try {
       const xBytes = fromBase64Url(jwk.x);
       const embeddedBytes = fromBase64(sig.publicKey);
-      const embeddedRawBytes = embeddedBytes.length === 32
-        ? embeddedBytes
-        : embeddedBytes.subarray(embeddedBytes.length - 32);
+      const embeddedRawBytes =
+        embeddedBytes.length === 32
+          ? embeddedBytes
+          : embeddedBytes.subarray(embeddedBytes.length - 32);
       if (!equalBytes(embeddedRawBytes, xBytes)) {
         return {
           ok: false,
-          error: 'key disagreement',
+          error: "key disagreement",
           detail: `snapshot.publicKey raw bytes != JWK.x raw bytes (kid=${sig.kid})`,
         };
       }
@@ -650,15 +738,16 @@ async function resolveSignatureKey(
   }
 
   return {
-    ok: true, key: jwkKey,
-    keySource: 'jwks',
+    ok: true,
+    key: jwkKey,
+    keySource: "jwks",
     detail: `resolved via JWKS (kid=${sig.kid}; ${jwks.keys.length} key(s) total)`,
   };
 }
 
 function fromBase64Url(s: string): Uint8Array {
-  const padded = s + '='.repeat((4 - s.length % 4) % 4);
-  const std = padded.replace(/-/g, '+').replace(/_/g, '/');
+  const padded = s + "=".repeat((4 - (s.length % 4)) % 4);
+  const std = padded.replace(/-/g, "+").replace(/_/g, "/");
   return fromBase64(std);
 }
 
@@ -707,7 +796,10 @@ async function verifySignature(snap: SnapshotV1): Promise<CheckResult> {
     return { ok: false, detail: `${keyRes.error}: ${keyRes.detail}` };
   }
   const ok = await crypto.subtle.verify(
-    'Ed25519', keyRes.key, sig as BufferSource, message as BufferSource,
+    "Ed25519",
+    keyRes.key,
+    sig as BufferSource,
+    message as BufferSource,
   );
   return {
     ok,
@@ -727,7 +819,17 @@ export async function verifySnapshot(snap: SnapshotV1): Promise<VerifyResult> {
     detail: "Snapshot format version compatibility",
   };
 
-  const [signature, edgesRoot, shardRoots, masterRoot, auditLogRoot, hubAtoms, tombstones, atomValueBind, consistencyProof] = await Promise.all([
+  const [
+    signature,
+    edgesRoot,
+    shardRoots,
+    masterRoot,
+    auditLogRoot,
+    hubAtoms,
+    tombstones,
+    atomValueBind,
+    consistencyProof,
+  ] = await Promise.all([
     verifySignature(snap).catch((err) => ({
       ok: false,
       detail: `Signature check threw: ${err instanceof Error ? err.message : String(err)}`,
