@@ -229,7 +229,11 @@ function ResultPanel({ result, snap }: { result: VerifyResult; snap: SnapshotV1 
         <CheckCard label="formatVersion" check={result.formatVersion} />
         <CheckCard label="Ed25519 signature" check={result.signature} />
         <CheckCard label="edgesRoot" check={result.edgesRoot} />
+        <CheckCard label="masterRoot" check={result.masterRoot} />
         <CheckCard label="auditLogRoot" check={result.auditLogRoot} />
+        <CheckCard label="atom value-bind" check={result.atomValueBind} />
+        <CheckCard label="consistency proof" check={result.consistencyProof} />
+        <CheckCard label="audit entries" check={result.auditEntries} />
       </div>
 
       <ShardRootsTable shardRoots={result.shardRoots} shardLeafCounts={snap.tree.shardLeafCounts} />
