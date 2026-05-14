@@ -98,6 +98,7 @@ kebab-case, all lower-case. No dots, no underscores, no slashes.
 | `waitlist-*` | Landing-page waitlist form |
 | `capacity-*` | Pricing capacity-inquiry form |
 | `knowledge-*` | `/knowledge` immersive surface (SidePanel etc.) |
+| `verify-*` | `/verify` snapshot-verifier surface (PublicKeysPanel, ScopePanel, drop zone, result cards) |
 | `toast-*` | Toast notifications (`toast-*` id matches the event type) |
 
 **Admin subflow aliases.** Some admin-scoped components register names without
@@ -438,6 +439,32 @@ Read-only audit feed of every auth-relevant event tied to the signed-in account.
 | `auth-audit-empty` | Empty-state copy when the feed has no rows |
 | `auth-audit-error` | Inline error region (network failure, 401, malformed response) |
 | `auth-audit-retry` | Retry button inside the error region |
+
+### Verify page — `src/app/verify/*`
+
+Cryptographic snapshot verifier. The drop zone is the primary affordance (handled by a hidden `<input type="file">` inside a `<label>`, no testid needed because the input itself is the interactive element and the label wraps it). Additional surfaces:
+
+- **ScopePanel** (V1.1) renders the "what this proves / does not prove" framing after a verify completes — non-interactive, no testid.
+- **FreshnessLine** (V1.4) renders exporter host + relative age inside the result hero — non-interactive, no testid.
+- **PublicKeysPanel** (V1.2 + V1.3) renders the JWKS publication panel anchored to the verified snapshot's signature, including the **Fetch JWKS now** button (V1.3) that lets the reader live-verify the embedded key against the published key from inside the browser. The button + its three result states are the only interactive surface inside this panel; each carries a testid below.
+
+| testid | Element |
+|---|---|
+| `verify-fetch-jwks` | "Fetch JWKS now" button inside PublicKeysPanel (V1.3). Clicking it fetches `signature.keyUri` cross-origin, looks up `signature.kid` in the response, and recomputes the SHA-256 fingerprint of the published key for comparison against the embedded fingerprint. |
+| `verify-jwks-result-match` | Green result panel rendered when the published fingerprint equals the embedded fingerprint. Shows the kid found in the JWKS, the published fingerprint, and the embedded fingerprint side by side. |
+| `verify-jwks-result-mismatch` | Red result panel rendered when (a) the snapshot's kid is not present in the published JWKS, OR (b) the kid is present but the published key's fingerprint differs from the embedded fingerprint. Both branches mean "refuse to trust this snapshot." |
+| `verify-jwks-result-error` | Amber result panel rendered when the cross-origin fetch fails (network error, 5xx, CORS misconfiguration). Explicitly tells the reader the embedded-key signature path is still structurally safe — the fallback is by-design, not a vulnerability. |
+| `verify-hash-toggle` | Click-to-expand button rendered by the `<HashWithCopy>` primitive (V2.2) on every truncatable hex value shown on the verify page (CheckCard `expected`/`computed` hashes, ShardRootsTable per-shard roots, SnapshotMeta `masterRoot` + `publicKey fingerprint`). Click toggles between truncated (`first-N + …`) and full hex display. `aria-expanded` reflects the state. Same testid is emitted by every instance — tests scope via `within(card)` for specificity. |
+| `verify-hash-copy` | Copy-to-clipboard icon rendered by `<HashWithCopy>` next to every hash. On click invokes `navigator.clipboard.writeText(fullHex)` and flips the icon to a green checkmark for 1.5s with `title="Copied"`. `aria-label` describes which hash is being copied. Same instance-multiple pattern as `verify-hash-toggle`. |
+| `verify-hash-match-tick` | Inline green ✓ rendered in a CheckCard's `computed` row (V2.3) when the card is PASS and the computed hash byte-equals the expected hash. Visual confirmation that the verifier did the work and got the same answer — the trust signal that "computed equals expected" is now visible, not implicit. `aria-label="computed matches expected"`. Same instance-multiple pattern as the other `verify-hash-*` testids; tests scope via `within(card)`. Absent on FAIL (where the FAIL/red rendering already conveys disagreement) and absent on cards where either expected or computed is missing. |
+| `verify-tamper-controls` | The tamper-demo panel (V2.1) rendered below the result panel on a successful verify. Header text "Tamper with this snapshot" and three mutation buttons (children below). Only rendered on `state.kind === "done"`. |
+| `verify-tamper-flip-master` | "Flip a bit in masterRoot" button (V2.1). On click, the parent mutates a deep clone of the verified snapshot by flipping the high bit of `tree.masterRoot[0]` and re-runs the verifier. Expected outcome: masterRoot card and Ed25519 signature card both FAIL. `aria-label="Flip a bit in tree.masterRoot"`. |
+| `verify-tamper-mutate-atom` | "Mutate atoms[0].leafHash" button (V2.1). On click, flips a bit in the first atom's leafHash. Expected outcome: the affected shard's root FAILs. Disabled when the snapshot has no atoms. `aria-label="Mutate the leaf hash on the first atom"`. |
+| `verify-tamper-drop-audit` | "Drop an audit entry" button (V2.1). On click, shifts the first entry from `auditLogExcerpt.entries`. Expected outcome: auditLogRoot card FAILs. Disabled when the snapshot has no audit-log entries. `aria-label="Drop the first audit-log entry"`. |
+| `verify-tamper-restore` | "Restore original" button (V2.1) shown only when a tamper is active. Reverts the displayed result + scope panel to the original verified state without re-running the verifier. `aria-label="Restore the original (un-tampered) snapshot"`. |
+| `verify-tamper-ribbon` | Yellow header banner (V2.1) rendered above the scope panel when a tamper is active. Visually distinct from a real FAIL (yellow not red) to make clear "this is a demo, not a shipped bug". Names which mutation was applied and which checks are expected to fail. |
+| `verify-atom-context` | Sentence below the Snapshot metadata table (V2.4) anchoring the abstract atom-count to concrete meaning ("MMPM agent memory entries — facts, procedures…") and stating the redaction stance for THIS snapshot (derived from whether any atom has a `value` field — never hardcoded). Wording adapts to redacted vs unredacted snapshot. No hardcoded counts. |
+| `verify-success-greeting` | Human-tone sentence (V3.4) at the top of the result hero panel, above the technical `result.summary` line. Renders ONLY on `state.kind === "done" && result.overallOk === true`. Tells the reader what they just accomplished in plain language ("You just independently verified an MMPM signed memory snapshot in your browser. No server trust, no API key, no Parametric Memory code path.") before the engine output. Absent on FAIL — the rose-coloured summary speaks for itself; a warmer greeting would feel tone-deaf. |
 
 ### Knowledge — `src/components/knowledge/*`
 

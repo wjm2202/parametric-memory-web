@@ -44,6 +44,35 @@ const nextConfig: NextConfig = {
       source: "/dashboard/:path*",
       headers: [{ key: "X-Robots-Tag", value: "noindex, nofollow" }],
     },
+    // ── JWKS public-key publication (V1.3 — Sprint 2026-05-13) ─────────────
+    // The /.well-known/jwks.json endpoint publishes the Ed25519 public key
+    // that signs MMPM snapshots. The verify page (and any third-party
+    // verifier) does a cross-origin `fetch(snap.signature.keyUri)` to confirm
+    // the embedded key matches the published key — i.e. that the snapshot
+    // wasn't signed by some other key the substrate also has access to.
+    //
+    // Without ACAO on this response, the browser blocks the cross-origin
+    // fetch and the verifier silently falls back to the embedded key
+    // (keySource = embedded-fallback-jwks-unreachable). The fallback is
+    // structurally safe — the embedded key is covered by the signature, so
+    // it can't be swapped in transit — but the trust narrative is
+    // "verifiable against an independently published key", which the
+    // fallback path defeats.
+    //
+    // Public-key publication is, by definition, public. ACAO: * is correct.
+    // OPTIONS is included so browser preflights succeed. Cache for 5 minutes
+    // so key rotations propagate within a short window without hammering the
+    // origin on every verify.
+    {
+      source: "/.well-known/jwks.json",
+      headers: [
+        { key: "Access-Control-Allow-Origin", value: "*" },
+        { key: "Access-Control-Allow-Methods", value: "GET, OPTIONS" },
+        { key: "Access-Control-Allow-Headers", value: "Content-Type" },
+        { key: "Cache-Control", value: "public, max-age=300, must-revalidate" },
+        { key: "Content-Type", value: "application/json; charset=utf-8" },
+      ],
+    },
   ],
   redirects: async () => [
     {

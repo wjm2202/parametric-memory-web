@@ -1,61 +1,57 @@
 # Dependencies
-
 node_modules/
 
 # Build output
-
 .next/
 out/
 dist/
 build/
 
 # Environment files — NEVER include in image
-
+# (The previous version had `.env.\*` with an escaped asterisk — Docker treats
+# `\*` as a literal `*` character, so variants like `.env.production` were NOT
+# being excluded. Fixed 2026-05-12.)
 .env
-.env.\*
+.env.*
 !.env.example
 
 # Git
-
 .git/
 .gitignore
 
 # IDE
-
 .vscode/
 .idea/
 
 # OS
-
 .DS_Store
 Thumbs.db
 
 # Tests & dev
-
 coverage/
-_.test.ts
-_.test.tsx
-_.spec.ts
-_.spec.tsx
+*.test.ts
+*.test.tsx
+*.spec.ts
+*.spec.tsx
 vitest.config.ts
+playwright.config.ts
+playwright-report/
+test-results/
+e2e/
 
 # Documentation source
-
 /docs/
 content/blog/drafts/
 
 # Docker
-
 Dockerfile
-docker-compose\*.yml
+docker-compose*.yml
 .dockerignore
 
 # CI/CD
-
 .github/
 
 # Misc
-
 README.md
 LICENSE
-\*.md
+*.md
