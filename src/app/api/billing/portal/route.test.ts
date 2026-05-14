@@ -117,8 +117,7 @@ describe("POST /api/billing/portal", () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockResolvedValue({
       status: 404,
-      text: () =>
-        Promise.resolve(JSON.stringify({ error: "substrate_subscription_not_found" })),
+      text: () => Promise.resolve(JSON.stringify({ error: "substrate_subscription_not_found" })),
     });
 
     const res = await POST(makeRequest({ substrateSlug: "not-mine-or-cancelled" }));

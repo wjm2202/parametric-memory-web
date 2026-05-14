@@ -292,9 +292,13 @@ describe("V2.1 — TamperControls inside VerifyClient (integration)", () => {
     // and tamper precedes formatVersion. Bitwise check is the standard
     // testing-library / DOM API idiom for this.
     // eslint-disable-next-line no-bitwise
-    expect(publicKeysHeading.compareDocumentPosition(tamper) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      publicKeysHeading.compareDocumentPosition(tamper) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     // eslint-disable-next-line no-bitwise
-    expect(tamper.compareDocumentPosition(formatVersionCheckCard) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
+    expect(
+      tamper.compareDocumentPosition(formatVersionCheckCard) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
   });
 
   it("renders all three tamper buttons when the snapshot has atoms + audit entries", async () => {

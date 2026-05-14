@@ -222,8 +222,7 @@ describe("DashboardClient — cancel subscription flow", () => {
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
       status: 200,
-      json: () =>
-        Promise.resolve({ portalUrl: "https://billing.stripe.com/session/scoped_test" }),
+      json: () => Promise.resolve({ portalUrl: "https://billing.stripe.com/session/scoped_test" }),
       headers: { get: () => null },
     });
     globalThis.fetch = fetchMock as unknown as typeof fetch;
