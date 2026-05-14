@@ -85,6 +85,48 @@ describe("POST /api/billing/portal", () => {
     expect(body.error).toBe("no_stripe_customer");
   });
 
+  it("forwards substrateSlug body field to compute for scoped deep-link", async () => {
+    // 2026-05-14 — the substrate-scoped cancel flow sends `{ substrateSlug }`
+    // in the body. The website proxy doesn't interpret or strip it — compute
+    // is the ownership-and-existence authority. This test pins that contract
+    // so a future "validate body shape at the edge" refactor doesn't silently
+    // drop the field on the floor.
+    mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
+    mockFetch.mockResolvedValue({
+      status: 200,
+      text: () =>
+        Promise.resolve(JSON.stringify({ portalUrl: "https://billing.stripe.com/session/scoped" })),
+    });
+
+    const res = await POST(makeRequest({ substrateSlug: "research-droplet-syd1" }));
+    expect(res.status).toBe(200);
+
+    // The upstream POST body must include the slug, verbatim.
+    const upstreamCall = mockFetch.mock.calls[0];
+    const upstreamInit = upstreamCall[1] as { body?: string };
+    expect(upstreamInit.body).toBeTruthy();
+    const upstreamBody = JSON.parse(upstreamInit.body!);
+    expect(upstreamBody).toEqual({ substrateSlug: "research-droplet-syd1" });
+  });
+
+  it("forwards 404 substrate_subscription_not_found from compute (scoped path)", async () => {
+    // When the slug doesn't resolve to an owned + active subscription, compute
+    // returns 404. The proxy must surface it verbatim so the dashboard can
+    // show the "page is out of date — refresh" alert rather than the generic
+    // "could not open portal" one.
+    mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
+    mockFetch.mockResolvedValue({
+      status: 404,
+      text: () => Promise.resolve(JSON.stringify({ error: "substrate_subscription_not_found" })),
+    });
+
+    const res = await POST(makeRequest({ substrateSlug: "not-mine-or-cancelled" }));
+    const body = await res.json();
+
+    expect(res.status).toBe(404);
+    expect(body.error).toBe("substrate_subscription_not_found");
+  });
+
   it("returns 502 when compute is unreachable", async () => {
     // compute-proxy.ts logs a diagnostic console.error on network failure —
     // that's intended ops signal in prod. In tests the log leaks into vitest

@@ -3,6 +3,9 @@ services:
     image: parametricmemory/parametric-memory-web:${GIT_COMMIT_SHA:-latest}
     container_name: pm-web
     restart: unless-stopped
+    # Runtime hardening (read_only, cap_drop, no-new-privileges, resource
+    # limits) deferred to a post-launch sprint when we have traffic to size
+    # against. See docs/docker-hardening-changes-2026-05-12.md "Wave 2".
     ports:
       - "127.0.0.1:3000:3000"
     environment:
