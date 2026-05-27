@@ -203,6 +203,10 @@ export default function TwoFactorChallengeClient() {
               onComplete={(full) => void submitCode(full)}
               disabled={submitting}
               describedBy={error ? "two-factor-challenge-error" : undefined}
+              // Focus the first digit on page load so the user can type the
+              // code from their authenticator immediately. Also refocuses
+              // field 0 after a failed verify (when `totpCode` is reset to
+              // "" in `submitCode`), so retries don't need a manual click.
               autoFocus
             />
           ) : (

@@ -208,6 +208,7 @@ entry here **first**, before the PR that uses it.
 | `capacity-success-<tier>` | Post-submit confirmation region (`role="status"`) |
 | `capacity-tier-label-<tier>` | Hidden label paired with the tier-id input |
 | `capacity-tier-input-<tier>` | Hidden `<input>` carrying the tier id on form submit |
+| `pricing-cta-adblock-notice` | Amber `role="alert"` notice rendered by `PricingCTA` in place of the embedded checkout drawer when `probeStripeAvailability()` reports Stripe.js can't load (adblock / CSP / network). Sprint 2026-05-18 D10. Static — user must disable the blocker and reload. |
 
 ### Login + signup — `src/app/login/*`, `src/app/signup/*`
 
@@ -243,6 +244,31 @@ entry here **first**, before the PR that uses it.
 | `billing-invoice-upcoming` | Renews-on banner (F5) |
 | `billing-portal-cta` | Open Stripe portal |
 | `cancel-substrate-modal-backdrop` | Modal backdrop for the cancel-substrate confirmation in the Dashboard substrate-list flow; click-to-dismiss target (sibling of the inner card whose `onClick={(e) => e.stopPropagation()}` keeps clicks inside the modal from bubbling) |
+| `substrate-card-cancel-<slug>` | Per-substrate "Cancel subscription" button on the dashboard substrate card. Opens `CancelSubstrateDialog` for that slug. Sprint 2026-05-18 E1. |
+
+**Cancel-substrate confirmation dialog — `src/app/dashboard/CancelSubstrateDialog.tsx`:**
+
+Minimum-copy modal asserted from the substrate card. Fires `POST /api/substrates/[slug]/cancel` (CSRF-gated BFF → compute), which sets `cancel_at_period_end: true` in Stripe. Drives the dashboard banner + badge below.
+
+| testid | Element |
+|---|---|
+| `cancel-substrate-dialog` | Dialog container (`role="dialog"` + `aria-modal="true"`) — paid month is preserved; cancellation lands at period end |
+| `cancel-substrate-dialog-backdrop` | Modal backdrop; click-to-dismiss target |
+| `cancel-substrate-dialog-keep` | "Keep subscription" cancel button (closes the dialog without calling the cancel BFF) |
+| `cancel-substrate-dialog-confirm` | "Cancel at period end" primary button — POSTs to `/api/substrates/[slug]/cancel` |
+| `cancel-substrate-dialog-error` | Inline error region (`role="alert"`) shown when the BFF call returns non-2xx |
+
+**Cancel-pending banner + badge — `src/app/dashboard/CancelPendingBanner.tsx`:**
+
+Renders for any substrate whose subscription is in the `cancel_at_period_end: true` window. Provides a reactivate path before the period ends and a dismiss option that persists per-day in localStorage (day-bucketed key so the banner reappears the next day). Sprint 2026-05-18 E2.
+
+| testid | Element |
+|---|---|
+| `cancel-pending-badge` | Compact amber pill rendered next to the substrate name in the substrate card header when cancellation is pending |
+| `cancel-pending-banner-<slug>` | Full banner container (`role="status"`) for the named substrate's cancel-pending state — shows the period-end date and a "Reactivate" CTA |
+| `cancel-pending-banner-reactivate-<slug>` | "Reactivate subscription" button inside the banner — POSTs to `/api/substrates/[slug]/reactivate` |
+| `cancel-pending-banner-dismiss-<slug>` | "Dismiss" close icon — writes the per-day localStorage key so the banner stays hidden until tomorrow |
+| `cancel-pending-banner-error-<slug>` | Inline error region shown when the reactivate BFF call fails |
 
 ### Admin — `src/app/admin/*`, `src/app/admin/[slug]/*`
 
@@ -297,6 +323,7 @@ entry here **first**, before the PR that uses it.
 | `proration-monthly` | New monthly rate line |
 | `proration-full-line` | Full breakdown footnote ("X/mo starting …") |
 | `dedicated-migration-warning` | Warning block shown when the target tier triggers a dedicated-cluster migration |
+| `confirm-upgrade-reactivate-note` | Amber notice rendered inside the confirm-upgrade dialog when the current subscription is in the `cancel_at_period_end: true` window. Explains that confirming will auto-reactivate the cancellation as part of the tier change (D9). Sprint 2026-05-18 E3. |
 
 **Tier-change progress banner — `src/app/admin/TierChangeProgressBanner.tsx`:**
 
@@ -484,6 +511,31 @@ Cryptographic snapshot verifier. The drop zone is the primary affordance (handle
 | `checkout-submit` | Embedded Stripe checkout submit (or our return handler) |
 | `checkout-success` | Success state region |
 | `checkout-error` | Error state region |
+
+**Checkout drawer — `src/app/pricing/CheckoutDrawer.tsx`:**
+
+Right-side slide-in drawer that hosts Stripe's `<EmbeddedCheckout>` iframe. Opened by `PricingCTA` after `probeStripeAvailability()` reports Stripe.js is loadable and the legal clickwrap is checked. The drawer binds its own `fetchClientSecret` callback against `/api/checkout`. Backdrop click + Esc + × all close. Sprint 2026-05-18 D3.
+
+| testid | Element |
+|---|---|
+| `checkout-drawer` | Outer dialog container (`role="dialog"` + `aria-modal="true"` + `aria-labelledby="checkout-drawer-title"`). Rendered only while `open=true`. |
+| `checkout-drawer-backdrop` | Full-viewport backdrop overlay; click-to-close target |
+| `checkout-drawer-close` | "×" icon button in the drawer header (`aria-label="Close checkout"`) |
+| `checkout-drawer-error` | Inline error notice rendered in place of the embedded iframe when `fetchClientSecret` rejects (HTTP 401 sign-in stale, HTTP 409 tier_at_capacity, or missing clientSecret in the body). Includes a Close button that fires the same `onClose` as the backdrop. |
+
+**Billing return page — `src/app/billing/return/BillingReturnClient.tsx`:**
+
+Client component mounted at `/billing/return?session_id=...` after Stripe's Embedded Checkout completes. Polls `/api/checkout/session/[id]` every 2s up to a 90s ceiling waiting for the substrate to flip from `pending_payment → provisioning → running`. Uses `history.replaceState` to strip the `session_id` from the URL bar so the polling key isn't shoulder-surfable. Sprint 2026-05-18 D4.
+
+| testid | Element |
+|---|---|
+| `billing-return-loading` | Initial card body shown while the first poll is in flight (`role="status"`) |
+| `billing-return-spinner` | Spinner element inside `billing-return-loading` (rotating SVG / CSS) |
+| `billing-return-open` | "Subscription confirmed" card body shown when the Stripe session reports `complete` but the substrate hasn't yet flipped to provisioning |
+| `billing-return-provisioning` | "We're provisioning your substrate" card body shown while the substrate is in the `provisioning` status |
+| `billing-return-ready` | Success card body shown when the substrate reaches `running` — links into `/admin/[slug]` for the new substrate |
+| `billing-return-timeout` | Soft-fallback card body shown when the 90s poll ceiling is reached without the substrate flipping to `running` (`role="status"`) — tells the user to refresh `/dashboard` to see status |
+| `billing-return-error` | Hard-failure card body shown when the BFF returns a terminal error (401 ownership mismatch, 404 session not found, 5xx) (`role="alert"`) |
 
 ### Toasts — `src/components/ui/Toaster` (sonner)
 

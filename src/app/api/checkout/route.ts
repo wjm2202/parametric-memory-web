@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { NextRequest, NextResponse } from "next/server";
 import { computeProxy, authHeaders } from "@/lib/compute-proxy";
+import { verifyCsrfOrigin } from "@/lib/csrf";
 
 const SESSION_COOKIE = "mmpm_session";
 
@@ -10,10 +11,19 @@ const SESSION_COOKIE = "mmpm_session";
  * Proxies to mmpm-compute POST /api/checkout.
  * Forwards the session cookie as a Bearer token so compute can identify the user.
  *
+ * After Phase D this returns { clientSecret } for Embedded Checkout instead of
+ * { sessionUrl } — same body shape upstream, only the response field changes.
+ *
  * Body:  { tier: string }
- * Returns: { sessionUrl: string, tier: string, amountCents: number }
+ * Returns: { clientSecret: string, tier: string, amountCents: number }
+ *
+ * CSRF: state-mutating proxy on session-authenticated path. Origin-checked
+ * via verifyCsrfOrigin (P0-5, sprint 2026-05-18).
  */
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const csrfError = verifyCsrfOrigin(request);
+  if (csrfError) return csrfError;
+
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(SESSION_COOKIE)?.value;
 

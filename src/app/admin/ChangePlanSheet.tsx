@@ -81,6 +81,12 @@ interface Props {
    * reads "…then $X/mo on May 17". null if unknown.
    */
   nextBillingDate: Date | null;
+  /**
+   * Sprint 2026-05-18 D9: forwarded to ConfirmUpgradeDialog so it can show
+   * the "Upgrading will reactivate your subscription" note when true.
+   * Defaults to false at consumer call sites that don't yet thread it.
+   */
+  isCancelPending?: boolean;
 }
 
 /**
@@ -103,6 +109,7 @@ export function ChangePlanSheet({
   currentTier,
   currentLimits,
   nextBillingDate,
+  isCancelPending = false,
 }: Props) {
   const [fetchState, setFetchState] = useState<FetchState>({ kind: "idle" });
   const [selectedOption, setSelectedOption] = useState<UpgradeOption | null>(null);
@@ -241,6 +248,7 @@ export function ChangePlanSheet({
           currentTier={currentTier}
           option={selectedOption}
           nextBillingDate={nextBillingDate}
+          isCancelPending={isCancelPending}
           onClose={handleDialogClose}
           // Successful upgrade → close BOTH the dialog AND this sheet so the
           // admin view re-shows. `useTierChangePoll` (mounted on the admin

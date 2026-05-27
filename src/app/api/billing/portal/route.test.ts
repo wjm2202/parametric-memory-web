@@ -23,7 +23,11 @@ function makeCookieStore(token?: string) {
 function makeRequest(body?: Record<string, unknown>): NextRequest {
   return new NextRequest("http://localhost:3000/api/billing/portal", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      // CSRF: same-origin header required after P0-5 sprint fix.
+      Origin: "http://localhost:3000",
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
 }

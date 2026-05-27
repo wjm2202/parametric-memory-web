@@ -75,10 +75,13 @@ export interface SixDigitInputProps {
    */
   dataTestId?: string;
   /**
-   * If true, focus the first input on mount (and on disabled→enabled transition).
-   * Default false so existing call sites (enrolment wizards that mount with a
-   * QR code visible) don't yank focus to the input. Set true on screens where
-   * the input is the user's first action — e.g. the TOTP login challenge.
+   * Focus the first input on mount, and re-focus the first input whenever
+   * the controlled `value` transitions from non-empty back to "" (which is
+   * the parent's signal that a submit just failed and the user should
+   * retry). Opt-in because the widget is rendered on three different
+   * surfaces and only the primary-action surface wants this.
+   *
+   * Default: false (no auto-focus, no clear-recovery focus).
    */
   autoFocus?: boolean;
 }
@@ -102,6 +105,11 @@ export function SixDigitInput({
   autoFocus = false,
 }: SixDigitInputProps) {
   const refs = useRef<Array<HTMLInputElement | null>>(Array(6).fill(null));
+  // Track the previous value length so we can detect the
+  //   "non-empty → empty" transition that signals a parent-side clear
+  //   (e.g. after a failed verify). Using a ref rather than a state
+  // value because we read it inside an effect and don't want re-renders.
+  const prevValueLengthRef = useRef<number>(value.length);
 
   // Auto-focus the first cell on mount and when the component transitions
   // out of the disabled state. The challenge screen passes autoFocus={true};
@@ -119,6 +127,35 @@ export function SixDigitInput({
     for (let i = 0; i < Math.min(value.length, 6); i++) out[i] = value[i] ?? "";
     return out;
   }, [value]);
+
+  // ── Focus management ─────────────────────────────────────────────────────
+  // 1. On mount, focus field 0 if autoFocus is true. This lets surfaces like
+  //    the 2FA login challenge / wizard verify step accept keystrokes the
+  //    moment the page renders, without the user having to click.
+  // 2. When the controlled value transitions from non-empty back to "",
+  //    re-focus field 0. The parent clears the value after a failed verify
+  //    so the user can retry; without this they'd need to click input 1
+  //    again, which is exactly the complaint that prompted this prop.
+  // Both effects are no-ops when autoFocus is false — existing call sites
+  // are unaffected.
+  useEffect(() => {
+    if (!autoFocus) return;
+    const el = refs.current[0];
+    if (el) el.focus();
+    // Intentionally mount-only — listing autoFocus would still only run
+    // once because the prop is effectively static at the call site.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  useEffect(() => {
+    const prevLen = prevValueLengthRef.current;
+    prevValueLengthRef.current = value.length;
+    if (!autoFocus) return;
+    if (prevLen > 0 && value.length === 0) {
+      const el = refs.current[0];
+      if (el) el.focus();
+    }
+  }, [value.length, autoFocus]);
 
   /** Move focus to a specific field if it exists. */
   const focusField = useCallback((idx: number) => {

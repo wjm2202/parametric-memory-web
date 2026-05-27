@@ -51,6 +51,7 @@ jobs:
             ${{ steps.tag.outputs.tag }}
           build-args: |
             GIT_COMMIT_SHA=${{ github.sha }}
+            NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${{ secrets.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY }}
           cache-from: type=registry,ref=parametricmemory/parametric-memory-web:buildcache
           cache-to: type=registry,ref=parametricmemory/parametric-memory-web:buildcache,mode=max
 

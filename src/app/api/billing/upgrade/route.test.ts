@@ -37,12 +37,26 @@ function makeCookieStore(token?: string) {
 }
 
 /**
- * Minimal NextRequest stand-in. The route only calls `request.json()`. Pass
- * `undefined` to simulate a json() rejection; pass any value otherwise to
- * have json() resolve with it.
+ * Minimal NextRequest stand-in. The route calls `request.json()` AND (after
+ * P0-5 CSRF wiring) reads `request.method`, `request.url`, and
+ * `request.headers.get()` via verifyCsrfOrigin. Pass `undefined` for body to
+ * simulate a json() rejection.
+ *
+ * Headers default to a same-origin Origin so the CSRF check passes; tests that
+ * want to exercise the CSRF block should override `originHeader`.
  */
-function makeReq(body: unknown): NextRequest {
+function makeReq(body: unknown, opts: { originHeader?: string | null } = {}): NextRequest {
+  const headers = new Map<string, string>();
+  // Default to same-origin localhost — matches the request URL below.
+  if (opts.originHeader !== null) {
+    headers.set("origin", opts.originHeader ?? "http://localhost:3000");
+  }
   return {
+    method: "POST",
+    url: "http://localhost:3000/api/billing/upgrade",
+    headers: {
+      get: (name: string) => headers.get(name.toLowerCase()) ?? null,
+    },
     json: () =>
       body === undefined ? Promise.reject(new Error("malformed json")) : Promise.resolve(body),
   } as unknown as NextRequest;

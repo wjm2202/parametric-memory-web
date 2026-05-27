@@ -28,6 +28,11 @@ services:
       dockerfile: Dockerfile
       args:
         GIT_COMMIT_SHA: dev
+        # Next.js inlines NEXT_PUBLIC_* at build time. Without this the
+        # Embedded Checkout drawer can't loadStripe() in the browser even
+        # if the runtime env has the key. Sourced from .env.local at
+        # `docker compose build` time via shell interpolation.
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
     image: parametric-memory-web:dev
     container_name: pm-web-dev
     # Re-map host port from 3000 (prod) → 3001 (dev) to align with

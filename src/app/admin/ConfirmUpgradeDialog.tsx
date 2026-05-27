@@ -95,6 +95,16 @@ interface Props {
    */
   nextBillingDate: Date | null;
   /**
+   * Sprint 2026-05-18 D9: true when the substrate's subscription is in the
+   * cancel-pending state (substrate.cancelAt is set). When true, the dialog
+   * surfaces a notice that confirming the upgrade will ALSO reactivate the
+   * subscription — both in a single Stripe operation. Compute's upgrade
+   * handler always sets `cancel_at_period_end: false`; this flag only
+   * controls the visible note so the user understands what they're agreeing
+   * to.
+   */
+  isCancelPending?: boolean;
+  /**
    * Called on Cancel button, backdrop click, or Esc key. Does NOT fire on a
    * successful Upgrade — that path uses {@link Props.onUpgradeStarted}.
    */
@@ -134,6 +144,7 @@ export function ConfirmUpgradeDialog({
   nextBillingDate,
   onClose,
   onUpgradeStarted,
+  isCancelPending = false,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
@@ -302,6 +313,20 @@ export function ConfirmUpgradeDialog({
               <li>• Transfer your data (substrate briefly read-only)</li>
               <li>• Cut over — your endpoint and API key stay the same</li>
             </ol>
+          </div>
+        )}
+
+        {/* D9 (sprint 2026-05-18): cancel-pending → upgrade auto-reactivates.
+            Surfaced as a friendly inline note rather than a separate dialog
+            step. Compute's upgrade handler unconditionally clears
+            cancel_at_period_end in the same .update() call, so the user
+            doesn't need a separate Reactivate confirmation. */}
+        {isCancelPending && (
+          <div
+            data-testid="confirm-upgrade-reactivate-note"
+            className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200"
+          >
+            Upgrading will reactivate your subscription. The pending cancellation will be cleared.
           </div>
         )}
 

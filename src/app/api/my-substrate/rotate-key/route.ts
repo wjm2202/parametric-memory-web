@@ -11,10 +11,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { cookies } from "next/headers";
 import { computeProxy, authHeaders } from "@/lib/compute-proxy";
+import { verifyCsrfOrigin } from "@/lib/csrf";
 
 const SESSION_COOKIE = "mmpm_session";
 
 export async function POST(request: NextRequest): Promise<NextResponse> {
+  const csrfError = verifyCsrfOrigin(request);
+  if (csrfError) return csrfError;
+
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(SESSION_COOKIE)?.value;
 

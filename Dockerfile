@@ -35,6 +35,14 @@ ARG GIT_COMMIT_SHA=unknown
 ENV GIT_COMMIT_SHA=${GIT_COMMIT_SHA}
 ENV NEXT_TELEMETRY_DISABLED=1
 
+# Next.js inlines NEXT_PUBLIC_* env vars at build time. The publishable
+# key MUST be available here, not just at runtime, otherwise the client
+# bundle ships with `process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY ===
+# undefined` and the Embedded Checkout drawer can't loadStripe().
+# Safe to bake into the image — the publishable key is, by name, public.
+ARG NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY
+ENV NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+
 # Ensure public directory exists (may have no static assets yet)
 RUN mkdir -p public
 
