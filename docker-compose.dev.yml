@@ -1,0 +1,69 @@
+# =============================================================================
+# Parametric Memory Web — Dev override
+# =============================================================================
+# Overlays a LOCAL BUILD CONTEXT on the prod service so `docker compose up`
+# in dev exercises the SAME hardened Dockerfile that ships to production,
+# built from your working tree instead of pulled from Docker Hub.
+#
+# Wired into mmpm-compute's dev supervisor: `npm run local:mockDO` calls
+# `docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build`
+# from this directory, so every dev session validates the production image
+# end-to-end before it ever reaches CI.
+#
+# Env vars (STRIPE_*, RESEND_*, OAuth client IDs, etc.) come from your shell.
+# mmpm-compute/scripts/dev.sh sources `$WEBSITE_DIR/.env.local` before invoking
+# compose, which lets the prod compose's ${VAR} interpolation resolve.
+#
+# Standalone usage (without mmpm-compute):
+#   set -a; source .env.local; set +a
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up -d --build
+# =============================================================================
+
+services:
+  web:
+    # Build from the local working tree instead of pulling from Docker Hub.
+    # Tagged :dev so it's visually distinct in `docker images` output.
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        GIT_COMMIT_SHA: dev
+        # Next.js inlines NEXT_PUBLIC_* at build time. Without this the
+        # Embedded Checkout drawer can't loadStripe() in the browser even
+        # if the runtime env has the key. Sourced from .env.local at
+        # `docker compose build` time via shell interpolation.
+        NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY}
+    image: parametric-memory-web:dev
+    container_name: pm-web-dev
+    # Re-map host port from 3000 (prod) → 3001 (dev) to align with
+    # mmpm-compute/scripts/dev.sh which clears port 3001 and waits on
+    # http://localhost:3001/. Keep this in sync if either side changes.
+    ports:
+      - "127.0.0.1:3001:3000"
+    # Let the container reach the host machine's network stack (the compute
+    # Express server, mock-do, mock-substrate, stripe listen — all of which
+    # run as host processes via mmpm-compute/scripts/dev.sh).
+    #
+    # On Docker Desktop (macOS / Windows) `host.docker.internal` is wired up
+    # automatically. The `extra_hosts` line below adds the same name on Linux
+    # (Docker Engine), where it doesn't exist by default. host-gateway is a
+    # Docker-supplied alias for the host's gateway IP. Safe no-op on macOS.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    environment:
+      # OAuth redirect_uri comes back to the browser at localhost:3001 in dev.
+      # Prod sets PUBLIC_SITE_URL=https://parametric-memory.dev via .env.production.
+      - PUBLIC_SITE_URL=http://localhost:3001
+      # CRITICAL — without this override the container's /auth/callback,
+      # /api/auth/[...path], /api/billing/*, /api/my-substrate/* and every
+      # admin-page server fetch would try `http://localhost:3100`, which
+      # inside the container is the container itself, not the host. The
+      # auto-login magic-link verify call silently fails and the user lands
+      # on /login?error=server_error.
+      #
+      # Wins over the prod compose's `${MMPM_COMPUTE_URL:-https://memory.kiwi}`
+      # entry per compose override merge semantics.
+      - MMPM_COMPUTE_URL=http://host.docker.internal:3100
+    # In prod we restart unless-stopped; in dev we want crashes to be LOUD
+    # so they show up in `docker compose logs` rather than silently looping.
+    restart: "no"

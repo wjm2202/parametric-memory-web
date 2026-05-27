@@ -7,6 +7,8 @@ import { getTierLabel } from "@/config/tiers";
 import SubstrateStateBanner from "@/components/ui/SubstrateStateBanner";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { readReauthFlag, redirectToReauth } from "@/lib/reauth";
+import { CancelSubstrateDialog } from "./CancelSubstrateDialog";
+import { CancelPendingBanner, CancelPendingBadge } from "./CancelPendingBanner";
 
 import { mailto } from "@/config/site";
 import { GRACE_PERIOD_DAYS } from "@/config/lifecycle";
@@ -33,6 +35,18 @@ interface SubstrateSummary {
   hasActiveSubscription: boolean;
   /** ISO timestamp of next Stripe billing date. Null when no active subscription. */
   renewsAt: string | null;
+  /**
+   * ISO timestamp of when the subscription will end (the period_end of the
+   * paying period). Populated by the webhook fan-out at
+   * substrate-stripe.ts when `cancel_at_period_end` is set on the Stripe
+   * subscription. Null while the subscription is fully active. Cleared back
+   * to null by the same webhook fan-out when the user reactivates.
+   *
+   * Sprint 2026-05-18 E2: drives the cancel-pending banner + badge on the
+   * dashboard substrate card. Surfaced by compute at
+   * src/api/substrates/routes.ts:513 (`cancelAt: detail.cancel_at?.toISOString()`).
+   */
+  cancelAt: string | null;
 }
 
 interface BillingStatus {
@@ -378,9 +392,14 @@ function CancelWarningModal({
 function SubstrateCard({
   substrate,
   onCancelRequest,
+  onActiveCancelRequest,
+  onReactivated,
 }: {
   substrate: SubstrateSummary;
   onCancelRequest: (slug: string) => void;
+  onActiveCancelRequest: (slug: string) => void;
+  /** E2: fires after a successful POST /api/substrates/:slug/reactivate. */
+  onReactivated: () => void;
 }) {
   const [isHovered, setIsHovered] = useState(false);
   // Show cancel only when the substrate is inactive AND Stripe still has an
@@ -388,6 +407,16 @@ function SubstrateCard({
   // the webhook flips substrate_subscriptions.status → 'cancelled' and this
   // flag goes false — the button disappears on the next poll.
   const isCancellable = INACTIVE_STATUSES.has(substrate.status) && substrate.hasActiveSubscription;
+  // E2 cancel-pending state — `cancelAt` is set whenever the user has
+  // clicked Cancel and the period hasn't ended yet. In this state we HIDE
+  // the cancel button and show the banner + badge instead. The badge is
+  // persistent; the banner is dismissable for the day.
+  const cancelPending = Boolean(substrate.cancelAt);
+  // E1: ACTIVE running substrate with a live sub → show the on-site cancel
+  // button. Don't show during cancel-pending (E2 owns that surface via the
+  // banner's Reactivate button).
+  const isActiveCancellable =
+    substrate.status === "running" && substrate.hasActiveSubscription && !cancelPending;
 
   return (
     <div
@@ -411,6 +440,12 @@ function SubstrateCard({
             <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" title="Provision failed" />
           )}
           <p className="font-mono text-sm break-all text-white/70">{substrate.slug}</p>
+          {/* E2: persistent badge while cancel-pending. The banner below
+              the card carries the dismissable detail + reactivate button;
+              this pill just keeps the state visible after dismissal. */}
+          {cancelPending && substrate.cancelAt && (
+            <CancelPendingBadge endsOn={formatDate(substrate.cancelAt)} />
+          )}
         </div>
 
         {/* Tier badge */}
@@ -440,7 +475,8 @@ function SubstrateCard({
         </div>
       </Link>
 
-      {/* Cancel subscription footer — only for inactive substrates */}
+      {/* Cancel subscription footer — only for inactive substrates with
+          orphan Stripe subs. Routes to the Stripe portal (existing flow). */}
       {isCancellable && (
         <div className="border-t border-white/5 px-4 py-2.5">
           <button
@@ -453,6 +489,36 @@ function SubstrateCard({
             Cancel subscription →
           </button>
         </div>
+      )}
+
+      {/* E1 (sprint 2026-05-18): on-site cancel for ACTIVE substrates. Opens
+          CancelSubstrateDialog with the minimum-copy "ends on DD MMM YYYY"
+          confirmation. No portal redirect. Hidden during cancel-pending. */}
+      {isActiveCancellable && (
+        <div className="border-t border-white/5 px-4 py-2.5">
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              onActiveCancelRequest(substrate.slug);
+            }}
+            data-testid={`substrate-card-cancel-${substrate.slug}`}
+            className="text-xs text-white/40 transition hover:text-red-400"
+          >
+            Cancel subscription
+          </button>
+        </div>
+      )}
+
+      {/* E2 (sprint 2026-05-18): cancel-pending banner with Reactivate.
+          Dismissable for the day via localStorage; the persistent badge
+          next to the slug stays visible regardless. */}
+      {cancelPending && substrate.cancelAt && (
+        <CancelPendingBanner
+          substrateId={substrate.id}
+          endsOn={formatDate(substrate.cancelAt)}
+          slug={substrate.slug}
+          onReactivated={onReactivated}
+        />
       )}
     </div>
   );
@@ -570,6 +636,13 @@ export default function DashboardClient({
   const [billingStatus, setBillingStatus] = useState<BillingStatus | null>(null);
   const [billingError, setBillingError] = useState(false);
   const [cancelWarning, setCancelWarning] = useState<{ slug: string; status: string } | null>(null);
+  // E1 (sprint 2026-05-18): on-site cancel target for ACTIVE substrates.
+  // Distinct from cancelWarning (which targets INACTIVE orphan-Stripe-sub
+  // substrates and redirects to the Stripe portal).
+  const [activeCancelTarget, setActiveCancelTarget] = useState<{
+    slug: string;
+    endsOn: string;
+  } | null>(null);
 
   const checkoutStatus = searchParams.get("checkout");
 
@@ -629,16 +702,59 @@ export default function DashboardClient({
     openBillingPortal();
   }
 
+  /**
+   * E1 (sprint 2026-05-18): on-site cancel trigger for ACTIVE substrates.
+   * Looks up the substrate's next renewal date (renewsAt) to compute the
+   * "ends on" string the dialog shows. If renewsAt is missing we fall back
+   * to a generic phrase — the dialog still renders, just without the date.
+   */
+  function handleActiveCancelRequest(slug: string) {
+    const sub = substrates.find((s) => s.slug === slug);
+    if (!sub) return;
+    const endsOn = sub.renewsAt ? formatDate(sub.renewsAt) : "your next billing date";
+    setActiveCancelTarget({ slug, endsOn });
+  }
+
+  function handleActiveCancelSuccess() {
+    setActiveCancelTarget(null);
+    // Re-fetch substrates so the UI reflects cancel_at (E2's banner + badge
+    // will key off this). Reuse the existing /api/my-substrate poll path —
+    // the next tick of the existing pollInterval would do it, but the
+    // explicit refetch removes the up-to-30s window where the substrate
+    // card still looks fully-active after the cancel landed.
+    fetch("/api/my-substrate")
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (data && Array.isArray(data.substrates)) {
+          setSubstrates(data.substrates as SubstrateSummary[]);
+        }
+      })
+      .catch(() => {
+        // Silent — the existing pollInterval will pick up the new state.
+      });
+  }
+
   return (
     // M7: overflow-x-hidden guard — see AdminClient.tsx for rationale.
     <div className="min-h-screen overflow-x-hidden bg-[#030712] text-white">
-      {/* Cancel subscription warning modal */}
+      {/* Cancel subscription warning modal — INACTIVE substrates, routes
+          to Stripe portal for orphan-sub cleanup. */}
       {cancelWarning && (
         <CancelWarningModal
           slug={cancelWarning.slug}
           status={cancelWarning.status}
           onConfirm={handleCancelConfirm}
           onDismiss={() => setCancelWarning(null)}
+        />
+      )}
+      {/* E1 (sprint 2026-05-18): ACTIVE substrate cancel dialog — minimum
+          copy, on-site POST to /api/substrates/:slug/cancel. */}
+      {activeCancelTarget && (
+        <CancelSubstrateDialog
+          slug={activeCancelTarget.slug}
+          endsOn={activeCancelTarget.endsOn}
+          onSuccess={handleActiveCancelSuccess}
+          onClose={() => setActiveCancelTarget(null)}
         />
       )}
       {/* Backdrop blur */}
@@ -732,6 +848,8 @@ export default function DashboardClient({
                 key={substrate.id}
                 substrate={substrate}
                 onCancelRequest={handleCancelRequest}
+                onActiveCancelRequest={handleActiveCancelRequest}
+                onReactivated={handleActiveCancelSuccess}
               />
             ))}
             <AddSubstrateCTA />

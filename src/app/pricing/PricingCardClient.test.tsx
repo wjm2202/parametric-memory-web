@@ -1,5 +1,29 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
+
+// Publishable key MUST be set before CheckoutDrawer imports — the module
+// reads it once on first probeStripeAvailability() / drawer mount and
+// caches the result in a module-singleton. Without this, the singleton
+// resolves to null permanently and every probe in this file returns
+// { ok: false, reason: 'stripe_unavailable' } regardless of the loadStripe
+// mock.
+process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY = "pk_test_pricing_card_xxx";
+
+// Mock Stripe libraries BEFORE the PricingCardClient import (which pulls in
+// CheckoutDrawer transitively). Without these mocks the drawer's loadStripe
+// call would hit the real network during the adblock probe.
+vi.mock("@stripe/stripe-js", () => ({
+  loadStripe: vi.fn().mockResolvedValue({
+    /* fake Stripe handle */
+  }),
+}));
+vi.mock("@stripe/react-stripe-js", () => ({
+  EmbeddedCheckoutProvider: ({ children }: { children: React.ReactNode }) => (
+    <div data-testid="mock-embedded-checkout-provider">{children}</div>
+  ),
+  EmbeddedCheckout: () => <div data-testid="mock-embedded-checkout-iframe" />,
+}));
+
 import { PricingCardClient } from "./PricingCardClient";
 
 // Mock next/link to render as a plain anchor
@@ -225,12 +249,10 @@ describe("PricingCardClient", () => {
     fetchMock.mockResolvedValueOnce(
       mockCapacityResponse({ indie: { status: "open", slotsRemaining: 5, message: null } }),
     );
-    // Checkout fetch
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ sessionUrl: "https://checkout.stripe.com/test" }),
-    });
+    // Sprint 2026-05-18 D3: /api/checkout is now called by CheckoutDrawer's
+    // fetchClientSecret callback (not by PricingCTA directly). The drawer
+    // is mocked above, so the CTA's job here is just to open the drawer
+    // after the probe + capacity check pass — no `sessionUrl` mock needed.
 
     // Agree to terms and click CTA
     const checkbox = screen.getByRole("checkbox");
@@ -313,12 +335,10 @@ describe("PricingCardClient", () => {
 
     // CTA click fetch — network error
     fetchMock.mockRejectedValueOnce(new Error("Network error"));
-    // Checkout should still fire
-    fetchMock.mockResolvedValueOnce({
-      ok: true,
-      status: 200,
-      json: () => Promise.resolve({ sessionUrl: "https://checkout.stripe.com/test" }),
-    });
+    // Sprint 2026-05-18 D3: after capacity fails-open, PricingCTA opens the
+    // CheckoutDrawer. The drawer's own fetchClientSecret callback will POST
+    // /api/checkout later — outside this test's scope. We only assert that
+    // the drawer is mounted (the named "checkout-drawer" testid renders).
 
     // Agree to terms and click CTA
     const checkbox = screen.getByRole("checkbox");
@@ -326,12 +346,9 @@ describe("PricingCardClient", () => {
     const button = screen.getByRole("button", { name: "Get Solo" });
     fireEvent.click(button);
 
-    // Should proceed to checkout despite capacity check failure
+    // Should proceed to open the drawer despite the capacity check failure.
     await waitFor(() => {
-      expect(fetchMock).toHaveBeenCalledWith(
-        "/api/checkout",
-        expect.objectContaining({ method: "POST" }),
-      );
+      expect(screen.getByTestId("checkout-drawer")).toBeInTheDocument();
     });
   });
 

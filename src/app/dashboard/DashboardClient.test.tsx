@@ -53,6 +53,8 @@ function makeSubstrate(overrides: Partial<ReturnType<typeof makeSubstrate>> = {}
     updatedAt: "2026-04-13T00:00:00Z",
     hasActiveSubscription: false,
     renewsAt: null,
+    // Sprint 2026-05-18 E2: cancel-pending date. Default null = fully active.
+    cancelAt: null,
     ...overrides,
   };
 }

@@ -4,6 +4,7 @@ import { useState } from "react";
 import Link from "next/link";
 import { isValidTierId } from "@/config/tiers";
 import { WaitlistForm } from "./WaitlistForm";
+import { CheckoutDrawer, probeStripeAvailability } from "./CheckoutDrawer";
 
 import { mailto } from "@/config/site";
 type CapacityStatus = "open" | "waitlist" | "paused";
@@ -38,12 +39,18 @@ interface PricingCTAProps {
 /**
  * Pricing CTA button.
  *
- * Flow:
+ * Flow (sprint 2026-05-18 D3 — Embedded Checkout cutover):
  *   - CTA click             → fresh capacity check (event-driven)
- *   - If open + logged in   → POST /api/checkout → redirect to Stripe Checkout
+ *   - If open + logged in   → probe Stripe.js loadability
+ *                             → on probe ok: open <CheckoutDrawer>
+ *                             → on probe fail: show adblock notice in place
  *   - If open + not logged  → Redirect to /login?redirect=/pricing
  *   - If waitlist/paused    → WaitlistForm replaces button
  *   - Enterprise            → Email contact link (manual sales)
+ *
+ * The drawer hosts <EmbeddedCheckoutProvider> + <EmbeddedCheckout>. It
+ * fetches its own clientSecret from /api/checkout via the bound
+ * fetchClientSecret callback — this component no longer redirects.
  */
 export function PricingCTA({
   tierId,
@@ -51,7 +58,10 @@ export function PricingCTA({
   label,
   isLoggedIn,
   ctaLink,
-  trial,
+  // `trial` was destructured here pre-sprint-D3 to forward into the
+  // `/api/checkout` body. Embedded Checkout's fetchClientSecret only sends
+  // { tier }; the prop is left on the interface (already @deprecated)
+  // so existing callers don't break, but it's intentionally unused here.
   capacityStatus,
   capacityMessage,
   onCheckCapacity,
@@ -63,6 +73,12 @@ export function PricingCTA({
   // Local state to track if capacity check returned waitlist/paused AFTER click
   const [blockedByCapacity, setBlockedByCapacity] = useState(false);
   const [blockMessage, setBlockMessage] = useState<string | null>(null);
+  // Drawer state — open when Stripe is loadable and capacity is open.
+  const [drawerOpen, setDrawerOpen] = useState(false);
+  // Set when probeStripeAvailability fails (adblock / CSP / network). Renders
+  // a static notice instead of opening the drawer so the user knows why
+  // nothing happened on click.
+  const [adblockNotice, setAdblockNotice] = useState(false);
 
   // Capacity gate — show waitlist if status was already known to be full
   // OR if we just checked on click and it came back full
@@ -165,44 +181,25 @@ export function PricingCTA({
       }
     }
 
-    // ── Stripe checkout ─────────────────────────────────────────────────
-    try {
-      const res = await fetch("/api/checkout", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tier: tierId,
-          agreedToTerms: true,
-          termsVersion: "2026-04-05",
-          ...(trial ? { trial: true } : {}),
-        }),
-      });
-
-      if (res.status === 401) {
-        // Session expired — redirect to login
-        window.location.href = "/login?redirect=/pricing";
-        return;
-      }
-
-      const data = await res.json();
-
-      if (!res.ok) {
-        setError(data.error ?? "Checkout failed. Please try again.");
-        setLoading(false);
-        return;
-      }
-
-      // Redirect to Stripe Checkout
-      if (data.sessionUrl) {
-        window.location.href = data.sessionUrl;
-      } else {
-        setError("No checkout URL returned. Please try again.");
-        setLoading(false);
-      }
-    } catch {
-      setError("Network error. Please check your connection and try again.");
+    // ── Adblock / CSP probe (D10) ───────────────────────────────────────
+    // Sprint 2026-05-18 D3+D10. Before opening the embedded drawer we
+    // verify that Stripe.js can load in this page environment. If it can't
+    // (most commonly: an adblocker is blocking js.stripe.com, or the user
+    // has the page open behind an old CSP that doesn't allow stripe), we
+    // show the static notice in place of the drawer rather than mounting a
+    // blank iframe that confuses the user.
+    const probe = await probeStripeAvailability();
+    if (!probe.ok) {
+      setAdblockNotice(true);
       setLoading(false);
+      return;
     }
+
+    // Stripe is reachable — open the drawer. The drawer's own
+    // `fetchClientSecret` callback will POST /api/checkout to get the
+    // client_secret. Errors there surface inside the drawer body.
+    setDrawerOpen(true);
+    setLoading(false);
   }
 
   const isDisabled = loading || !agreedToTerms || checkingCapacity;
@@ -254,13 +251,36 @@ export function PricingCTA({
         ) : loading ? (
           <>
             <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            Redirecting to payment…
+            Opening checkout…
           </>
         ) : (
           label || `Get ${tierName}`
         )}
       </button>
       {error && <p className="mt-2 text-center text-xs text-red-400">{error}</p>}
+
+      {/* Adblock / CSP probe failure notice (D10). Shown in place of the
+          drawer when Stripe.js can't load. Static — no retry button because
+          the user has to actually disable the blocker and reload. */}
+      {adblockNotice && (
+        <div
+          data-testid="pricing-cta-adblock-notice"
+          role="alert"
+          className="mt-2 rounded-md border border-amber-500/30 bg-amber-500/5 p-3 text-xs leading-relaxed text-amber-200"
+        >
+          We can&apos;t load the payment form. Please disable any ad blocker or privacy extension
+          for parametric-memory.dev and reload the page.
+        </div>
+      )}
+
+      {/* Embedded Checkout drawer — sprint 2026-05-18 D3. Mounted whenever
+          drawerOpen=true; closes on backdrop, Esc, or × inside the drawer. */}
+      <CheckoutDrawer
+        open={drawerOpen}
+        onClose={() => setDrawerOpen(false)}
+        tierId={tierId}
+        tierName={tierName}
+      />
     </div>
   );
 }

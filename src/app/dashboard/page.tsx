@@ -30,6 +30,8 @@ interface SubstrateSummary {
   updatedAt: string;
   hasActiveSubscription: boolean;
   renewsAt: string | null;
+  /** Cancel-pending end-of-period date. Sprint 2026-05-18 E2. */
+  cancelAt: string | null;
 }
 
 interface SubstratesResponse {

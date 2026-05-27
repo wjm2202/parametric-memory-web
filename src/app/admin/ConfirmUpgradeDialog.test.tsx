@@ -93,6 +93,8 @@ interface RenderOverrides {
   substrateSlug?: string;
   onClose?: () => void;
   onUpgradeStarted?: () => void;
+  /** Sprint 2026-05-18 D9 — drives the auto-reactivate inline note. */
+  isCancelPending?: boolean;
 }
 
 function renderDialog(overrides: RenderOverrides = {}) {
@@ -106,6 +108,7 @@ function renderDialog(overrides: RenderOverrides = {}) {
       nextBillingDate={
         overrides.nextBillingDate === undefined ? NEXT_BILLING : overrides.nextBillingDate
       }
+      isCancelPending={overrides.isCancelPending ?? false}
       onClose={onClose}
       onUpgradeStarted={onUpgradeStarted}
     />,
@@ -492,5 +495,21 @@ describe("ConfirmUpgradeDialog — a11y", () => {
     expect(labelledBy).toBeTruthy();
     // The referenced element exists and has the dialog title text.
     expect(document.getElementById(labelledBy!)?.textContent).toMatch(/confirm upgrade/i);
+  });
+});
+
+// ─── D9: cancel-pending auto-reactivate notice ────────────────────────────────
+
+describe("ConfirmUpgradeDialog — D9 cancel-pending auto-reactivate note", () => {
+  it("does NOT render the reactivate note when isCancelPending is false (default)", () => {
+    renderDialog();
+    expect(screen.queryByTestId("confirm-upgrade-reactivate-note")).toBeNull();
+  });
+
+  it("renders the reactivate note when isCancelPending is true", () => {
+    renderDialog({ isCancelPending: true });
+    const note = screen.getByTestId("confirm-upgrade-reactivate-note");
+    expect(note).toBeInTheDocument();
+    expect(note.textContent).toMatch(/reactivate your subscription/i);
   });
 });

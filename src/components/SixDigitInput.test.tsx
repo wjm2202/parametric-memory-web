@@ -22,7 +22,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, fireEvent, cleanup, act } from "@testing-library/react";
 import { useState } from "react";
 import { SixDigitInput } from "./SixDigitInput";
 
@@ -314,5 +314,112 @@ describe("SixDigitInput — disabled and a11y", () => {
       const input = screen.getByTestId(`six-digit-input-${i}`);
       expect(input.getAttribute("aria-describedby")).toBe("totp-error-msg");
     }
+  });
+});
+
+// ─── 9. autoFocus prop ───────────────────────────────────────────────────────
+//
+// The widget is the primary entry point on three surfaces. Two of them (the
+// login-time 2FA challenge and the regenerate-codes step) want the user to
+// be able to type the moment the page renders, with no manual click. They
+// also want the focus to spring back to digit 1 when the parent clears the
+// value after a failed verify — saves a click on every retry.
+//
+// Opt-in by design — other call sites that prefer a click-to-engage UX get
+// the same widget without surprise focus stealing.
+
+describe("SixDigitInput — autoFocus", () => {
+  // Build a Harness that exposes a setValue handle so tests can simulate
+  // the parent clearing the controlled value (the "failed verify" path).
+  function AutoFocusHarness({
+    autoFocus,
+    onSetValue,
+  }: {
+    autoFocus?: boolean;
+    onSetValue?: (setter: (v: string) => void) => void;
+  }) {
+    const [value, setValue] = useState("");
+    // Capture the setter so the test can drive it.
+    if (onSetValue) onSetValue(setValue);
+    return <SixDigitInput value={value} onChange={setValue} autoFocus={autoFocus} />;
+  }
+
+  it("focuses digit 1 on mount when autoFocus is true", () => {
+    render(<AutoFocusHarness autoFocus />);
+    const input0 = screen.getByTestId("six-digit-input-0");
+    expect(document.activeElement).toBe(input0);
+  });
+
+  it("does NOT focus any digit on mount when autoFocus is false (default)", () => {
+    render(<AutoFocusHarness />);
+    const input0 = screen.getByTestId("six-digit-input-0");
+    // body is the default activeElement in jsdom when nothing is focused.
+    expect(document.activeElement).not.toBe(input0);
+  });
+
+  it("re-focuses digit 1 when value resets from non-empty to '' (failed-verify retry)", () => {
+    let externalSetter: ((v: string) => void) | null = null;
+    render(
+      <AutoFocusHarness
+        autoFocus
+        onSetValue={(setter) => {
+          externalSetter = setter;
+        }}
+      />,
+    );
+    const input0 = screen.getByTestId("six-digit-input-0") as HTMLInputElement;
+    const input3 = screen.getByTestId("six-digit-input-3") as HTMLInputElement;
+
+    // User types 4 digits; focus is somewhere downstream (input3 by then).
+    fireEvent.change(input0, { target: { value: "1" } });
+    fireEvent.change(screen.getByTestId("six-digit-input-1"), { target: { value: "2" } });
+    fireEvent.change(screen.getByTestId("six-digit-input-2"), { target: { value: "3" } });
+    fireEvent.change(input3, { target: { value: "4" } });
+
+    // Manually move focus away from input0 so we can prove the effect
+    // brings it back. (After typing the 4th digit, focus is on input4.)
+    expect(document.activeElement).not.toBe(input0);
+
+    // Parent clears the value — simulates the submitCode failure path.
+    // We wrap in act() because the setter is invoked outside any
+    // fireEvent/render call. Without act(), React processes the state
+    // update but the resulting useEffect (which calls .focus() on
+    // input0) is scheduled in a microtask that the test's synchronous
+    // assertion will outrun, leaving focus on whatever input the user's
+    // last typed digit advanced it to.
+    expect(externalSetter).not.toBeNull();
+    act(() => {
+      externalSetter!("");
+    });
+
+    // After re-render + effect: focus is back on input0.
+    expect(document.activeElement).toBe(input0);
+  });
+
+  it("does NOT re-focus on clear when autoFocus is false", () => {
+    let externalSetter: ((v: string) => void) | null = null;
+    render(
+      <AutoFocusHarness
+        onSetValue={(setter) => {
+          externalSetter = setter;
+        }}
+      />,
+    );
+    const input0 = screen.getByTestId("six-digit-input-0") as HTMLInputElement;
+    const input3 = screen.getByTestId("six-digit-input-3") as HTMLInputElement;
+
+    // Click into input3 directly so we have a known focus to NOT-recover from.
+    input3.focus();
+    fireEvent.change(input0, { target: { value: "1" } });
+    fireEvent.change(screen.getByTestId("six-digit-input-1"), { target: { value: "2" } });
+
+    // Wrap in act() so the effect (if any) actually flushes — proves the
+    // negative assertion below is observing reality, not a stale render.
+    act(() => {
+      externalSetter!("");
+    });
+
+    // input0 should NOT have been auto-focused.
+    expect(document.activeElement).not.toBe(input0);
   });
 });

@@ -25,7 +25,11 @@ function makeCookieStore(token?: string) {
 function makeRequest(body?: Record<string, unknown>): NextRequest {
   return new NextRequest("http://localhost:3000/api/my-substrate/rotate-key", {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      // CSRF: same-origin Origin header required after P0-5 sprint fix.
+      Origin: "http://localhost:3000",
+    },
     body: body ? JSON.stringify(body) : undefined,
   });
 }
@@ -123,6 +127,8 @@ describe("POST /api/my-substrate/rotate-key", () => {
 
     const req = new NextRequest("http://localhost:3000/api/my-substrate/rotate-key", {
       method: "POST",
+      // CSRF: same-origin Origin header required after P0-5 sprint fix.
+      headers: { Origin: "http://localhost:3000" },
     });
     const res = await POST(req);
     const body = await res.json();
