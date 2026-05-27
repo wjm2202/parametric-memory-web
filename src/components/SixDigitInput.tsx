@@ -111,6 +111,15 @@ export function SixDigitInput({
   // value because we read it inside an effect and don't want re-renders.
   const prevValueLengthRef = useRef<number>(value.length);
 
+  // Auto-focus the first cell on mount and when the component transitions
+  // out of the disabled state. The challenge screen passes autoFocus={true};
+  // enrolment wizards leave it false so QR-code mount doesn't steal focus.
+  useEffect(() => {
+    if (autoFocus && !disabled) {
+      refs.current[0]?.focus();
+    }
+  }, [autoFocus, disabled]);
+
   // Pad to 6 for rendering — the controlled value can be 0..6 chars; we
   // expand to 6 fields so the layout doesn't shift as the user types.
   const digits = useMemo(() => {

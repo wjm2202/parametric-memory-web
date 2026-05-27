@@ -63,17 +63,37 @@ describe("Phase 1 — pricing consistency (no more $9/mo contradictions)", () =>
   });
 
   it("stats bar does not surface a non-cheapest tier as the starting price", () => {
-    // The stats bar must reference the cheapest tier's price, never the second-cheapest.
+    // The "stats bar" is rendered from `const stats = [...]` in page.tsx
+    // (search for "// ── Stats ──"). Each entry is `{ value: "$X/mo", label: ... }`,
+    // and one entry has label "dedicated instance, starting". Any `$X/mo`
+    // value that lives inside this array MUST reference the cheapest tier
+    // price — surfacing the second-cheapest there would be misleading
+    // marketing on the landing surface.
+    //
+    // Anchor on the array literal directly rather than the whole page source.
+    // Other price strings ($X/mo) appear elsewhere on the page legitimately
+    // (pricing JSON-LD, tier cards) — scoping to the stats array is what
+    // makes this guard meaningful instead of just "$X appears somewhere".
+    const statsMatch = pageSrc.match(/const stats\s*=\s*\[([\s\S]*?)\];/);
+    expect(
+      statsMatch,
+      "Could not locate `const stats = [...]` in page.tsx — has it been renamed or restructured? Update this test's anchor.",
+    ).not.toBeNull();
+    const statsBlock = statsMatch![1];
+
     const cheapestRegex = new RegExp(`"\\$${CHEAPEST_PRICE}\\/mo"`);
     const secondCheapestRegex = new RegExp(`"\\$${SECOND_CHEAPEST}\\/mo"`);
-    expect(pageSrc).toMatch(cheapestRegex);
-    // The second-cheapest tier price MAY appear elsewhere on the page (it's a
-    // valid tier), but the stats-bar surface must show the cheapest. We
-    // don't have a precise stats-bar selector here, so we just assert the
-    // cheapest is present — runtime/Playwright tests cover the placement.
+
+    // The cheapest tier price must appear inside the stats array.
+    expect(statsBlock).toMatch(cheapestRegex);
+
+    // The second-cheapest price MAY appear elsewhere on the page (it's a
+    // valid tier surfaced on /pricing, JSON-LD, tier cards) but it must NOT
+    // appear inside the stats array — that would mean the stats bar is
+    // advertising a more expensive tier as the starting price. This is the
+    // regression this test exists to prevent.
     if (CHEAPEST_PRICE !== SECOND_CHEAPEST) {
-      // If they differ, at least the cheapest must appear.
-      expect(pageSrc).toMatch(cheapestRegex);
+      expect(statsBlock).not.toMatch(secondCheapestRegex);
     }
   });
 

@@ -39,6 +39,9 @@ Thumbs.db
 
 # IDE
 .idea/
+# Top-level docs workspace
+/docs/
+
 # Docs
 docs/WEB-DROPLET-SETUP-GUIDE.md
 # Local-only sprint plans, journey reviews, etc. Move stale root-level

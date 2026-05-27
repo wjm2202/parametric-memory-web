@@ -39,12 +39,14 @@ function Harness({
   describedBy,
   onChange,
   onComplete,
+  autoFocus,
 }: {
   initial?: string;
   disabled?: boolean;
   describedBy?: string;
   onChange?: (next: string) => void;
   onComplete?: (full: string) => void;
+  autoFocus?: boolean;
 }) {
   const [value, setValue] = useState(initial);
   return (
@@ -57,6 +59,7 @@ function Harness({
       onComplete={onComplete}
       disabled={disabled}
       describedBy={describedBy}
+      autoFocus={autoFocus}
     />
   );
 }
@@ -421,5 +424,11 @@ describe("SixDigitInput — autoFocus", () => {
 
     // input0 should NOT have been auto-focused.
     expect(document.activeElement).not.toBe(input0);
+  });
+
+  it("does not steal focus when autoFocus is true but disabled is true", () => {
+    render(<Harness autoFocus disabled />);
+    const first = screen.getByTestId("six-digit-input-0");
+    expect(document.activeElement).not.toBe(first);
   });
 });

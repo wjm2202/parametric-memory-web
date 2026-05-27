@@ -8,6 +8,9 @@ dist/
 build/
 
 # Environment files — NEVER include in image
+# (The previous version had `.env.\*` with an escaped asterisk — Docker treats
+# `\*` as a literal `*` character, so variants like `.env.production` were NOT
+# being excluded. Fixed 2026-05-12.)
 .env
 .env.*
 !.env.example
@@ -31,8 +34,13 @@ coverage/
 *.spec.ts
 *.spec.tsx
 vitest.config.ts
+playwright.config.ts
+playwright-report/
+test-results/
+e2e/
 
 # Documentation source
+/docs/
 content/blog/drafts/
 
 # Docker

@@ -77,10 +77,23 @@ function formatDate(iso: string | null): string {
   });
 }
 
-async function openBillingPortal() {
+/**
+ * Opens the Stripe Billing Portal.
+ *
+ * Without `substrateSlug`: returns the full portal with every subscription on
+ * the account. Used by the top-level "Manage billing" action.
+ *
+ * With `substrateSlug`: returns a portal session scoped via Stripe `flow_data`
+ * directly to the cancel-this-subscription confirmation step for that one
+ * substrate. Used by the per-substrate Cancel button. Compute server enforces
+ * ownership (substrate.account_id = caller) before issuing the scoped session
+ * — a forged slug returns 404 with `substrate_subscription_not_found`.
+ */
+async function openBillingPortal(substrateSlug?: string) {
   const res = await fetch("/api/billing/portal", {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(substrateSlug ? { substrateSlug } : {}),
   });
   // Compute's recent-auth middleware returns 401 with
   // `code: "reauth_required"` when the recent-auth window has expired
@@ -98,6 +111,16 @@ async function openBillingPortal() {
   }
   if (res.status === 422) {
     alert("No billing account found. Please subscribe first.");
+    return;
+  }
+  if (res.status === 404 && substrateSlug) {
+    // Substrate-scoped path: 404 means the substrate has no active/past_due
+    // subscription to cancel (already cancelled, or never had one). Most
+    // likely the page is stale and `hasActiveSubscription` flipped to false
+    // between render and click — a refresh will hide the button.
+    alert(
+      "This substrate doesn't have an active subscription to cancel. The page may be out of date — refresh and try again.",
+    );
     return;
   }
   if (!res.ok) {
@@ -698,8 +721,15 @@ export default function DashboardClient({
   }
 
   function handleCancelConfirm() {
+    // Capture the slug BEFORE clearing the modal — setCancelWarning is async
+    // and `cancelWarning` could be null by the time openBillingPortal reads it
+    // in some React batching scenarios. The portal call is then scoped to
+    // exactly this substrate's Stripe subscription via flow_data on the
+    // compute side, dropping the customer directly on the cancel
+    // confirmation step instead of a list of indistinguishable subs.
+    const slug = cancelWarning?.slug;
     setCancelWarning(null);
-    openBillingPortal();
+    openBillingPortal(slug);
   }
 
   /**

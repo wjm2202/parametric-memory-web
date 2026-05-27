@@ -211,6 +211,55 @@ describe("DashboardClient — cancel subscription flow", () => {
     fireEvent.click(backdrop);
     expect(screen.queryByText(/cancel subscription for ashen-north/i)).not.toBeInTheDocument();
   });
+
+  it("'Go to billing →' POSTs the substrate slug for the scoped deep-link", async () => {
+    // 2026-05-14 — confirming Cancel must POST `{ substrateSlug }` so compute
+    // returns a Stripe portal session scoped via flow_data to THIS sub's
+    // cancel flow. Without the slug the user lands on a list of identical-
+    // looking "Parametric Memory — Solo" rows and has to guess.
+    //
+    // Mock fetch to capture the request body. We also stub window.location.href
+    // assignment because openBillingPortal redirects on success — jsdom would
+    // otherwise throw "navigation not implemented".
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: () => Promise.resolve({ portalUrl: "https://billing.stripe.com/session/scoped_test" }),
+      headers: { get: () => null },
+    });
+    globalThis.fetch = fetchMock as unknown as typeof fetch;
+    const originalLocation = window.location;
+    // Replace window.location with a stub that captures `.href = ...` without
+    // navigating. defineProperty on `location` because it's not writable by
+    // default in jsdom.
+    Object.defineProperty(window, "location", {
+      value: { ...originalLocation, href: "" },
+      writable: true,
+    });
+
+    render(<DashboardClient account={baseAccount} substrates={[deprovisionedSubstrate]} />);
+    fireEvent.click(screen.getByRole("button", { name: /cancel subscription/i }));
+    fireEvent.click(screen.getByRole("button", { name: /go to billing/i }));
+
+    // The portal fetch is fired synchronously inside the click handler.
+    // Flush microtasks so the await chain inside openBillingPortal completes.
+    await Promise.resolve();
+    await Promise.resolve();
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      "/api/billing/portal",
+      expect.objectContaining({
+        method: "POST",
+        body: JSON.stringify({ substrateSlug: "ashen-north" }),
+      }),
+    );
+
+    // Restore window.location so subsequent tests aren't affected.
+    Object.defineProperty(window, "location", {
+      value: originalLocation,
+      writable: true,
+    });
+  });
 });
 
 // ── F-BILLING-3 + F-PROV-1 — per-substrate attention banners ──────────────────
