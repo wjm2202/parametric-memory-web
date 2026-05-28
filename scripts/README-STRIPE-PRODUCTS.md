@@ -4,13 +4,13 @@ This directory contains scripts to create and manage Stripe products and subscri
 
 ## Scripts
 
-### 1. `create-stripe-products.js` (Production)
+### 1. `create-stripe-products.mjs` (Production)
 
 Creates real Stripe products and prices using the Stripe API.
 
 **Usage:**
 ```bash
-node scripts/create-stripe-products.js
+node scripts/create-stripe-products.mjs
 ```
 
 **Features:**
@@ -28,18 +28,18 @@ node scripts/create-stripe-products.js
 4. **Enterprise Cloud** - $299/mo - 8 GiB RAM, 100+ GiB storage
 5. **Enterprise Self-Hosted** - $499/mo - Commercial license
 
-### 2. `create-stripe-products-with-mock.js` (Testing)
+### 2. `create-stripe-products-with-mock.mjs` (Testing)
 
 Dual-mode script that can operate with real Stripe API or mock data for testing.
 
 **Usage (Production):**
 ```bash
-node scripts/create-stripe-products-with-mock.js
+node scripts/create-stripe-products-with-mock.mjs
 ```
 
 **Usage (Mock/Testing):**
 ```bash
-node scripts/create-stripe-products-with-mock.js --mock
+node scripts/create-stripe-products-with-mock.mjs --mock
 ```
 
 **Features:**

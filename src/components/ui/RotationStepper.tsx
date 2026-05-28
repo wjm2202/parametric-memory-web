@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -77,6 +77,46 @@ const STATUS_TO_STEP_INDEX: Record<RotationStatus, number> = {
 // Steps where we show an elapsed time counter (they take the longest)
 const ELAPSED_STEPS = new Set<RotationStatus>(["restarting", "verifying"]);
 
+// ── External clock subscription (module-level cache) ────────────────────────
+//
+// `useSyncExternalStore` requires a stable snapshot — calling `Date.now()`
+// inside `getSnapshot` would change every call and trip React's infinite-
+// render guard. The clock value is cached at module scope; `subscribe`
+// schedules a 1Hz update that bumps the cache and notifies listeners. This
+// is the canonical "subscribe to an external system" pattern that the
+// React Compiler readiness rules approve of.
+let cachedNow = Date.now();
+const clockListeners = new Set<() => void>();
+let clockInterval: ReturnType<typeof setInterval> | null = null;
+
+function subscribeToClock(notify: () => void): () => void {
+  clockListeners.add(notify);
+  if (clockInterval === null) {
+    clockInterval = setInterval(() => {
+      cachedNow = Date.now();
+      clockListeners.forEach((listener) => listener());
+    }, 1000);
+  }
+  return () => {
+    clockListeners.delete(notify);
+    if (clockListeners.size === 0 && clockInterval !== null) {
+      clearInterval(clockInterval);
+      clockInterval = null;
+    }
+  };
+}
+
+function getClockSnapshot(): number {
+  return cachedNow;
+}
+
+function getClockServerSnapshot(): number {
+  // SSR baseline. The "elapsed counter" reads 0 server-side because the
+  // client's first paint also reads 0 (status === ELAPSED hasn't started
+  // ticking yet). Any non-zero would cause hydration mismatch.
+  return 0;
+}
+
 // ── Icons ─────────────────────────────────────────────────────────────────────
 
 function SpinnerIcon() {
@@ -149,25 +189,42 @@ export function RotationStepper({
   const isFailed = status === "failed";
   const isComplete = status === "complete";
 
-  // Elapsed time counter — starts when an ELAPSED_STEPS status is first observed
-  const [elapsedSeconds, setElapsedSeconds] = useState(0);
-  const [elapsedStepStatus, setElapsedStepStatus] = useState<RotationStatus | null>(null);
+  // RC-13 (react-compiler-readiness, 2026-05-27): derive `elapsedSeconds`
+  // from an external clock subscription plus React's documented
+  // "adjust-state-during-render-when-a-prop-changes" pattern.
+  //
+  // Previous shape was useState(0) + reset-in-effect on status change,
+  // which is the textbook set-state-in-effect pattern flagged by the
+  // React Compiler readiness rules. The first refactor attempt used a
+  // ref with lazy initialisation during render, which trips the
+  // react-hooks/refs rule (refs cannot be read or written during render).
+  //
+  // New shape:
+  //   - `now` comes from useSyncExternalStore against a module-level
+  //     clock that ticks once per second. This is the canonical
+  //     "subscribe to an external system" pattern; the snapshot is
+  //     cached so React doesn't infinite-loop.
+  //   - `startedAt` is plain state. We adjust it during render by
+  //     comparing `prevStatus` to `status` (React docs:
+  //     https://react.dev/learn/you-might-not-need-an-effect#adjusting-some-state-when-a-prop-changes).
+  //     The setState during render isn't flagged by set-state-in-effect
+  //     because there's no effect involved.
+  //   - `elapsedSeconds` is plain derived state from `now - startedAt`.
+  const now = useSyncExternalStore(subscribeToClock, getClockSnapshot, getClockServerSnapshot);
+  const [prevStatus, setPrevStatus] = useState<RotationStatus>(status);
+  const [startedAt, setStartedAt] = useState<{ status: RotationStatus; ms: number } | null>(
+    ELAPSED_STEPS.has(status) ? { status, ms: now } : null,
+  );
 
-  useEffect(() => {
-    if (ELAPSED_STEPS.has(status)) {
-      if (elapsedStepStatus !== status) {
-        // New elapsed step — reset counter
-        setElapsedSeconds(0);
-        setElapsedStepStatus(status);
-      }
-      const interval = setInterval(() => {
-        setElapsedSeconds((s) => s + 1);
-      }, 1000);
-      return () => clearInterval(interval);
-    } else {
-      setElapsedStepStatus(null);
-    }
-  }, [status, elapsedStepStatus]);
+  // Adjust state during render when the status prop changes — React's
+  // canonical pattern for "derived state that resets on a prop change."
+  if (status !== prevStatus) {
+    setPrevStatus(status);
+    setStartedAt(ELAPSED_STEPS.has(status) ? { status, ms: now } : null);
+  }
+
+  const elapsedSeconds =
+    startedAt && startedAt.status === status ? Math.floor((now - startedAt.ms) / 1000) : 0;
 
   return (
     <div className="space-y-1">

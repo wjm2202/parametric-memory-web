@@ -29,12 +29,23 @@
  * usually scanning for a specific event ("did I sign in from there?")
  * and an explicit "Load older events" button gives them control. Same
  * reason GitHub's audit log uses pagination, not infinite scroll.
+ *
+ * ## React-Compiler note (RC-05, 2026-05-27)
+ *
+ * The previous shape used a `fetchPage` useCallback that pushed into
+ * `useState` from inside its own body, and an on-mount `useEffect` that
+ * called `void fetchPage(...)`. That tripped the
+ * `react-hooks/set-state-in-effect` rule because the effect's only job
+ * was to drive state updates. SWR's `useSWRInfinite` owns the pagination
+ * state machine (data array, isLoading/isValidating, mutate to retry),
+ * so the call site no longer has any effect of ours.
  */
 
 "use client";
 
 import Link from "next/link";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useState } from "react";
+import useSWRInfinite from "swr/infinite";
 import { RecentAuthGate } from "@/components/RecentAuthGate";
 import { formatAuthEvent, formatActorIp, type AuthEvent } from "@/lib/format-auth-event";
 import { parseUserAgent } from "@/lib/parse-user-agent";
@@ -107,81 +118,116 @@ export default function AuditClient({ account }: AuditClientProps) {
   );
 }
 
-function AuditFeed() {
-  const [events, setEvents] = useState<AuthEvent[]>([]);
-  const [nextCursor, setNextCursor] = useState<string | null>(null);
-  const [kindFilter, setKindFilter] = useState<string>("");
-  const [loadingFirst, setLoadingFirst] = useState<boolean>(true);
-  const [loadingMore, setLoadingMore] = useState<boolean>(false);
-  const [error, setError] = useState<string | null>(null);
+/**
+ * Categorised error wrapper — SWR's `error` exposes whatever the fetcher
+ * throws, so embedding the user-facing copy on the error keeps the
+ * render branch trivial (`error?.message`) without re-classifying.
+ */
+class AuditError extends Error {
+  constructor(message: string) {
+    super(message);
+    this.name = "AuditError";
+  }
+}
 
-  /**
-   * Fetch a page. When `cursor` is null we're loading the head of the
-   * feed (or refreshing after a filter change) — the existing rows are
-   * cleared. Otherwise we append.
-   */
-  const fetchPage = useCallback(async (opts: { cursor: string | null; kind: string }) => {
-    const isFirst = opts.cursor === null;
-    if (isFirst) {
-      setLoadingFirst(true);
-      setEvents([]);
-      setNextCursor(null);
-    } else {
-      setLoadingMore(true);
-    }
-    setError(null);
+/**
+ * SWR fetcher. Tuple key `["audit", kind, cursor]` so we can disambiguate
+ * cache entries when the filter changes or pagination advances. The
+ * fetcher throws AuditError with the user-facing copy attached so the
+ * render branch doesn't need its own switch on res.status.
+ */
+async function fetchAuditPage(
+  key: readonly ["audit", string, string | null],
+): Promise<AuditFeedResponse> {
+  const [, kind, cursor] = key;
+  const params = new URLSearchParams();
+  params.set("limit", "50");
+  if (kind.length > 0) params.set("kind", kind);
+  if (cursor !== null) params.set("cursor", cursor);
 
-    const params = new URLSearchParams();
-    params.set("limit", "50");
-    if (opts.kind.length > 0) params.set("kind", opts.kind);
-    if (opts.cursor !== null) params.set("cursor", opts.cursor);
+  let res: Response;
+  try {
+    res = await fetch(`/api/auth/audit?${params.toString()}`, {
+      credentials: "same-origin",
+    });
+  } catch {
+    throw new AuditError("Could not reach the server. Try again.");
+  }
 
-    let res: Response;
-    try {
-      res = await fetch(`/api/auth/audit?${params.toString()}`, {
-        credentials: "same-origin",
-      });
-    } catch {
-      setError("Could not reach the server. Try again.");
-      setLoadingFirst(false);
-      setLoadingMore(false);
-      return;
-    }
-
-    if (!res.ok) {
+  if (!res.ok) {
+    if (res.status === 401) {
       // 401 reauth_required is handled by RecentAuthGate's own
       // visibility-change refresh; if it fires here something's
-      // out of sync. Surface a generic error and a retry button.
-      setError(
-        res.status === 401
-          ? "Your sign-in expired. Refresh the page to sign in again."
-          : "Failed to load activity. Try again.",
-      );
-      setLoadingFirst(false);
-      setLoadingMore(false);
-      return;
+      // out of sync. Surface generic copy + retry as belt-and-braces.
+      throw new AuditError("Your sign-in expired. Refresh the page to sign in again.");
     }
+    throw new AuditError("Failed to load activity. Try again.");
+  }
 
-    let body: AuditFeedResponse;
-    try {
-      body = (await res.json()) as AuditFeedResponse;
-    } catch {
-      setError("The server returned an unexpected response. Try again.");
-      setLoadingFirst(false);
-      setLoadingMore(false);
-      return;
-    }
+  try {
+    return (await res.json()) as AuditFeedResponse;
+  } catch {
+    throw new AuditError("The server returned an unexpected response. Try again.");
+  }
+}
 
-    setEvents((prev) => (isFirst ? body.events : [...prev, ...body.events]));
-    setNextCursor(body.nextCursor);
-    setLoadingFirst(false);
-    setLoadingMore(false);
-  }, []);
+function AuditFeed() {
+  const [kindFilter, setKindFilter] = useState<string>("");
 
-  // Initial load + reload when the filter changes.
-  useEffect(() => {
-    void fetchPage({ cursor: null, kind: kindFilter });
-  }, [fetchPage, kindFilter]);
+  // `getKey` derives the SWR cache key from the page index + the previous
+  // page's response. Returning `null` signals "no more pages" so
+  // useSWRInfinite stops growing. Filter changes flow through the closure
+  // and re-key every page (which causes a cache miss + refetch on page 1).
+  const getKey = useCallback(
+    (
+      pageIndex: number,
+      previousPageData: AuditFeedResponse | null,
+    ): readonly ["audit", string, string | null] | null => {
+      if (previousPageData && previousPageData.nextCursor === null) return null;
+      if (pageIndex === 0) return ["audit", kindFilter, null] as const;
+      return ["audit", kindFilter, previousPageData!.nextCursor] as const;
+    },
+    [kindFilter],
+  );
+
+  const { data, error, isLoading, isValidating, size, setSize, mutate } = useSWRInfinite<
+    AuditFeedResponse,
+    AuditError
+  >(getKey, fetchAuditPage, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    // We never want the first page silently re-fetched when a later page
+    // updates — that would clobber the currently-rendered list. The
+    // "Load older events" flow strictly appends.
+    revalidateFirstPage: false,
+    shouldRetryOnError: false,
+  });
+
+  // Flatten the pages array into a single event list for the render. SWR's
+  // `data` is undefined before the first fetch resolves; `events` is
+  // always an array so downstream `.length` checks don't NPE.
+  const events: AuthEvent[] = data ? data.flatMap((p) => p.events) : [];
+  const lastPage = data && data.length > 0 ? data[data.length - 1] : null;
+  const nextCursor = lastPage?.nextCursor ?? null;
+
+  // Loading mappings:
+  //   loadingFirst: cold-start fetch OR a filter change that's invalidated
+  //     all pages → data is undefined while SWR re-fetches page 1.
+  //   loadingMore: user asked for an additional page (size grew beyond
+  //     data.length) and SWR is in flight resolving it.
+  const loadingFirst = isLoading || (isValidating && !data);
+  const loadingMore =
+    isValidating && data !== undefined && data.length > 0 && size > data.length;
+
+  const errorMessage = error?.message ?? null;
+
+  const handleRetry = useCallback(() => {
+    void mutate();
+  }, [mutate]);
+
+  const handleLoadMore = useCallback(() => {
+    void setSize((s) => s + 1);
+  }, [setSize]);
 
   return (
     <div
@@ -208,16 +254,16 @@ function AuditFeed() {
         </select>
       </div>
 
-      {error !== null && (
+      {errorMessage !== null && (
         <div
           role="alert"
           data-testid="auth-audit-error"
           className="mb-4 rounded-lg border border-red-500/30 bg-red-500/[0.05] p-3 text-sm text-red-300"
         >
-          <span>{error}</span>
+          <span>{errorMessage}</span>
           <button
             type="button"
-            onClick={() => void fetchPage({ cursor: null, kind: kindFilter })}
+            onClick={handleRetry}
             data-testid="auth-audit-retry"
             className="ml-3 underline transition-opacity hover:opacity-80"
           >
@@ -232,7 +278,7 @@ function AuditFeed() {
         </p>
       )}
 
-      {!loadingFirst && events.length === 0 && error === null && (
+      {!loadingFirst && events.length === 0 && errorMessage === null && (
         <p data-testid="auth-audit-empty" className="text-sm text-white/50">
           No activity to show yet.
         </p>
@@ -266,7 +312,7 @@ function AuditFeed() {
         <div className="mt-5 flex justify-center">
           <button
             type="button"
-            onClick={() => void fetchPage({ cursor: nextCursor, kind: kindFilter })}
+            onClick={handleLoadMore}
             disabled={loadingMore}
             data-testid="auth-audit-load-more"
             className="rounded-lg border border-white/10 bg-white/[0.03] px-4 py-2 text-sm text-white transition-colors hover:bg-white/[0.06] disabled:cursor-not-allowed disabled:opacity-50"

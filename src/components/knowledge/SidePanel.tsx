@@ -12,13 +12,14 @@
  *   - Conflict warning with competing claims
  *   - Top 8 outgoing Markov transitions ranked by effectiveWeight
  *
- * Fetches fetchAtomDetail on open. Caches via store.cacheDetail to avoid
- * re-fetching on re-select (honours the KG-16 LRU cap of 50 entries).
+ * Fetches fetchAtomDetail on open. Caching across re-selects is provided
+ * by SWR's built-in cache (keyed on the atom string) — no separate
+ * Zustand cache layer (RC-18, 2026-05-27).
  *
  * Lives outside the R3F scene — absolute positioned HTML overlay.
  */
 
-import { useEffect, useState } from "react";
+import useSWR from "swr";
 import { useKnowledgeStore, parseLabel } from "@/stores/knowledge-store";
 import { fetchAtomDetail, fetchAtomEdges } from "@/lib/knowledge-api";
 import { parseAtomType, ATOM_COLORS } from "@/types/memory";
@@ -61,68 +62,62 @@ function EdgeTypeBadge({ type }: { type: string }) {
   );
 }
 
+const EMPTY_EDGES: { outgoing: StructuralEdge[]; incoming: StructuralEdge[] } = {
+  outgoing: [],
+  incoming: [],
+};
+
+/**
+ * SWR fetcher for structural edges. The tuple key `[atom, "edges"]`
+ * namespaces this hook so the same atom string doesn't collide with the
+ * atom-detail hook's key in SWR's global cache.
+ */
+async function fetchEdgesForAtom([atom]: readonly [string, "edges"]) {
+  return fetchAtomEdges(atom);
+}
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export default function SidePanel() {
   const selectedAtom = useKnowledgeStore((s) => s.selectedAtom);
-  const cachedDetails = useKnowledgeStore((s) => s.cachedDetails);
-  const cacheDetail = useKnowledgeStore((s) => s.cacheDetail);
   const selectAtom = useKnowledgeStore((s) => s.selectAtom);
 
-  const [detail, setDetail] = useState<AtomDetailResponse | null>(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  /** S-EDGE-VIZ: Structural edges for the selected atom (not cached — cheap to re-fetch) */
-  const [structEdges, setStructEdges] = useState<{
-    outgoing: StructuralEdge[];
-    incoming: StructuralEdge[];
-  }>({
-    outgoing: [],
-    incoming: [],
+  // RC-18 (react-compiler-readiness, 2026-05-27): SWR replaces the
+  // previous useState quartet (detail / isLoading / error / structEdges)
+  // plus the long useEffect that read the Zustand cache, fetched on miss,
+  // and wrote back to the cache. The on-select fetch and the cross-mount
+  // memoisation both move into SWR — its built-in cache provides the
+  // same UX as the Zustand cache (return cached on re-select, optionally
+  // revalidate) without the setState-in-effect pattern.
+  //
+  // Two SWR hooks because the detail payload and the structural-edges
+  // payload have independent revalidation lifetimes: detail is heavy and
+  // worth caching across selections; edges are cheap and always
+  // re-fetched. Each hook uses a distinct key namespace so they can't
+  // collide in SWR's global cache.
+  const { data: detail, error: detailError, isLoading: detailLoading } = useSWR<
+    AtomDetailResponse
+  >(selectedAtom, fetchAtomDetail, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    shouldRetryOnError: false,
   });
 
-  /* ── Fetch on atom select ─────────────────────────────────────────── */
+  const { data: structEdgesData, error: edgesError } = useSWR<{
+    outgoing: StructuralEdge[];
+    incoming: StructuralEdge[];
+  }>(selectedAtom ? ([selectedAtom, "edges"] as const) : null, fetchEdgesForAtom, {
+    revalidateOnFocus: false,
+    revalidateOnReconnect: false,
+    shouldRetryOnError: false,
+  });
 
-  useEffect(() => {
-    if (!selectedAtom) {
-      setDetail(null);
-      setError(null);
-      setStructEdges({ outgoing: [], incoming: [] });
-      return;
-    }
-
-    // Cache hit for detail — still fetch structural edges (not cached)
-    const cached = cachedDetails.get(selectedAtom);
-    if (cached) {
-      setDetail(cached);
-      setError(null);
-    }
-
-    if (!cached) {
-      setIsLoading(true);
-      setDetail(null);
-      setError(null);
-    }
-
-    // S-EDGE-VIZ: Fetch detail + structural edges concurrently
-    Promise.all([
-      cached ? Promise.resolve(cached) : fetchAtomDetail(selectedAtom),
-      fetchAtomEdges(selectedAtom),
-    ])
-      .then(([d, edges]) => {
-        if (!cached) {
-          cacheDetail(selectedAtom, d);
-          setDetail(d);
-        }
-        setStructEdges(edges);
-      })
-      .catch((err: Error) => {
-        if (err.name !== "AbortError") {
-          setError("Failed to load atom details.");
-        }
-      })
-      .finally(() => setIsLoading(false));
-  }, [selectedAtom, cachedDetails, cacheDetail]);
+  // Derived state — no setState, no effect. The previous "either detail OR
+  // edges errored" branch collapses to a single boolean: any error from
+  // either hook fails the panel into the error state.
+  const isLoading = detailLoading;
+  const error: string | null = detailError || edgesError ? "Failed to load atom details." : null;
+  const structEdges = structEdgesData ?? EMPTY_EDGES;
 
   /* ── Derived ──────────────────────────────────────────────────────── */
 

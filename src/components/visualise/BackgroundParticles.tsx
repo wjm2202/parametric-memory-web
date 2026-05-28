@@ -1,11 +1,53 @@
 "use client";
 
-import { useRef, useMemo } from "react";
+import { useRef } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 
 const PARTICLE_COUNT = 200;
 const SPREAD = 30;
+
+// ── Deterministic particle generation ───────────────────────────────────────
+//
+// The previous implementation called `Math.random()` inside `useMemo`. That
+// looked safe because of the empty dep array, but `useMemo` is allowed to
+// re-run between renders, and `Math.random()` is impure during render — the
+// React Compiler's `react-hooks/purity` rule rightly flags this.
+//
+// Fix: pre-compute positions and velocities once at module load via a
+// tiny seeded PRNG (mulberry32). The visual is identical (still a noisy
+// cloud of dust motes) but the output is now deterministic and computed
+// outside of any React lifecycle.
+function mulberry32(seed: number): () => number {
+  let s = seed >>> 0;
+  return () => {
+    s = (s + 0x6d2b79f5) >>> 0;
+    let t = s;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function buildField(seed: number, count: number, scale: number): Float32Array {
+  const rand = mulberry32(seed);
+  const arr = new Float32Array(count * 3);
+  for (let i = 0; i < count; i++) {
+    arr[i * 3] = (rand() - 0.5) * scale;
+    arr[i * 3 + 1] = (rand() - 0.5) * scale;
+    arr[i * 3 + 2] = (rand() - 0.5) * scale;
+  }
+  return arr;
+}
+
+// Two independent seeds so positions and velocities are uncorrelated.
+const POSITIONS = buildField(0xc0ffee, PARTICLE_COUNT, SPREAD);
+const VEL_X_Z = buildField(0xfeed_face, PARTICLE_COUNT, 0.003);
+// y-axis drift is gentler — overlay a softer field on top of the x/z one.
+for (let i = 0; i < PARTICLE_COUNT; i++) {
+  VEL_X_Z[i * 3 + 1] = (VEL_X_Z[i * 3 + 1] / 0.003) * 0.002;
+}
+const VELOCITIES = VEL_X_Z;
 
 /**
  * Subtle floating particles in the background.
@@ -13,26 +55,8 @@ const SPREAD = 30;
  */
 export default function BackgroundParticles() {
   const pointsRef = useRef<THREE.Points>(null);
-
-  const positions = useMemo(() => {
-    const arr = new Float32Array(PARTICLE_COUNT * 3);
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      arr[i * 3] = (Math.random() - 0.5) * SPREAD;
-      arr[i * 3 + 1] = (Math.random() - 0.5) * SPREAD;
-      arr[i * 3 + 2] = (Math.random() - 0.5) * SPREAD;
-    }
-    return arr;
-  }, []);
-
-  const velocities = useMemo(() => {
-    const arr = new Float32Array(PARTICLE_COUNT * 3);
-    for (let i = 0; i < PARTICLE_COUNT; i++) {
-      arr[i * 3] = (Math.random() - 0.5) * 0.003;
-      arr[i * 3 + 1] = (Math.random() - 0.5) * 0.002;
-      arr[i * 3 + 2] = (Math.random() - 0.5) * 0.003;
-    }
-    return arr;
-  }, []);
+  const positions = POSITIONS;
+  const velocities = VELOCITIES;
 
   useFrame(() => {
     const geo = pointsRef.current?.geometry;

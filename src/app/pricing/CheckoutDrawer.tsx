@@ -70,12 +70,14 @@ interface Props {
 type FetchState = { kind: "ready" } | { kind: "error"; message: string };
 
 export function CheckoutDrawer({ open, onClose, tierId, tierName, priceLabel }: Props) {
+  // RC-07 (react-compiler-readiness, 2026-05-27): state starts as
+  // { kind: "ready" } via useState's initial value. The previous
+  // reset-on-open useEffect was removed because the parent
+  // (PricingCTA) now renders <CheckoutDrawer> conditionally — every
+  // open is a fresh mount with fresh state, which is also what the
+  // Stripe iframe wants. See the comment over the conditional render
+  // in PricingCTA.tsx for the architectural reasoning.
   const [state, setState] = useState<FetchState>({ kind: "ready" });
-
-  // ── Reset error state whenever the drawer is re-opened ─────────────────
-  useEffect(() => {
-    if (open) setState({ kind: "ready" });
-  }, [open]);
 
   // ── Esc closes (Stripe's iframe doesn't listen to Esc inside its own
   //    frame, so the parent must) ───────────────────────────────────────

@@ -1,6 +1,6 @@
-const Stripe = require('stripe');
-const fs = require('fs');
-const path = require('path');
+import Stripe from 'stripe';
+import fs from 'node:fs';
+import path from 'node:path';
 
 // Read .env.local directly and parse it
 const envPath = path.join(process.cwd(), '.env.local');
@@ -27,6 +27,8 @@ const stripe = new Stripe(STRIPE_SECRET_KEY, {
   maxNetworkRetries: 5,
   timeout: 60000,
 });
+
+const USE_MOCK = process.argv.includes('--mock');
 
 const PRODUCTS = [
   {
@@ -61,6 +63,16 @@ const PRODUCTS = [
   },
 ];
 
+// Generate mock Stripe IDs
+function generateMockStripeId(prefix) {
+  const chars = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+  let id = '';
+  for (let i = 0; i < 16; i++) {
+    id += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `${prefix}_${id}`;
+}
+
 async function retryWithExponentialBackoff(fn, maxRetries = 5) {
   for (let attempt = 1; attempt <= maxRetries; attempt++) {
     try {
@@ -78,6 +90,9 @@ async function retryWithExponentialBackoff(fn, maxRetries = 5) {
 
 async function main() {
   console.log('\n🚀 Starting Stripe product creation...\n');
+  if (USE_MOCK) {
+    console.log('⚠️  Using MOCK mode (no real Stripe API calls). Use --live for production.\n');
+  }
 
   const createdProducts = [];
 
@@ -85,99 +100,106 @@ async function main() {
     console.log(`Processing: ${product.name} ($${(product.price / 100).toFixed(2)}/mo)`);
 
     try {
-      // Check if product already exists by name
-      let existingProduct;
-      try {
-        const result = await retryWithExponentialBackoff(async () => {
-          const existingProducts = await stripe.products.list({
-            limit: 100,
-          });
-          return existingProducts.data.find((p) => p.name === product.name);
-        });
-        existingProduct = result;
-      } catch (listError) {
-        console.log(`  ⚠️  Could not list products: ${listError.message}`);
-        existingProduct = null;
-      }
-
       let productId;
-
-      if (existingProduct) {
-        console.log(`  ✓ Product already exists: ${existingProduct.id}`);
-        productId = existingProduct.id;
-      } else {
-        // Create new product
-        let createdProduct;
-        try {
-          createdProduct = await retryWithExponentialBackoff(() =>
-            stripe.products.create({
-              name: product.name,
-              description: product.description,
-              type: 'service',
-              metadata: {
-                tier: product.name.toLowerCase().replace(/\s+/g, '-'),
-              },
-            })
-          );
-        } catch (createError) {
-          console.error(`  ❌ Failed to create product after retries:`);
-          console.error(`     ${createError.message || createError}`);
-          throw createError;
-        }
-
-        console.log(`  ✓ Created product: ${createdProduct.id}`);
-        productId = createdProduct.id;
-      }
-
-      // Check if price already exists for this product
-      let existingPrice;
-      try {
-        const result = await retryWithExponentialBackoff(async () => {
-          const existingPrices = await stripe.prices.list({
-            product: productId,
-            limit: 100,
-          });
-          return existingPrices.data.find(
-            (p) => p.unit_amount === product.price && p.recurring?.interval === 'month'
-          );
-        });
-        existingPrice = result;
-      } catch (listError) {
-        console.log(`  ⚠️  Could not list prices: ${listError.message}`);
-        existingPrice = null;
-      }
-
       let priceId;
 
-      if (existingPrice) {
-        console.log(`  ✓ Price already exists: ${existingPrice.id}`);
-        priceId = existingPrice.id;
+      if (USE_MOCK) {
+        // Generate mock IDs
+        productId = generateMockStripeId('prod');
+        priceId = generateMockStripeId('price');
+        console.log(`  ✓ Created product (mock): ${productId}`);
+        console.log(`  ✓ Created price (mock): ${priceId}`);
       } else {
-        // Create new price
-        let createdPrice;
+        // Check if product already exists by name
+        let existingProduct;
         try {
-          createdPrice = await retryWithExponentialBackoff(() =>
-            stripe.prices.create({
-              product: productId,
-              unit_amount: product.price,
-              currency: 'usd',
-              recurring: {
-                interval: 'month',
-                interval_count: 1,
-              },
-              metadata: {
-                tier: product.name.toLowerCase().replace(/\s+/g, '-'),
-              },
-            })
-          );
-        } catch (createError) {
-          console.error(`  ❌ Failed to create price after retries:`);
-          console.error(`     ${createError.message || createError}`);
-          throw createError;
+          const result = await retryWithExponentialBackoff(async () => {
+            const existingProducts = await stripe.products.list({
+              limit: 100,
+            });
+            return existingProducts.data.find((p) => p.name === product.name);
+          });
+          existingProduct = result;
+        } catch (listError) {
+          console.log(`  ⚠️  Could not list products: ${listError.message}`);
+          existingProduct = null;
         }
 
-        console.log(`  ✓ Created price: ${createdPrice.id}`);
-        priceId = createdPrice.id;
+        if (existingProduct) {
+          console.log(`  ✓ Product already exists: ${existingProduct.id}`);
+          productId = existingProduct.id;
+        } else {
+          // Create new product
+          let createdProduct;
+          try {
+            createdProduct = await retryWithExponentialBackoff(() =>
+              stripe.products.create({
+                name: product.name,
+                description: product.description,
+                type: 'service',
+                metadata: {
+                  tier: product.name.toLowerCase().replace(/\s+/g, '-'),
+                },
+              })
+            );
+          } catch (createError) {
+            console.error(`  ❌ Failed to create product after retries:`);
+            console.error(`     ${createError.message || createError}`);
+            throw createError;
+          }
+
+          console.log(`  ✓ Created product: ${createdProduct.id}`);
+          productId = createdProduct.id;
+        }
+
+        // Check if price already exists for this product
+        let existingPrice;
+        try {
+          const result = await retryWithExponentialBackoff(async () => {
+            const existingPrices = await stripe.prices.list({
+              product: productId,
+              limit: 100,
+            });
+            return existingPrices.data.find(
+              (p) => p.unit_amount === product.price && p.recurring?.interval === 'month'
+            );
+          });
+          existingPrice = result;
+        } catch (listError) {
+          console.log(`  ⚠️  Could not list prices: ${listError.message}`);
+          existingPrice = null;
+        }
+
+        if (existingPrice) {
+          console.log(`  ✓ Price already exists: ${existingPrice.id}`);
+          priceId = existingPrice.id;
+        } else {
+          // Create new price
+          let createdPrice;
+          try {
+            createdPrice = await retryWithExponentialBackoff(() =>
+              stripe.prices.create({
+                product: productId,
+                unit_amount: product.price,
+                currency: 'usd',
+                recurring: {
+                  interval: 'month',
+                  interval_count: 1,
+                },
+                metadata: {
+                  tier: product.name.toLowerCase().replace(/\s+/g, '-'),
+                },
+              })
+            );
+          } catch (createError) {
+            console.error(`  ❌ Failed to create price after retries:`);
+            console.error(`     ${createError.message || createError}`);
+            throw createError;
+          }
+
+          console.log(`  ✓ Created price: ${createdPrice.id}`);
+          priceId = createdPrice.id;
+        }
       }
 
       createdProducts.push({
@@ -190,7 +212,7 @@ async function main() {
       });
 
       console.log();
-    } catch (error) {
+    } catch {
       console.error(`\n✗ Stopping due to error with ${product.name}`);
       process.exit(1);
     }
@@ -206,8 +228,9 @@ async function main() {
     console.log(`📁 Created directory: ${configDir}`);
   }
 
-  const configContent = `// Auto-generated by scripts/create-stripe-products.js
-// DO NOT EDIT MANUALLY - regenerate with: node scripts/create-stripe-products.js
+  const configContent = `// Auto-generated by scripts/create-stripe-products-with-mock.mjs
+// DO NOT EDIT MANUALLY - regenerate with: node scripts/create-stripe-products-with-mock.mjs
+${USE_MOCK ? '// Generated with --mock flag (test data)' : '// Generated with live Stripe API'}
 
 export interface StripeProductConfig {
   name: string;
@@ -243,6 +266,10 @@ export const STRIPE_PRICES_BY_PRODUCT_ID = Object.fromEntries(
     console.log(`    Price ID: ${p.priceId}`);
   });
   console.log('\n' + '='.repeat(60));
+  if (USE_MOCK) {
+    console.log('\n⚠️  This configuration was generated with mock data.');
+    console.log('   For production, run: node scripts/create-stripe-products-with-mock.mjs');
+  }
 }
 
 main().catch((error) => {

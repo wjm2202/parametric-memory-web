@@ -328,6 +328,15 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
   // KG-07: useCallback — stable handler refs across renders.
   // Pattern mirrors AtomNodes.tsx (/visualise) where all three handlers
   // are memoized to prevent unnecessary instancedMesh event rebinding.
+  //
+  // RC-10 / RC-11 (react-compiler-readiness, 2026-05-27): the ref container
+  // itself (`simNodes`) is stable across renders by definition — only
+  // `simNodes.current` changes, and that's a mutable side door that
+  // useCallback's dep array doesn't need to track. Previously listing
+  // `simNodes` in deps tripped `react-hooks/preserve-manual-memoization`
+  // because the compiler infers the dep as `simNodes.current` (the actual
+  // read) while the dev specified the ref container. Drop refs from deps;
+  // they're stable by construction.
   const handleClick = useCallback(
     (e: ThreeEvent<MouseEvent>) => {
       e.stopPropagation();
@@ -375,7 +384,9 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
           useKnowledgeStore.getState().markLoading(node.key, false);
         });
     },
-    [simNodes],
+    // simNodes is a ref — stable across renders, doesn't belong in deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [],
   );
 
   const handlePointerOver = useCallback(
@@ -384,7 +395,9 @@ export default function GraphNodes({ handle }: GraphNodesProps) {
       const node = simNodes.current[e.instanceId ?? -1] as KGNode | undefined;
       if (node) hoverAtom(node.key);
     },
-    [simNodes, hoverAtom],
+    // simNodes is a ref — stable, not in deps. hoverAtom IS a real dep.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [hoverAtom],
   );
 
   const handlePointerOut = useCallback(() => {

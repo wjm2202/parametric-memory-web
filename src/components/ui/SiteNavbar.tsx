@@ -285,15 +285,34 @@ export default function SiteNavbar({
   const pathname = usePathname();
   const { email, verified } = useAuthState(isLoggedIn);
 
-  const [drawerOpen, setDrawerOpen] = useState(false);
+  // RC-14 (react-compiler-readiness, 2026-05-27): derive `drawerOpen` from
+  // a "openAtPath" sentinel rather than synchronise via an effect on
+  // pathname. Previously the shape was useState(false) + useEffect that
+  // setDrawerOpen(false) on pathname change. That was a navigation-event
+  // safety net (drawer Links already close on click — see linkClose) but
+  // tripped the setState-in-effect rule.
+  //
+  // New shape: `openAtPath` stores the pathname at which the drawer was
+  // opened. `drawerOpen` is derived: true iff that sentinel matches the
+  // CURRENT pathname. Any navigation (Link click, router.push, popstate)
+  // changes `pathname` and automatically invalidates the open state — no
+  // effect needed. The public setDrawerOpen API is preserved so callers
+  // (the hamburger button, useDrawerBehaviour, etc.) don't see any change.
+  const [openAtPath, setOpenAtPath] = useState<string | null>(null);
+  const drawerOpen = openAtPath === pathname;
+  const setDrawerOpen = useCallback(
+    (next: boolean | ((prev: boolean) => boolean)) => {
+      if (typeof next === "function") {
+        setOpenAtPath((prevPath) => (next(prevPath === pathname) ? pathname : null));
+      } else {
+        setOpenAtPath(next ? pathname : null);
+      }
+    },
+    [pathname],
+  );
   const hamburgerRef = useRef<HTMLButtonElement>(null);
-  const closeDrawer = useCallback(() => setDrawerOpen(false), []);
+  const closeDrawer = useCallback(() => setOpenAtPath(null), []);
   useDrawerBehaviour(drawerOpen, closeDrawer, hamburgerRef);
-
-  // Close drawer on route change (covers the link-tap close as a safety net).
-  useEffect(() => {
-    setDrawerOpen(false);
-  }, [pathname]);
 
   /* ── Shared link helpers ─────────────────────────────────────────────── */
 

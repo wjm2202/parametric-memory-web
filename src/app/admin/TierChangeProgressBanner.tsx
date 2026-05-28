@@ -81,20 +81,20 @@ interface Props {
 }
 
 export function TierChangeProgressBanner({ result, currentTierName }: Props) {
-  const [dismissed, setDismissed] = useState(false);
-
-  // Reset the auto-dismiss flag whenever a fresh change kicks off (state
-  // returns to a non-terminal value). Without this, a second upgrade after
-  // a dismissed success would stay hidden.
-  useEffect(() => {
-    if (
-      result.state !== "completed" &&
-      result.state !== "failed" &&
-      result.state !== "rolled_back"
-    ) {
-      setDismissed(false);
-    }
-  }, [result.state]);
+  // RC-04 (react-compiler-readiness, 2026-05-27): derive `dismissed` from a
+  // "dismissedAt" sentinel rather than synchronise via a reset-in-effect.
+  //
+  // The previous shape was:
+  //   useState(false) + useEffect(() => setDismissed(false), [result.state])
+  //   to reset the flag when a fresh change kicks off. That's a textbook
+  //   reset-on-prop-change setState-in-effect — flagged by the React
+  //   Compiler readiness rules because it cascades renders.
+  //
+  // New shape: track which result.state we dismissed AT. Banner is hidden
+  // when the dismissed-at sentinel matches the current state. A new state
+  // automatically un-dismisses (sentinel ≠ state). No reset effect needed.
+  const [dismissedAt, setDismissedAt] = useState<string | null>(null);
+  const dismissed = dismissedAt === result.state;
 
   const isSlowPath =
     result.transitionKind === "shared_to_dedicated" ||
@@ -105,7 +105,7 @@ export function TierChangeProgressBanner({ result, currentTierName }: Props) {
   // for the migration, they deserve a persistent "done".
   useEffect(() => {
     if (result.state === "completed" && !isSlowPath) {
-      const id = setTimeout(() => setDismissed(true), SUCCESS_AUTO_DISMISS_MS);
+      const id = setTimeout(() => setDismissedAt("completed"), SUCCESS_AUTO_DISMISS_MS);
       return () => clearTimeout(id);
     }
   }, [result.state, isSlowPath]);

@@ -26,9 +26,22 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 // React 19: `act` lives on the `react` package.
-import { act } from "react";
+import { act, type ReactNode } from "react";
+import { SWRConfig } from "swr";
 import { ChangePlanSheet, type CurrentTierLimits } from "./ChangePlanSheet";
 import type { UpgradeOption } from "./ConfirmUpgradeDialog";
+
+// RC-17 (react-compiler-readiness, 2026-05-27): SWR's cache is module-
+// global by default; without isolation per render, test N would observe
+// test N-1's cached options for the same URL and skip the fetch. A fresh
+// Map provider + dedupingInterval: 0 makes every test deterministic.
+function SwrTestWrapper({ children }: { children: ReactNode }) {
+  return (
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      {children}
+    </SWRConfig>
+  );
+}
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
@@ -137,7 +150,7 @@ function renderSheet(
       overrides.nextBillingDate === undefined ? NEXT_BILLING : overrides.nextBillingDate,
   };
   return {
-    ...render(<ChangePlanSheet {...props} />),
+    ...render(<ChangePlanSheet {...props} />, { wrapper: SwrTestWrapper }),
     onClose: props.onClose,
   };
 }
@@ -476,6 +489,7 @@ describe("ChangePlanSheet — stale-response guard", () => {
         currentLimits={INDIE_LIMITS}
         nextBillingDate={NEXT_BILLING}
       />,
+      { wrapper: SwrTestWrapper },
     );
     expect(mockFetch).toHaveBeenCalledTimes(1);
 
@@ -509,12 +523,36 @@ describe("ChangePlanSheet — stale-response guard", () => {
   });
 
   it("re-fetches when the sheet is re-opened", async () => {
+    // RC-17 (react-compiler-readiness, 2026-05-27): production renders the
+    // sheet conditionally with `{open && <ChangePlanSheet ... />}` so a
+    // close-then-reopen cycle unmounts the sheet and remounts a fresh
+    // instance. The test mirrors that by rerendering with `null` for the
+    // closed state — keeping `open={false}` on a mounted instance would
+    // leave SWR's hook subscribed (just with a null key) and the cached
+    // options would suppress the revalidation on reopen, which is NOT what
+    // happens in prod.
+    //
+    // Harness wraps the conditional pattern so both rerenders use the same
+    // root element type — the `{open && ...}` syntax inside rerender works
+    // identically.
+    function Harness(props: {
+      open: boolean;
+      onClose: () => void;
+      substrateSlug: string;
+      currentTier: string;
+      currentLimits: CurrentTierLimits | null;
+      nextBillingDate: Date | null;
+    }) {
+      const { open, ...rest } = props;
+      return open ? <ChangePlanSheet open={open} {...rest} /> : null;
+    }
+
     // First open: resolve with an empty options list.
     resolveWith(200, { currentTier: "team", options: [] });
 
     const onClose = vi.fn();
     const { rerender } = render(
-      <ChangePlanSheet
+      <Harness
         open={true}
         onClose={onClose}
         substrateSlug="bold-junction"
@@ -522,13 +560,14 @@ describe("ChangePlanSheet — stale-response guard", () => {
         currentLimits={null}
         nextBillingDate={null}
       />,
+      { wrapper: SwrTestWrapper },
     );
     await flush();
     expect(screen.getByTestId("change-plan-sheet-empty")).toBeInTheDocument();
 
-    // Close it.
+    // Close it — unmounts the sheet via the conditional render.
     rerender(
-      <ChangePlanSheet
+      <Harness
         open={false}
         onClose={onClose}
         substrateSlug="bold-junction"
@@ -537,12 +576,14 @@ describe("ChangePlanSheet — stale-response guard", () => {
         nextBillingDate={null}
       />,
     );
+    expect(screen.queryByTestId("change-plan-sheet")).toBeNull();
 
-    // Re-open with a populated response this time.
+    // Re-open with a populated response this time. Fresh mount → fresh
+    // SWR hook → fresh fetch (independent of any cached payload).
     resolveWith(200, { currentTier: "indie", options: [PRO_OPTION] });
 
     rerender(
-      <ChangePlanSheet
+      <Harness
         open={true}
         onClose={onClose}
         substrateSlug="bold-junction"
