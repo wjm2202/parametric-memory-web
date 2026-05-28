@@ -95,9 +95,11 @@ export default function SidePanel() {
   // worth caching across selections; edges are cheap and always
   // re-fetched. Each hook uses a distinct key namespace so they can't
   // collide in SWR's global cache.
-  const { data: detail, error: detailError, isLoading: detailLoading } = useSWR<
-    AtomDetailResponse
-  >(selectedAtom, fetchAtomDetail, {
+  const {
+    data: detail,
+    error: detailError,
+    isLoading: detailLoading,
+  } = useSWR<AtomDetailResponse>(selectedAtom, fetchAtomDetail, {
     revalidateOnFocus: false,
     revalidateOnReconnect: false,
     shouldRetryOnError: false,

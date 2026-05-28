@@ -26,9 +26,7 @@ import AuditClient from "./AuditClient";
 // fetch — defeating fetchMock.toHaveBeenCalledTimes assertions.
 function SwrTestWrapper({ children }: { children: ReactNode }) {
   return (
-    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
-      {children}
-    </SWRConfig>
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>{children}</SWRConfig>
   );
 }
 

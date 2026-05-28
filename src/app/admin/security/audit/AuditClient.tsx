@@ -216,8 +216,7 @@ function AuditFeed() {
   //   loadingMore: user asked for an additional page (size grew beyond
   //     data.length) and SWR is in flight resolving it.
   const loadingFirst = isLoading || (isValidating && !data);
-  const loadingMore =
-    isValidating && data !== undefined && data.length > 0 && size > data.length;
+  const loadingMore = isValidating && data !== undefined && data.length > 0 && size > data.length;
 
   const errorMessage = error?.message ?? null;
 

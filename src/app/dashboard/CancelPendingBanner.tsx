@@ -132,10 +132,7 @@ export function CancelPendingBanner({ substrateId, endsOn, slug, onReactivated }
   //   localStorage blocked → visible (unless session-dismissed)
   //   key present ("1")  → hidden (dismissed today)
   //   key absent (null)  → visible
-  const visible =
-    flag !== SSR_SENTINEL &&
-    flag !== "1" &&
-    !sessionDismissed;
+  const visible = flag !== SSR_SENTINEL && flag !== "1" && !sessionDismissed;
 
   function dismiss() {
     try {

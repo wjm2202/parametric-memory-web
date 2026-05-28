@@ -146,8 +146,7 @@ export function useRecentAuth(initialStatus?: TotpStatus | null): UseRecentAuthR
   // session_expired clears status (the session is dead — any cached body is
   // by definition stale). network errors leave the previous successful
   // payload in place so the UI can render a retry without losing context.
-  const status: TotpStatus | null =
-    errCategory === "session_expired" ? null : (data ?? null);
+  const status: TotpStatus | null = errCategory === "session_expired" ? null : (data ?? null);
   // `loading` covers both the cold initial fetch (isLoading) and any
   // explicit refetch / reconnect revalidation (isValidating). The original
   // hook flipped loading=true → false on every refetch call, so this is the

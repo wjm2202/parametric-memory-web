@@ -187,22 +187,23 @@ export function ChangePlanSheet({
   const [mountSeq] = useState(() => ++changePlanSheetMountSeq);
 
   const upgradeOptionsKey: readonly [string, number] | null = open
-    ? [
+    ? ([
         `/api/billing/upgrade-options?substrateSlug=${encodeURIComponent(substrateSlug)}`,
         mountSeq,
-      ] as const
+      ] as const)
     : null;
-  const {
-    data: upgradeOptions,
-    error: upgradeOptionsError,
-  } = useSWR<UpgradeOption[]>(upgradeOptionsKey, fetchUpgradeOptions, {
-    // The mount-seq salt above makes every reopen a unique key, so the
-    // dedupe window is irrelevant. Focus/reconnect revalidations stay
-    // off — the sheet is short-lived and we don't want extra traffic.
-    revalidateOnFocus: false,
-    revalidateOnReconnect: false,
-    shouldRetryOnError: false,
-  });
+  const { data: upgradeOptions, error: upgradeOptionsError } = useSWR<UpgradeOption[]>(
+    upgradeOptionsKey,
+    fetchUpgradeOptions,
+    {
+      // The mount-seq salt above makes every reopen a unique key, so the
+      // dedupe window is irrelevant. Focus/reconnect revalidations stay
+      // off — the sheet is short-lived and we don't want extra traffic.
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
+    },
+  );
 
   // Translate the SWR snapshot into the existing FetchState union so the
   // render tree below stays byte-for-byte identical.

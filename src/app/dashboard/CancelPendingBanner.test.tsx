@@ -142,13 +142,9 @@ describe("CancelPendingBanner", () => {
       expect(banner).toBeInTheDocument();
 
       // Dismiss button still works for the session (no setItem possible).
-      fireEvent.click(
-        screen.getByTestId("cancel-pending-banner-dismiss-subst_storage_blocked"),
-      );
+      fireEvent.click(screen.getByTestId("cancel-pending-banner-dismiss-subst_storage_blocked"));
       await waitFor(() => {
-        expect(
-          screen.queryByTestId("cancel-pending-banner-subst_storage_blocked"),
-        ).toBeNull();
+        expect(screen.queryByTestId("cancel-pending-banner-subst_storage_blocked")).toBeNull();
       });
     } finally {
       window.localStorage.getItem = originalGetItem;
