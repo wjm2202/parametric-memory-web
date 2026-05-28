@@ -117,6 +117,41 @@ describe("CancelPendingBanner", () => {
     );
   });
 
+  it("shows the banner and lets the user dismiss for the session when localStorage throws", async () => {
+    // Simulate private browsing / blocked storage: both getItem and setItem throw.
+    const originalGetItem = window.localStorage.getItem;
+    const originalSetItem = window.localStorage.setItem;
+    window.localStorage.getItem = vi.fn(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+    window.localStorage.setItem = vi.fn(() => {
+      throw new DOMException("blocked", "SecurityError");
+    });
+
+    try {
+      render(
+        <CancelPendingBanner
+          substrateId="subst_storage_blocked"
+          endsOn="14 Jun 2026"
+          slug="x"
+          onReactivated={() => {}}
+        />,
+      );
+      // Storage blocked → snapshot returns UNAVAILABLE_SENTINEL → banner visible.
+      const banner = await screen.findByTestId("cancel-pending-banner-subst_storage_blocked");
+      expect(banner).toBeInTheDocument();
+
+      // Dismiss button still works for the session (no setItem possible).
+      fireEvent.click(screen.getByTestId("cancel-pending-banner-dismiss-subst_storage_blocked"));
+      await waitFor(() => {
+        expect(screen.queryByTestId("cancel-pending-banner-subst_storage_blocked")).toBeNull();
+      });
+    } finally {
+      window.localStorage.getItem = originalGetItem;
+      window.localStorage.setItem = originalSetItem;
+    }
+  });
+
   it("renders inline error when reactivate fails; banner stays open", async () => {
     mockFetch.mockResolvedValue({
       ok: false,

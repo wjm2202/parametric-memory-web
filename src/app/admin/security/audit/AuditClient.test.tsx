@@ -16,7 +16,28 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, fireEvent, cleanup, waitFor, within } from "@testing-library/react";
+import { type ReactNode } from "react";
+import { SWRConfig } from "swr";
 import AuditClient from "./AuditClient";
+
+// RC-05 (react-compiler-readiness, 2026-05-27): a fresh SWR cache provider
+// per render isolates each test. Without this, SWR's module-global cache
+// would let test N observe test N-1's cached audit pages and skip the
+// fetch — defeating fetchMock.toHaveBeenCalledTimes assertions.
+function SwrTestWrapper({ children }: { children: ReactNode }) {
+  return (
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>{children}</SWRConfig>
+  );
+}
+
+function renderAudit(account: AccountInfo) {
+  return render(<AuditClient account={account} />, { wrapper: SwrTestWrapper });
+}
+
+interface AccountInfo {
+  id: string;
+  email: string;
+}
 
 // RecentAuthGate is unconditionally "open" — its own tests cover the
 // gate logic; this file asserts what happens once the gate has passed.
@@ -81,7 +102,7 @@ describe("AuditClient — initial fetch", () => {
     fetchMock().mockResolvedValueOnce(
       jsonResponse(200, { events: SAMPLE_EVENTS, nextCursor: null }),
     );
-    render(<AuditClient account={ACCOUNT} />);
+    renderAudit(ACCOUNT);
 
     await waitFor(() => {
       expect(fetchMock()).toHaveBeenCalledTimes(1);
@@ -97,7 +118,7 @@ describe("AuditClient — initial fetch", () => {
     fetchMock().mockResolvedValueOnce(
       jsonResponse(200, { events: SAMPLE_EVENTS, nextCursor: null }),
     );
-    render(<AuditClient account={ACCOUNT} />);
+    renderAudit(ACCOUNT);
 
     await waitFor(() => {
       const items = screen.getAllByTestId("auth-audit-item");
@@ -113,7 +134,7 @@ describe("AuditClient — initial fetch", () => {
 describe("AuditClient — empty state", () => {
   it("renders empty-state copy when the feed is empty", async () => {
     fetchMock().mockResolvedValueOnce(jsonResponse(200, { events: [], nextCursor: null }));
-    render(<AuditClient account={ACCOUNT} />);
+    renderAudit(ACCOUNT);
     await waitFor(() => {
       expect(screen.getByTestId("auth-audit-empty")).toBeTruthy();
     });
@@ -126,7 +147,7 @@ describe("AuditClient — kind filter", () => {
       .mockResolvedValueOnce(jsonResponse(200, { events: SAMPLE_EVENTS, nextCursor: null }))
       .mockResolvedValueOnce(jsonResponse(200, { events: [SAMPLE_EVENTS[0]], nextCursor: null }));
 
-    render(<AuditClient account={ACCOUNT} />);
+    renderAudit(ACCOUNT);
     await waitFor(() => {
       expect(screen.getAllByTestId("auth-audit-item")).toHaveLength(2);
     });
@@ -156,7 +177,7 @@ describe("AuditClient — pagination", () => {
     fetchMock().mockResolvedValueOnce(
       jsonResponse(200, { events: SAMPLE_EVENTS, nextCursor: "OPAQUE_CURSOR" }),
     );
-    render(<AuditClient account={ACCOUNT} />);
+    renderAudit(ACCOUNT);
     await waitFor(() => {
       expect(screen.getByTestId("auth-audit-load-more")).toBeTruthy();
     });
@@ -177,7 +198,7 @@ describe("AuditClient — pagination", () => {
       )
       .mockResolvedValueOnce(jsonResponse(200, { events: [olderEvent], nextCursor: null }));
 
-    render(<AuditClient account={ACCOUNT} />);
+    renderAudit(ACCOUNT);
     await waitFor(() => {
       expect(screen.getByTestId("auth-audit-load-more")).toBeTruthy();
     });
@@ -202,7 +223,7 @@ describe("AuditClient — pagination", () => {
     fetchMock().mockResolvedValueOnce(
       jsonResponse(200, { events: SAMPLE_EVENTS, nextCursor: null }),
     );
-    render(<AuditClient account={ACCOUNT} />);
+    renderAudit(ACCOUNT);
     await waitFor(() => {
       expect(screen.getAllByTestId("auth-audit-item")).toHaveLength(2);
     });
@@ -216,7 +237,7 @@ describe("AuditClient — error paths", () => {
       .mockRejectedValueOnce(new TypeError("offline"))
       .mockResolvedValueOnce(jsonResponse(200, { events: SAMPLE_EVENTS, nextCursor: null }));
 
-    render(<AuditClient account={ACCOUNT} />);
+    renderAudit(ACCOUNT);
 
     await waitFor(() => {
       const err = screen.getByTestId("auth-audit-error");
@@ -237,7 +258,7 @@ describe("AuditClient — error paths", () => {
     fetchMock().mockResolvedValueOnce(
       jsonResponse(401, { code: "reauth_required", error: "stale" }),
     );
-    render(<AuditClient account={ACCOUNT} />);
+    renderAudit(ACCOUNT);
     await waitFor(() => {
       const err = screen.getByTestId("auth-audit-error");
       expect(err.textContent).toMatch(/sign-in expired/i);

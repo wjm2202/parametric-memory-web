@@ -26,16 +26,21 @@ function NavBadge({ badge }: { badge: DocNavItem["badge"] }) {
   );
 }
 
-// ── Main component ────────────────────────────────────────────────────────────
+// ── SidebarContent ────────────────────────────────────────────────────────────
+//
+// Extracted to top-level component (was previously defined inside DocsSidebar's
+// render scope, which the React Compiler's react-hooks/static-components rule
+// rightly flags: a component re-created on every parent render resets its own
+// state on every parent update). Now `activeSlug` and `onLinkClick` flow in as
+// props so this stays stable across parent renders.
 
-export function DocsSidebar() {
-  const pathname = usePathname();
-  const [mobileOpen, setMobileOpen] = useState(false);
+interface SidebarContentProps {
+  activeSlug: string;
+  onLinkClick: () => void;
+}
 
-  // Normalise /docs/foo/bar → "foo/bar" for comparison
-  const activeSlug = pathname.replace(/^\/docs\/?/, "");
-
-  const SidebarContent = () => (
+function SidebarContent({ activeSlug, onLinkClick }: SidebarContentProps) {
+  return (
     <nav aria-label="Documentation navigation">
       <ul className="space-y-6">
         {docsNav.map((section) => (
@@ -63,7 +68,7 @@ export function DocsSidebar() {
                             ? "bg-brand-500/10 text-brand-400 border-brand-500 border-l-2 pl-[7px] font-medium"
                             : "text-surface-400 hover:text-surface-200 hover:bg-surface-800/60",
                         ].join(" ")}
-                        onClick={() => setMobileOpen(false)}
+                        onClick={onLinkClick}
                       >
                         <span>{item.title}</span>
                         <NavBadge badge={item.badge} />
@@ -78,6 +83,17 @@ export function DocsSidebar() {
       </ul>
     </nav>
   );
+}
+
+// ── Main component ────────────────────────────────────────────────────────────
+
+export function DocsSidebar() {
+  const pathname = usePathname();
+  const [mobileOpen, setMobileOpen] = useState(false);
+
+  // Normalise /docs/foo/bar → "foo/bar" for comparison
+  const activeSlug = pathname.replace(/^\/docs\/?/, "");
+  const closeMobile = () => setMobileOpen(false);
 
   return (
     <>
@@ -118,14 +134,14 @@ export function DocsSidebar() {
       {/* Mobile drawer */}
       {mobileOpen && (
         <div className="border-surface-800 bg-surface-950 border-b px-4 py-4 lg:hidden">
-          <SidebarContent />
+          <SidebarContent activeSlug={activeSlug} onLinkClick={closeMobile} />
         </div>
       )}
 
       {/* Desktop sidebar */}
       <aside className="hidden w-60 shrink-0 lg:block">
         <div className="sticky top-20 max-h-[calc(100vh-5rem)] overflow-y-auto py-6 pr-4">
-          <SidebarContent />
+          <SidebarContent activeSlug={activeSlug} onLinkClick={closeMobile} />
         </div>
       </aside>
     </>

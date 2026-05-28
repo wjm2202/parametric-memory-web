@@ -4,17 +4,27 @@ import type { NextRequest } from "next/server";
 const SESSION_COOKIE = "mmpm_session";
 
 /**
- * Edge middleware — protects /admin and any future authenticated routes.
+ * Proxy (Next.js 16+) — protects /admin and any future authenticated routes.
  *
- * Note: Edge runtime cannot make DB calls, so this is a cookie presence check
- * only. The actual session validation happens in each protected page/route
- * when it calls GET /api/auth/me (which validates against the DB).
+ * Formerly `middleware.ts` / `export function middleware`. Renamed to
+ * `proxy.ts` / `export function proxy` by the @next/codemod
+ * `middleware-to-proxy` transform during the Next 16 upgrade (Phase 2 of
+ * docs/SPRINT-NEXTJS-16-UPGRADE-2026-05-27.md). Functional behaviour is
+ * unchanged — `proxy` runs at the same lifecycle point that `middleware`
+ * did, with the same matcher and return semantics.
  *
- * This is the correct security model:
- *   - Middleware: fast redirect for obviously unauthenticated users (no cookie)
+ * Runtime note: `proxy.ts` forces the Node.js runtime (Edge is not
+ * supported for the proxy semantic). This codebase doesn't make DB calls
+ * from here anyway — it's a cookie-presence redirect, not a session
+ * validator — so the runtime change is functionally invisible. The
+ * actual session validation happens in each protected page/route when
+ * it calls GET /api/auth/me (which validates against the DB).
+ *
+ * Security model:
+ *   - Proxy: fast redirect for obviously unauthenticated users (no cookie)
  *   - Page/server component: full session validation via API call
  */
-export function middleware(request: NextRequest): NextResponse {
+export function proxy(request: NextRequest): NextResponse {
   const { pathname } = request.nextUrl;
 
   // ── Protected routes ──────────────────────────────────────────────────────

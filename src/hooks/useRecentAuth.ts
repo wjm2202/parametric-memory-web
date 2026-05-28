@@ -15,7 +15,9 @@
  * shared context cache would leak stale state. Each call site mounts the
  * hook independently; the in-flight overlap is irrelevant — /status is
  * cheap (single SELECT in compute) and the requests deduplicate at the
- * HTTP cache layer.
+ * HTTP cache layer. SWR's own dedupe (default 2s) further short-circuits
+ * the duplicate-fetch problem at the cost of a brief shared-cache window
+ * between sibling mounts.
  *
  * ## Why we read /status server-side too
  *
@@ -35,11 +37,22 @@
  *   field, not a status code.
  * - Network errors surface as `error: 'network'` and the parent renders
  *   a retry button.
+ *
+ * ## React-Compiler note (RC-15, 2026-05-27)
+ *
+ * The previous implementation used a manual `useState` + `useEffect`
+ * + `useCallback(refetch)` triad. The on-mount `void refetch()` inside
+ * `useEffect` set state synchronously when the request resolved, which
+ * tripped `react-hooks/set-state-in-effect`. SWR is the documented
+ * remedy: it owns the effect / state machine internally and exposes the
+ * snapshot through React's official `use-sync-external-store` shim, so
+ * the call site has no effect to flag.
  */
 
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback } from "react";
+import useSWR from "swr";
 
 export interface TotpStatus {
   /** True iff TOTP is fully enrolled (active row, not half-enrolled). */
@@ -59,7 +72,7 @@ export type RecentAuthError = "session_expired" | "network" | null;
 export interface UseRecentAuthResult {
   /** The latest /status response, or null while loading or after error. */
   status: TotpStatus | null;
-  /** True while the initial fetch is in-flight. False once we have data or an error. */
+  /** True while a fetch is in-flight (initial or refresh). */
   loading: boolean;
   /** Last error category, or null on success. */
   error: RecentAuthError;
@@ -70,50 +83,82 @@ export interface UseRecentAuthResult {
   refetch: () => Promise<void>;
 }
 
+/** Canonical /status URL — exported so tests and consumers share the constant. */
+export const TOTP_STATUS_URL = "/api/auth/factors/totp/status";
+
+/**
+ * Categorised fetch error. SWR exposes the thrown value through `error`;
+ * carrying the category as a field keeps the public surface unchanged.
+ */
+class TotpStatusError extends Error {
+  readonly category: NonNullable<RecentAuthError>;
+  constructor(category: NonNullable<RecentAuthError>) {
+    super(category);
+    this.name = "TotpStatusError";
+    this.category = category;
+  }
+}
+
+/** SWR fetcher for /status — throws categorised errors so the hook can map them. */
+async function fetchTotpStatus(url: string): Promise<TotpStatus> {
+  let res: Response;
+  try {
+    res = await fetch(url, { credentials: "same-origin", cache: "no-store" });
+  } catch {
+    throw new TotpStatusError("network");
+  }
+  if (res.status === 401) throw new TotpStatusError("session_expired");
+  if (!res.ok) throw new TotpStatusError("network");
+  return (await res.json()) as TotpStatus;
+}
+
 /**
  * Fetch the current TOTP enrolment + recent-auth state.
  *
  * `initialStatus` lets the parent server component pass a server-rendered
  * value so the first paint shows real data. The hook still fetches on mount
  * to catch the case where status changed between server render and client
- * hydration (e.g. the user enrolled on another tab).
+ * hydration (e.g. the user enrolled on another tab) — SWR's `fallbackData`
+ * carries the SSR value and then revalidates immediately.
  */
 export function useRecentAuth(initialStatus?: TotpStatus | null): UseRecentAuthResult {
-  const [status, setStatus] = useState<TotpStatus | null>(initialStatus ?? null);
-  const [loading, setLoading] = useState<boolean>(initialStatus == null);
-  const [error, setError] = useState<RecentAuthError>(null);
+  const { data, error, isLoading, isValidating, mutate } = useSWR<TotpStatus, TotpStatusError>(
+    TOTP_STATUS_URL,
+    fetchTotpStatus,
+    {
+      // Match the pre-SWR behaviour: only revalidate on explicit refetch
+      // (caller's action) or reconnect; never on tab focus. The hook is
+      // already mounted in multiple places, so focus-revalidate would
+      // hammer compute for no UX gain.
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      // Surface errors to the UI immediately; the parent renders a retry
+      // button rather than waiting for an exponential backoff. Preserves
+      // the previous fetch-and-set behaviour exactly.
+      shouldRetryOnError: false,
+      // Server-rendered initial value, if the parent passed one.
+      fallbackData: initialStatus ?? undefined,
+    },
+  );
 
+  // Translate the SWR snapshot into the existing public surface.
+  const errCategory: RecentAuthError = error?.category ?? null;
+  // session_expired clears status (the session is dead — any cached body is
+  // by definition stale). network errors leave the previous successful
+  // payload in place so the UI can render a retry without losing context.
+  const status: TotpStatus | null = errCategory === "session_expired" ? null : (data ?? null);
+  // `loading` covers both the cold initial fetch (isLoading) and any
+  // explicit refetch / reconnect revalidation (isValidating). The original
+  // hook flipped loading=true → false on every refetch call, so this is the
+  // closest behavioural match.
+  const loading = isLoading || isValidating;
+
+  // refetch is a stable callback. SWR's mutate() with no args revalidates;
+  // we await the returned promise so the caller's await result.refetch()
+  // resolves only after the new data has been written.
   const refetch = useCallback(async (): Promise<void> => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await fetch("/api/auth/factors/totp/status", {
-        credentials: "same-origin",
-        cache: "no-store",
-      });
-      if (res.status === 401) {
-        setError("session_expired");
-        setStatus(null);
-        return;
-      }
-      if (!res.ok) {
-        setError("network");
-        return;
-      }
-      const data = (await res.json()) as TotpStatus;
-      setStatus(data);
-    } catch {
-      setError("network");
-    } finally {
-      setLoading(false);
-    }
-  }, []);
+    await mutate();
+  }, [mutate]);
 
-  useEffect(() => {
-    void refetch();
-    // refetch is stable (useCallback with no deps); the lint rule still
-    // wants it in the dep array.
-  }, [refetch]);
-
-  return { status, loading, error, refetch };
+  return { status, loading, error: errCategory, refetch };
 }

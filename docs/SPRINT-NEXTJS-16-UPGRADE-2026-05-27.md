@@ -184,6 +184,10 @@ Everything that can be done before the bump, so the upgrade itself has the small
 
 All tests are in addition to existing coverage. Twelve files total. Numbers below match the cross-references in Section 4.
 
+> **Phase 1 actuals — see Section 10.** During execution, two changes from this plan were made:
+> - Test 5.3 (Playwright redirect smoke) was deferred to Phase 3 — its highest value is verifying the `middleware.ts` → `proxy.ts` rename wired up, which is a Phase 2 change.
+> - Test 5.10's cross-repo byte-equality was replaced with comprehensive runtime guard tests on the LOCAL `isApiError`. The original would have either broken in CI (filesystem dep on `MMPM_COMPUTE_REPO`) or silently skipped, giving false confidence. The shared-package architecture fix remains the long-term solution (Section 8). A cosmetic prettier-style drift between the two repos was surfaced during this work and documented.
+
 ### Middleware-bypass regression suite (Phase 1.4)
 
 **5.1 `src/middleware.test.ts`** (new file) — exercises `src/middleware.ts` (becomes `src/proxy.ts` post-upgrade — update import path then).
@@ -191,15 +195,15 @@ All tests are in addition to existing coverage. Twelve files total. Numbers belo
 Each case constructs a `NextRequest` and asserts behaviour. With no `mmpm_session` cookie:
 
 - **App Router segment-prefetch bypass shape.** `GET /admin/security` with headers `Next-Router-Prefetch: 1`, `RSC: 1`. Must redirect to `/login?redirect=%2Fadmin%2Fsecurity`. (Not return 200/204 prefetch payload.)
-- **Pages-Router i18n default-locale prefix shape.** `GET /en-US/admin` and `GET /en/admin`. Must redirect. Note: current matcher does NOT list locale-prefixed segments — this test may fail on 15.5.15 and force a matcher hardening fix. **If it fails, fix the matcher in Phase 1, before the upgrade.**
-- **Dynamic-route param injection shape.** `GET /admin/..%2Fpublic`, `GET /admin/%2e%2e/login`, `GET /admin//double-slash`. Must redirect; pathname after normalisation still starts with `/admin`.
+- **Pages-Router i18n default-locale prefix shape.** `GET /en-US/admin` and `GET /en/admin`. **Phase 1 finding:** this codebase does NOT configure i18n in `next.config.ts`, so the CVE shape doesn't apply — `/en-US/admin` resolves to a 404 before reaching the middleware. The tests now pin "passes through middleware (no i18n configured)" with a comment block explaining what to do if i18n is ever added. No matcher change needed today.
+- **Dynamic-route param injection shape.** `GET /admin/..%2Fpublic`, `GET /admin/%2e%2e/login`, `GET /admin//double-slash`. **Phase 1 finding:** `%2e%2e` is normalised by the WHATWG URL parser BELOW the middleware layer — the resulting pathname is `/login`, not `/admin/...`. The test was reframed to pin both the URL-parser normalisation AND the resulting middleware passthrough. The `..%2F` and `//double-slash` variants are NOT normalised and reach middleware as `/admin/...`, where the prefix check catches them.
 - **Prefetch-incomplete-fix follow-up shape.** `POST /admin/anything` with `Next-Action: <fake-id>` header. Must redirect (server-action invocations on protected routes without a session cookie must not execute).
 
 Positive case: each path **with** a non-empty `mmpm_session` cookie value must produce `NextResponse.next()`.
 
 **5.2 `src/middleware.matcher.test.ts`** — snapshot the matcher regex from the `config.matcher` array. This locks the exclusion list against silent edits. Any code review that touches the matcher will then have to acknowledge a snapshot change.
 
-**5.3 `e2e/smoke/middleware-redirects.spec.ts`** — Playwright counterpart. Hit `/admin`, `/dashboard`, `/admin/security/audit` without `storageState`. Assert 307 redirect to `/login?redirect=...`. Catches deployed-build behaviour the unit test can't.
+**5.3 `e2e/smoke/middleware-redirects.spec.ts` (DEFERRED to Phase 3)** — Playwright counterpart. Hit `/admin`, `/dashboard`, `/admin/security/audit` without `storageState`. Assert 307 redirect to `/login?redirect=...`. **Why deferred:** the e2e's unique value is verifying that Next.js actually invokes middleware on these request shapes — a known-yes on 15.5.15 (the unit tests already cover function logic). The failure mode the e2e protects against is "after the `middleware.ts` → `proxy.ts` rename in Phase 2, did Next still wire up the gate?" That's a Phase 3 verification, not a Phase 1 hardening. Write this test as part of Phase 3.
 
 ### Wire-contract tests (Phase 1.3)
 
@@ -217,7 +221,7 @@ All under `src/lib/__tests__/` or alongside the file they pin. All use mocked `f
 
 **5.9 `memory-events-sse.contract.test.ts`** — mocked upstream SSE source. Assert outbound headers (`Accept: text/event-stream`, `Cache-Control: no-cache`), response headers (`Content-Type: text/event-stream`, `Cache-Control: no-cache, no-store, must-revalidate`, `Connection: keep-alive`, `X-Accel-Buffering: no`), and that aborting the inbound request also aborts the upstream.
 
-**5.10 `api-error-envelope.contract.test.ts`** — `isApiError` round-trip test. Read the file `compute/src/types/api-error.ts` at test time, compare byte-for-byte against `src/types/api-error.ts`. Test fails if they drift. (Workaround for the "no monorepo yet" duplication.) Requires the compute folder to be mounted at a known path; gate the test on `process.env.MMPM_COMPUTE_REPO` being set so CI doesn't fail when only one repo is checked out.
+**5.10 `src/types/api-error.contract.test.ts`** — **Reframed in Phase 1.** Original plan: read `compute/src/types/api-error.ts` at test time and compare byte-for-byte. Replaced because a filesystem dependency on a sibling repo either skips silently in CI (false confidence) or breaks if the env-var path is wrong. **New shape:** exhaustive runtime guard tests of the LOCAL `isApiError` — accepts valid envelopes (minimal + fully populated + partial + extras), rejects invalid inputs (null, primitives, arrays, empty, null-proto), rejects each required field missing (parameterised over the four), rejects wrong types for required + optional fields, and explicitly pins the snake_case field names against camelCase substitutes. **Finding:** the two `api-error.ts` files DO differ today — purely cosmetic (single vs double quotes, prettier config divergence), no semantic drift. Recorded as a cleanup follow-up. The architectural fix (shared package) remains in Section 8 out-of-scope.
 
 **5.11 `fetch-cache-defaults.test.ts`** — unit test importing each cache-bearing helper (`computeProxy`, `bridgeClient.call`, the raw fetch sites at `callback/route.ts:61` and `login-verify/route.ts:108`) and asserting the `init` passed to `fetch` contains the expected `cache`/`next` keys. Prevents a future regression where someone deletes `cache: "no-store"` "because v16 makes it the default."
 
@@ -268,7 +272,7 @@ These are real follow-ups but not part of this sprint, to keep the diff bounded:
 - **next-mdx-remote migration** to `@next/mdx` or an actively-maintained fork. The current package was archived 2026-04-09 and works fine under v16; migrate before launch in a separate sprint.
 - **Adapter API adoption.** v16 makes the Adapter API stable. Today we use `output: "standalone"`. The Adapter API is the long-term replacement but adopting it is a deploy-pipeline change, not a code change in this codebase.
 - **Sharing the `ApiError` shape** between repos via a real package (monorepo, internal npm, or workspace). The 5.10 contract test closes the immediate drift risk; the structural fix is its own piece of work.
-- **JWKS hosting.** Confirm where `parametric-memory.dev/.well-known/jwks.json` resolves from. Document or move. Single-grep job; if it surfaces a real architecture gap, file a sprint.
+- ~~**JWKS hosting.** Confirm where `parametric-memory.dev/.well-known/jwks.json` resolves from.~~ **Phase 1 finding: resolved, no gap.** The website serves `/.well-known/jwks.json` from `public/.well-known/jwks.json` (Ed25519 public key, kid `mmpm-snapshot-signing-v1`). The Next.js config emits ACAO + CORS preflight + 5-min cache headers on this path (`next.config.ts:66-75`). Compute's substrate-provisioner passes the URL into every customer substrate as `MMPM_JWKS_URI` (`substrate-provisioner.ts:158, :874`); substrates verify Merkle snapshots against this published key. Architecture is consistent. Test 5.13 (`src/app/__tests__/jwks-public.test.ts`) pins structural validity.
 - **ESLint 10.** Available since Feb 2026 but `eslint-config-next@16` targets 9. Hold.
 - **TypeScript 5.10+ chase.** Not needed for v16.
 
@@ -284,3 +288,49 @@ This document is a plan, not an execution. No code has changed. Phase 1 begins o
 2. Confirm doc location is acceptable — `docs/SPRINT-NEXTJS-16-UPGRADE-2026-05-27.md` follows existing convention.
 3. Confirm the wire-contract tests should land in Phase 1 (so they pass on 15.5.15 first) versus Phase 2 (alongside the upgrade). Phase 1 is recommended.
 4. Confirm the `npx @next/codemod@canary upgrade latest` strategy versus hand-migration. Codemod is recommended for safety + auditability — the diff is large but reviewable.
+
+---
+
+## 10. Phase 1 actuals (2026-05-27 execution log)
+
+Pre-launch status confirmed → Phase 1 executed in a single session on branch `nextjs-16-upgrade` (cut from `web_upgrade` after stripe refactor merged). All Phase 1 work landed on this branch; no commits yet (sprint commits at logical checkpoints, human-only per ground rules).
+
+### Code changes (M2 + M4 mitigations)
+
+- **`src/app/layout.tsx`** — added `data-scroll-behavior="smooth"` on `<html>`. Restores the v15 SPA-transition behaviour that v16 removed. Inline comment cross-references this doc.
+- **`next.config.ts`** — image config: explicit pins on `minimumCacheTTL: 14400` (4h, matches v16 default deliberately), `imageSizes: [16, 32, 48, …]` (keeps 16 for the homepage favicon at width=24), `qualities: [75]` (matches what we render). Inline comment cross-references this doc and the pinning test.
+
+### Tests added (Phase 1 sum: 133 tests across 9 files, all green on 15.5.15)
+
+| File | Tests | Sprint test | Notes |
+|---|---|---|---|
+| `src/app/__tests__/next-config-images-defaults.test.ts` | 5 | 5.12 | Pins each image config value. |
+| `src/middleware.test.ts` | 13 | 5.1 | Bypass regression suite — see refinements in Section 5. |
+| `src/middleware.matcher.test.ts` | 7 | 5.2 | Snapshot + structural pins on the matcher regex. |
+| `src/app/__tests__/jwks-public.test.ts` | 8 | 5.13 | Structural validity of `public/.well-known/jwks.json`. |
+| `src/types/api-error.contract.test.ts` | 25 | 5.10 | Reframed — see Section 5. |
+| `src/lib/fetch-cache-defaults.test.ts` | 8 | 5.11 | Pins `cache: "no-store"` on `computeProxy`, `bridgeClient.call`, `fetchAllAtoms`, and `next: { revalidate: 30 }` on `fetchAtomGraph`. |
+| `src/app/__tests__/session-cookie.contract.test.ts` | 18 | 5.6 | `mmpm_session` + `mmpm_pending_token` `Set-Cookie` byte shape; v16-default-flip guards (Strict / Partitioned absent). |
+| `src/types/compute-responses.contract.test.ts` | 33 | 5.7 + 5.8 | Auth-verify + signup response shape runtime guards. |
+| `src/app/api/memory/events/route.contract.test.ts` | 16 | 5.9 | SSE proxy wire contract — outbound headers, signal propagation, response headers, error paths. |
+
+### Tests NOT YET written (intentional deferrals)
+
+- **Test 5.3** — Playwright e2e middleware-redirect smoke. Deferred to Phase 3 because its highest-value scenario is verifying the `middleware.ts` → `proxy.ts` rename wired up correctly.
+- **Tests 5.4 + 5.5** — full HMAC bridge golden-file contract test and compute-proxy contract extension. The existing `compute-bridge-signed.test.ts` + `compute-bridge-signed.security.test.ts` + `compute-proxy.test.ts` files (pre-existing) already cover wire-format correctness; the gap that 5.4/5.5 would close is "exact bytes" pinning, which is incremental hardening rather than a regression net. Can be added as polish during Phase 2 if time permits, or deferred to a separate cleanup sprint.
+
+### Other Phase 1 work
+
+- **Turbopack dry-run on 15.5.15:** `npx next build --turbopack` succeeded cleanly. The v16 default-bundler switch is safe; we will not be debugging Turbopack issues compounded with v16 changes.
+- **`caniuse-lite` refresh:** 1.0.30001778 → 1.0.30001793. "No target browser changes" — CSS output won't shift; the database is just fresher for upcoming builds.
+
+### Findings surfaced during Phase 1 (not in the original plan)
+
+- **URL normalisation defeats `%2e%2e` injection at the platform layer.** The WHATWG URL parser collapses encoded dot-segments before middleware sees them. Test 5.1 case 3a was reframed from "middleware redirects this" to "URL parser normalises this; middleware correctly passes through the resulting `/login`." Documented in `src/middleware.test.ts` with rationale.
+- **i18n CVE shape (test 5.1 case 2) does not apply to this codebase today.** No i18n config in `next.config.ts`, so `/en-US/admin` resolves to a 404. Tests now pin "passes through middleware" with an inline comment block telling future engineers what to do if i18n is ever added.
+- **`api-error.ts` cosmetic drift between repos.** The website uses double quotes, compute uses single quotes — prettier configs diverged. No semantic drift. Cleanup is a follow-up; the shared-package fix in Section 8 is the long-term answer.
+- **JWKS architecture confirmed and documented** (see Section 8 entry).
+
+### Phase 1 exit gate
+
+Phase 1 is done when `npm run preflight` is fully green on 15.5.15. That run is the next action item — Step 16 of the execution log.

@@ -274,13 +274,24 @@ export function PricingCTA({
       )}
 
       {/* Embedded Checkout drawer — sprint 2026-05-18 D3. Mounted whenever
-          drawerOpen=true; closes on backdrop, Esc, or × inside the drawer. */}
-      <CheckoutDrawer
-        open={drawerOpen}
-        onClose={() => setDrawerOpen(false)}
-        tierId={tierId}
-        tierName={tierName}
-      />
+          drawerOpen=true; closes on backdrop, Esc, or × inside the drawer.
+
+          RC-07 (react-compiler-readiness, 2026-05-27): render conditionally
+          so the Stripe Embedded Checkout iframe mounts fresh on every
+          open. The drawer previously stayed mounted and reset its error
+          state via useEffect on `open` — that tripped set-state-in-effect.
+          Stripe Embedded Checkout's clientSecret is fetched lazily by
+          <EmbeddedCheckoutProvider>'s `fetchClientSecret` callback (bound
+          per-mount), so a fresh mount means a fresh checkout session — the
+          exact behaviour we want on each user-initiated open. */}
+      {drawerOpen && (
+        <CheckoutDrawer
+          open={drawerOpen}
+          onClose={() => setDrawerOpen(false)}
+          tierId={tierId}
+          tierName={tierName}
+        />
+      )}
     </div>
   );
 }

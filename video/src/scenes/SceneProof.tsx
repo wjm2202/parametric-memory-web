@@ -1,6 +1,6 @@
 /** Scene 4 — THE PROOF (8s) — Merkle verification + stats */
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import { C } from "../MMPMVideo";
 
 const PROOF_STATS = [
@@ -10,19 +10,8 @@ const PROOF_STATS = [
   { v: "Zero", l: "shared infrastructure", color: C.green },
 ];
 
-const HASH_NODES = [
-  { label: "⬡ Root Hash · f3a2b9c1", level: 0, active: true, root: true, delay: 30 },
-  { label: "Shard A · 8d4f", level: 1, active: true, delay: 50 },
-  { label: "Shard B · 2c91", level: 1, active: true, delay: 60 },
-  { label: "atom.001", level: 2, active: false, delay: 75 },
-  { label: "atom.002", level: 2, active: true, delay: 80 },
-  { label: "atom.003", level: 2, active: false, delay: 85 },
-  { label: "atom.004", level: 2, active: true, delay: 90 },
-];
-
 export const SceneProof: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
   const leftOpacity = interpolate(frame, [0, 30], [0, 1], { extrapolateRight: "clamp" });
 

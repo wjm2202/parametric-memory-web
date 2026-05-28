@@ -11,6 +11,7 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor } from "@testing-library/react";
+import { SWRConfig } from "swr";
 import AdminClient from "./AdminClient";
 import { IDLE_TIER_CHANGE, type TierChangePollResult } from "@/hooks/useTierChangePoll";
 import type { CurrentTierLimits } from "./ChangePlanSheet";
@@ -186,12 +187,19 @@ function stubFetch() {
 
 function renderAdmin(substrateOverrides: Partial<Record<string, unknown>> = {}) {
   const substrate = makeSubstrate(substrateOverrides);
+  // RC-02 (react-compiler-readiness, 2026-05-27): wrap every render in a
+  // fresh SWRConfig provider so tests can't leak each other's cached
+  // billing-status responses. SWR's default cache is module-global, which
+  // would let test N see N-1's resolved data and skip the fetch. A new
+  // Map() per render + dedupingInterval: 0 keeps every test deterministic.
   return render(
-    <AdminClient
-      account={baseAccount}
-      slug={substrate.slug as string}
-      initialSubstrate={substrate as Parameters<typeof AdminClient>[0]["initialSubstrate"]}
-    />,
+    <SWRConfig value={{ provider: () => new Map(), dedupingInterval: 0 }}>
+      <AdminClient
+        account={baseAccount}
+        slug={substrate.slug as string}
+        initialSubstrate={substrate as Parameters<typeof AdminClient>[0]["initialSubstrate"]}
+      />
+    </SWRConfig>,
   );
 }
 

@@ -1,6 +1,6 @@
 /** Scene 2 — THE SUBSTRATE (8s) */
 import React from "react";
-import { AbsoluteFill, useCurrentFrame, useVideoConfig, interpolate, spring } from "remotion";
+import { AbsoluteFill, useCurrentFrame, interpolate } from "remotion";
 import { C } from "../MMPMVideo";
 
 const STATS = [
@@ -12,7 +12,6 @@ const STATS = [
 
 export const SceneSubstrate: React.FC = () => {
   const frame = useCurrentFrame();
-  const { fps } = useVideoConfig();
 
   const headingOpacity = interpolate(frame, [15, 45], [0, 1], { extrapolateRight: "clamp" });
   const headingY = interpolate(frame, [15, 45], [30, 0], { extrapolateRight: "clamp" });

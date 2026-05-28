@@ -70,7 +70,7 @@ export const SceneClose: React.FC = () => {
           transform: `translateY(${headingY}px)`,
         }}
       >
-        Your AI's second brain.
+        Your AI&apos;s second brain.
         <br />
         <span
           style={{
@@ -96,7 +96,7 @@ export const SceneClose: React.FC = () => {
       >
         Dedicated substrate · Cryptographic proofs · Markov prediction
         <br />
-        Your own Merkle tree — not a row in someone else's database.
+        Your own Merkle tree — not a row in someone else&apos;s database.
       </p>
 
       {/* CTA button */}

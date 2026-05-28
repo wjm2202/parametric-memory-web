@@ -476,7 +476,8 @@ describe("SPRINT-11.M5 — opt-in validate? predicate", () => {
     // against `T` would always fail and obscure the real error code.
     // Pin the contract: validate runs only on success.
     let validateCalls = 0;
-    const isExpected = (_: unknown): _ is { foo: string } => {
+    const isExpected = (x: unknown): x is { foo: string } => {
+      void x;
       validateCalls += 1;
       return false;
     };

@@ -170,7 +170,6 @@ describe("V3.4 — success-greeting sentence", () => {
     // DOCUMENT_POSITION_FOLLOWING (4) means `summary` comes AFTER `greeting`
     // in source order — i.e. greeting is above summary in the rendered hero.
     const relation = greeting.compareDocumentPosition(summary);
-    // eslint-disable-next-line no-bitwise
     expect(relation & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

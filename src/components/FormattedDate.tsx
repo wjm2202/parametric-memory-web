@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo } from "react";
+import { useHasHydrated } from "@/hooks/useHasHydrated";
 
 export interface FormattedDateProps {
   /** ISO 8601 string, epoch milliseconds, or Date instance. */
@@ -38,15 +39,17 @@ const FORMATS: Record<NonNullable<FormattedDateProps["mode"]>, Intl.DateTimeForm
  * OAuth login lands the user on /admin which renders billing renewal and
  * substrate cancel dates — both with no locale arg.
  *
- * Strategy — SSR an ISO calendar date, upgrade post-mount
- * ───────────────────────────────────────────────────────
+ * Strategy — SSR an ISO calendar date, upgrade post-hydration
+ * ───────────────────────────────────────────────────────────
  *   1. Server-side render and the FIRST client render both produce the
  *      same locale-independent placeholder: "2026-05-22" (ISO 8601
  *      calendar date, sliced from `Date.prototype.toISOString()`). Both
  *      runtimes emit identical bytes for this — Node's `toISOString`
- *      and the browser's are byte-stable.
- *   2. After hydration commits, the `useEffect` below fires and replaces
- *      the placeholder with the visitor's locale-formatted string via
+ *      and the browser's are byte-stable. `useHasHydrated()` returns
+ *      `false` on both runs, so the placeholder branch is taken.
+ *   2. After hydration commits, `useHasHydrated()` flips to `true` via
+ *      `useSyncExternalStore`, React schedules a re-render, and the
+ *      derived text becomes the visitor's locale-formatted string via
  *      `toLocaleDateString(undefined, ...)`. Passing `undefined` defers
  *      to `navigator.language`, so a German visitor sees "22. Mai 2026",
  *      a French visitor sees "22 mai 2026", a NZ visitor sees
@@ -58,6 +61,16 @@ const FORMATS: Record<NonNullable<FormattedDateProps["mode"]>, Intl.DateTimeForm
  *      step is to read `Accept-Language` server-side and pass the
  *      negotiated locale to this component as a prop — same shape, no
  *      caller changes needed.
+ *
+ * React-Compiler note
+ * ───────────────────
+ * The previous implementation used `useState(placeholder)` plus a
+ * `useEffect` that called `setText(localised)`. That tripped the
+ * react-compiler readiness rule against set-state-in-effect — the
+ * effect did nothing the render function couldn't do, given a stable
+ * "have we hydrated" signal. `useHasHydrated()` provides that signal as
+ * a `useSyncExternalStore` snapshot, so `text` is now pure derived
+ * data: no state, no effect.
  *
  * Semantic markup
  * ───────────────
@@ -78,13 +91,12 @@ export function FormattedDate({ iso, mode = "date" }: FormattedDateProps) {
   const isoTimestamp = useMemo(() => date.toISOString(), [date]);
   const isoCalendarDate = useMemo(() => isoTimestamp.slice(0, 10), [isoTimestamp]);
 
-  // First render (server + initial client) emits the same calendar date.
-  // useEffect upgrades to the visitor's locale after hydration commits.
-  const [text, setText] = useState<string>(isoCalendarDate);
-
-  useEffect(() => {
-    setText(date.toLocaleDateString(undefined, FORMATS[mode]));
-  }, [date, mode]);
+  // RC-08 (react-compiler-readiness, 2026-05-27): derived from a stable
+  // hydration signal instead of useState + setState-in-effect. SSR and
+  // first client paint both see hasHydrated=false → identical bytes,
+  // then post-hydration `text` upgrades to the visitor's locale.
+  const hasHydrated = useHasHydrated();
+  const text = hasHydrated ? date.toLocaleDateString(undefined, FORMATS[mode]) : isoCalendarDate;
 
   return <time dateTime={isoTimestamp}>{text}</time>;
 }

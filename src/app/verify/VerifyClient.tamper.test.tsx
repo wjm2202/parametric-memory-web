@@ -24,12 +24,11 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, within, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import VerifyClient, {
   tamperFlipMasterBit,
   tamperMutateAtom,
   tamperDropAuditEntry,
-  type TamperMode,
 } from "./VerifyClient";
 import type { SnapshotV1 } from "./verifier";
 
@@ -291,11 +290,9 @@ describe("V2.1 — TamperControls inside VerifyClient (integration)", () => {
     // the receiver in source order. We assert: publicKeys precedes tamper,
     // and tamper precedes formatVersion. Bitwise check is the standard
     // testing-library / DOM API idiom for this.
-    // eslint-disable-next-line no-bitwise
     expect(
       publicKeysHeading.compareDocumentPosition(tamper) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();
-    // eslint-disable-next-line no-bitwise
     expect(
       tamper.compareDocumentPosition(formatVersionCheckCard) & Node.DOCUMENT_POSITION_FOLLOWING,
     ).toBeTruthy();

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback, useMemo, useRef } from "react";
+import useSWR from "swr";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
@@ -78,6 +79,23 @@ interface AdminBillingStatus {
   tier: string;
   status: string;
   renewalDate: string | null;
+}
+
+/**
+ * SWR fetcher for /api/billing/status. Silent-fail behaviour preserved
+ * from the pre-SWR implementation: any non-2xx or network failure
+ * resolves to `null` so the UI falls back to `substrate.tier`. The hook
+ * never surfaces an error to the user — billing status is auxiliary
+ * (the substrate tier is the canonical source until it loads).
+ */
+async function fetchAdminBillingStatus(url: string): Promise<AdminBillingStatus | null> {
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    return (await res.json()) as AdminBillingStatus;
+  } catch {
+    return null;
+  }
 }
 
 interface AdminClientProps {
@@ -166,7 +184,22 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   const searchParams = useSearchParams();
   const [loggingOut, setLoggingOut] = useState(false);
   const [substrate, setSubstrate] = useState<SubstrateInfo | null>(initialSubstrate);
-  const [billingStatus, setBillingStatus] = useState<AdminBillingStatus | null>(null);
+  // RC-02 (react-compiler-readiness, 2026-05-27): SWR replaces the
+  // previous useState + useCallback + useEffect triad. The on-mount
+  // fetch lives inside SWR's internal subscription, so the call site
+  // has no `setState` in any effect of ours. `data ?? null` keeps the
+  // downstream `billingStatus` shape (`AdminBillingStatus | null`)
+  // unchanged for the dozens of read sites below.
+  const { data: billingStatusData } = useSWR<AdminBillingStatus | null>(
+    `/api/billing/status?slug=${slug}`,
+    fetchAdminBillingStatus,
+    {
+      revalidateOnFocus: false,
+      revalidateOnReconnect: true,
+      shouldRetryOnError: false,
+    },
+  );
+  const billingStatus: AdminBillingStatus | null = billingStatusData ?? null;
   const [rotationStatus, setRotationStatus] = useState<RotationStatus>("none");
   // F6: capture errorMessage from /api/substrates/[slug]/key-rotation/status
   // so the user sees *why* a rotation failed + can restart it.
@@ -208,11 +241,19 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   // Next billing date is driven off billingStatus.renewalDate when it's set.
   // The dialog uses it for "…then $29/mo on May 17"; if we don't have it yet,
   // the dialog renders a generic "on your next billing date" fallback.
+  //
+  // RC-01 (react-compiler-readiness, 2026-05-27): hoist the optional chain
+  // into a const so the compiler's inferred dep (`renewalDate`) matches the
+  // dev-specified dep array. Previously the dep was `billingStatus?.renewalDate`
+  // while the compiler inferred `billingStatus`, which bailed out of the memo
+  // optimisation. The semantics are identical (only the date matters), but
+  // now the compiler can preserve the manual memoization.
+  const renewalDate = billingStatus?.renewalDate;
   const nextBillingDate: Date | null = useMemo(() => {
-    if (!billingStatus?.renewalDate) return null;
-    const d = new Date(billingStatus.renewalDate);
+    if (!renewalDate) return null;
+    const d = new Date(renewalDate);
     return Number.isNaN(d.getTime()) ? null : d;
-  }, [billingStatus?.renewalDate]);
+  }, [renewalDate]);
 
   // Fetch substrate details
   const fetchSubstrate = useCallback(async () => {
@@ -229,18 +270,13 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
     }
   }, [slug]);
 
-  // Fetch billing status
-  const fetchBillingStatus = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/billing/status?slug=${slug}`);
-      if (res.ok) {
-        const data = await res.json();
-        setBillingStatus(data);
-      }
-    } catch {
-      // Silent fail
-    }
-  }, [slug]);
+  // RC-02 (react-compiler-readiness, 2026-05-27): the bespoke
+  // `fetchBillingStatus` useCallback + its on-mount useEffect (formerly
+  // L318-320) are gone — SWR owns the lifecycle now (see the useSWR
+  // call above). If a caller ever needs to force a billing refresh
+  // (e.g. immediately after a tier-change completion), use SWR's
+  // global `mutate('/api/billing/status?slug=<slug>')` — no caller
+  // does today, so we don't expose a wrapper.
 
   // Poll substrate during provisioning
   useEffect(() => {
@@ -307,9 +343,8 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
     }
   }, [keyRotating, showKeyReveal]);
 
-  useEffect(() => {
-    fetchBillingStatus();
-  }, [fetchBillingStatus]);
+  // (RC-02) the previous `useEffect(() => { fetchBillingStatus(); }, [fetchBillingStatus])`
+  // was removed in the same sprint — SWR's on-mount fetch above replaces it.
 
   // Handle ?upgrade=pending | ?upgrade=cancelled, the two query params Stripe
   // Checkout bounces the customer back with. We fire one toast then strip the

@@ -6,6 +6,25 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   images: {
     formats: ["image/avif", "image/webp"],
+    // ── Locked explicitly for Next 16 forward-compat (Sprint 2026-05-27) ──
+    // The following three values are silently flipped by Next.js 16. Pinning
+    // them here makes the defaults visible in source, prevents an invisible
+    // behaviour change on upgrade, and gives reviewers a single place to
+    // adjust them deliberately. See M2 in
+    // docs/SPRINT-NEXTJS-16-UPGRADE-2026-05-27.md and the regression test at
+    // src/app/__tests__/next-config-images-defaults.test.ts.
+    //
+    // minimumCacheTTL: 60s (v15 default) → 14400s/4h (v16 default).
+    //   We accept v16's 4h — blog cover images + favicons rarely change and
+    //   refreshing the optimizer cache every minute is wasteful.
+    minimumCacheTTL: 14400,
+    // imageSizes: [16, 32, ...] (v15) → 16 removed (v16). We keep 16 because
+    //   the homepage favicon at src/app/page.tsx:178 renders at width=24,
+    //   and 16 is the closest size below the deviceSizes floor.
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
+    // qualities: unrestricted (v15) → [75] only (v16). Neither <Image> site
+    //   currently passes `quality`, so 75 is what we render. Explicit lock.
+    qualities: [75],
   },
   headers: async () => [
     {

@@ -2,4 +2,6 @@
 // This file is intentionally empty — kept only as a placeholder.
 // See: src/app/globals.css for all theme tokens.
 
-export default {};
+const tailwindConfig = {};
+
+export default tailwindConfig;

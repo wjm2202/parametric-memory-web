@@ -96,14 +96,24 @@ export function ChangePlanButton({
         {label}
       </button>
 
-      <ChangePlanSheet
-        open={open}
-        onClose={() => setOpen(false)}
-        substrateSlug={substrateSlug}
-        currentTier={currentTier}
-        currentLimits={currentLimits}
-        nextBillingDate={nextBillingDate}
-      />
+      {/* RC-03 (react-compiler-readiness, 2026-05-27): render the sheet
+          conditionally so close = unmount and a fresh open mounts with
+          default state. Previously the sheet stayed mounted and reset
+          its state via a useEffect on `open`, which tripped the
+          set-state-in-effect rule. The `open` prop is still passed for
+          the brief window where mount happens before unmount (avoids
+          flickering during transition) — the sheet's own `if (!open)
+          return null` plus this conditional are belt-and-braces. */}
+      {open && (
+        <ChangePlanSheet
+          open={open}
+          onClose={() => setOpen(false)}
+          substrateSlug={substrateSlug}
+          currentTier={currentTier}
+          currentLimits={currentLimits}
+          nextBillingDate={nextBillingDate}
+        />
+      )}
     </>
   );
 }

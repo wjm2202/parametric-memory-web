@@ -331,6 +331,14 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html
       lang="en"
+      // ── Next 16 forward-compat (Sprint nextjs-16-upgrade, 2026-05-27) ───
+      // In v15 Next.js auto-overrode `scroll-behavior: smooth` to `auto`
+      // during SPA route transitions. v16 removes that auto-override; this
+      // data attribute restores the v15 behaviour. Without it, every internal
+      // navigation smooth-scrolls (visible delay on long pages).
+      // See globals.css:70 for the `scroll-behavior: smooth` rule, and the
+      // M4 row in docs/SPRINT-NEXTJS-16-UPGRADE-2026-05-27.md.
+      data-scroll-behavior="smooth"
       className={`dark ${syne.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
       <head>

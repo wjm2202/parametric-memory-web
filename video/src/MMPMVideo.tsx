@@ -13,15 +13,7 @@
  */
 
 import React from "react";
-import {
-  AbsoluteFill,
-  Sequence,
-  useCurrentFrame,
-  useVideoConfig,
-  interpolate,
-  spring,
-  Easing,
-} from "remotion";
+import { AbsoluteFill, useCurrentFrame } from "remotion";
 import { TransitionSeries, linearTiming } from "@remotion/transitions";
 import { fade } from "@remotion/transitions/fade";
 

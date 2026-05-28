@@ -12,11 +12,31 @@
  * Persistent badge is a sibling component (CancelPendingBadge); both
  * render concurrently when `cancelAt` is set. The dismissal here only
  * hides the banner — the badge stays visible while cancel-pending.
+ *
+ * React-Compiler note (RC-06, 2026-05-27)
+ * ───────────────────────────────────────
+ * The previous shape was `useState(false)` + `useEffect` that read
+ * localStorage and called `setVisible(true)` when the dismissal flag was
+ * absent. That tripped `react-hooks/set-state-in-effect` — the effect
+ * exists only to bridge "external system → React state," which is the
+ * exact use case `useSyncExternalStore` covers.
+ *
+ * The localStorage helpers below are module-scoped so a single
+ * subscription registry is shared across all CancelPendingBanner
+ * instances. The `dismiss()` event handler writes the key and then
+ * notifies listeners — every mounted instance reading the same key
+ * re-renders with the new snapshot.
+ *
+ * Private-browsing fallback: when localStorage throws (denied / quota /
+ * unavailable), the snapshot returns the `UNAVAILABLE_SENTINEL` and the
+ * banner shows. The dismiss handler in that branch flips a session-only
+ * state flag so the user still gets the "hide for now" affordance within
+ * the current page lifetime, even though it can't survive a reload.
  */
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useState, useSyncExternalStore } from "react";
 
 interface Props {
   /** Substrate id — used to key the localStorage dismissal flag. */
@@ -42,31 +62,87 @@ function dismissKey(substrateId: string): string {
   return `mmpm-cancel-banner-dismissed:${substrateId}:${todayBucket()}`;
 }
 
+// ── External store: localStorage subscription ────────────────────────────────
+//
+// React's `useSyncExternalStore` requires three callables (subscribe,
+// getSnapshot, getServerSnapshot). Defined at module scope so identity is
+// stable across renders — re-creating them inside the component would defeat
+// React's reuse of the internal subscription.
+
+/** Sentinel returned during SSR / hydration so server and client agree. */
+const SSR_SENTINEL = "__ssr";
+/** Sentinel returned when localStorage throws (private browsing / quota). */
+const UNAVAILABLE_SENTINEL = "__unavailable";
+
+const localStorageListeners = new Map<string, Set<() => void>>();
+
+function subscribeToLocalStorageKey(key: string, notify: () => void): () => void {
+  let set = localStorageListeners.get(key);
+  if (!set) {
+    set = new Set();
+    localStorageListeners.set(key, set);
+  }
+  set.add(notify);
+  return () => {
+    set?.delete(notify);
+    if (set && set.size === 0) localStorageListeners.delete(key);
+  };
+}
+
+function notifyLocalStorageKey(key: string): void {
+  localStorageListeners.get(key)?.forEach((n) => n());
+}
+
+function getLocalStorageSnapshot(key: string): string | null {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return UNAVAILABLE_SENTINEL;
+  }
+}
+
+function getLocalStorageServerSnapshot(): string {
+  return SSR_SENTINEL;
+}
+
 export function CancelPendingBanner({ substrateId, endsOn, slug, onReactivated }: Props) {
-  // Default to hidden during SSR so the markup matches before localStorage
-  // is read. The effect below flips it on if not dismissed today.
-  const [visible, setVisible] = useState(false);
+  // The key bucket depends on today's date. Re-computed each render — cheap
+  // (single Date allocation) and avoids stale keys if the day rolls over
+  // mid-session. The subscription re-keys when the result changes.
+  const key = dismissKey(substrateId);
+
+  const subscribe = useCallback(
+    (notify: () => void) => subscribeToLocalStorageKey(key, notify),
+    [key],
+  );
+  const getSnapshot = useCallback(() => getLocalStorageSnapshot(key), [key]);
+  const flag = useSyncExternalStore(subscribe, getSnapshot, getLocalStorageServerSnapshot);
+
+  // Session-only fallback for the private-browsing case. Set by `dismiss()`
+  // when `localStorage.setItem` throws — keeps the banner hidden for the
+  // remainder of the page lifetime even though we can't persist.
+  const [sessionDismissed, setSessionDismissed] = useState(false);
+
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    try {
-      const dismissed = window.localStorage.getItem(dismissKey(substrateId));
-      if (!dismissed) setVisible(true);
-    } catch {
-      // localStorage unavailable (private browsing). Show by default —
-      // the banner is non-blocking and the user can still click ×.
-      setVisible(true);
-    }
-  }, [substrateId]);
+  // Banner visibility derived purely from the external snapshot + session
+  // fallback. No setState-in-effect.
+  //   SSR / first paint  → hidden (SSR_SENTINEL)
+  //   localStorage blocked → visible (unless session-dismissed)
+  //   key present ("1")  → hidden (dismissed today)
+  //   key absent (null)  → visible
+  const visible = flag !== SSR_SENTINEL && flag !== "1" && !sessionDismissed;
 
   function dismiss() {
     try {
-      window.localStorage.setItem(dismissKey(substrateId), "1");
+      window.localStorage.setItem(key, "1");
+      notifyLocalStorageKey(key);
     } catch {
-      // ignore — see effect above
+      // localStorage unavailable — fall back to session-local hide so the
+      // user still gets a working dismiss button this session.
+      setSessionDismissed(true);
     }
-    setVisible(false);
   }
 
   async function handleReactivate() {

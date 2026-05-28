@@ -132,8 +132,17 @@ export function useTierChangePoll(
     mountedRef.current = true;
     clearTimer();
 
+    // RC-16 (react-compiler-readiness, 2026-05-27): no `setResult(IDLE)` in
+    // this branch. The previous shape called setState here to clear stale
+    // poll data when `slug` flipped to null/empty, which tripped the
+    // `react-hooks/set-state-in-effect` rule. The derived return at the
+    // bottom of the hook (`slug ? result : IDLE_TIER_CHANGE`) covers the
+    // same UX requirement — consumers see IDLE whenever they ask the
+    // hook for a falsy slug — without any setState during render or in
+    // an effect. The internal `result` state may retain its last polled
+    // value across a slug→null→slug cycle, but consumers never observe
+    // it because the gate at the return statement masks it.
     if (!slug) {
-      setResult(IDLE_TIER_CHANGE);
       return () => {
         mountedRef.current = false;
         clearTimer();
@@ -166,5 +175,7 @@ export function useTierChangePoll(
     };
   }, [slug, intervalMs, doFetch, clearTimer]);
 
-  return result;
+  // RC-16: derive IDLE for the !slug case at the consumer boundary instead
+  // of setting it via setState inside the effect.
+  return slug ? result : IDLE_TIER_CHANGE;
 }

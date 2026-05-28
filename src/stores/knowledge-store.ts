@@ -10,7 +10,7 @@
  * reads happen directly from node objects inside useFrame.
  */
 import { create } from "zustand";
-import type { AtomType, AtomDetailResponse, StructuralEdgeType } from "@/types/memory";
+import type { AtomType, StructuralEdgeType } from "@/types/memory";
 import { parseAtomType } from "@/types/memory";
 import * as THREE from "three";
 
@@ -123,8 +123,6 @@ interface KnowledgeState {
   hoveredAtom: string | null;
   /** Last search query string */
   searchQuery: string;
-  /** Cached full atom details (avoids re-fetching on re-select) */
-  cachedDetails: Map<string, AtomDetailResponse>;
   /**
    * Atoms that were direct matches in the last search query.
    * Used by GraphNodes to highlight seed atoms with a distinct colour + pulse.
@@ -234,9 +232,6 @@ interface KnowledgeState {
    */
   setVisibleAtoms: (keys: string[] | null) => void;
 
-  /** Store a fetched AtomDetailResponse for the side panel */
-  cacheDetail: (key: string, detail: AtomDetailResponse) => void;
-
   /** Sprint 5.5: Switch between semantic and provenance layout modes */
   setLayoutMode: (mode: LayoutMode) => void;
 
@@ -259,7 +254,6 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
   selectedAtom: null,
   hoveredAtom: null,
   searchQuery: "",
-  cachedDetails: new Map(),
   searchHits: new Set(),
   visibleAtoms: null,
   layoutMode: "semantic",
@@ -447,21 +441,9 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
 
   setBridgeAtom: (key) => set({ bridgeAtom: key }),
 
-  /**
-   * KG-16: LRU cap at 50 entries — evicts oldest on overflow.
-   * Prevents unbounded Map growth from side-panel atom clicks.
-   */
-  cacheDetail: (key, detail) => {
-    set((s) => {
-      const next = new Map(s.cachedDetails);
-      next.set(key, detail);
-      if (next.size > 50) {
-        const firstKey = next.keys().next().value;
-        if (firstKey !== undefined) next.delete(firstKey);
-      }
-      return { cachedDetails: next };
-    });
-  },
+  // KG-16 cacheDetail / cachedDetails were removed (RC-18, 2026-05-27)
+  // when SidePanel migrated to SWR. SWR's built-in cache provides the
+  // re-select memoisation; the bespoke LRU cap was redundant.
 
   reset: () =>
     set({
@@ -473,7 +455,6 @@ export const useKnowledgeStore = create<KnowledgeState>((set, get) => ({
       selectedAtom: null,
       hoveredAtom: null,
       searchQuery: "",
-      cachedDetails: new Map(),
       searchHits: new Set(),
       visibleAtoms: null,
       layoutMode: "semantic",

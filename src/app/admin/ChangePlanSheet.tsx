@@ -22,6 +22,7 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import useSWR from "swr";
 import {
   DEDICATED_MIGRATION_WARNING_BODY,
   DEDICATED_MIGRATION_WARNING_TITLE,
@@ -102,6 +103,44 @@ type FetchState =
   | { kind: "ready"; options: UpgradeOption[] }
   | { kind: "error" };
 
+/**
+ * Module-level monotonic counter — assigns each ChangePlanSheet instance a
+ * unique mount sequence number. The number flows into the SWR key as part
+ * of an array tuple so a second open of the sheet (even within SWR's
+ * dedupe window and even with cached data for the same URL) ALWAYS hits a
+ * fresh cache entry and therefore triggers a fresh fetch. Without this
+ * salt, a user reopening the sheet would see whatever options were cached
+ * from the previous open — possibly stale prices or availability.
+ *
+ * Increment-on-read inside useState's lazy initializer is the
+ * React-Compiler-safe pattern (useState initializer runs once per mount).
+ */
+let changePlanSheetMountSeq = 0;
+
+/**
+ * SWR fetcher for the upgrade-options endpoint. Validates the response
+ * shape inline — a 200 with a body missing `options[]` is just as broken
+ * as a 500, so we treat both as the same `{ kind: "error" }` UI state.
+ *
+ * Throws on any failure mode; SWR forwards the throw to `error`, which
+ * the call site translates to the `FetchState` union.
+ *
+ * Tuple-key shape: `[url, mountSeq]`. We destructure the URL and discard
+ * the salt — the salt is only there to make the SWR cache key unique per
+ * mount.
+ */
+async function fetchUpgradeOptions([url]: readonly [string, number]): Promise<UpgradeOption[]> {
+  const res = await fetch(url, { cache: "no-store" });
+  if (!res.ok) {
+    throw new Error(`upgrade-options HTTP ${res.status}`);
+  }
+  const body = (await res.json()) as Partial<UpgradeOptionsResponse>;
+  if (!body || !Array.isArray(body.options)) {
+    throw new Error("upgrade-options response missing options array");
+  }
+  return body.options;
+}
+
 export function ChangePlanSheet({
   open,
   onClose,
@@ -111,54 +150,70 @@ export function ChangePlanSheet({
   nextBillingDate,
   isCancelPending = false,
 }: Props) {
-  const [fetchState, setFetchState] = useState<FetchState>({ kind: "idle" });
   const [selectedOption, setSelectedOption] = useState<UpgradeOption | null>(null);
 
   // ── Fetch on open ────────────────────────────────────────────────────────
   //
-  // Race guard: if the user closes the sheet before the fetch resolves (or
-  // reopens it quickly), the in-flight promise must not clobber the next
-  // state. The useEffect cleanup flag flips when open transitions true→false
-  // or when the effect re-runs for any other reason.
-  useEffect(() => {
-    if (!open) {
-      // Reset to idle on close so the next open shows a fresh loading state.
-      setFetchState({ kind: "idle" });
-      setSelectedOption(null);
-      return;
-    }
+  // RC-17 (react-compiler-readiness, 2026-05-27): SWR replaces the
+  // previous useState<FetchState> + useEffect-with-cancellation triad.
+  // The on-open / on-slug-change fetch lives inside SWR's internal
+  // subscription, so the call site has no `setState` in any effect of
+  // ours.
+  //
+  // Key gating: when `open` is false the key is `null`, which SWR treats
+  // as "don't fetch." Re-opening flips the key back to the URL and a
+  // mount-style fetch runs immediately (dedupingInterval: 0 means the
+  // cached payload from the previous open doesn't suppress the new
+  // request — every reopen is a fresh look at the available plans).
+  //
+  // Race guard: SWR ignores fetcher resolutions for keys that have
+  // changed since the request was issued. So if the sheet closes
+  // (open → false → key → null) while a fetch is in flight, the
+  // resolution updates SWR's cache for the old URL key but does NOT
+  // touch this hook instance's `data` (now tracking the null key). The
+  // existing `if (!open) return null` further down covers the render
+  // side. The pre-SWR `cancelled` flag is no longer needed.
+  //
+  // RC-03 (react-compiler-readiness, 2026-05-27, prior): the previous
+  // "reset to idle on close" branch was removed. The parent
+  // (ChangePlanButton) now renders the sheet conditionally with
+  // {open && ...}, so close means unmount and the next open mounts with
+  // fresh defaults. The reset-in-effect is structurally unnecessary.
+  // useState's lazy initializer runs exactly once per component instance —
+  // i.e., once per mount. The salt persists across re-renders of the same
+  // instance (so a render triggered by, say, selectedOption changing
+  // doesn't re-fetch) but resets on unmount/remount (so reopening the
+  // sheet ALWAYS triggers a fresh fetch).
+  const [mountSeq] = useState(() => ++changePlanSheetMountSeq);
 
-    let cancelled = false;
-    setFetchState({ kind: "loading" });
+  const upgradeOptionsKey: readonly [string, number] | null = open
+    ? ([
+        `/api/billing/upgrade-options?substrateSlug=${encodeURIComponent(substrateSlug)}`,
+        mountSeq,
+      ] as const)
+    : null;
+  const { data: upgradeOptions, error: upgradeOptionsError } = useSWR<UpgradeOption[]>(
+    upgradeOptionsKey,
+    fetchUpgradeOptions,
+    {
+      // The mount-seq salt above makes every reopen a unique key, so the
+      // dedupe window is irrelevant. Focus/reconnect revalidations stay
+      // off — the sheet is short-lived and we don't want extra traffic.
+      revalidateOnFocus: false,
+      revalidateOnReconnect: false,
+      shouldRetryOnError: false,
+    },
+  );
 
-    (async () => {
-      try {
-        const res = await fetch(
-          `/api/billing/upgrade-options?substrateSlug=${encodeURIComponent(substrateSlug)}`,
-          { cache: "no-store" },
-        );
-        if (cancelled) return;
-        if (!res.ok) {
-          setFetchState({ kind: "error" });
-          return;
-        }
-        const body = (await res.json()) as Partial<UpgradeOptionsResponse>;
-        if (cancelled) return;
-        if (!body || !Array.isArray(body.options)) {
-          setFetchState({ kind: "error" });
-          return;
-        }
-        setFetchState({ kind: "ready", options: body.options });
-      } catch {
-        if (cancelled) return;
-        setFetchState({ kind: "error" });
-      }
-    })();
-
-    return () => {
-      cancelled = true;
-    };
-  }, [open, substrateSlug]);
+  // Translate the SWR snapshot into the existing FetchState union so the
+  // render tree below stays byte-for-byte identical.
+  const fetchState: FetchState = !open
+    ? { kind: "idle" }
+    : upgradeOptionsError
+      ? { kind: "error" }
+      : upgradeOptions === undefined
+        ? { kind: "loading" }
+        : { kind: "ready", options: upgradeOptions };
 
   // ── Esc closes (unless ConfirmUpgradeDialog is open — it owns its own Esc) ──
   useEffect(() => {
