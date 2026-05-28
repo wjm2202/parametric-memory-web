@@ -34,7 +34,13 @@
 
 import { describe, it, expect } from "vitest";
 import { NextRequest, NextResponse } from "next/server";
-import { middleware } from "./middleware";
+import { proxy } from "./proxy";
+
+// Post-Next-16 rename: `middleware` → `proxy`. Aliased here so the test
+// bodies below keep reading naturally as "middleware-bypass regression
+// suite" — the security concept these tests cover hasn't changed, only
+// the framework's name for the lifecycle hook.
+const middleware = proxy;
 
 const ORIGIN = "https://parametric-memory.dev";
 

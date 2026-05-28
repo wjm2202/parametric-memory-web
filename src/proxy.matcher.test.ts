@@ -23,7 +23,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { config } from "./middleware";
+import { config } from "./proxy";
 
 const EXPECTED_MATCHER =
   "/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|api/|auth/).*)";
