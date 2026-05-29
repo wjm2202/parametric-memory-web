@@ -39,18 +39,31 @@ interface PricingCTAProps {
 /**
  * Pricing CTA button.
  *
- * Flow (sprint 2026-05-18 D3 — Embedded Checkout cutover):
+ * Flow (sprint 2026-05-18 D3 — Embedded Checkout cutover; 2026-05-29
+ * adblock-resilience hosted fallback):
  *   - CTA click             → fresh capacity check (event-driven)
  *   - If open + logged in   → probe Stripe.js loadability
- *                             → on probe ok: open <CheckoutDrawer>
- *                             → on probe fail: show adblock notice in place
+ *                             → on probe ok:   open <CheckoutDrawer>
+ *                             → on probe fail: POST /api/checkout with
+ *                                              { mode: "hosted" } and
+ *                                              window.location.href = url
+ *                                              (server-driven Stripe-hosted
+ *                                              redirect — same shape as
+ *                                              /dashboard's Manage Billing,
+ *                                              which adblockers can't block
+ *                                              because there's no on-page
+ *                                              js.stripe.com load)
+ *                             → on hosted-fallback failure: show adblock
+ *                                              notice as a last resort
  *   - If open + not logged  → Redirect to /login?redirect=/pricing
  *   - If waitlist/paused    → WaitlistForm replaces button
  *   - Enterprise            → Email contact link (manual sales)
  *
  * The drawer hosts <EmbeddedCheckoutProvider> + <EmbeddedCheckout>. It
  * fetches its own clientSecret from /api/checkout via the bound
- * fetchClientSecret callback — this component no longer redirects.
+ * fetchClientSecret callback — this component no longer redirects for the
+ * embedded path. The hosted-fallback path is the only PricingCTA->compute
+ * fetch and reads `response.url` instead of `response.clientSecret`.
  */
 export function PricingCTA({
   tierId,
@@ -186,13 +199,56 @@ export function PricingCTA({
     // verify that Stripe.js can load in this page environment. If it can't
     // (most commonly: an adblocker is blocking js.stripe.com, or the user
     // has the page open behind an old CSP that doesn't allow stripe), we
-    // show the static notice in place of the drawer rather than mounting a
-    // blank iframe that confuses the user.
+    // fall through to the hosted-redirect path — same shape as
+    // /dashboard's Manage Billing, which adblockers can't block because
+    // there's no on-page js.stripe.com load.
+    //
+    // Sprint 2026-05-29 (adblock resilience). The amber notice is now a
+    // last-resort fallback (network failure between probe and redirect)
+    // rather than the first response to a blocked stripe.js.
     const probe = await probeStripeAvailability();
     if (!probe.ok) {
-      setAdblockNotice(true);
-      setLoading(false);
-      return;
+      try {
+        const res = await fetch("/api/checkout", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ tier: tierId, mode: "hosted" }),
+        });
+        if (!res.ok) {
+          // Mirror the error mapping in CheckoutDrawer's fetchClientSecret
+          // so the UX is consistent across embedded and hosted paths.
+          const body = (await res.json().catch(() => null)) as {
+            error?: string;
+            message?: string;
+          } | null;
+          setError(
+            res.status === 401
+              ? "You need to sign in again before paying. Please reload."
+              : res.status === 409
+                ? (body?.message ?? "This tier is temporarily full. Please come back shortly.")
+                : (body?.error ?? `Checkout failed (HTTP ${res.status}).`),
+          );
+          setLoading(false);
+          return;
+        }
+        const body = (await res.json()) as { url?: string };
+        if (!body.url) {
+          setError("Stripe returned no checkout URL. Please retry.");
+          setLoading(false);
+          return;
+        }
+        // Top-level navigation — adblockers don't filter this (same as
+        // Manage Billing's portalUrl redirect). Leave loading=true; the
+        // page is about to navigate away.
+        window.location.href = body.url;
+        return;
+      } catch {
+        // Network died between the probe and the redirect. Fall back to
+        // the amber notice so the user has something to act on.
+        setAdblockNotice(true);
+        setLoading(false);
+        return;
+      }
     }
 
     // Stripe is reachable — open the drawer. The drawer's own
