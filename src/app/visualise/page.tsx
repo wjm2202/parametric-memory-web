@@ -73,31 +73,23 @@ export default async function VisualisePage() {
             Live 3D Merkle-tree visualisation
           </h1>
           <p className="mt-4 leading-relaxed">
-            This is a real-time 3D rendering of the Markov–Merkle Predictive
-            Memory (MMPM) substrate. Every node is a memory atom committed to a
-            SHA-256 Merkle tree; every edge is a proof path or a Markov
-            transition between atoms. As atoms are written the tree rebalances
-            and the visualisation updates live, so you can watch the structure
-            that backs each cryptographic consistency proof.
+            This is a real-time 3D rendering of the Markov–Merkle Predictive Memory (MMPM)
+            substrate. Every node is a memory atom committed to a SHA-256 Merkle tree; every edge is
+            a proof path or a Markov transition between atoms. As atoms are written the tree
+            rebalances and the visualisation updates live, so you can watch the structure that backs
+            each cryptographic consistency proof.
           </p>
           <p className="mt-4 leading-relaxed">
-            Use it to understand how MMPM stores and verifies memory: atoms
-            cluster by shard (MMPM uses four independent Merkle shards via
-            JumpHash sharding), proof paths trace the hashes needed to verify a
-            single atom, and Markov arcs show which memories tend to be recalled
-            together. The viewer runs entirely in your browser with WebGL. For
-            the underlying architecture see the{" "}
-            <Link
-              href="/docs"
-              className="text-cyan-400 underline-offset-4 hover:underline"
-            >
+            Use it to understand how MMPM stores and verifies memory: atoms cluster by shard (MMPM
+            uses four independent Merkle shards via JumpHash sharding), proof paths trace the hashes
+            needed to verify a single atom, and Markov arcs show which memories tend to be recalled
+            together. The viewer runs entirely in your browser with WebGL. For the underlying
+            architecture see the{" "}
+            <Link href="/docs" className="text-cyan-400 underline-offset-4 hover:underline">
               documentation
             </Link>
             , and to independently verify a signed snapshot use the{" "}
-            <Link
-              href="/verify"
-              className="text-cyan-400 underline-offset-4 hover:underline"
-            >
+            <Link href="/verify" className="text-cyan-400 underline-offset-4 hover:underline">
               snapshot verifier
             </Link>
             .

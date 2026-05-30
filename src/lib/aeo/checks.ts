@@ -84,25 +84,62 @@ function metaContent(html: string, attr: "name" | "property", key: string): stri
 export function checkRobots(robots: string | null): CheckResult[] {
   const cat = "robots.txt";
   if (!robots || !robots.trim()) {
-    return [fail("robots.present", cat, "robots.txt present", "robots.txt is missing or empty — crawlers have no policy to read")];
+    return [
+      fail(
+        "robots.present",
+        cat,
+        "robots.txt present",
+        "robots.txt is missing or empty — crawlers have no policy to read",
+      ),
+    ];
   }
-  const out: CheckResult[] = [ok("robots.present", cat, "robots.txt present", "served and non-empty")];
+  const out: CheckResult[] = [
+    ok("robots.present", cat, "robots.txt present", "served and non-empty"),
+  ];
 
   if (/^\s*sitemap:\s*https?:\/\//im.test(robots)) {
     out.push(ok("robots.sitemap", cat, "Sitemap reference", "robots.txt points to a sitemap"));
   } else {
-    out.push(warn("robots.sitemap", cat, "Sitemap reference", "no `Sitemap:` line — crawlers must guess /sitemap.xml"));
+    out.push(
+      warn(
+        "robots.sitemap",
+        cat,
+        "Sitemap reference",
+        "no `Sitemap:` line — crawlers must guess /sitemap.xml",
+      ),
+    );
   }
 
   const addressed = KNOWN_AI_AGENTS.filter((a) =>
     new RegExp(`user-agent:\\s*${a}\\b`, "i").test(robots),
   );
   if (addressed.length >= 4) {
-    out.push(ok("robots.ai_agents", cat, "AI crawler policy", `explicit policy for ${addressed.length} AI/search agents (${addressed.slice(0, 4).join(", ")}…)`));
+    out.push(
+      ok(
+        "robots.ai_agents",
+        cat,
+        "AI crawler policy",
+        `explicit policy for ${addressed.length} AI/search agents (${addressed.slice(0, 4).join(", ")}…)`,
+      ),
+    );
   } else if (addressed.length > 0) {
-    out.push(warn("robots.ai_agents", cat, "AI crawler policy", `only ${addressed.length} AI agents addressed (${addressed.join(", ")}) — consider GPTBot, ClaudeBot, PerplexityBot, Google-Extended`));
+    out.push(
+      warn(
+        "robots.ai_agents",
+        cat,
+        "AI crawler policy",
+        `only ${addressed.length} AI agents addressed (${addressed.join(", ")}) — consider GPTBot, ClaudeBot, PerplexityBot, Google-Extended`,
+      ),
+    );
   } else {
-    out.push(warn("robots.ai_agents", cat, "AI crawler policy", "no AI answer-engine user agents addressed explicitly (relying on wildcard)"));
+    out.push(
+      warn(
+        "robots.ai_agents",
+        cat,
+        "AI crawler policy",
+        "no AI answer-engine user agents addressed explicitly (relying on wildcard)",
+      ),
+    );
   }
 
   out.push(
@@ -118,7 +155,14 @@ export function checkRobots(robots: string | null): CheckResult[] {
 export function checkLlms(llms: string | null): CheckResult[] {
   const cat = "llms.txt";
   if (!llms || !llms.trim()) {
-    return [fail("llms.present", cat, "llms.txt present", "llms.txt is missing or empty — agents have no curated entry point")];
+    return [
+      fail(
+        "llms.present",
+        cat,
+        "llms.txt present",
+        "llms.txt is missing or empty — agents have no curated entry point",
+      ),
+    ];
   }
   const out: CheckResult[] = [ok("llms.present", cat, "llms.txt present", "served and non-empty")];
   const lines = llms.split(/\r?\n/);
@@ -132,7 +176,12 @@ export function checkLlms(llms: string | null): CheckResult[] {
   out.push(
     /^>\s+\S/m.test(llms)
       ? ok("llms.summary", cat, "Summary blockquote", "has a `>` one-line summary")
-      : warn("llms.summary", cat, "Summary blockquote", "no `>` summary blockquote — agents lack a one-line description"),
+      : warn(
+          "llms.summary",
+          cat,
+          "Summary blockquote",
+          "no `>` summary blockquote — agents lack a one-line description",
+        ),
   );
   out.push(
     /^##\s+\S/m.test(llms)
@@ -143,7 +192,12 @@ export function checkLlms(llms: string | null): CheckResult[] {
   out.push(
     links >= 3
       ? ok("llms.links", cat, "Curated links", `${links} markdown links to key pages`)
-      : warn("llms.links", cat, "Curated links", `only ${links} link(s) — list the high-value pages for agents`),
+      : warn(
+          "llms.links",
+          cat,
+          "Curated links",
+          `only ${links} link(s) — list the high-value pages for agents`,
+        ),
   );
   out.push(
     llms.length >= 300
@@ -162,9 +216,18 @@ export function checkSitemap(xml: string | null, expectedHost?: string): CheckRe
   }
   const out: CheckResult[] = [];
   if (/<urlset[\s>]/i.test(xml) || /<sitemapindex[\s>]/i.test(xml)) {
-    out.push(ok("sitemap.present", cat, "sitemap.xml present", "valid <urlset>/<sitemapindex> root"));
+    out.push(
+      ok("sitemap.present", cat, "sitemap.xml present", "valid <urlset>/<sitemapindex> root"),
+    );
   } else {
-    out.push(fail("sitemap.present", cat, "sitemap.xml present", "served but not a recognisable sitemap (no <urlset>/<sitemapindex>)"));
+    out.push(
+      fail(
+        "sitemap.present",
+        cat,
+        "sitemap.xml present",
+        "served but not a recognisable sitemap (no <urlset>/<sitemapindex>)",
+      ),
+    );
     return out;
   }
   const locs = (xml.match(/<loc>\s*([^<\s]+)\s*<\/loc>/gi) || []).map((m) =>
@@ -182,13 +245,27 @@ export function checkSitemap(xml: string | null, expectedHost?: string): CheckRe
   const insecure = locs.filter((u) => u.startsWith("http://"));
   const offHost = expectedHost ? locs.filter((u) => !u.includes(expectedHost)) : [];
   if (insecure.length === 0 && offHost.length === 0) {
-    out.push(ok("sitemap.urls_clean", cat, "URL hygiene", "all URLs are https" + (expectedHost ? ` on ${expectedHost}` : "")));
+    out.push(
+      ok(
+        "sitemap.urls_clean",
+        cat,
+        "URL hygiene",
+        "all URLs are https" + (expectedHost ? ` on ${expectedHost}` : ""),
+      ),
+    );
   } else {
     const bits = [
       insecure.length ? `${insecure.length} http (non-https)` : "",
       offHost.length ? `${offHost.length} off-host` : "",
     ].filter(Boolean);
-    out.push(warn("sitemap.urls_clean", cat, "URL hygiene", `${bits.join(", ")} — e.g. ${(insecure[0] || offHost[0])}`));
+    out.push(
+      warn(
+        "sitemap.urls_clean",
+        cat,
+        "URL hygiene",
+        `${bits.join(", ")} — e.g. ${insecure[0] || offHost[0]}`,
+      ),
+    );
   }
   return out;
 }
@@ -216,8 +293,18 @@ export function checkPageHtml(html: string | null, opts: PageCheckOptions): Chec
   const text = visibleText(html);
   out.push(
     text.length >= minText
-      ? ok(`page.ssr_text:${opts.path}`, cat, "Readable without JS", `${text.length} chars of server-rendered text`)
-      : fail(`page.ssr_text:${opts.path}`, cat, "Readable without JS", `only ${text.length} chars without JS — agents that don't run JS see an empty shell`),
+      ? ok(
+          `page.ssr_text:${opts.path}`,
+          cat,
+          "Readable without JS",
+          `${text.length} chars of server-rendered text`,
+        )
+      : fail(
+          `page.ssr_text:${opts.path}`,
+          cat,
+          "Readable without JS",
+          `only ${text.length} chars without JS — agents that don't run JS see an empty shell`,
+        ),
   );
 
   // 2. <html lang>
@@ -234,7 +321,14 @@ export function checkPageHtml(html: string | null, opts: PageCheckOptions): Chec
   if (!title) {
     out.push(fail(`page.title:${opts.path}`, cat, "Title tag", "missing or empty <title>"));
   } else if (title.length > 65) {
-    out.push(warn(`page.title:${opts.path}`, cat, "Title tag", `${title.length} chars (>65 may truncate in results)`));
+    out.push(
+      warn(
+        `page.title:${opts.path}`,
+        cat,
+        "Title tag",
+        `${title.length} chars (>65 may truncate in results)`,
+      ),
+    );
   } else {
     out.push(ok(`page.title:${opts.path}`, cat, "Title tag", `"${title}"`));
   }
@@ -242,9 +336,18 @@ export function checkPageHtml(html: string | null, opts: PageCheckOptions): Chec
   // 4. meta description
   const desc = metaContent(html, "name", "description");
   if (!desc) {
-    out.push(fail(`page.description:${opts.path}`, cat, "Meta description", "missing meta description"));
+    out.push(
+      fail(`page.description:${opts.path}`, cat, "Meta description", "missing meta description"),
+    );
   } else if (desc.length < 50 || desc.length > 160) {
-    out.push(warn(`page.description:${opts.path}`, cat, "Meta description", `${desc.length} chars (aim for 50–160)`));
+    out.push(
+      warn(
+        `page.description:${opts.path}`,
+        cat,
+        "Meta description",
+        `${desc.length} chars (aim for 50–160)`,
+      ),
+    );
   } else {
     out.push(ok(`page.description:${opts.path}`, cat, "Meta description", `${desc.length} chars`));
   }
@@ -262,19 +365,35 @@ export function checkPageHtml(html: string | null, opts: PageCheckOptions): Chec
   );
   out.push(
     ogMissing.length === 0
-      ? ok(`page.opengraph:${opts.path}`, cat, "Open Graph", "og:title, og:description, og:image present")
+      ? ok(
+          `page.opengraph:${opts.path}`,
+          cat,
+          "Open Graph",
+          "og:title, og:description, og:image present",
+        )
       : warn(`page.opengraph:${opts.path}`, cat, "Open Graph", `missing: ${ogMissing.join(", ")}`),
   );
 
   // 7. JSON-LD structured data — primary AEO citation signal
-  const ldBlocks = html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
+  const ldBlocks =
+    html.match(/<script[^>]*type=["']application\/ld\+json["'][^>]*>([\s\S]*?)<\/script>/gi) || [];
   if (ldBlocks.length === 0) {
-    out.push(warn(`page.jsonld:${opts.path}`, cat, "Structured data", "no JSON-LD — answer engines can't extract entities"));
+    out.push(
+      warn(
+        `page.jsonld:${opts.path}`,
+        cat,
+        "Structured data",
+        "no JSON-LD — answer engines can't extract entities",
+      ),
+    );
   } else {
     const types: string[] = [];
     let bad = 0;
     for (const block of ldBlocks) {
-      const inner = block.replace(/<script[^>]*>/i, "").replace(/<\/script>/i, "").trim();
+      const inner = block
+        .replace(/<script[^>]*>/i, "")
+        .replace(/<\/script>/i, "")
+        .trim();
       try {
         const parsed = JSON.parse(inner);
         const collect = (o: unknown) => {
@@ -291,9 +410,23 @@ export function checkPageHtml(html: string | null, opts: PageCheckOptions): Chec
       }
     }
     if (bad > 0) {
-      out.push(fail(`page.jsonld:${opts.path}`, cat, "Structured data", `${bad} JSON-LD block(s) failed to parse — invalid structured data`));
+      out.push(
+        fail(
+          `page.jsonld:${opts.path}`,
+          cat,
+          "Structured data",
+          `${bad} JSON-LD block(s) failed to parse — invalid structured data`,
+        ),
+      );
     } else {
-      out.push(ok(`page.jsonld:${opts.path}`, cat, "Structured data", `${ldBlocks.length} block(s): ${[...new Set(types)].join(", ") || "untyped"}`));
+      out.push(
+        ok(
+          `page.jsonld:${opts.path}`,
+          cat,
+          "Structured data",
+          `${ldBlocks.length} block(s): ${[...new Set(types)].join(", ") || "untyped"}`,
+        ),
+      );
     }
   }
 
@@ -302,15 +435,31 @@ export function checkPageHtml(html: string | null, opts: PageCheckOptions): Chec
   if (h1Count === 1) {
     out.push(ok(`page.h1:${opts.path}`, cat, "Heading structure", "exactly one <h1>"));
   } else if (h1Count === 0) {
-    out.push(warn(`page.h1:${opts.path}`, cat, "Heading structure", "no <h1> — weak document outline for agents"));
+    out.push(
+      warn(
+        `page.h1:${opts.path}`,
+        cat,
+        "Heading structure",
+        "no <h1> — weak document outline for agents",
+      ),
+    );
   } else {
-    out.push(warn(`page.h1:${opts.path}`, cat, "Heading structure", `${h1Count} <h1> tags (prefer one)`));
+    out.push(
+      warn(`page.h1:${opts.path}`, cat, "Heading structure", `${h1Count} <h1> tags (prefer one)`),
+    );
   }
 
   // 9. accidental noindex on a public page
   const robotsMeta = metaContent(html, "name", "robots");
   if (robotsMeta && /noindex/i.test(robotsMeta)) {
-    out.push(fail(`page.noindex:${opts.path}`, cat, "Indexability", `meta robots="${robotsMeta}" blocks indexing on a public page`));
+    out.push(
+      fail(
+        `page.noindex:${opts.path}`,
+        cat,
+        "Indexability",
+        `meta robots="${robotsMeta}" blocks indexing on a public page`,
+      ),
+    );
   } else {
     out.push(ok(`page.noindex:${opts.path}`, cat, "Indexability", "not noindex"));
   }
