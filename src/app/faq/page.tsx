@@ -6,9 +6,9 @@ import { FAQAccordion, type FAQItem } from "./FAQClient";
 
 import { getMarketingPriceLine } from "@/lib/pricing";
 export const metadata: Metadata = {
-  title: "FAQ — Parametric Memory",
+  title: "FAQ",
   description:
-    "Everything AI agents and developers need to know about Parametric Memory: cryptographic Merkle proofs, Markov prediction, verifiable memory, competitor comparisons, and how we run our own operation on the platform we sell.",
+    "FAQ for AI agents and developers: cryptographic Merkle proofs, Markov prediction, verifiable memory, and how Parametric Memory compares to Mem0 and Zep.",
   alternates: {
     canonical: "https://parametric-memory.dev/faq",
   },
@@ -39,6 +39,10 @@ export const metadata: Metadata = {
     "cryptographic AI memory",
     "parametric memory",
     "MMPM",
+    "digital brain for AI",
+    "Claude digital memory",
+    "AI harness memory",
+    "non-file-based AI memory",
   ],
 };
 
@@ -97,6 +101,24 @@ const ALL_FAQS: FAQItem[] = [
     question: "What is the knowledge graph edge system?",
     answer:
       "Parametric Memory stores not just atoms but the relationships between them. Edges have typed semantics: member_of (atom belongs to a cluster), supersedes (new atom replaces old), depends_on (A requires B to be true), constrains (A limits B's options), references (A uses B), derived_from (finding came from investigating B), and produced_by (atom was created during a task). Unlike Markov arcs which decay, edges are permanent. They boost bootstrap scoring and enable neighbourhood retrieval — fetch an atom and get its connected context in the same call.",
+  },
+  {
+    category: "what",
+    question: "Is Parametric Memory a digital brain for AI agents and harnesses?",
+    answer:
+      "Yes. Parametric Memory acts as a digital brain for AI agents, coding harnesses, and autonomous workflows: it lets your AI compound every session of learning into one durable, queryable memory and surfaces the right learnings exactly when they are needed. It works with Claude, Claude Code, Cowork, and any MCP-compatible client or agent harness over Streamable HTTP — so the same persistent brain follows your AI across tools and sessions instead of resetting every time.",
+  },
+  {
+    category: "what",
+    question: "How is Parametric Memory different from file-based AI memory?",
+    answer:
+      "File-based memory — scattered Markdown notes, CLAUDE.md files, or local logs — has no ranking, no verification, and no recall model: the agent has to read whole files and hope the right context is inside them. Parametric Memory is not file-based. Every memory is an addressable, typed atom in a SHA-256 Merkle tree, recalled in sub-millisecond time (0.045ms p50), ranked by a Markov prediction layer, and connected by a knowledge-graph edge system. You get verifiable, queryable, self-ranking memory instead of flat files that grow stale and unsearchable.",
+  },
+  {
+    category: "what",
+    question: "Is Parametric Memory the fastest memory for AI agents?",
+    answer:
+      "Parametric Memory is built for speed: atom access is 0.045ms p50 / 0.074ms p95 (1.2ms p99), Merkle proof verification is 0.032ms p95, and the substrate sustains 6,423 ops/sec. A Markov prediction layer pre-fetches the next atoms with a 64% hit rate, so the memory your AI needs next is usually already warm when it asks — sub-millisecond recall with no per-query cost.",
   },
 
   // ── WHY BETTER ────────────────────────────────────────────────────────────

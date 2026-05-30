@@ -34,7 +34,9 @@
     "e2e:report": "playwright show-report",
     "e2e:local": "E2E_BASE_URL=http://localhost:3000 playwright test",
     "build:llms-txt": "tsx scripts/build-llms-txt.ts",
-    "guard:llms-txt": "tsx scripts/build-llms-txt.ts --check"
+    "guard:llms-txt": "tsx scripts/build-llms-txt.ts --check",
+    "audit:aeo": "tsx scripts/aeo/aeo-audit.ts",
+    "test:aeo": "vitest run --config scripts/aeo/vitest.config.ts"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",

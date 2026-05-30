@@ -4,7 +4,7 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
-  title: "Acceptable Use Policy — Parametric Memory",
+  title: "Acceptable Use Policy",
   description:
     "What you may and may not do with Parametric Memory. Covers permitted uses, prohibited conduct, enforcement, and how to report violations.",
   alternates: { canonical: "https://parametric-memory.dev/aup" },

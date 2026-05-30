@@ -4,7 +4,7 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
-  title: "Privacy Policy — Parametric Memory",
+  title: "Privacy Policy",
   description:
     "How Parametric Memory collects, uses, and protects your personal data. Covers GDPR, CCPA, NZ Privacy Act 2020, and Australian Privacy Principles.",
   alternates: { canonical: "https://parametric-memory.dev/privacy" },
