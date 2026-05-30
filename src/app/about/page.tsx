@@ -4,9 +4,9 @@ import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 
 export const metadata: Metadata = {
-  title: "About — Parametric Memory",
+  title: "About",
   description:
-    "Parametric Memory is a persistent, cryptographically verifiable memory substrate for AI agents. One founder, built with Claude, operated the same way we sell it.",
+    "Parametric Memory is a persistent, cryptographically verifiable memory substrate for AI agents. One founder, built with Claude, run the way we sell it.",
   alternates: { canonical: "https://parametric-memory.dev/about" },
   keywords: [
     "Parametric Memory team",

@@ -4,9 +4,9 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 import VerifyClient from "./VerifyClient";
 
 export const metadata: Metadata = {
-  title: "Verify a Parametric Memory snapshot — Ed25519 + Merkle, in your browser",
+  title: "Verify a snapshot — Ed25519 + Merkle proof",
   description:
-    "Drop a signed snapshot from any Parametric Memory substrate. Your browser independently verifies the Ed25519 signature against the embedded public key and recomputes every Merkle root from the atoms, edges, and audit entries. Same cryptographic pattern as Bitcoin block headers, Git commits, and Certificate Transparency logs. No data leaves your browser.",
+    "Drop a signed Parametric Memory snapshot and your browser verifies its Ed25519 signature and recomputes every Merkle root locally. No data leaves your browser.",
   keywords: [
     "verify AI memory",
     "signed snapshot verifier",

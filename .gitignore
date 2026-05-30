@@ -39,16 +39,16 @@ Thumbs.db
 
 # IDE
 .idea/
-# Top-level docs workspace
-/docs/
-
-# Docs
-docs/WEB-DROPLET-SETUP-GUIDE.md
-# Local-only sprint plans, journey reviews, etc. Move stale root-level
-# planning docs into this folder to keep them on disk for reference
-# without cluttering the repo. Use `mv` (not `git mv`) when moving files
-# in so they don't stay tracked.
+# Docs workspace.
+# docs/ holds COMMITTED text docs (guides, ADRs, runbooks, and
+# DUAL-ACCESSIBILITY.md — which the CI check-testids guard depends on).
+# Tracked .md/.mdx/.html stay in git. The following are kept on disk but NOT
+# tracked: the archive folder, binary .docx planning docs, and the local-only
+# droplet setup guide. (Previously a blanket `/docs/` ignore here was
+# contradicted by 63 already-tracked files; replaced with targeted rules.)
 docs/archive/
+docs/*.docx
+docs/WEB-DROPLET-SETUP-GUIDE.md
 
 # Docker
 docker-compose.override.yml

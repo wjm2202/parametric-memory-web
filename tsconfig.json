@@ -38,6 +38,7 @@
   "exclude": [
     "node_modules",
     "video",
+    "scripts/aeo",
     "src/**/*.test.ts",
     "src/**/*.test.tsx",
     "src/**/*.spec.ts",

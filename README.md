@@ -4,7 +4,7 @@ Commercial website, documentation, and developer portal for [Parametric Memory](
 
 ## Stack
 
-- **Framework:** Next.js 15 (App Router, TypeScript)
+- **Framework:** Next.js 16 (App Router, TypeScript)
 - **Styling:** Tailwind CSS + Framer Motion
 - **Payments:** Stripe Checkout
 - **Docs:** MDX, auto-generated from MMPM source

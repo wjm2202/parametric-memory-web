@@ -4,9 +4,9 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
-  title: "Data Processing Agreement — Parametric Memory",
+  title: "Data Processing Agreement",
   description:
-    "GDPR Article 28-compliant Data Processing Agreement for B2B customers. Covers processor obligations, sub-processors, breach notification, and data subject rights.",
+    "GDPR Article 28-compliant Data Processing Agreement for customers. Covers processor obligations, sub-processors, breach notification, and data subject rights.",
   alternates: { canonical: "https://parametric-memory.dev/dpa" },
   openGraph: {
     title: "Data Processing Agreement | Parametric Memory",

@@ -31,7 +31,7 @@ import { SUPPORT_EMAIL } from "../src/config/site";
 
 const HEADER = `# Parametric Memory
 
-> Your AI's second brain. Persistent, verifiable memory with cryptographic Merkle proofs, Markov-chain prediction, and MCP-native integration.
+> Your AI's second brain — a digital brain for AI agents and harnesses. Compound every session of learning into persistent, verifiable memory and surface it on demand. Not file-based notes: cryptographic Merkle proofs, Markov-chain prediction, MCP-native integration, and sub-millisecond recall.
 
 ## Pages
 
@@ -48,6 +48,10 @@ const HEADER = `# Parametric Memory
 Parametric Memory (MMPM — Markov-Merkle Predictive Memory) is a persistent memory substrate for AI agents. It stores knowledge as atoms in a SHA-256 Merkle tree with RFC 6962 consistency proofs, providing cryptographic proof of what was stored and when. A Markov-chain prediction layer anticipates what an agent will need next with 64% hit rate, reducing latency and token usage.
 
 This is not just for developers. It is used to manage web systems, billing operations, deployment state, onboarding flows, and any workflow where an AI agent needs durable memory across sessions.
+
+Think of it as a digital brain that lets your AI compound all of its sessions of learning into one durable, queryable memory — and surface the right learnings exactly when they are needed. Unlike file-based approaches (scattered Markdown notes, CLAUDE.md files, or local logs), Parametric Memory is a real substrate: every memory is an addressable atom in a verifiable Merkle tree, recalled in sub-millisecond time (0.045ms p50) and ranked by a Markov prediction layer. It is built for AI agents, coding harnesses, and autonomous workflows.
+
+Also described as: an AI digital brain, an AI memory substrate, persistent digital memory for Claude and Claude Code, harness memory, and a non-file-based alternative to Markdown/CLAUDE.md memory.
 
 ## Key Specifications
 

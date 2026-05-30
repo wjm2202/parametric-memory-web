@@ -5,7 +5,7 @@ import { cookies } from "next/headers";
 
 import { getPricingTableRows } from "@/lib/pricing";
 export const metadata: Metadata = {
-  title: "Terms of Service — Parametric Memory",
+  title: "Terms of Service",
   description:
     "Terms of Service for Parametric Memory. Covers subscriptions, AI disclaimers, data retention, liability limits, and dispute resolution.",
   alternates: { canonical: "https://parametric-memory.dev/terms" },
