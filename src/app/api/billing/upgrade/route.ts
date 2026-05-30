@@ -17,14 +17,10 @@
  *   { accepted: true, currentTier, targetTier, transitionType,
  *     stripeSubscriptionId, prorationCents }
  *
- * NOTE — response shape mismatch with the legacy frontend. The dashboard's
- * dialog still expects `{ checkoutUrl }` (left over from the Stripe Checkout
- * flow that this endpoint replaced with in-place `subscriptions.update`).
- * After this proxy fix the BFF returns the in-place commit response
- * verbatim; the dialog will toast "Submission error" because `checkoutUrl`
- * is undefined. Fixing that is a frontend follow-up — close the dialog on
- * 200, let `useTierChangePoll` pick up the in-flight tier-change row, and
- * render the progress banner. See PLAN-ADMIN-UPGRADE-FLOW.md §4.3.
+ * Returns compute's in-place upgrade response verbatim. The frontend
+ * dialog (ConfirmUpgradeDialog.tsx) closes on 200 and hands off to
+ * `useTierChangePoll`; it does NOT read the body. See
+ * PLAN-ADMIN-UPGRADE-FLOW.md §4.3.
  *
  * Historical: this proxy used to call `api/v1/billing/upgrade` which never
  * existed on compute. It silently 404'd as HTML which `computeProxy`

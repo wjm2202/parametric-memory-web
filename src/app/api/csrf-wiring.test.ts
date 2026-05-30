@@ -23,7 +23,6 @@
  *
  * Routes intentionally NOT guarded and out of scope here:
  *   - /api/memory/[...path]            (public-CORS proxy, no session)
- *   - /api/docs-hook, /api/deploy-hook (HMAC signature, not session auth)
  *   - /api/waitlist, /api/team-inquiry, /api/capacity-inquiry (public forms;
  *     covered separately if/when they grow session state)
  */

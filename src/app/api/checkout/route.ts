@@ -14,8 +14,17 @@ const SESSION_COOKIE = "mmpm_session";
  * After Phase D this returns { clientSecret } for Embedded Checkout instead of
  * { sessionUrl } — same body shape upstream, only the response field changes.
  *
- * Body:  { tier: string }
- * Returns: { clientSecret: string, tier: string, amountCents: number }
+ * Body:
+ *   { tier: string, trial?: boolean, mode?: "embedded" | "hosted" }
+ *
+ * Returns (mode-branched; sprint 2026-05-29 adblock resilience):
+ *   - embedded (default): { clientSecret: string, tier: string, amountCents: number }
+ *   - hosted:             { url: string,          tier: string, amountCents: number }
+ *
+ * The body is forwarded verbatim to compute via the compute-proxy utility, so
+ * `mode` (and any future field) flows through without any explicit handling
+ * at this layer — keeps the BFF and compute decoupled. The frontend branches
+ * on which field is present in the response.
  *
  * CSRF: state-mutating proxy on session-authenticated path. Origin-checked
  * via verifyCsrfOrigin (P0-5, sprint 2026-05-18).

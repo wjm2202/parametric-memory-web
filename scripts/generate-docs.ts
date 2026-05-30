@@ -18,8 +18,7 @@
  *
  * This script is called:
  * 1. During `npm run build` (pre-build step)
- * 2. When the MMPM repo pushes to main (via docs-hook webhook)
- * 3. Manually via `npm run generate-docs`
+ * 2. Manually via `npm run generate-docs`
  */
 
 import { existsSync, mkdirSync, writeFileSync } from "fs";
