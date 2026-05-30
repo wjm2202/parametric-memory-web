@@ -36,7 +36,11 @@
     "build:llms-txt": "tsx scripts/build-llms-txt.ts",
     "guard:llms-txt": "tsx scripts/build-llms-txt.ts --check",
     "audit:aeo": "tsx scripts/aeo/aeo-audit.ts",
-    "test:aeo": "vitest run --config scripts/aeo/vitest.config.ts"
+    "test:aeo": "vitest run --config scripts/aeo/vitest.config.ts",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "*.{ts,tsx,mts,cts,js,mjs,jsx}": "eslint --fix"
   },
   "dependencies": {
     "@react-three/drei": "^10.7.7",
@@ -79,7 +83,9 @@
     "@vitejs/plugin-react": "^4.0.0",
     "eslint": "^9.0.0",
     "eslint-config-next": "16.2.6",
+    "husky": "^9.1.7",
     "jsdom": "^25.0.1",
+    "lint-staged": "^16.4.0",
     "postcss": "^8.5.10",
     "prettier": "^3.5.0",
     "prettier-plugin-tailwindcss": "^0.6.0",
