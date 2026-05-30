@@ -27,21 +27,13 @@ export const metadata: Metadata = {
     "MCP-native memory",
     "AI memory for Claude Code",
     "parametric memory",
-    "Markov prediction",
     "AI memory substrate",
-    // Table stakes — must appear, but won't out-rank Mem0/Anthropic
-    "persistent AI memory",
-    "AI agent memory",
     "Claude memory",
     // AI-discovery — digital brain / agent & harness positioning
     "digital brain for AI",
-    "AI digital memory",
     "Claude digital memory",
     "AI harness memory",
-    "memory for AI agents and harnesses",
     "non-file-based AI memory",
-    "sub-millisecond AI memory",
-    "compounding AI memory",
   ],
   openGraph: {
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
