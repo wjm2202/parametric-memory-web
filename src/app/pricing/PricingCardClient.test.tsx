@@ -26,6 +26,12 @@ vi.mock("@stripe/react-stripe-js", () => ({
 
 import { PricingCardClient } from "./PricingCardClient";
 
+// PricingCTA (rendered by PricingCardClient) calls useRouter for the
+// SM-MULTI-5 chooser; stub it so render doesn't require an app-router context.
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 // Mock next/link to render as a plain anchor
 vi.mock("next/link", () => ({
   default: ({

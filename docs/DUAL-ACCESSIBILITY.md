@@ -209,6 +209,11 @@ entry here **first**, before the PR that uses it.
 | `capacity-tier-label-<tier>` | Hidden label paired with the tier-id input |
 | `capacity-tier-input-<tier>` | Hidden `<input>` carrying the tier id on form submit |
 | `pricing-cta-adblock-notice` | Amber `role="alert"` notice rendered by `PricingCTA` in place of the embedded checkout drawer when `probeStripeAvailability()` reports Stripe.js can't load (adblock / CSP / network). Sprint 2026-05-18 D10. Static — user must disable the blocker and reload. |
+| `cap-reached-card` | `role="alert"` actionable card (`CapReachedCard`) shown when checkout is refused with the compute 409 `substrate_cap_reached` (per-account substrate cap hit). Replaces the dead-end error text. Rendered in both `PricingCTA` (hosted-fallback path) and inside `CheckoutDrawer` (embedded path). SM-MULTI-1. |
+| `cap-reached-upgrade-cta` | Primary CTA inside `cap-reached-card` — link to `/dashboard` to upgrade (migrate) the existing instance to the next tier up. Label is "Upgrade this instance to {nextTier}" or "Manage my plan" on the top tier. SM-MULTI-1. |
+| `pricing-chooser` | SM-MULTI-5 panel shown in place of the pricing CTA when a logged-in customer who already owns a substrate clicks a tier — offers upgrade-in-place vs add-new. |
+| `pricing-chooser-upgrade` | "Upgrade my existing instance" button in `pricing-chooser` — routes to `/dashboard` (tier-change, one subscription). |
+| `pricing-chooser-add` | "Add a new instance" button in `pricing-chooser` — continues to checkout for a new subscription/substrate. |
 
 ### Login + signup — `src/app/login/*`, `src/app/signup/*`
 

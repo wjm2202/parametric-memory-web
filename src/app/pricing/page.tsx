@@ -39,6 +39,29 @@ export const metadata: Metadata = {
   },
 };
 
+// Compute base URL for the server-side substrate-count lookup (SM-MULTI-5).
+const COMPUTE_URL = process.env.MMPM_COMPUTE_URL ?? "http://localhost:3100";
+
+/**
+ * SM-MULTI-5: does this logged-in customer already own >=1 substrate? Drives
+ * the pricing CTA's upgrade-vs-add chooser. Server-resolved so the choice
+ * appears instantly on click. Fails closed to `false` (new-customer flow:
+ * straight to checkout) if compute is unreachable — never blocks a purchase.
+ */
+async function hasAnySubstrate(sessionToken: string): Promise<boolean> {
+  try {
+    const res = await fetch(`${COMPUTE_URL}/api/v1/substrates`, {
+      headers: { Authorization: `Bearer ${sessionToken}` },
+      cache: "no-store",
+    });
+    if (!res.ok) return false;
+    const data = (await res.json()) as { substrates?: unknown[] };
+    return Array.isArray(data?.substrates) && data.substrates.length > 0;
+  } catch {
+    return false;
+  }
+}
+
 // ── Display tiers — internal expired-subscription tier filtered out ───────────
 // The 'free' tier is an internal fallback state; not publicly sold.
 // Publicly we show starter, indie, pro, and team. Team uses a contact-sales flow.
@@ -170,7 +193,10 @@ function CheckIcon() {
 /* ── Page (Server Component) ─────────────────────────────────────────── */
 export default async function PricingPage() {
   const cookieStore = await cookies();
-  const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
+  const sessionToken = cookieStore.get("mmpm_session")?.value;
+  const isLoggedIn = Boolean(sessionToken);
+  // SM-MULTI-5: existing customers get the upgrade-vs-add chooser on the CTA.
+  const hasExistingSubstrate = sessionToken ? await hasAnySubstrate(sessionToken) : false;
 
   // Capacity is now event-driven: checked on user click, not on page render.
   // See PricingCardClient.tsx for the on-click capacity check flow.
@@ -272,6 +298,7 @@ export default async function PricingPage() {
                             : "Get Professional"
                       }
                       isLoggedIn={isLoggedIn}
+                      hasExistingSubstrate={hasExistingSubstrate}
                     >
                       {/* Price — rendered as children inside the client wrapper */}
                       <div className="mb-6">

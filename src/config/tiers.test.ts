@@ -1,37 +1,58 @@
 /**
  * Invariant tests for the canonical tier registry.
  *
- * These assertions enforce the architectural constraint recorded in
- * `TierLimits.maxSubstrates` JSDoc: every tier is pinned to exactly 1 live
- * substrate because the compute API has no path for the client to
- * disambiguate between multiple live substrates on the same account.
+ * SM-MULTI-2 (2026-05): the website's per-tier `maxSubstrates` MUST mirror
+ * compute's authoritative ceilings — DEFAULT_CEILINGS (src/config/
+ * platform-ceilings.ts), the `platform_settings.max_substrates_*` row, and the
+ * `enforce_substrate_cap` trigger (init.sql). Compute is the source of truth;
+ * the website only advertises. If these drift, the pricing page either lies
+ * about how many instances a tier allows or dead-ends a purchase the DB would
+ * accept.
  *
- * If this test ever fails, it means someone bumped a tier's substrate count
- * on a customer surface (pricing page, llms.txt, docs) BEFORE the compute
- * rotate-key / billing-portal / reactivate / deprovision routes started
- * accepting a `substrateId` in the URL. That would re-introduce the bug
- * that caused commit 30dcb41 ("fix sudo issue", Apr 9 2026) to be reverted.
- * Don't loosen this test — fix the compute contract first.
+ * EXPECTED_MAX_SUBSTRATES below is the contract. If you change it here, change
+ * compute's DEFAULT_CEILINGS + the platform_settings migration in lockstep
+ * (and vice-versa). The previous "every tier === 1" pin (2026-04-11) is
+ * retired now that the slug-scoped substrate routes + dashboard list + the
+ * SM-MULTI-1 cap-reached card have shipped.
  */
 
 import { describe, it, expect } from "vitest";
-import { TIERS, TIER_ORDER, TIERS_BY_ID, getTier, isValidTierId } from "./tiers";
+import { TIERS, TIER_ORDER, TIERS_BY_ID, getTier, isValidTierId, type TierId } from "./tiers";
 
-describe("tiers.ts — maxSubstrates invariant (2026-04-11)", () => {
-  it("every canonical tier has maxSubstrates === 1", () => {
+/** Mirror of compute DEFAULT_CEILINGS.maxSubstrates — keep in lockstep. */
+const EXPECTED_MAX_SUBSTRATES: Record<TierId, number> = {
+  free: 1,
+  starter: 1,
+  indie: 2,
+  pro: 3,
+  team: 5,
+};
+
+/** The substrate feature-bullet copy implied by a ceiling. */
+function expectedSubstrateBullet(n: number): string {
+  return n === 1 ? "1 substrate" : `Up to ${n} substrates`;
+}
+
+describe("tiers.ts — maxSubstrates mirrors compute ceilings (SM-MULTI-2)", () => {
+  it("every tier's maxSubstrates matches the compute ceiling contract", () => {
     for (const tier of TIERS) {
-      expect(tier.limits.maxSubstrates, `tier ${tier.id} must advertise 1 substrate`).toBe(1);
+      expect(
+        tier.limits.maxSubstrates,
+        `tier ${tier.id} maxSubstrates must mirror compute DEFAULT_CEILINGS`,
+      ).toBe(EXPECTED_MAX_SUBSTRATES[tier.id]);
     }
   });
 
-  it("exactly one feature per tier mentions substrates, and it equals '1 substrate'", () => {
+  it("exactly one feature per tier mentions substrates, matching its ceiling", () => {
     for (const tier of TIERS) {
       const substrateFeatures = tier.features.filter((f) => /substrate/i.test(f.name));
       expect(
         substrateFeatures.length,
         `tier ${tier.id} should have exactly 1 substrate feature bullet`,
       ).toBe(1);
-      expect(substrateFeatures[0].name).toBe("1 substrate");
+      expect(substrateFeatures[0].name).toBe(
+        expectedSubstrateBullet(EXPECTED_MAX_SUBSTRATES[tier.id]),
+      );
       expect(substrateFeatures[0].included).toBe(true);
     }
   });

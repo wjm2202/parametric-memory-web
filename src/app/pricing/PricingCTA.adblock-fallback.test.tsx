@@ -67,6 +67,13 @@ vi.mock("next/link", () => ({
   ),
 }));
 
+// PricingCTA calls useRouter for the SM-MULTI-5 chooser; stub it so render
+// doesn't require an app-router context. (This suite renders the new-customer
+// path — hasExistingSubstrate defaults false — so the chooser never opens.)
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({ push: vi.fn() }),
+}));
+
 // Imported AFTER the mocks above so the component picks up the mocked
 // probeStripeAvailability.
 import { PricingCTA } from "./PricingCTA";

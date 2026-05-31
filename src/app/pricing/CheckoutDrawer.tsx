@@ -32,6 +32,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
+import { CapReachedCard } from "./CapReachedCard";
 
 // Module-singleton Stripe.js promise. loadStripe is safe to call once per
 // publishable key per page; PricingCTA also calls it for the adblock probe,
@@ -67,7 +68,12 @@ interface Props {
   priceLabel?: string;
 }
 
-type FetchState = { kind: "ready" } | { kind: "error"; message: string };
+type FetchState =
+  | { kind: "ready" }
+  | { kind: "error"; message: string }
+  // SM-MULTI-1: per-account substrate cap hit. Render the actionable
+  // CapReachedCard (upgrade / migrate path) instead of dead-end error text.
+  | { kind: "cap"; tier: string; activeCount: number; ceiling: number };
 
 export function CheckoutDrawer({ open, onClose, tierId, tierName, priceLabel }: Props) {
   // RC-07 (react-compiler-readiness, 2026-05-27): state starts as
@@ -109,7 +115,29 @@ export function CheckoutDrawer({ open, onClose, tierId, tierName, priceLabel }: 
       const body = (await res.json().catch(() => null)) as {
         error?: string;
         message?: string;
+        tier?: string;
+        activeCount?: number;
+        ceiling?: number;
       } | null;
+      // SM-MULTI-1: the per-account substrate cap (substrate_cap_reached) is a
+      // distinct 409 from tier capacity (tier_at_capacity). Route it to the
+      // actionable CapReachedCard so the customer can upgrade/migrate instead
+      // of hitting a dead end.
+      if (
+        res.status === 409 &&
+        body?.error === "substrate_cap_reached" &&
+        typeof body.tier === "string" &&
+        typeof body.activeCount === "number" &&
+        typeof body.ceiling === "number"
+      ) {
+        setState({
+          kind: "cap",
+          tier: body.tier,
+          activeCount: body.activeCount,
+          ceiling: body.ceiling,
+        });
+        return "";
+      }
       const message =
         res.status === 401
           ? "You need to sign in again before paying. Please reload."
@@ -173,7 +201,14 @@ export function CheckoutDrawer({ open, onClose, tierId, tierName, priceLabel }: 
         </header>
 
         <div className="flex-1 overflow-y-auto px-2 py-3">
-          {state.kind === "error" ? (
+          {state.kind === "cap" ? (
+            <CapReachedCard
+              tier={state.tier}
+              activeCount={state.activeCount}
+              ceiling={state.ceiling}
+              onClose={onClose}
+            />
+          ) : state.kind === "error" ? (
             <ErrorBody message={state.message} onClose={onClose} />
           ) : (
             <EmbeddedCheckoutProvider stripe={getStripe()} options={providerOptions}>
