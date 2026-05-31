@@ -468,8 +468,14 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
 
   async function handleDeprovision() {
     try {
+      // The DeprovisionModal's type-"destroy" step IS the explicit
+      // confirmation, so we send cancelActiveSubscription: true — for a paid
+      // substrate this forfeits the remaining period and cancels the sub
+      // immediately (compute's SM-7 guard requires this flag to proceed).
       const res = await fetch(`/api/substrates/${slug}/deprovision`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ cancelActiveSubscription: true }),
       });
       if (res.ok) {
         await fetchSubstrate();
@@ -994,13 +1000,18 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                         Cancel Subscription
                       </button>
                     )}
-                  {/* Deprovision available for internal free/expired state only — provision_failed uses the callout above */}
-                  {substrate.tier === "free" && substrate.status !== "provision_failed" && (
+                  {/* SM-DEP: self-serve "Deprovision now" for ANY non-terminal
+                      substrate (paid included). The modal warns about
+                      irreversibility and offers the gentle Cancel path; for a
+                      paid substrate the confirmed action forfeits the remaining
+                      period and cancels the subscription immediately.
+                      provision_failed uses the callout above instead. */}
+                  {substrate.status !== "deprovisioned" && substrate.status !== "destroyed" && (
                     <button
                       onClick={() => setDeprovisionModalOpen(true)}
                       className="rounded-lg border border-red-500/20 px-4 py-2 text-sm text-red-400/70 transition-colors hover:border-red-500/40 hover:text-red-400"
                     >
-                      Deprovision Substrate
+                      Deprovision Now
                     </button>
                   )}
                 </div>
@@ -1027,6 +1038,17 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
       {/* Deprovision modal */}
       {deprovisionModalOpen && (
         <DeprovisionModal
+          isPaid={!!substrate && substrate.tier !== "free"}
+          canCancelInstead={
+            !!substrate &&
+            substrate.tier !== "free" &&
+            !substrate.cancelAt &&
+            substrate.status !== "provision_failed"
+          }
+          onSwitchToCancel={() => {
+            setDeprovisionModalOpen(false);
+            setCancelModalOpen(true);
+          }}
           onClose={() => setDeprovisionModalOpen(false)}
           onConfirm={handleDeprovision}
         />
@@ -1112,7 +1134,19 @@ function CancelModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (
   );
 }
 
-function DeprovisionModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
+function DeprovisionModal({
+  onClose,
+  onConfirm,
+  isPaid,
+  canCancelInstead,
+  onSwitchToCancel,
+}: {
+  onClose: () => void;
+  onConfirm: () => void;
+  isPaid: boolean;
+  canCancelInstead: boolean;
+  onSwitchToCancel: () => void;
+}) {
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
   const confirmed = input === "destroy";
@@ -1146,13 +1180,41 @@ function DeprovisionModal({ onClose, onConfirm }: { onClose: () => void; onConfi
           </div>
           <div>
             <h2 className="font-[family-name:var(--font-syne)] text-base font-semibold text-white">
-              Deprovision substrate
+              Deprovision now
             </h2>
-            <p className="mt-1 text-sm text-white/50">
-              This will permanently delete your substrate and all data on it. This cannot be undone.
+            <p className="mt-1 text-sm text-white/60">
+              This immediately tears down the substrate — you lose access right away and it{" "}
+              <span className="font-semibold text-red-300">can&apos;t be undone</span> from your
+              dashboard. Your data is kept for 30 days for support-assisted recovery only, then{" "}
+              <span className="font-semibold text-red-300">permanently deleted</span>.
             </p>
           </div>
         </div>
+
+        {isPaid && (
+          <p className="mb-4 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-200/80">
+            This also cancels your subscription immediately. The remaining paid period is{" "}
+            <span className="font-semibold">forfeited — no refund</span>.
+          </p>
+        )}
+
+        {canCancelInstead && (
+          <div className="mb-4 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3">
+            <p className="text-xs text-white/60">
+              Prefer to keep your data?{" "}
+              <span className="text-white/80">Cancel your subscription instead</span> — your
+              substrate stays read-only until your billing period ends, then it&apos;s deprovisioned
+              for you automatically.
+            </p>
+            <button
+              onClick={onSwitchToCancel}
+              disabled={loading}
+              className="mt-2 text-xs font-medium text-indigo-300 underline-offset-2 transition-colors hover:text-indigo-200 hover:underline disabled:opacity-40"
+            >
+              Cancel subscription instead →
+            </button>
+          </div>
+        )}
 
         <div className="mb-4">
           <label className="mb-1.5 block text-xs text-white/50">

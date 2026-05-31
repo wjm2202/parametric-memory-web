@@ -273,16 +273,17 @@ describe("AdminClient — Danger Zone", () => {
     expect(screen.getByRole("button", { name: /deprovision/i })).toBeInTheDocument();
   });
 
-  it("shows Deprovision button for free tier (existing behaviour)", () => {
+  it("shows Deprovision Now button for free tier", () => {
     renderAdmin({ status: "running", tier: "free" });
-    expect(screen.getByRole("button", { name: /deprovision substrate/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /deprovision now/i })).toBeInTheDocument();
   });
 
-  it("does NOT show Deprovision for running non-free tier without cancelAt", () => {
+  // SM-DEP: self-serve deprovision is now available for paid substrates too
+  // (the modal warns + offers the gentle Cancel path; confirming forfeits the
+  // remaining paid period). Previously this button was hidden for paid tiers.
+  it("shows Deprovision Now for a running paid tier (SM-DEP self-serve)", () => {
     renderAdmin({ status: "running", tier: "starter", cancelAt: null });
-    expect(
-      screen.queryByRole("button", { name: /deprovision substrate/i }),
-    ).not.toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /deprovision now/i })).toBeInTheDocument();
   });
 
   it("does NOT show Cancel Subscription for provision_failed", () => {
