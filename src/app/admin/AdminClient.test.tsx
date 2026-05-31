@@ -10,7 +10,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, waitFor } from "@testing-library/react";
+import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import { SWRConfig } from "swr";
 import AdminClient from "./AdminClient";
 import { IDLE_TIER_CHANGE, type TierChangePollResult } from "@/hooks/useTierChangePoll";
@@ -220,6 +220,18 @@ beforeEach(() => {
   h.mockToast.info.mockReset();
   h.mockToast.success.mockReset();
   h.mockToast.error.mockReset();
+});
+
+afterEach(async () => {
+  // AdminClient kicks off an async billing-status fetch on mount. The
+  // synchronous toast/callout tests assert and return before that promise
+  // resolves, so its setState lands outside act() and React warns. Flush the
+  // pending microtasks inside act() here (fetch → json → setState is a short
+  // chain) so every test ends clean. No-op for tests that already awaited.
+  await act(async () => {
+    await Promise.resolve();
+    await Promise.resolve();
+  });
 });
 
 // ── provision_failed callout ──────────────────────────────────────────────────
@@ -736,8 +748,7 @@ describe("AdminClient — upgrade query-param toasts", () => {
 // These tests cover the two entry points to the failed state:
 //   1. POST /rotate-key fails immediately (handleRotateKey catch path)
 //   2. Poll returns status:"failed" + errorMessage (poll handler path)
-
-import { fireEvent, act } from "@testing-library/react";
+// (fireEvent + act are imported at the top of the file.)
 
 describe("AdminClient — F6 key-rotation failure (handleRotateKey path)", () => {
   const originalFetch = globalThis.fetch;

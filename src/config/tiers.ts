@@ -30,7 +30,12 @@ export interface TierLimits {
    * by slug. Each subscription maps to one substrate. Users can purchase
    * multiple subscriptions to have multiple substrates.
    *
-   * Current tier config still pins to 1 per tier — bump when capacity allows.
+   * SM-MULTI-2 (2026-05): caps now mirror compute's authoritative ceilings
+   * (DEFAULT_CEILINGS / platform_settings / init.sql): free 1, starter 1,
+   * indie 2, pro 3, team 5. tiers.test.ts pins this 1:1 with compute. Buying a
+   * second instance of a HIGHER tier than the account currently holds is still
+   * gated until SM-MULTI-3 reworks the cap trigger; same-tier adds within the
+   * ceiling (e.g. a 2nd Solo on a Solo account) work today.
    */
   maxSubstrates: number;
 }
@@ -166,7 +171,7 @@ export const TIERS: Tier[] = [
       maxBootstrapsPerMonth: 1_000,
       maxStorageMB: 500,
       maxMonthlyCents: 1500,
-      maxSubstrates: 1,
+      maxSubstrates: 2,
     },
     stripePriceEnvKey: "STRIPE_PRICE_INDIE_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_INDIE",
@@ -174,7 +179,7 @@ export const TIERS: Tier[] = [
       { name: "10,000 atoms", included: true },
       { name: "1,000 bootstraps / month", included: true },
       { name: "500 MB storage", included: true },
-      { name: "1 substrate", included: true },
+      { name: "Up to 2 substrates", included: true },
       { name: "$15/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
@@ -196,7 +201,7 @@ export const TIERS: Tier[] = [
       maxBootstrapsPerMonth: 10_000,
       maxStorageMB: 2_048,
       maxMonthlyCents: 5000,
-      maxSubstrates: 1,
+      maxSubstrates: 3,
     },
     stripePriceEnvKey: "STRIPE_PRICE_PRO_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_PRO",
@@ -204,7 +209,7 @@ export const TIERS: Tier[] = [
       { name: "100,000 atoms", included: true },
       { name: "10,000 bootstraps / month", included: true },
       { name: "2 GB storage", included: true },
-      { name: "1 substrate", included: true },
+      { name: "Up to 3 substrates", included: true },
       { name: "$50/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },
@@ -227,7 +232,7 @@ export const TIERS: Tier[] = [
       maxBootstrapsPerMonth: -1,
       maxStorageMB: 10_240,
       maxMonthlyCents: 12000,
-      maxSubstrates: 1,
+      maxSubstrates: 5,
     },
     stripePriceEnvKey: "STRIPE_PRICE_TEAM_MONTHLY",
     stripeProductEnvKey: "STRIPE_PRODUCT_TEAM",
@@ -235,7 +240,7 @@ export const TIERS: Tier[] = [
       { name: "500,000 atoms", included: true },
       { name: "Unlimited bootstraps", included: true },
       { name: "10 GB storage", included: true },
-      { name: "1 substrate", included: true },
+      { name: "Up to 5 substrates", included: true },
       { name: "$120/mo spend cap", included: true },
       { name: "Merkle proofs", included: true },
       { name: "Markov prediction", included: true },

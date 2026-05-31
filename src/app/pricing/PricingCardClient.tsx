@@ -24,6 +24,8 @@ interface PricingCardClientProps {
   tierName: string;
   ctaLabel: string;
   isLoggedIn: boolean;
+  /** SM-MULTI-5: customer already owns >=1 substrate → CTA opens the chooser. */
+  hasExistingSubstrate?: boolean;
   children: React.ReactNode;
 }
 
@@ -51,6 +53,7 @@ export function PricingCardClient({
   tierName,
   ctaLabel,
   isLoggedIn,
+  hasExistingSubstrate = false,
   children,
 }: PricingCardClientProps) {
   const [capacity, setCapacity] = useState<TierCapacity>({
@@ -145,6 +148,7 @@ export function PricingCardClient({
         tierName={tierName}
         label={ctaLabel}
         isLoggedIn={isLoggedIn}
+        hasExistingSubstrate={hasExistingSubstrate}
         capacityStatus={capacity.status}
         capacityMessage={capacity.message}
         onCheckCapacity={checkCapacity}

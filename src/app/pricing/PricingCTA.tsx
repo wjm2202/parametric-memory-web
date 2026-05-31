@@ -2,9 +2,11 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { isValidTierId } from "@/config/tiers";
 import { WaitlistForm } from "./WaitlistForm";
 import { CheckoutDrawer, probeStripeAvailability } from "./CheckoutDrawer";
+import { CapReachedCard } from "./CapReachedCard";
 
 import { mailto } from "@/config/site";
 type CapacityStatus = "open" | "waitlist" | "paused";
@@ -34,6 +36,15 @@ interface PricingCTAProps {
   onCheckCapacity?: () => Promise<TierCapacity>;
   /** True while a capacity check is in flight (disables button). */
   checkingCapacity?: boolean;
+  /**
+   * SM-MULTI-5: whether the logged-in customer already owns >=1 substrate.
+   * When true, clicking the CTA opens the upgrade-vs-add chooser instead of
+   * going straight to checkout — so a customer can either upgrade their
+   * existing instance (one subscription) or add a new one (a second
+   * subscription). Server-resolved by the pricing page. Defaults false (new
+   * customers go straight to checkout).
+   */
+  hasExistingSubstrate?: boolean;
 }
 
 /**
@@ -79,13 +90,25 @@ export function PricingCTA({
   capacityMessage,
   onCheckCapacity,
   checkingCapacity,
+  hasExistingSubstrate = false,
 }: PricingCTAProps) {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [agreedToTerms, setAgreedToTerms] = useState(false);
+  // SM-MULTI-5: when an existing customer clicks the CTA, show the
+  // upgrade-vs-add chooser instead of going straight to checkout.
+  const [showChooser, setShowChooser] = useState(false);
   // Local state to track if capacity check returned waitlist/paused AFTER click
   const [blockedByCapacity, setBlockedByCapacity] = useState(false);
   const [blockMessage, setBlockMessage] = useState<string | null>(null);
+  // SM-MULTI-1: per-account substrate cap hit (distinct from tier capacity).
+  // Set from a 409 substrate_cap_reached on the hosted-fallback checkout path.
+  const [capBlock, setCapBlock] = useState<{
+    tier: string;
+    activeCount: number;
+    ceiling: number;
+  } | null>(null);
   // Drawer state — open when Stripe is loadable and capacity is open.
   const [drawerOpen, setDrawerOpen] = useState(false);
   // Set when probeStripeAvailability fails (adblock / CSP / network). Renders
@@ -161,12 +184,30 @@ export function PricingCTA({
     );
   }
 
-  // Logged in → check capacity on click → if available, redirect to Stripe Checkout
+  // Logged in → on click, either open the upgrade-vs-add chooser (existing
+  // customer) or go straight to checkout (new customer).
   async function handleCheckout() {
     if (!agreedToTerms) {
       setError("Please agree to the Terms of Service before continuing.");
       return;
     }
+    setError(null);
+
+    // SM-MULTI-5: an existing customer chooses between upgrading their current
+    // instance (one subscription) and adding a new one (a second subscription).
+    if (hasExistingSubstrate) {
+      setShowChooser(true);
+      return;
+    }
+
+    await proceedToCheckout();
+  }
+
+  // The actual purchase flow: capacity check → Stripe probe → embedded drawer
+  // (or hosted-redirect fallback). Reached directly for new customers, or via
+  // the chooser's "Add a new instance" action for existing customers.
+  async function proceedToCheckout() {
+    setShowChooser(false);
     setLoading(true);
     setError(null);
 
@@ -220,7 +261,27 @@ export function PricingCTA({
           const body = (await res.json().catch(() => null)) as {
             error?: string;
             message?: string;
+            tier?: string;
+            activeCount?: number;
+            ceiling?: number;
           } | null;
+          // SM-MULTI-1: per-account substrate cap → actionable card, not a
+          // dead-end error string. Mirrors CheckoutDrawer's embedded path.
+          if (
+            res.status === 409 &&
+            body?.error === "substrate_cap_reached" &&
+            typeof body.tier === "string" &&
+            typeof body.activeCount === "number" &&
+            typeof body.ceiling === "number"
+          ) {
+            setCapBlock({
+              tier: body.tier,
+              activeCount: body.activeCount,
+              ceiling: body.ceiling,
+            });
+            setLoading(false);
+            return;
+          }
           setError(
             res.status === 401
               ? "You need to sign in again before paying. Please reload."
@@ -258,6 +319,21 @@ export function PricingCTA({
     setLoading(false);
   }
 
+  // SM-MULTI-1: substrate cap hit on the hosted-fallback path → show the
+  // actionable card in place of the CTA (the embedded drawer path renders the
+  // same card inside the drawer).
+  if (capBlock) {
+    return (
+      <div className="mb-8">
+        <CapReachedCard
+          tier={capBlock.tier}
+          activeCount={capBlock.activeCount}
+          ceiling={capBlock.ceiling}
+        />
+      </div>
+    );
+  }
+
   const isDisabled = loading || !agreedToTerms || checkingCapacity;
 
   return (
@@ -293,26 +369,66 @@ export function PricingCTA({
         </span>
       </label>
 
-      <button
-        onClick={handleCheckout}
-        disabled={isDisabled}
-        data-testid={`pricing-card-${tierId === "indie" ? "solo" : tierId}-cta`}
-        className="bg-brand-500 hover:bg-brand-400 ring-brand-400/30 hover:ring-brand-400/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white ring-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
-      >
-        {checkingCapacity ? (
-          <>
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            Checking availability…
-          </>
-        ) : loading ? (
-          <>
-            <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
-            Opening checkout…
-          </>
-        ) : (
-          label || `Get ${tierName}`
-        )}
-      </button>
+      {showChooser ? (
+        /* SM-MULTI-5: existing customer chooses upgrade-in-place vs add-new.
+           Upgrade = one subscription (tier-change on the current instance,
+           done from the dashboard). Add new = a second subscription/instance
+           (continue to checkout). */
+        <div
+          data-testid="pricing-chooser"
+          className="space-y-2 rounded-lg border border-white/10 bg-white/[0.03] p-3"
+        >
+          <p className="text-xs leading-relaxed text-white/70">
+            You already have a memory instance. Upgrade it to{" "}
+            <span className="font-medium text-white">{tierName}</span> (keeps one subscription), or
+            add a new {tierName} instance as a separate subscription.
+          </p>
+          <button
+            type="button"
+            data-testid="pricing-chooser-upgrade"
+            onClick={() => router.push("/dashboard")}
+            className="bg-brand-500 hover:bg-brand-400 ring-brand-400/30 inline-flex w-full items-center justify-center rounded-lg px-6 py-2.5 text-sm font-semibold text-white ring-1 transition-all"
+          >
+            Upgrade my existing instance
+          </button>
+          <button
+            type="button"
+            data-testid="pricing-chooser-add"
+            onClick={proceedToCheckout}
+            className="ring-surface-200/15 text-surface-200 inline-flex w-full items-center justify-center rounded-lg px-6 py-2.5 text-sm font-semibold ring-1 transition-all hover:bg-white/5"
+          >
+            Add a new {tierName} instance
+          </button>
+          <button
+            type="button"
+            onClick={() => setShowChooser(false)}
+            className="w-full py-1 text-center text-xs text-white/40 hover:text-white/70"
+          >
+            Cancel
+          </button>
+        </div>
+      ) : (
+        <button
+          onClick={handleCheckout}
+          disabled={isDisabled}
+          data-testid={`pricing-card-${tierId === "indie" ? "solo" : tierId}-cta`}
+          className="bg-brand-500 hover:bg-brand-400 ring-brand-400/30 hover:ring-brand-400/50 inline-flex w-full items-center justify-center gap-2 rounded-lg px-6 py-3 text-sm font-semibold text-white ring-1 transition-all disabled:cursor-not-allowed disabled:opacity-50"
+        >
+          {checkingCapacity ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              Checking availability…
+            </>
+          ) : loading ? (
+            <>
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+              Opening checkout…
+            </>
+          ) : (
+            label || `Get ${tierName}`
+          )}
+        </button>
+      )}
       {error && <p className="mt-2 text-center text-xs text-red-400">{error}</p>}
 
       {/* Adblock / CSP probe failure notice (D10). Shown in place of the

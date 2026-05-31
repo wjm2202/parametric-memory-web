@@ -11,7 +11,7 @@
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent, waitFor } from "@testing-library/react";
+import { render, screen, fireEvent, waitFor, act } from "@testing-library/react";
 
 // ── Mocks (must come BEFORE component import) ──────────────────────────────
 
@@ -37,8 +37,38 @@ vi.mock("@stripe/react-stripe-js", () => ({
   EmbeddedCheckout: () => <div data-testid="mock-embedded-checkout-iframe" />,
 }));
 
+// CapReachedCard (rendered on the substrate_cap_reached 409) uses next/link.
+vi.mock("next/link", () => ({
+  default: ({
+    children,
+    href,
+    ...props
+  }: {
+    children: React.ReactNode;
+    href: string;
+    [key: string]: unknown;
+  }) => (
+    <a href={href} {...props}>
+      {children}
+    </a>
+  ),
+}));
+
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
+
+/**
+ * Invoke the captured fetchClientSecret inside act() so the setState it makes
+ * on the error paths (401 / 409 / missing-secret) flushes within React's act
+ * scope — otherwise React warns "An update … was not wrapped in act(...)".
+ */
+async function callFetchClientSecret(): Promise<string> {
+  let result = "";
+  await act(async () => {
+    result = await lastFetchClientSecretCall.fn!();
+  });
+  return result;
+}
 
 // Only CheckoutDrawer is statically imported. The probeStripeAvailability
 // tests use a dynamic `await import("./CheckoutDrawer")` inside each test
@@ -144,7 +174,7 @@ describe("CheckoutDrawer", () => {
     render(<CheckoutDrawer open onClose={() => {}} tierId="indie" tierName="Solo" />);
 
     expect(lastFetchClientSecretCall.fn).toBeTruthy();
-    const result = await lastFetchClientSecretCall.fn!();
+    const result = await callFetchClientSecret();
 
     expect(mockFetch).toHaveBeenCalledWith(
       "/api/checkout",
@@ -166,7 +196,7 @@ describe("CheckoutDrawer", () => {
 
     render(<CheckoutDrawer open onClose={() => {}} tierId="indie" tierName="Solo" />);
     // Trigger fetchClientSecret manually (in real life Stripe.js calls it).
-    await lastFetchClientSecretCall.fn!();
+    await callFetchClientSecret();
     // The drawer updates state → re-render renders the error body.
     await waitFor(() => {
       expect(screen.getByTestId("checkout-drawer-error")).toBeTruthy();
@@ -174,6 +204,49 @@ describe("CheckoutDrawer", () => {
     expect(screen.getByTestId("checkout-drawer-error").textContent).toContain(
       "Solo is at capacity",
     );
+  });
+
+  it("renders the actionable CapReachedCard (not raw error text) on 409 substrate_cap_reached", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: () =>
+        Promise.resolve({
+          error: "substrate_cap_reached",
+          tier: "starter",
+          activeCount: 1,
+          ceiling: 1,
+          message: "You have 1 active substrate(s). Your starter plan allows a maximum of 1.",
+        }),
+    });
+
+    render(<CheckoutDrawer open onClose={() => {}} tierId="pro" tierName="Professional" />);
+    const result = await callFetchClientSecret();
+
+    expect(result).toBe("");
+    await waitFor(() => {
+      expect(screen.getByTestId("cap-reached-card")).toBeTruthy();
+    });
+    // The actionable upgrade CTA is present; the dead-end ErrorBody is not.
+    expect(screen.getByTestId("cap-reached-upgrade-cta")).toBeTruthy();
+    expect(screen.queryByTestId("checkout-drawer-error")).toBeNull();
+  });
+
+  it("still renders the plain error notice for a non-cap 409 (tier_at_capacity)", async () => {
+    mockFetch.mockResolvedValue({
+      ok: false,
+      status: 409,
+      json: () =>
+        Promise.resolve({ error: "tier_at_capacity", message: "Pro is at capacity — try later." }),
+    });
+
+    render(<CheckoutDrawer open onClose={() => {}} tierId="pro" tierName="Professional" />);
+    await callFetchClientSecret();
+
+    await waitFor(() => {
+      expect(screen.getByTestId("checkout-drawer-error")).toBeTruthy();
+    });
+    expect(screen.queryByTestId("cap-reached-card")).toBeNull();
   });
 
   it("renders a friendly 401 message and short-circuits to empty string", async () => {
@@ -184,7 +257,7 @@ describe("CheckoutDrawer", () => {
     });
 
     render(<CheckoutDrawer open onClose={() => {}} tierId="indie" tierName="Solo" />);
-    const result = await lastFetchClientSecretCall.fn!();
+    const result = await callFetchClientSecret();
 
     expect(result).toBe("");
     await waitFor(() => {
@@ -200,7 +273,7 @@ describe("CheckoutDrawer", () => {
     });
 
     render(<CheckoutDrawer open onClose={() => {}} tierId="indie" tierName="Solo" />);
-    const result = await lastFetchClientSecretCall.fn!();
+    const result = await callFetchClientSecret();
 
     expect(result).toBe("");
     await waitFor(() => {
