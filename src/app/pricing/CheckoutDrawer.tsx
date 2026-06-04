@@ -30,6 +30,7 @@
 "use client";
 
 import { useCallback, useEffect, useMemo, useState } from "react";
+import { createPortal } from "react-dom";
 import { loadStripe, type Stripe } from "@stripe/stripe-js";
 import { EmbeddedCheckoutProvider, EmbeddedCheckout } from "@stripe/react-stripe-js";
 import { CapReachedCard } from "./CapReachedCard";
@@ -95,6 +96,25 @@ export function CheckoutDrawer({ open, onClose, tierId, tierName, priceLabel }: 
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
+
+  // ── Slide-in entrance + body scroll-lock ───────────────────────────────
+  // `show` flips true one frame AFTER mount so the panel transitions in from
+  // off-screen (translate-x-full → 0) and the backdrop fades in — the sheet
+  // "makes space" for the form. Locking body scroll keeps the page from
+  // moving behind the overlay. (Close unmounts us via open=false, so this is
+  // a one-way entrance — no exit-animation bookkeeping needed for checkout.)
+  const [show, setShow] = useState(false);
+  useEffect(() => {
+    if (!open) return;
+    const prevOverflow = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    const raf = requestAnimationFrame(() => setShow(true));
+    return () => {
+      document.body.style.overflow = prevOverflow;
+      cancelAnimationFrame(raf);
+      setShow(false);
+    };
+  }, [open]);
 
   // ── fetchClientSecret — bound per-mount ────────────────────────────────
   // <EmbeddedCheckoutProvider> calls this once to obtain the clientSecret
@@ -163,22 +183,32 @@ export function CheckoutDrawer({ open, onClose, tierId, tierName, priceLabel }: 
   const providerOptions = useMemo(() => ({ fetchClientSecret }), [fetchClientSecret]);
 
   if (!open) return null;
+  if (typeof document === "undefined") return null; // SSR guard — portal needs a DOM
 
-  return (
+  // Portal to <body> so `fixed` positioning resolves against the VIEWPORT.
+  // The pricing card uses backdrop-blur (a backdrop-filter), which creates a
+  // containing block that would otherwise trap this overlay inside the card.
+  return createPortal(
     <div
       role="dialog"
       aria-modal="true"
       aria-labelledby="checkout-drawer-title"
       data-testid="checkout-drawer"
-      className="fixed inset-0 z-40 flex justify-end"
+      className="fixed inset-0 z-[60] flex justify-end"
     >
       <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        className={`absolute inset-0 bg-black/70 backdrop-blur-sm transition-opacity duration-300 ${
+          show ? "opacity-100" : "opacity-0"
+        }`}
         data-testid="checkout-drawer-backdrop"
         onClick={onClose}
       />
 
-      <aside className="relative flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-white/10 bg-[#0d0d14] shadow-2xl">
+      <aside
+        className={`relative flex h-full w-full max-w-xl flex-col overflow-hidden border-l border-white/10 bg-[#0d0d14] shadow-2xl transition-transform duration-300 ease-out ${
+          show ? "translate-x-0" : "translate-x-full"
+        }`}
+      >
         <header className="flex items-start justify-between gap-4 border-b border-white/5 px-6 py-5">
           <div>
             <h2
@@ -200,7 +230,7 @@ export function CheckoutDrawer({ open, onClose, tierId, tierName, priceLabel }: 
           </button>
         </header>
 
-        <div className="flex-1 overflow-y-auto px-2 py-3">
+        <div className="flex-1 overflow-y-auto px-4 py-4 sm:px-6">
           {state.kind === "cap" ? (
             <CapReachedCard
               tier={state.tier}
@@ -217,7 +247,8 @@ export function CheckoutDrawer({ open, onClose, tierId, tierName, priceLabel }: 
           )}
         </div>
       </aside>
-    </div>
+    </div>,
+    document.body,
   );
 }
 
