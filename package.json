@@ -4,9 +4,9 @@
   "private": true,
   "engines": {
     "node": ">=22.0.0 <23.0.0",
-    "npm": ">=10.0.0"
+    "npm": ">=11.10.0"
   },
-  "packageManager": "npm@10.9.4",
+  "packageManager": "npm@11.10.0",
   "description": "Commercial website, documentation, and developer portal for Parametric Memory",
   "scripts": {
     "dev": "next dev",
