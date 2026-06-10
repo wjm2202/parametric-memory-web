@@ -222,8 +222,11 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
 
   // One poll instance, shared between the progress banner and the change-plan
   // button, so only a single 3 s interval runs regardless of which consumers
-  // observe it.
-  const tierChangeResult = useTierChangePoll(slug);
+  // observe it. `startTierChangePolling` re-arms the loop when an upgrade
+  // kicks off — the loop stops while idle, so without the re-arm the banner
+  // would only ever appear after a page reload (2026-06-10 fix).
+  const { result: tierChangeResult, startPolling: startTierChangePolling } =
+    useTierChangePoll(slug);
 
   // Translate the substrate's raw caps into the shape ChangePlanSheet wants.
   // Note the casing flip: SubstrateInfo uses `maxStorageMB`, the sheet uses
@@ -382,6 +385,21 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
     }
   }
 
+  /**
+   * Human-readable wait from the API's `retryAfterSeconds`. The rotation
+   * rate limits are per-account (2 attempts/hour including failed, 3
+   * completed/24h — KR-S-04 on compute), so the unlock time is the one
+   * thing a rate-limited user actually needs to know.
+   */
+  function formatRotationWait(seconds: number): string {
+    if (seconds < 90) return "about a minute";
+    if (seconds < 3600) return `about ${Math.ceil(seconds / 60)} minutes`;
+    const hours = Math.floor(seconds / 3600);
+    const minutes = Math.ceil((seconds % 3600) / 60);
+    const hourPart = hours === 1 ? "1 hour" : `${hours} hours`;
+    return minutes > 0 ? `about ${hourPart} ${minutes} min` : `about ${hourPart}`;
+  }
+
   async function handleRotateKey() {
     // F6: clear any stale error from a prior failed attempt before starting.
     setRotationError(null);
@@ -393,6 +411,26 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
         method: "POST",
       });
       if (!res.ok) {
+        // Rate-limited is a self-service condition, not a support case:
+        // surface the limit that tripped and when it reopens.
+        if (res.status === 429) {
+          let detail =
+            "Rotation limit reached — at most 2 attempts per hour and 3 rotations per day.";
+          try {
+            const body = await res.json();
+            const wait =
+              typeof body.retryAfterSeconds === "number"
+                ? ` You can rotate again in ${formatRotationWait(body.retryAfterSeconds)}.`
+                : "";
+            detail = `${body.message ?? detail}${wait}`;
+          } catch {
+            /* body unreadable — keep the generic limits text */
+          }
+          setRotationStatus("failed");
+          setRotationError(detail);
+          setKeyRotating(false);
+          return;
+        }
         // Compute's recent-auth middleware returns 401 + a structured
         // `code: "reauth_required"` body when the recent-auth window (10 min single-factor, 30 min TOTP — migration 083) has
         // expired (see src/lib/reauth.ts for the contract). Detecting it
@@ -598,6 +636,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                       currentLimits={currentLimits}
                       nextBillingDate={nextBillingDate}
                       pollResult={tierChangeResult}
+                      onUpgradeStarted={startTierChangePolling}
                     />
                   )}
                   {substrate.cancelAt && (
@@ -969,6 +1008,10 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                   <div className="space-y-3">
                     <p className="text-sm text-white/50">
                       Rotating invalidates your current key and generates a new claimable one.
+                    </p>
+                    <p className="text-xs text-white/30" data-testid="keyrot-limits">
+                      Limits: 2 rotation attempts per hour (including failed attempts), 3
+                      rotations per day.
                     </p>
                     <button
                       onClick={handleRotateKey}

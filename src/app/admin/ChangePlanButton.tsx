@@ -53,6 +53,13 @@ interface Props {
    * without duplicating Tailwind fragments here.
    */
   className?: string;
+  /**
+   * Forwarded to ChangePlanSheet → ConfirmUpgradeDialog. Fires when
+   * POST /api/billing/upgrade is accepted (202). AdminClient passes
+   * useTierChangePoll's `startPolling` so the (stopped-while-idle) poll
+   * loop re-arms and the progress banner appears (2026-06-10 fix).
+   */
+  onUpgradeStarted?: () => void;
 }
 
 /**
@@ -71,6 +78,7 @@ export function ChangePlanButton({
   nextBillingDate,
   pollResult,
   className,
+  onUpgradeStarted,
 }: Props) {
   const [open, setOpen] = useState(false);
 
@@ -112,6 +120,7 @@ export function ChangePlanButton({
           currentTier={currentTier}
           currentLimits={currentLimits}
           nextBillingDate={nextBillingDate}
+          onUpgradeStarted={onUpgradeStarted}
         />
       )}
     </>
