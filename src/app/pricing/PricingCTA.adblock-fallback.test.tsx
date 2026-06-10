@@ -67,9 +67,9 @@ vi.mock("next/link", () => ({
   ),
 }));
 
-// PricingCTA calls useRouter for the SM-MULTI-5 chooser; stub it so render
-// doesn't require an app-router context. (This suite renders the new-customer
-// path — hasExistingSubstrate defaults false — so the chooser never opens.)
+// Harmless next/navigation stub so render never needs an app-router context.
+// (PricingCTA no longer uses useRouter — the SM-MULTI-5 upgrade-vs-add chooser
+// was removed; pricing is always a new-substrate checkout.)
 vi.mock("next/navigation", () => ({
   useRouter: () => ({ push: vi.fn() }),
 }));
