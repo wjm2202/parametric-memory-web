@@ -31,7 +31,7 @@
 
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   DEDICATED_MIGRATION_WARNING_BODY,
@@ -40,12 +40,17 @@ import {
   DIALOG_CONFIRM_LABEL,
   DIALOG_CONFIRM_LABEL_SUBMITTING,
   DIALOG_TITLE,
+  PREVIEW_ERROR,
+  PREVIEW_LOADING,
+  PREVIEW_RETRY_LABEL,
   TOAST_PENDING_BODY,
   TOAST_PENDING_TITLE,
   TOAST_SUBMIT_ERROR_BODY,
   TOAST_SUBMIT_ERROR_TITLE,
+  chargedTodayLabel,
+  chargedTodaySubtext,
   formatUsdCents,
-  prorationPreview,
+  fromDateSubtext,
   type TierChangeTransitionKind,
 } from "./tier-change-copy";
 import { getTierLabel } from "@/config/tiers";
@@ -125,6 +130,20 @@ interface Props {
 }
 
 /**
+ * Live proration preview fetched from GET /api/billing/upgrade/preview.
+ * Mirrors compute's UpgradePreviewResponse (camelCase, cents, ISO dates).
+ */
+interface UpgradePreviewData {
+  prorationCents: number;
+  newPriceCents: number;
+  nextInvoiceDate: string | null;
+  nextInvoiceTotalCents: number;
+  currency: string;
+}
+
+type PreviewStatus = "loading" | "loaded" | "error";
+
+/**
  * Generate a browser-side idempotency key so the backend can de-duplicate a
  * double-click on Upgrade. `crypto.randomUUID` is available in all modern
  * browsers + jsdom; defensive fallback for ancient environments.
@@ -147,24 +166,41 @@ export function ConfirmUpgradeDialog({
   isCancelPending = false,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
+  const [previewStatus, setPreviewStatus] = useState<PreviewStatus>("loading");
+  const [previewData, setPreviewData] = useState<UpgradePreviewData | null>(null);
 
   const fromLabel = getTierLabel(currentTier);
   const toLabel = option.name;
   const isDedicatedMigration = option.transitionKind === "shared_to_dedicated";
 
   /**
-   * Proration sentence. When we know the next billing date we use the full
-   * "…then $X/mo on May 17" copy; otherwise we fall back to a shorter form
-   * so the dialog never renders a broken date.
+   * Fetch the live Stripe proration preview. Called on dialog open and on
+   * retry. `substrateSlug` and `option.tier` are stable for the dialog's
+   * lifetime so the useEffect below runs once (on mount = dialog open).
    */
-  const prorationLine = useMemo(() => {
-    if (nextBillingDate) {
-      return prorationPreview(option.estimatedProrationCents, option.amountCents, nextBillingDate);
+  async function fetchPreview() {
+    setPreviewStatus("loading");
+    try {
+      const params = new URLSearchParams({ substrateSlug, tier: option.tier });
+      const res = await fetch(`/api/billing/upgrade/preview?${params.toString()}`);
+      if (!res.ok) {
+        setPreviewStatus("error");
+        return;
+      }
+      const data = (await res.json()) as UpgradePreviewData;
+      setPreviewData(data);
+      setPreviewStatus("loaded");
+    } catch {
+      setPreviewStatus("error");
     }
-    return `${formatUsdCents(option.estimatedProrationCents)} charged today, then ${formatUsdCents(
-      option.amountCents,
-    )}/mo`;
-  }, [nextBillingDate, option.estimatedProrationCents, option.amountCents]);
+  }
+
+  // Fetch preview once on dialog open. Props are stable for the lifetime of
+  // this dialog instance — the parent unmounts and remounts on each selection.
+
+  useEffect(() => {
+    void fetchPreview();
+  }, []);
 
   // Esc closes the dialog (unless we're mid-submit — avoids closing while a
   // network round-trip is in flight and stranding the customer in limbo).
@@ -177,7 +213,7 @@ export function ConfirmUpgradeDialog({
   }, [onClose, submitting]);
 
   async function handleUpgrade() {
-    if (submitting) return;
+    if (submitting || previewStatus !== "loaded") return;
     setSubmitting(true);
 
     try {
@@ -278,23 +314,55 @@ export function ConfirmUpgradeDialog({
           </p>
         </div>
 
-        {/* Pricing block */}
+        {/* Pricing block — shows live Stripe proration preview */}
         <div className="mb-4 rounded-lg border border-white/10 bg-white/[0.02] p-4">
-          <p className="text-xs tracking-wider text-white/40 uppercase">Today</p>
-          <p className="mt-1 text-lg font-semibold text-white" data-testid="proration-charge">
-            {formatUsdCents(option.estimatedProrationCents)}
-          </p>
-          <p className="mt-1 text-xs text-white/50">prorated for the remainder of this period</p>
+          {previewStatus === "loading" && (
+            <div data-testid="proration-loading" aria-label={PREVIEW_LOADING}>
+              <div className="h-2.5 w-20 animate-pulse rounded bg-white/10" />
+              <div className="mt-2 h-6 w-28 animate-pulse rounded bg-white/10" />
+              <div className="mt-1.5 h-2 w-48 animate-pulse rounded bg-white/10" />
+              <div className="mt-3 border-t border-white/5 pt-3">
+                <div className="h-2.5 w-24 animate-pulse rounded bg-white/10" />
+                <div className="mt-2 h-4 w-20 animate-pulse rounded bg-white/10" />
+                <div className="mt-1.5 h-2 w-40 animate-pulse rounded bg-white/10" />
+              </div>
+            </div>
+          )}
 
-          <div className="mt-3 border-t border-white/5 pt-3">
-            <p className="text-xs tracking-wider text-white/40 uppercase">Then, on next renewal</p>
-            <p className="mt-1 text-sm text-white/80" data-testid="proration-monthly">
-              {formatUsdCents(option.amountCents)}/mo
-            </p>
-            <p className="mt-1 text-xs text-white/40" data-testid="proration-full-line">
-              {prorationLine}
-            </p>
-          </div>
+          {previewStatus === "error" && (
+            <div data-testid="proration-error" className="flex items-center justify-between gap-3">
+              <p className="text-sm text-white/50">{PREVIEW_ERROR}</p>
+              <button
+                type="button"
+                onClick={() => void fetchPreview()}
+                className="shrink-0 rounded-md px-3 py-1 text-xs font-medium text-indigo-400 ring-1 ring-indigo-500/40 transition-colors hover:bg-indigo-500/10"
+              >
+                {PREVIEW_RETRY_LABEL}
+              </button>
+            </div>
+          )}
+
+          {previewStatus === "loaded" && previewData && (
+            <>
+              <p className="text-xs tracking-wider text-white/40 uppercase">Charged today</p>
+              <p className="mt-1 text-lg font-semibold text-white" data-testid="proration-charge">
+                {chargedTodayLabel(previewData.prorationCents)}
+              </p>
+              <p className="mt-1 text-xs text-white/50" data-testid="proration-charge-subtext">
+                {chargedTodaySubtext(previewData.prorationCents)}
+              </p>
+
+              <div className="mt-3 border-t border-white/5 pt-3">
+                <p className="text-xs tracking-wider text-white/40 uppercase">From next renewal</p>
+                <p className="mt-1 text-sm text-white/80" data-testid="proration-monthly">
+                  {formatUsdCents(previewData.newPriceCents)}/mo
+                </p>
+                <p className="mt-1 text-xs text-white/40" data-testid="proration-from-date">
+                  {fromDateSubtext(previewData.nextInvoiceDate)}
+                </p>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Dedicated-migration warning block */}
@@ -342,7 +410,7 @@ export function ConfirmUpgradeDialog({
           </button>
           <button
             onClick={handleUpgrade}
-            disabled={submitting}
+            disabled={submitting || previewStatus !== "loaded"}
             data-testid="confirm-upgrade-confirm"
             className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
           >

@@ -1,42 +1,50 @@
 /**
  * Tests for ConfirmUpgradeDialog.
  *
- * Covers:
- *   1. Header restates "Upgrading from {from} to {to}" with canonical tier labels.
- *   2. Proration today + monthly-thereafter display correctly, with the full
- *      prorationPreview() line when nextBillingDate is provided and the
- *      fallback line when it isn't.
- *   3. Dedicated-migration warning panel renders only for
- *      transitionKind === "shared_to_dedicated".
- *   4. Cancel button fires onClose; backdrop click fires onClose.
- *   5. Happy path: Upgrade button POSTs to /api/billing/upgrade with
- *      substrateSlug, targetTier, idempotencyKey; on 2xx the dialog fires
- *      `onUpgradeStarted` (NOT onClose) and emits the "Processing your
- *      upgrade…" toast — no window.location redirect.
- *   6. Submitting state: button label swaps to "Starting upgrade…" and
- *      Cancel is disabled.
- *   7. Error path (non-ok response): toast.error fires, the dialog stays
- *      open, Upgrade re-enables so the user can retry, onUpgradeStarted is
- *      NOT called.
- *   8. Error path (network failure): same as above.
- *   9. Esc key closes the dialog (when not submitting).
+ * The dialog now fetches GET /api/billing/upgrade/preview on mount so the user
+ * sees real Stripe proration figures before confirming. The Upgrade button is
+ * disabled until preview loads (or after an error + retry). This file covers
+ * all three preview states (loading / loaded / error) plus the existing upgrade
+ * submit flow.
  *
- * Architectural note: as of May 2026 the upgrade flow is in-place
- * (`stripe.subscriptions.update`), not Stripe Checkout. The dialog no
- * longer redirects the browser; it hands off to `useTierChangePoll` via
- * the `onUpgradeStarted` callback.
+ * Covers:
+ *   1.  Header restates "Upgrading from {from} to {to}" with canonical tier labels.
+ *   2.  On mount — fetch /api/billing/upgrade/preview with correct params.
+ *   3.  Loading state — skeleton visible, Upgrade button disabled.
+ *   4.  Loaded state — proration-charge shows real prorationCents from preview.
+ *   5.  Loaded state — proration-monthly shows real newPriceCents from preview.
+ *   6.  Zero proration — renders "No charge today".
+ *   7.  nextInvoiceDate present — proration-from-date includes the date.
+ *   8.  nextInvoiceDate null — proration-from-date falls back to "next renewal".
+ *   9.  Error state — error panel + Retry shown, Upgrade disabled.
+ *  10.  Retry — clicking Retry re-fetches preview; success re-enables Upgrade.
+ *  11.  Cancel button fires onClose.
+ *  12.  × close icon fires onClose; disabled while submitting.
+ *  13.  Backdrop click fires onClose; suppressed while submitting.
+ *  14.  Esc fires onClose; non-Escape keys don't.
+ *  15.  Upgrade disabled while submitting.
+ *  16.  Happy path: POSTs /api/billing/upgrade with correct body, info-toasts,
+ *       calls onUpgradeStarted — does NOT call onClose.
+ *  17.  Happy path: ignores body shape on 2xx — no redirect.
+ *  18.  Happy path: button label swaps to "Starting upgrade…" while submitting.
+ *  19.  Error path (non-ok response): toast.error, dialog stays open, buttons re-enabled.
+ *  20.  Error path (network failure): same.
+ *  21.  Does NOT double-submit on rapid clicks.
+ *  22.  dedicated_migration warning renders only for shared_to_dedicated.
+ *  23.  D9: isCancelPending note renders when prop is true.
+ *  24.  a11y — role=dialog, aria-modal, aria-labelledby.
+ *
+ * Architectural note: the upgrade flow is in-place (`stripe.subscriptions.update`).
+ * The dialog does NOT redirect the browser; it hands off via `onUpgradeStarted`.
  */
 
 import { describe, it, expect, vi, beforeEach } from "vitest";
-import { render, screen, fireEvent } from "@testing-library/react";
-// React 19: `act` lives on the `react` package; `react-dom/test-utils` is
-// deprecated. Matching TierChangeProgressBanner.test.tsx.
+import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { act } from "react";
 import { ConfirmUpgradeDialog, type UpgradeOption } from "./ConfirmUpgradeDialog";
 
 // ─── Mocks ────────────────────────────────────────────────────────────────────
 
-// sonner — every import of `toast` in the SUT resolves to these vi.fn() spies.
 const mockToastError = vi.fn();
 const mockToastInfo = vi.fn();
 vi.mock("sonner", () => ({
@@ -47,11 +55,23 @@ vi.mock("sonner", () => ({
   },
 }));
 
-// Global fetch — each test arranges its own resolved/rejected mock.
 const mockFetch = vi.fn();
 vi.stubGlobal("fetch", mockFetch);
 
-// ─── Test fixtures ────────────────────────────────────────────────────────────
+// ─── Fixtures ─────────────────────────────────────────────────────────────────
+
+/** Returned by GET /api/billing/upgrade/preview. prorationCents: 633 = "$6.33". */
+const PREVIEW_STUB = {
+  currentTier: "indie",
+  targetTier: "pro",
+  transitionType: "shared_to_shared",
+  currentPriceCents: 900,
+  newPriceCents: 2900,
+  prorationCents: 633,
+  currency: "usd",
+  nextInvoiceDate: "2026-07-01T00:00:00.000Z",
+  nextInvoiceTotalCents: 2900,
+};
 
 const FAST_PATH_OPTION: UpgradeOption = {
   tier: "pro",
@@ -81,9 +101,6 @@ const SLOW_PATH_OPTION: UpgradeOption = {
   ],
 };
 
-// Use a local-midnight constructor (not an ISO string) so the "on May 17"
-// copy is TZ-independent — ISO strings shift the rendered day by up to ±1
-// depending on the environment offset. Month is 0-indexed → 4 = May.
 const NEXT_BILLING = new Date(2026, 4, 17);
 
 interface RenderOverrides {
@@ -93,7 +110,6 @@ interface RenderOverrides {
   substrateSlug?: string;
   onClose?: () => void;
   onUpgradeStarted?: () => void;
-  /** Sprint 2026-05-18 D9 — drives the auto-reactivate inline note. */
   isCancelPending?: boolean;
 }
 
@@ -116,71 +132,226 @@ function renderDialog(overrides: RenderOverrides = {}) {
   return { ...utils, onClose, onUpgradeStarted };
 }
 
+/**
+ * Helper: mock fetch with URL-based dispatch.
+ * - Preview GET resolves with `previewData` (default: PREVIEW_STUB).
+ * - Upgrade POST resolves with `upgradeResponse` (default: accepted=true).
+ * - Passing `null` for either makes it never resolve (for testing pending states).
+ */
+function mockFetchDispatch(
+  opts: {
+    preview?: object | null;
+    previewStatus?: number;
+    upgrade?: object | null;
+    upgradeOk?: boolean;
+  } = {},
+) {
+  const {
+    preview = PREVIEW_STUB,
+    previewStatus = 200,
+    upgrade = { accepted: true },
+    upgradeOk = true,
+  } = opts;
+
+  mockFetch.mockImplementation((url: string) => {
+    if (typeof url === "string" && url.includes("/api/billing/upgrade/preview")) {
+      if (preview === null) return new Promise(() => {}); // never resolves
+      return Promise.resolve({
+        ok: previewStatus >= 200 && previewStatus < 300,
+        status: previewStatus,
+        json: () => Promise.resolve(preview),
+      });
+    }
+    // Upgrade POST
+    if (upgrade === null) return new Promise(() => {}); // never resolves
+    return Promise.resolve({
+      ok: upgradeOk,
+      status: upgradeOk ? 200 : 409,
+      json: () => Promise.resolve(upgrade),
+    });
+  });
+}
+
+/** Wait for the preview to finish loading (skeleton gone, charge visible). */
+async function waitForPreviewLoaded() {
+  await waitFor(() => screen.getByTestId("proration-charge"));
+}
+
+// ─── Setup ────────────────────────────────────────────────────────────────────
+
 beforeEach(() => {
   vi.clearAllMocks();
   mockToastError.mockClear();
   mockToastInfo.mockClear();
+  // Default: preview resolves immediately. Tests that need specific preview
+  // behavior (error, loading-stuck, retry) call mockFetchDispatch directly.
+  mockFetchDispatch();
 });
 
-// ─── Header restatement ───────────────────────────────────────────────────────
+// ─── Header ───────────────────────────────────────────────────────────────────
 
 describe("ConfirmUpgradeDialog — header", () => {
-  it("restates the transition with canonical tier display names", () => {
-    renderDialog({ currentTier: "indie", option: FAST_PATH_OPTION });
-    // getTierLabel("indie") === "Solo"
-    expect(screen.getByText(/Solo/)).toBeInTheDocument();
-    // option.name is "Professional"
+  it("restates the transition with canonical tier display names", async () => {
+    await act(async () => {
+      renderDialog({ currentTier: "indie", option: FAST_PATH_OPTION });
+    });
+    expect(screen.getByText(/Solo/)).toBeInTheDocument(); // getTierLabel("indie")
     expect(screen.getByText(/Professional/)).toBeInTheDocument();
-    // "Upgrading from" intro
     expect(screen.getByText(/Upgrading from/i)).toBeInTheDocument();
   });
 
-  it("renders the 'Confirm upgrade' title", () => {
-    renderDialog();
+  it("renders the 'Confirm upgrade' title", async () => {
+    await act(async () => {
+      renderDialog();
+    });
     expect(screen.getByRole("heading", { name: /confirm upgrade/i })).toBeInTheDocument();
+  });
+});
+
+// ─── Preview fetch ─────────────────────────────────────────────────────────────
+
+describe("ConfirmUpgradeDialog — preview fetch", () => {
+  it("fetches /api/billing/upgrade/preview with substrateSlug and tier on mount", async () => {
+    await act(async () => {
+      renderDialog({ substrateSlug: "bold-junction", option: FAST_PATH_OPTION });
+    });
+    await waitFor(() => expect(mockFetch).toHaveBeenCalled());
+
+    const previewCall = mockFetch.mock.calls.find(([url]: [string]) =>
+      url.includes("/api/billing/upgrade/preview"),
+    );
+    expect(previewCall).toBeTruthy();
+    const url: string = previewCall![0] as string;
+    expect(url).toContain("substrateSlug=bold-junction");
+    expect(url).toContain("tier=pro");
+  });
+
+  it("loading state — skeleton visible, Upgrade button disabled", () => {
+    mockFetchDispatch({ preview: null }); // never resolves
+    renderDialog();
+
+    expect(screen.getByTestId("proration-loading")).toBeInTheDocument();
+    expect(screen.getByTestId("confirm-upgrade-confirm")).toBeDisabled();
   });
 });
 
 // ─── Proration block ──────────────────────────────────────────────────────────
 
 describe("ConfirmUpgradeDialog — proration", () => {
-  it("shows the charge today and the monthly-thereafter amounts", () => {
-    renderDialog({ option: FAST_PATH_OPTION });
-    // estimatedProrationCents: 633  → "$6.33"
+  it("shows real prorationCents and newPriceCents from the preview response", async () => {
+    mockFetchDispatch({ preview: { ...PREVIEW_STUB, prorationCents: 633, newPriceCents: 2900 } });
+    await act(async () => {
+      renderDialog();
+    });
+    await waitForPreviewLoaded();
+
     expect(screen.getByTestId("proration-charge")).toHaveTextContent("$6.33");
-    // amountCents: 2900  → "$29.00/mo"
     expect(screen.getByTestId("proration-monthly")).toHaveTextContent("$29.00/mo");
   });
 
-  it("renders the full prorationPreview line when nextBillingDate is provided", () => {
-    renderDialog({ option: FAST_PATH_OPTION, nextBillingDate: NEXT_BILLING });
-    const line = screen.getByTestId("proration-full-line").textContent ?? "";
-    // Example: "$6.33 charged today, then $29.00/mo on May 17"
-    expect(line).toMatch(/\$6\.33 charged today/);
-    expect(line).toMatch(/\$29\.00\/mo/);
-    expect(line).toMatch(/May 17/);
+  it("zero proration — renders 'No charge today'", async () => {
+    mockFetchDispatch({ preview: { ...PREVIEW_STUB, prorationCents: 0 } });
+    await act(async () => {
+      renderDialog();
+    });
+    await waitForPreviewLoaded();
+
+    expect(screen.getByTestId("proration-charge")).toHaveTextContent("No charge today");
   });
 
-  it("falls back to the shorter line when nextBillingDate is null", () => {
-    renderDialog({ option: FAST_PATH_OPTION, nextBillingDate: null });
-    const line = screen.getByTestId("proration-full-line").textContent ?? "";
-    expect(line).toMatch(/\$6\.33 charged today/);
-    expect(line).toMatch(/\$29\.00\/mo/);
-    // Must NOT have trailing "on <date>" — no fake dates in this mode.
-    expect(line).not.toMatch(/on May/);
+  it("nextInvoiceDate present — proration-from-date includes the formatted date", async () => {
+    mockFetchDispatch({
+      preview: { ...PREVIEW_STUB, nextInvoiceDate: "2026-07-01T00:00:00.000Z" },
+    });
+    await act(async () => {
+      renderDialog();
+    });
+    await waitForPreviewLoaded();
+
+    expect(screen.getByTestId("proration-from-date").textContent).toContain("July 1");
+  });
+
+  it("nextInvoiceDate null — proration-from-date falls back to 'next renewal'", async () => {
+    mockFetchDispatch({ preview: { ...PREVIEW_STUB, nextInvoiceDate: null } });
+    await act(async () => {
+      renderDialog();
+    });
+    await waitForPreviewLoaded();
+
+    expect(screen.getByTestId("proration-from-date").textContent).toContain("next renewal");
+  });
+});
+
+// ─── Preview error state ──────────────────────────────────────────────────────
+
+describe("ConfirmUpgradeDialog — preview error", () => {
+  it("shows error panel + Retry, Upgrade disabled on preview failure", async () => {
+    mockFetchDispatch({ preview: { error: "preview_failed" }, previewStatus: 500 });
+    await act(async () => {
+      renderDialog();
+    });
+    await waitFor(() => screen.getByTestId("proration-error"));
+
+    expect(screen.getByTestId("proration-error")).toBeInTheDocument();
+    expect(screen.getByText("Retry")).toBeInTheDocument();
+    expect(screen.getByTestId("confirm-upgrade-confirm")).toBeDisabled();
+  });
+
+  it("clicking Retry re-fetches and transitions to loaded state", async () => {
+    // First call fails, second succeeds
+    let callCount = 0;
+    mockFetch.mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("/api/billing/upgrade/preview")) {
+        callCount++;
+        if (callCount === 1) {
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            json: () => Promise.resolve({ error: "err" }),
+          });
+        }
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ ...PREVIEW_STUB, prorationCents: 400 }),
+        });
+      }
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ accepted: true }),
+      });
+    });
+
+    await act(async () => {
+      renderDialog();
+    });
+    await waitFor(() => screen.getByTestId("proration-error"));
+
+    await act(async () => {
+      fireEvent.click(screen.getByText("Retry"));
+    });
+    await waitFor(() => screen.getByTestId("proration-charge"));
+
+    expect(screen.getByTestId("proration-charge").textContent).toBe("$4.00");
+    expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
   });
 });
 
 // ─── Dedicated-migration warning panel ────────────────────────────────────────
 
 describe("ConfirmUpgradeDialog — dedicated migration warning", () => {
-  it("does NOT render the warning panel for a shared_to_shared option", () => {
-    renderDialog({ option: FAST_PATH_OPTION });
+  it("does NOT render the warning panel for a shared_to_shared option", async () => {
+    await act(async () => {
+      renderDialog({ option: FAST_PATH_OPTION });
+    });
     expect(screen.queryByTestId("dedicated-migration-warning")).not.toBeInTheDocument();
   });
 
-  it("renders the warning panel with title + body for shared_to_dedicated", () => {
-    renderDialog({ option: SLOW_PATH_OPTION, currentTier: "pro" });
+  it("renders the warning panel with title + body for shared_to_dedicated", async () => {
+    await act(async () => {
+      renderDialog({ option: SLOW_PATH_OPTION, currentTier: "pro" });
+    });
     const panel = screen.getByTestId("dedicated-migration-warning");
     expect(panel).toBeInTheDocument();
     expect(panel).toHaveTextContent(/dedicated hosting/i);
@@ -192,37 +363,37 @@ describe("ConfirmUpgradeDialog — dedicated migration warning", () => {
 // ─── Close behaviour ──────────────────────────────────────────────────────────
 
 describe("ConfirmUpgradeDialog — close behaviour", () => {
-  it("Cancel button fires onClose", () => {
+  it("Cancel button fires onClose", async () => {
     const onClose = vi.fn();
-    renderDialog({ onClose });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.click(screen.getByTestId("confirm-upgrade-cancel"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("× close icon button fires onClose", () => {
-    // The icon button is a discoverability affordance — Cancel is the
-    // semantic close, but users scan for the canonical ×. Both must work.
+  it("× close icon button fires onClose", async () => {
     const onClose = vi.fn();
-    renderDialog({ onClose });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.click(screen.getByTestId("confirm-upgrade-close-icon"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("× close icon button is disabled while submitting", async () => {
-    // Mid-submit the parent must NOT receive onClose — that would unmount
-    // the dialog while a network request is still in flight, leaving
-    // submitting state stranded.
-    let resolveFetch: (v: unknown) => void = () => {};
-    mockFetch.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveFetch = resolve;
-        }),
-    );
+    // Preview resolves immediately; upgrade never resolves (pending state).
+    mockFetchDispatch({ upgrade: null });
 
     const onClose = vi.fn();
-    renderDialog({ onClose });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
 
+    // Wait for preview to load so the Upgrade button becomes enabled.
+    await waitForPreviewLoaded();
+
+    // Click Upgrade — puts the dialog in submitting state.
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
     });
@@ -230,30 +401,31 @@ describe("ConfirmUpgradeDialog — close behaviour", () => {
     expect(screen.getByTestId("confirm-upgrade-close-icon")).toBeDisabled();
     fireEvent.click(screen.getByTestId("confirm-upgrade-close-icon"));
     expect(onClose).not.toHaveBeenCalled();
-
-    // Drain the pending fetch so vitest doesn't flag a hanging promise.
-    await act(async () => {
-      resolveFetch({ ok: true, json: () => Promise.resolve({ accepted: true }) });
-    });
   });
 
-  it("backdrop click fires onClose", () => {
+  it("backdrop click fires onClose", async () => {
     const onClose = vi.fn();
-    renderDialog({ onClose });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.click(screen.getByTestId("confirm-upgrade-backdrop"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("Esc key fires onClose", () => {
+  it("Esc key fires onClose", async () => {
     const onClose = vi.fn();
-    renderDialog({ onClose });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
   });
 
-  it("non-Escape keys do NOT fire onClose", () => {
+  it("non-Escape keys do NOT fire onClose", async () => {
     const onClose = vi.fn();
-    renderDialog({ onClose });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.keyDown(window, { key: "Enter" });
     fireEvent.keyDown(window, { key: "a" });
     expect(onClose).not.toHaveBeenCalled();
@@ -264,75 +436,60 @@ describe("ConfirmUpgradeDialog — close behaviour", () => {
 
 describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
   it("POSTs to /api/billing/upgrade with slug + targetTier + idempotencyKey", async () => {
-    // Compute's UpgradeCommitResponse — accepted in-place. Body fields
-    // are unused client-side; only the 2xx status matters.
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () =>
-        Promise.resolve({
-          accepted: true,
-          currentTier: "indie",
-          targetTier: "pro",
-          transitionType: "shared_to_shared",
-          stripeSubscriptionId: "sub_test_abc",
-          prorationCents: 200,
-        }),
+    await act(async () => {
+      renderDialog({ substrateSlug: "bold-junction", option: FAST_PATH_OPTION });
     });
-
-    const onClose = vi.fn();
-    const onUpgradeStarted = vi.fn();
-    renderDialog({
-      substrateSlug: "bold-junction",
-      option: FAST_PATH_OPTION,
-      onClose,
-      onUpgradeStarted,
-    });
+    await waitForPreviewLoaded();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
     });
 
-    // Request shape: BFF expects substrateSlug + targetTier + idempotencyKey.
-    // The BFF unwraps slug into the path and renames targetTier→tier on its
-    // way to compute; the dialog stays on the documented BFF contract.
-    expect(mockFetch).toHaveBeenCalledOnce();
-    const [url, init] = mockFetch.mock.calls[0] as [string, RequestInit];
+    // The upgrade POST is the second mockFetch call (after the preview GET).
+    const upgradeCalls = mockFetch.mock.calls.filter(
+      ([url]: [string]) => url === "/api/billing/upgrade",
+    );
+    expect(upgradeCalls).toHaveLength(1);
+    const [url, init] = upgradeCalls[0] as [string, RequestInit];
     expect(url).toBe("/api/billing/upgrade");
     expect(init.method).toBe("POST");
 
-    const body = JSON.parse(init.body as string);
+    const body = JSON.parse(init.body as string) as Record<string, unknown>;
     expect(body.substrateSlug).toBe("bold-junction");
     expect(body.targetTier).toBe("pro");
     expect(typeof body.idempotencyKey).toBe("string");
-    expect(body.idempotencyKey.length).toBeGreaterThan(0);
+    expect((body.idempotencyKey as string).length).toBeGreaterThan(0);
+  });
 
-    // Handoff: onUpgradeStarted fires; onClose does NOT (Cancel/Esc owns
-    // that callback — success goes through onUpgradeStarted so the parent
-    // can distinguish "user cancelled" from "upgrade accepted").
-    expect(onUpgradeStarted).toHaveBeenCalledOnce();
-    expect(onClose).not.toHaveBeenCalled();
+  it("fires info toast and calls onUpgradeStarted — does NOT call onClose", async () => {
+    const onClose = vi.fn();
+    const onUpgradeStarted = vi.fn();
+    await act(async () => {
+      renderDialog({ onClose, onUpgradeStarted });
+    });
+    await waitForPreviewLoaded();
 
-    // User feedback: pending toast fires (poller is on a 3 s tick — too
-    // slow to be the only confirmation signal).
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
+    });
+
     expect(mockToastInfo).toHaveBeenCalledOnce();
     expect(mockToastInfo).toHaveBeenCalledWith(
       expect.stringMatching(/Processing your upgrade/i),
       expect.objectContaining({ description: expect.any(String) }),
     );
-    // No error toast.
+    expect(onUpgradeStarted).toHaveBeenCalledOnce();
+    expect(onClose).not.toHaveBeenCalled();
     expect(mockToastError).not.toHaveBeenCalled();
   });
 
-  it("ignores body shape on 2xx — no checkoutUrl read, no redirect", async () => {
-    // Defensive: even an empty body is fine. The dialog must not assume any
-    // particular field on success — only the status code.
-    mockFetch.mockResolvedValue({
-      ok: true,
-      json: () => Promise.resolve({}),
-    });
-
+  it("ignores body shape on 2xx — no redirect, onUpgradeStarted fires", async () => {
+    mockFetchDispatch({ upgrade: {} }); // empty body is fine
     const onUpgradeStarted = vi.fn();
-    renderDialog({ onUpgradeStarted });
+    await act(async () => {
+      renderDialog({ onUpgradeStarted });
+    });
+    await waitForPreviewLoaded();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
@@ -343,16 +500,12 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
   });
 
   it("swaps the button label to 'Starting upgrade…' while submitting", async () => {
-    // Never resolve — we want to observe the pending state.
-    let resolveFetch: (v: unknown) => void = () => {};
-    mockFetch.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveFetch = resolve;
-        }),
-    );
+    mockFetchDispatch({ upgrade: null }); // upgrade never resolves
 
-    renderDialog();
+    await act(async () => {
+      renderDialog();
+    });
+    await waitForPreviewLoaded();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
@@ -361,28 +514,17 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
     const confirmBtn = screen.getByTestId("confirm-upgrade-confirm");
     expect(confirmBtn).toHaveTextContent(/starting upgrade/i);
     expect(confirmBtn).toBeDisabled();
-    // Cancel disabled during submit too.
     expect(screen.getByTestId("confirm-upgrade-cancel")).toBeDisabled();
-
-    // Tidy up the hanging promise so vitest doesn't complain.
-    await act(async () => {
-      resolveFetch({
-        ok: true,
-        json: () => Promise.resolve({ accepted: true }),
-      });
-    });
   });
 
   it("backdrop click is suppressed while submitting", async () => {
-    let resolveFetch: (v: unknown) => void = () => {};
-    mockFetch.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveFetch = resolve;
-        }),
-    );
+    mockFetchDispatch({ upgrade: null });
+
     const onClose = vi.fn();
-    renderDialog({ onClose });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
+    await waitForPreviewLoaded();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
@@ -390,110 +532,98 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
 
     fireEvent.click(screen.getByTestId("confirm-upgrade-backdrop"));
     expect(onClose).not.toHaveBeenCalled();
-
-    // Clean up the pending fetch.
-    await act(async () => {
-      resolveFetch({
-        ok: true,
-        json: () => Promise.resolve({ accepted: true }),
-      });
-    });
   });
 });
 
 // ─── Error paths ──────────────────────────────────────────────────────────────
 
 describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
-  it("fires toast.error and re-enables the button when the POST returns non-ok", async () => {
-    mockFetch.mockResolvedValue({
-      ok: false,
-      status: 409,
-      json: () => Promise.resolve({ error: "upgrade_in_progress" }),
-    });
-
+  it("fires toast.error and re-enables button when the POST returns non-ok", async () => {
+    mockFetchDispatch({ upgradeOk: false, upgrade: { error: "upgrade_in_progress" } });
     const onUpgradeStarted = vi.fn();
-    renderDialog({ onUpgradeStarted });
+    await act(async () => {
+      renderDialog({ onUpgradeStarted });
+    });
+    await waitForPreviewLoaded();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
     });
 
     expect(mockToastError).toHaveBeenCalledOnce();
-    // Dialog still in the DOM.
     expect(screen.getByTestId("confirm-upgrade-dialog")).toBeInTheDocument();
-    // Button re-enabled so the user can retry or cancel.
     expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
     expect(screen.getByTestId("confirm-upgrade-cancel")).not.toBeDisabled();
-    // Parent must NOT think the upgrade started.
     expect(onUpgradeStarted).not.toHaveBeenCalled();
   });
 
-  it("fires toast.error when fetch rejects (network failure)", async () => {
-    mockFetch.mockRejectedValue(new Error("ECONNREFUSED"));
+  it("fires toast.error when upgrade fetch rejects (network failure)", async () => {
+    mockFetch.mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("/api/billing/upgrade/preview")) {
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(PREVIEW_STUB),
+        });
+      }
+      return Promise.reject(new Error("ECONNREFUSED"));
+    });
 
     const onUpgradeStarted = vi.fn();
-    renderDialog({ onUpgradeStarted });
+    await act(async () => {
+      renderDialog({ onUpgradeStarted });
+    });
+    await waitForPreviewLoaded();
 
     await act(async () => {
       fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
     });
 
     expect(mockToastError).toHaveBeenCalledOnce();
-    expect(screen.getByTestId("confirm-upgrade-dialog")).toBeInTheDocument();
     expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
     expect(onUpgradeStarted).not.toHaveBeenCalled();
   });
 
-  it("does NOT double-submit when Upgrade is clicked again while in flight", async () => {
-    let resolveFetch: (v: unknown) => void = () => {};
-    mockFetch.mockImplementation(
-      () =>
-        new Promise((resolve) => {
-          resolveFetch = resolve;
-        }),
-    );
+  it("does NOT double-submit on rapid clicks", async () => {
+    mockFetchDispatch({ upgrade: null }); // upgrade never resolves
 
-    renderDialog();
+    await act(async () => {
+      renderDialog();
+    });
+    await waitForPreviewLoaded();
 
     const confirmBtn = screen.getByTestId("confirm-upgrade-confirm");
 
-    // First click — fetch should fire exactly once and the button should
-    // transition to disabled before the next event loop turn.
     await act(async () => {
       fireEvent.click(confirmBtn);
     });
-    expect(mockFetch).toHaveBeenCalledOnce();
+
+    // Count only upgrade calls (not preview)
+    const upgradeCalls = () =>
+      mockFetch.mock.calls.filter(([url]: [string]) => url === "/api/billing/upgrade");
+
+    expect(upgradeCalls()).toHaveLength(1);
     expect(confirmBtn).toBeDisabled();
 
-    // A second click on the now-disabled button is a no-op — jsdom drops
-    // click events on `disabled` buttons, and the `if (submitting) return;`
-    // guard at the top of handleUpgrade catches any sneakier path.
     await act(async () => {
       fireEvent.click(confirmBtn);
-    });
-    expect(mockFetch).toHaveBeenCalledOnce();
-
-    // Drain the pending fetch so vitest doesn't flag a hanging promise.
-    await act(async () => {
-      resolveFetch({
-        ok: true,
-        json: () => Promise.resolve({ accepted: true }),
-      });
-    });
+    }); // no-op — disabled
+    expect(upgradeCalls()).toHaveLength(1);
   });
 });
 
 // ─── Accessibility attributes ─────────────────────────────────────────────────
 
 describe("ConfirmUpgradeDialog — a11y", () => {
-  it("exposes role='dialog' + aria-modal + aria-labelledby", () => {
-    renderDialog();
+  it("exposes role='dialog' + aria-modal + aria-labelledby", async () => {
+    await act(async () => {
+      renderDialog();
+    });
     const dialog = screen.getByTestId("confirm-upgrade-dialog");
     expect(dialog.getAttribute("role")).toBe("dialog");
     expect(dialog.getAttribute("aria-modal")).toBe("true");
     const labelledBy = dialog.getAttribute("aria-labelledby");
     expect(labelledBy).toBeTruthy();
-    // The referenced element exists and has the dialog title text.
     expect(document.getElementById(labelledBy!)?.textContent).toMatch(/confirm upgrade/i);
   });
 });
@@ -501,13 +631,17 @@ describe("ConfirmUpgradeDialog — a11y", () => {
 // ─── D9: cancel-pending auto-reactivate notice ────────────────────────────────
 
 describe("ConfirmUpgradeDialog — D9 cancel-pending auto-reactivate note", () => {
-  it("does NOT render the reactivate note when isCancelPending is false (default)", () => {
-    renderDialog();
+  it("does NOT render the reactivate note when isCancelPending is false (default)", async () => {
+    await act(async () => {
+      renderDialog();
+    });
     expect(screen.queryByTestId("confirm-upgrade-reactivate-note")).toBeNull();
   });
 
-  it("renders the reactivate note when isCancelPending is true", () => {
-    renderDialog({ isCancelPending: true });
+  it("renders the reactivate note when isCancelPending is true", async () => {
+    await act(async () => {
+      renderDialog({ isCancelPending: true });
+    });
     const note = screen.getByTestId("confirm-upgrade-reactivate-note");
     expect(note).toBeInTheDocument();
     expect(note.textContent).toMatch(/reactivate your subscription/i);

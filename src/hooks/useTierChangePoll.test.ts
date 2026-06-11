@@ -11,6 +11,9 @@
  *   7. 404 from endpoint → { state: "none" }.
  *   8. Network error → { state: "none", error: "network_error" }.
  *   9. Cleanup on unmount stops further polling.
+ *  10. startPolling() re-arms a stopped loop (2026-06-10 fix) and tolerates
+ *      the POST→webhook gap: "none" and stale terminal states don't stop a
+ *      kicked loop until a live state is seen or the grace window expires.
  *
  * We use fake timers throughout. Because testing-library's `waitFor` relies on
  * real setTimeout to retry, we do NOT use it here — instead we advance the
@@ -61,7 +64,7 @@ describe("useTierChangePoll", () => {
     await flush(10_000);
 
     expect(mockFetch).not.toHaveBeenCalled();
-    expect(result.current).toEqual(IDLE_TIER_CHANGE);
+    expect(result.current.result).toEqual(IDLE_TIER_CHANGE);
   });
 
   it("fetches once on mount and reflects the response body", async () => {
@@ -88,10 +91,10 @@ describe("useTierChangePoll", () => {
       "/api/billing/tier-change/bold-junction",
       expect.objectContaining({ cache: "no-store" }),
     );
-    expect(result.current.state).toBe("processing");
-    expect(result.current.phase).toBe("transferring");
-    expect(result.current.transitionKind).toBe("shared_to_dedicated");
-    expect(result.current.transferAttempts).toBe(1);
+    expect(result.current.result.state).toBe("processing");
+    expect(result.current.result.phase).toBe("transferring");
+    expect(result.current.result.transitionKind).toBe("shared_to_dedicated");
+    expect(result.current.result.transferAttempts).toBe(1);
   });
 
   it("continues polling every 3s while state is in-flight", async () => {
@@ -109,13 +112,13 @@ describe("useTierChangePoll", () => {
     const { result } = renderHook(() => useTierChangePoll("my-sub"));
 
     await flush();
-    expect(result.current.state).toBe("queued");
+    expect(result.current.result.state).toBe("queued");
 
     await flush(3000);
-    expect(result.current.phase).toBe("provisioning");
+    expect(result.current.result.phase).toBe("provisioning");
 
     await flush(3000);
-    expect(result.current.phase).toBe("transferring");
+    expect(result.current.result.phase).toBe("transferring");
 
     expect(mockFetch).toHaveBeenCalledTimes(3);
   });
@@ -128,10 +131,10 @@ describe("useTierChangePoll", () => {
     const { result } = renderHook(() => useTierChangePoll("my-sub"));
 
     await flush();
-    expect(result.current.state).toBe("processing");
+    expect(result.current.result.state).toBe("processing");
 
     await flush(3000);
-    expect(result.current.state).toBe("completed");
+    expect(result.current.result.state).toBe("completed");
 
     // Advance well past another interval — no further fetches should fire.
     await flush(10_000);
@@ -148,14 +151,14 @@ describe("useTierChangePoll", () => {
     const { result } = renderHook(() => useTierChangePoll("my-sub"));
 
     await flush();
-    expect(result.current.state).toBe("processing");
+    expect(result.current.result.state).toBe("processing");
 
     await flush(3000);
-    expect(result.current.state).toBe("failed");
+    expect(result.current.result.state).toBe("failed");
 
     await flush(10_000);
     expect(mockFetch).toHaveBeenCalledTimes(2);
-    expect(result.current.error).toBe("transfer_exhausted");
+    expect(result.current.result.error).toBe("transfer_exhausted");
   });
 
   it("stops polling when state becomes rolled_back", async () => {
@@ -166,10 +169,10 @@ describe("useTierChangePoll", () => {
     const { result } = renderHook(() => useTierChangePoll("my-sub"));
 
     await flush();
-    expect(result.current.state).toBe("processing");
+    expect(result.current.result.state).toBe("processing");
 
     await flush(3000);
-    expect(result.current.state).toBe("rolled_back");
+    expect(result.current.result.state).toBe("rolled_back");
 
     await flush(10_000);
     expect(mockFetch).toHaveBeenCalledTimes(2);
@@ -181,8 +184,8 @@ describe("useTierChangePoll", () => {
     const { result } = renderHook(() => useTierChangePoll("my-sub"));
 
     await flush();
-    expect(result.current.state).toBe("none");
-    expect(result.current.error).toBeNull();
+    expect(result.current.result.state).toBe("none");
+    expect(result.current.result.error).toBeNull();
 
     // State is "none" — polling stops immediately.
     await flush(10_000);
@@ -195,8 +198,8 @@ describe("useTierChangePoll", () => {
     const { result } = renderHook(() => useTierChangePoll("my-sub"));
 
     await flush();
-    expect(result.current.error).toBe("network_error");
-    expect(result.current.state).toBe("none");
+    expect(result.current.result.error).toBe("network_error");
+    expect(result.current.result.state).toBe("none");
 
     // "none" terminates polling.
     await flush(10_000);
@@ -209,7 +212,7 @@ describe("useTierChangePoll", () => {
     const { result, unmount } = renderHook(() => useTierChangePoll("my-sub"));
 
     await flush();
-    expect(result.current.state).toBe("processing");
+    expect(result.current.result.state).toBe("processing");
 
     const countBefore = mockFetch.mock.calls.length;
     unmount();
@@ -217,5 +220,115 @@ describe("useTierChangePoll", () => {
 
     // No further fetches after unmount.
     expect(mockFetch.mock.calls.length).toBe(countBefore);
+  });
+
+  // ── startPolling() — the 2026-06-10 re-arm fix ─────────────────────────────
+
+  describe("startPolling", () => {
+    it("re-arms a loop that stopped on idle and rides the webhook gap to a live state", async () => {
+      // Page load: idle, loop stops after one fetch.
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({ error: "not_found" }, { status: 404 }));
+
+      const { result } = renderHook(() => useTierChangePoll("my-sub"));
+      await flush();
+      expect(result.current.result.state).toBe("none");
+      await flush(10_000);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // User confirms an upgrade → POST 202 → onUpgradeStarted → startPolling.
+      // The webhook hasn't inserted the row yet: two more "none" responses,
+      // THEN the row appears.
+      mockFetch
+        .mockResolvedValueOnce(mockJsonResponse({ error: "not_found" }, { status: 404 }))
+        .mockResolvedValueOnce(mockJsonResponse({ error: "not_found" }, { status: 404 }))
+        .mockResolvedValueOnce(mockJsonResponse({ state: "queued", phase: null }))
+        .mockResolvedValueOnce(mockJsonResponse({ state: "processing", phase: "provisioning" }));
+
+      act(() => {
+        result.current.startPolling();
+      });
+
+      await flush(); // immediate re-armed fetch → none
+      expect(mockFetch).toHaveBeenCalledTimes(2);
+      await flush(3000); // → none (still waiting on webhook)
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+      await flush(3000); // → queued (webhook landed)
+      expect(result.current.result.state).toBe("queued");
+      await flush(3000); // → processing
+      expect(result.current.result.phase).toBe("provisioning");
+      expect(mockFetch).toHaveBeenCalledTimes(5);
+    });
+
+    it("polls through a STALE terminal state from a previous change during the grace window", async () => {
+      // Page load: previous upgrade's completed row → loop stops.
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({ state: "completed", phase: null }));
+
+      const { result } = renderHook(() => useTierChangePoll("my-sub"));
+      await flush();
+      expect(result.current.result.state).toBe("completed");
+      await flush(10_000);
+      expect(mockFetch).toHaveBeenCalledTimes(1);
+
+      // New upgrade kicks off. First poll still sees the OLD completed row;
+      // the webhook then replaces it with the new queued row.
+      mockFetch
+        .mockResolvedValueOnce(mockJsonResponse({ state: "completed", phase: null }))
+        .mockResolvedValueOnce(mockJsonResponse({ state: "queued", phase: null }));
+
+      act(() => {
+        result.current.startPolling();
+      });
+
+      await flush(); // stale completed — kicked loop keeps going
+      await flush(3000); // new row
+      expect(result.current.result.state).toBe("queued");
+      expect(mockFetch).toHaveBeenCalledTimes(3);
+    });
+
+    it("normal stop rules resume once a live state was seen after the kick", async () => {
+      mockFetch.mockResolvedValueOnce(mockJsonResponse({ error: "not_found" }, { status: 404 }));
+
+      const { result } = renderHook(() => useTierChangePoll("my-sub"));
+      await flush();
+
+      mockFetch
+        .mockResolvedValueOnce(mockJsonResponse({ state: "processing", phase: null }))
+        .mockResolvedValueOnce(mockJsonResponse({ state: "completed", phase: null }));
+
+      act(() => {
+        result.current.startPolling();
+      });
+
+      await flush(); // processing — grace satisfied
+      expect(result.current.result.state).toBe("processing");
+      await flush(3000); // completed — terminal stops the loop again
+      expect(result.current.result.state).toBe("completed");
+
+      const countAfterTerminal = mockFetch.mock.calls.length;
+      await flush(30_000);
+      expect(mockFetch.mock.calls.length).toBe(countAfterTerminal);
+    });
+
+    it("gives up when the grace window expires without a live state (webhook lost)", async () => {
+      mockFetch.mockResolvedValue(mockJsonResponse({ error: "not_found" }, { status: 404 }));
+
+      const { result } = renderHook(() => useTierChangePoll("my-sub"));
+      await flush();
+      const countIdle = mockFetch.mock.calls.length;
+
+      act(() => {
+        result.current.startPolling();
+      });
+
+      // Grace window is 90 s; at 3 s per tick that's ~30 polls, then stop.
+      await flush(200_000);
+      const countAfterGrace = mockFetch.mock.calls.length;
+      expect(countAfterGrace).toBeGreaterThan(countIdle + 1); // it did retry
+      expect(countAfterGrace).toBeLessThan(countIdle + 40); // bounded by grace
+
+      // Well past the window: no further fetches.
+      await flush(60_000);
+      expect(mockFetch.mock.calls.length).toBe(countAfterGrace);
+    });
   });
 });

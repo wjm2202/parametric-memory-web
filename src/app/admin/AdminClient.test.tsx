@@ -13,7 +13,11 @@ import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, waitFor, fireEvent, act } from "@testing-library/react";
 import { SWRConfig } from "swr";
 import AdminClient from "./AdminClient";
-import { IDLE_TIER_CHANGE, type TierChangePollResult } from "@/hooks/useTierChangePoll";
+import {
+  IDLE_TIER_CHANGE,
+  type TierChangePoll,
+  type TierChangePollResult,
+} from "@/hooks/useTierChangePoll";
 import type { CurrentTierLimits } from "./ChangePlanSheet";
 
 // ── Hoisted spy state ─────────────────────────────────────────────────────────
@@ -28,7 +32,10 @@ import type { CurrentTierLimits } from "./ChangePlanSheet";
 const h = vi.hoisted(() => {
   return {
     mockSearchParamsGet: vi.fn<(key: string) => string | null>(() => null),
-    mockUseTierChangePoll: vi.fn<(slug: string | null | undefined) => TierChangePollResult>(),
+    mockUseTierChangePoll: vi.fn<(slug: string | null | undefined) => TierChangePoll>(),
+    // The hook's re-arm trigger (2026-06-10 fix) — AdminClient must thread
+    // this into ChangePlanButton's onUpgradeStarted.
+    mockStartPolling: vi.fn(),
     mockBannerRender: vi.fn(),
     mockButtonRender: vi.fn(),
     // mockToast is callable (neutral toast) AND carries .info/.success/.error
@@ -120,6 +127,7 @@ vi.mock("./ChangePlanButton", () => ({
     nextBillingDate: Date | null;
     pollResult: TierChangePollResult;
     className?: string;
+    onUpgradeStarted?: () => void;
   }) => {
     h.mockButtonRender(props);
     return (
@@ -213,7 +221,11 @@ beforeEach(() => {
   h.mockSearchParamsGet.mockReset();
   h.mockSearchParamsGet.mockImplementation(() => null);
   h.mockUseTierChangePoll.mockReset();
-  h.mockUseTierChangePoll.mockImplementation(() => IDLE_TIER_CHANGE);
+  h.mockStartPolling.mockReset();
+  h.mockUseTierChangePoll.mockImplementation(() => ({
+    result: IDLE_TIER_CHANGE,
+    startPolling: h.mockStartPolling,
+  }));
   h.mockBannerRender.mockReset();
   h.mockButtonRender.mockReset();
   h.mockToast.mockReset();
@@ -571,7 +583,10 @@ describe("AdminClient — tier-change wiring", () => {
       targetTier: "pro",
       transitionKind: "shared_to_shared",
     };
-    h.mockUseTierChangePoll.mockImplementation(() => inFlight);
+    h.mockUseTierChangePoll.mockImplementation(() => ({
+      result: inFlight,
+      startPolling: h.mockStartPolling,
+    }));
 
     renderAdmin({ status: "running", tier: "starter" });
 
@@ -602,6 +617,18 @@ describe("AdminClient — tier-change wiring", () => {
       maxStorageMb: 500,
     });
     expect(lastBtnProps.pollResult).toBe(IDLE_TIER_CHANGE);
+  });
+
+  it("threads the hook's startPolling into ChangePlanButton.onUpgradeStarted (2026-06-10 re-arm fix)", () => {
+    renderAdmin({ status: "running", tier: "indie" });
+
+    const lastBtnProps = h.mockButtonRender.mock.calls.at(-1)![0];
+    expect(typeof lastBtnProps.onUpgradeStarted).toBe("function");
+
+    // Calling the prop must re-arm the poll loop — without this the banner
+    // only ever appears after a page reload.
+    lastBtnProps.onUpgradeStarted!();
+    expect(h.mockStartPolling).toHaveBeenCalledTimes(1);
   });
 
   it("does NOT mount ChangePlanButton when substrate is provision_failed", () => {
@@ -791,6 +818,55 @@ describe("AdminClient — F6 key-rotation failure (handleRotateKey path)", () =>
     const retry = screen.getByTestId("keyrot-restart");
     expect(retry).toBeInTheDocument();
     expect(retry).toHaveAttribute("aria-label", "Retry key rotation");
+  });
+
+  it("shows the rate-limit reason and unlock time when rotate-key returns 429", async () => {
+    // 2026-06-10 UX fix: a rate-limited rotation is self-service, not a
+    // support case. The error surface must carry the limit that tripped
+    // (from the API message) and when it reopens (retryAfterSeconds),
+    // instead of the generic "contact support" copy.
+    globalThis.fetch = vi.fn().mockImplementation((url: string) => {
+      if (typeof url === "string" && url.includes("/rotate-key")) {
+        return Promise.resolve({
+          ok: false,
+          status: 429,
+          json: () =>
+            Promise.resolve({
+              error: "rate_limited",
+              message:
+                "Too many requests — at most 2 rotation attempts per hour (including failed).",
+              retryAfterSeconds: 1800,
+            }),
+        });
+      }
+      return Promise.resolve({ ok: false, json: () => Promise.resolve({}) });
+    });
+
+    renderAdmin({ status: "running", mcpEndpoint: "https://example.com/mcp" });
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("admin-rotate-key"));
+    });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("keyrot-status-error")).toBeInTheDocument();
+    });
+
+    const alertRegion = screen.getByTestId("keyrot-status-error");
+    // The reason (which limit tripped)…
+    expect(alertRegion).toHaveTextContent(/2 rotation attempts per hour/);
+    // …and the unlock time (1800s → "about 30 minutes").
+    expect(alertRegion).toHaveTextContent(/about 30 minutes/);
+    // No generic HTTP-status fallback copy.
+    expect(alertRegion).not.toHaveTextContent(/HTTP 429/);
+  });
+
+  it("documents the rotation limits in the idle rotate section", () => {
+    renderAdmin({ status: "running", mcpEndpoint: "https://example.com/mcp" });
+
+    const limits = screen.getByTestId("keyrot-limits");
+    expect(limits).toHaveTextContent(/2 rotation attempts per hour/i);
+    expect(limits).toHaveTextContent(/3\s*rotations per day/i);
   });
 
   it("renders the reauth-required panel + Sign-in CTA when rotate-key returns 401 reauth_required", async () => {

@@ -88,6 +88,14 @@ interface Props {
    * Defaults to false at consumer call sites that don't yet thread it.
    */
   isCancelPending?: boolean;
+  /**
+   * Fired when POST /api/billing/upgrade is accepted (202), in addition to
+   * this sheet closing itself. AdminClient threads useTierChangePoll's
+   * `startPolling` here — the poll loop has STOPPED by this point (it
+   * halts once it sees the idle "none" state on page load) and must be
+   * re-armed or the progress banner never appears (2026-06-10 fix).
+   */
+  onUpgradeStarted?: () => void;
 }
 
 /**
@@ -149,6 +157,7 @@ export function ChangePlanSheet({
   currentLimits,
   nextBillingDate,
   isCancelPending = false,
+  onUpgradeStarted,
 }: Props) {
   const [selectedOption, setSelectedOption] = useState<UpgradeOption | null>(null);
 
@@ -306,12 +315,14 @@ export function ChangePlanSheet({
           isCancelPending={isCancelPending}
           onClose={handleDialogClose}
           // Successful upgrade → close BOTH the dialog AND this sheet so the
-          // admin view re-shows. `useTierChangePoll` (mounted on the admin
-          // page) will pick up the in-flight tier-change row on its next
-          // tick and the progress banner takes over from here.
+          // admin view re-shows, then notify the parent. AdminClient's
+          // handler re-arms useTierChangePoll (the loop is stopped while
+          // idle and would otherwise never tick again — 2026-06-10 fix);
+          // the progress banner takes over from there.
           onUpgradeStarted={() => {
             handleDialogClose();
             onClose();
+            onUpgradeStarted?.();
           }}
         />
       )}

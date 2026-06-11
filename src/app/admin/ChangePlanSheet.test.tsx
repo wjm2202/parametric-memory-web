@@ -136,6 +136,7 @@ function renderSheet(
     currentTier?: string;
     currentLimits?: CurrentTierLimits | null;
     nextBillingDate?: Date | null;
+    onUpgradeStarted?: () => void;
   } = {},
 ) {
   const props = {
@@ -146,6 +147,7 @@ function renderSheet(
     currentLimits: overrides.currentLimits === undefined ? INDIE_LIMITS : overrides.currentLimits,
     nextBillingDate:
       overrides.nextBillingDate === undefined ? NEXT_BILLING : overrides.nextBillingDate,
+    onUpgradeStarted: overrides.onUpgradeStarted,
   };
   return {
     ...render(<ChangePlanSheet {...props} />, { wrapper: SwrTestWrapper }),
@@ -399,6 +401,24 @@ describe("ChangePlanSheet — Select opens ConfirmUpgradeDialog", () => {
     // Dialog unmounts (selectedOption → null) AND the sheet's own onClose
     // fired so the parent dismisses it.
     expect(screen.queryByTestId("mock-confirm-upgrade-dialog")).toBeNull();
+    expect(onClose).toHaveBeenCalledOnce();
+  });
+
+  it("notifies the parent via onUpgradeStarted so the poll loop re-arms (2026-06-10 fix)", async () => {
+    // AdminClient threads useTierChangePoll's startPolling here. Without
+    // this notification the poll loop (stopped while idle) never restarts
+    // and the progress banner never appears.
+    resolveWith(200, { currentTier: "indie", options: [PRO_OPTION] });
+
+    const onClose = vi.fn();
+    const onUpgradeStarted = vi.fn();
+    renderSheet({ onClose, onUpgradeStarted });
+    await flush();
+
+    fireEvent.click(screen.getByTestId("change-plan-option-pro-select"));
+    fireEvent.click(screen.getByTestId("mock-confirm-upgrade-started"));
+
+    expect(onUpgradeStarted).toHaveBeenCalledOnce();
     expect(onClose).toHaveBeenCalledOnce();
   });
 });
