@@ -1010,8 +1010,8 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                       Rotating invalidates your current key and generates a new claimable one.
                     </p>
                     <p className="text-xs text-white/30" data-testid="keyrot-limits">
-                      Limits: 2 rotation attempts per hour (including failed attempts), 3
-                      rotations per day.
+                      Limits: 2 rotation attempts per hour (including failed attempts), 3 rotations
+                      per day.
                     </p>
                     <button
                       onClick={handleRotateKey}

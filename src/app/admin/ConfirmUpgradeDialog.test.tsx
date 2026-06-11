@@ -138,12 +138,14 @@ function renderDialog(overrides: RenderOverrides = {}) {
  * - Upgrade POST resolves with `upgradeResponse` (default: accepted=true).
  * - Passing `null` for either makes it never resolve (for testing pending states).
  */
-function mockFetchDispatch(opts: {
-  preview?: object | null;
-  previewStatus?: number;
-  upgrade?: object | null;
-  upgradeOk?: boolean;
-} = {}) {
+function mockFetchDispatch(
+  opts: {
+    preview?: object | null;
+    previewStatus?: number;
+    upgrade?: object | null;
+    upgradeOk?: boolean;
+  } = {},
+) {
   const {
     preview = PREVIEW_STUB,
     previewStatus = 200,
@@ -190,14 +192,18 @@ beforeEach(() => {
 
 describe("ConfirmUpgradeDialog — header", () => {
   it("restates the transition with canonical tier display names", async () => {
-    await act(async () => { renderDialog({ currentTier: "indie", option: FAST_PATH_OPTION }); });
+    await act(async () => {
+      renderDialog({ currentTier: "indie", option: FAST_PATH_OPTION });
+    });
     expect(screen.getByText(/Solo/)).toBeInTheDocument(); // getTierLabel("indie")
     expect(screen.getByText(/Professional/)).toBeInTheDocument();
     expect(screen.getByText(/Upgrading from/i)).toBeInTheDocument();
   });
 
   it("renders the 'Confirm upgrade' title", async () => {
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     expect(screen.getByRole("heading", { name: /confirm upgrade/i })).toBeInTheDocument();
   });
 });
@@ -206,7 +212,9 @@ describe("ConfirmUpgradeDialog — header", () => {
 
 describe("ConfirmUpgradeDialog — preview fetch", () => {
   it("fetches /api/billing/upgrade/preview with substrateSlug and tier on mount", async () => {
-    await act(async () => { renderDialog({ substrateSlug: "bold-junction", option: FAST_PATH_OPTION }); });
+    await act(async () => {
+      renderDialog({ substrateSlug: "bold-junction", option: FAST_PATH_OPTION });
+    });
     await waitFor(() => expect(mockFetch).toHaveBeenCalled());
 
     const previewCall = mockFetch.mock.calls.find(([url]: [string]) =>
@@ -232,7 +240,9 @@ describe("ConfirmUpgradeDialog — preview fetch", () => {
 describe("ConfirmUpgradeDialog — proration", () => {
   it("shows real prorationCents and newPriceCents from the preview response", async () => {
     mockFetchDispatch({ preview: { ...PREVIEW_STUB, prorationCents: 633, newPriceCents: 2900 } });
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     await waitForPreviewLoaded();
 
     expect(screen.getByTestId("proration-charge")).toHaveTextContent("$6.33");
@@ -241,15 +251,21 @@ describe("ConfirmUpgradeDialog — proration", () => {
 
   it("zero proration — renders 'No charge today'", async () => {
     mockFetchDispatch({ preview: { ...PREVIEW_STUB, prorationCents: 0 } });
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     await waitForPreviewLoaded();
 
     expect(screen.getByTestId("proration-charge")).toHaveTextContent("No charge today");
   });
 
   it("nextInvoiceDate present — proration-from-date includes the formatted date", async () => {
-    mockFetchDispatch({ preview: { ...PREVIEW_STUB, nextInvoiceDate: "2026-07-01T00:00:00.000Z" } });
-    await act(async () => { renderDialog(); });
+    mockFetchDispatch({
+      preview: { ...PREVIEW_STUB, nextInvoiceDate: "2026-07-01T00:00:00.000Z" },
+    });
+    await act(async () => {
+      renderDialog();
+    });
     await waitForPreviewLoaded();
 
     expect(screen.getByTestId("proration-from-date").textContent).toContain("July 1");
@@ -257,7 +273,9 @@ describe("ConfirmUpgradeDialog — proration", () => {
 
   it("nextInvoiceDate null — proration-from-date falls back to 'next renewal'", async () => {
     mockFetchDispatch({ preview: { ...PREVIEW_STUB, nextInvoiceDate: null } });
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     await waitForPreviewLoaded();
 
     expect(screen.getByTestId("proration-from-date").textContent).toContain("next renewal");
@@ -269,7 +287,9 @@ describe("ConfirmUpgradeDialog — proration", () => {
 describe("ConfirmUpgradeDialog — preview error", () => {
   it("shows error panel + Retry, Upgrade disabled on preview failure", async () => {
     mockFetchDispatch({ preview: { error: "preview_failed" }, previewStatus: 500 });
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     await waitFor(() => screen.getByTestId("proration-error"));
 
     expect(screen.getByTestId("proration-error")).toBeInTheDocument();
@@ -284,17 +304,33 @@ describe("ConfirmUpgradeDialog — preview error", () => {
       if (typeof url === "string" && url.includes("/api/billing/upgrade/preview")) {
         callCount++;
         if (callCount === 1) {
-          return Promise.resolve({ ok: false, status: 500, json: () => Promise.resolve({ error: "err" }) });
+          return Promise.resolve({
+            ok: false,
+            status: 500,
+            json: () => Promise.resolve({ error: "err" }),
+          });
         }
-        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ ...PREVIEW_STUB, prorationCents: 400 }) });
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve({ ...PREVIEW_STUB, prorationCents: 400 }),
+        });
       }
-      return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve({ accepted: true }) });
+      return Promise.resolve({
+        ok: true,
+        status: 200,
+        json: () => Promise.resolve({ accepted: true }),
+      });
     });
 
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     await waitFor(() => screen.getByTestId("proration-error"));
 
-    await act(async () => { fireEvent.click(screen.getByText("Retry")); });
+    await act(async () => {
+      fireEvent.click(screen.getByText("Retry"));
+    });
     await waitFor(() => screen.getByTestId("proration-charge"));
 
     expect(screen.getByTestId("proration-charge").textContent).toBe("$4.00");
@@ -306,12 +342,16 @@ describe("ConfirmUpgradeDialog — preview error", () => {
 
 describe("ConfirmUpgradeDialog — dedicated migration warning", () => {
   it("does NOT render the warning panel for a shared_to_shared option", async () => {
-    await act(async () => { renderDialog({ option: FAST_PATH_OPTION }); });
+    await act(async () => {
+      renderDialog({ option: FAST_PATH_OPTION });
+    });
     expect(screen.queryByTestId("dedicated-migration-warning")).not.toBeInTheDocument();
   });
 
   it("renders the warning panel with title + body for shared_to_dedicated", async () => {
-    await act(async () => { renderDialog({ option: SLOW_PATH_OPTION, currentTier: "pro" }); });
+    await act(async () => {
+      renderDialog({ option: SLOW_PATH_OPTION, currentTier: "pro" });
+    });
     const panel = screen.getByTestId("dedicated-migration-warning");
     expect(panel).toBeInTheDocument();
     expect(panel).toHaveTextContent(/dedicated hosting/i);
@@ -325,14 +365,18 @@ describe("ConfirmUpgradeDialog — dedicated migration warning", () => {
 describe("ConfirmUpgradeDialog — close behaviour", () => {
   it("Cancel button fires onClose", async () => {
     const onClose = vi.fn();
-    await act(async () => { renderDialog({ onClose }); });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.click(screen.getByTestId("confirm-upgrade-cancel"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("× close icon button fires onClose", async () => {
     const onClose = vi.fn();
-    await act(async () => { renderDialog({ onClose }); });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.click(screen.getByTestId("confirm-upgrade-close-icon"));
     expect(onClose).toHaveBeenCalledOnce();
   });
@@ -342,7 +386,9 @@ describe("ConfirmUpgradeDialog — close behaviour", () => {
     mockFetchDispatch({ upgrade: null });
 
     const onClose = vi.fn();
-    await act(async () => { renderDialog({ onClose }); });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
 
     // Wait for preview to load so the Upgrade button becomes enabled.
     await waitForPreviewLoaded();
@@ -359,21 +405,27 @@ describe("ConfirmUpgradeDialog — close behaviour", () => {
 
   it("backdrop click fires onClose", async () => {
     const onClose = vi.fn();
-    await act(async () => { renderDialog({ onClose }); });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.click(screen.getByTestId("confirm-upgrade-backdrop"));
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("Esc key fires onClose", async () => {
     const onClose = vi.fn();
-    await act(async () => { renderDialog({ onClose }); });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.keyDown(window, { key: "Escape" });
     expect(onClose).toHaveBeenCalledOnce();
   });
 
   it("non-Escape keys do NOT fire onClose", async () => {
     const onClose = vi.fn();
-    await act(async () => { renderDialog({ onClose }); });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     fireEvent.keyDown(window, { key: "Enter" });
     fireEvent.keyDown(window, { key: "a" });
     expect(onClose).not.toHaveBeenCalled();
@@ -394,8 +446,8 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
     });
 
     // The upgrade POST is the second mockFetch call (after the preview GET).
-    const upgradeCalls = mockFetch.mock.calls.filter(([url]: [string]) =>
-      url === "/api/billing/upgrade",
+    const upgradeCalls = mockFetch.mock.calls.filter(
+      ([url]: [string]) => url === "/api/billing/upgrade",
     );
     expect(upgradeCalls).toHaveLength(1);
     const [url, init] = upgradeCalls[0] as [string, RequestInit];
@@ -412,7 +464,9 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
   it("fires info toast and calls onUpgradeStarted — does NOT call onClose", async () => {
     const onClose = vi.fn();
     const onUpgradeStarted = vi.fn();
-    await act(async () => { renderDialog({ onClose, onUpgradeStarted }); });
+    await act(async () => {
+      renderDialog({ onClose, onUpgradeStarted });
+    });
     await waitForPreviewLoaded();
 
     await act(async () => {
@@ -432,7 +486,9 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
   it("ignores body shape on 2xx — no redirect, onUpgradeStarted fires", async () => {
     mockFetchDispatch({ upgrade: {} }); // empty body is fine
     const onUpgradeStarted = vi.fn();
-    await act(async () => { renderDialog({ onUpgradeStarted }); });
+    await act(async () => {
+      renderDialog({ onUpgradeStarted });
+    });
     await waitForPreviewLoaded();
 
     await act(async () => {
@@ -446,7 +502,9 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
   it("swaps the button label to 'Starting upgrade…' while submitting", async () => {
     mockFetchDispatch({ upgrade: null }); // upgrade never resolves
 
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     await waitForPreviewLoaded();
 
     await act(async () => {
@@ -463,7 +521,9 @@ describe("ConfirmUpgradeDialog — Upgrade happy path", () => {
     mockFetchDispatch({ upgrade: null });
 
     const onClose = vi.fn();
-    await act(async () => { renderDialog({ onClose }); });
+    await act(async () => {
+      renderDialog({ onClose });
+    });
     await waitForPreviewLoaded();
 
     await act(async () => {
@@ -481,7 +541,9 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
   it("fires toast.error and re-enables button when the POST returns non-ok", async () => {
     mockFetchDispatch({ upgradeOk: false, upgrade: { error: "upgrade_in_progress" } });
     const onUpgradeStarted = vi.fn();
-    await act(async () => { renderDialog({ onUpgradeStarted }); });
+    await act(async () => {
+      renderDialog({ onUpgradeStarted });
+    });
     await waitForPreviewLoaded();
 
     await act(async () => {
@@ -498,13 +560,19 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
   it("fires toast.error when upgrade fetch rejects (network failure)", async () => {
     mockFetch.mockImplementation((url: string) => {
       if (typeof url === "string" && url.includes("/api/billing/upgrade/preview")) {
-        return Promise.resolve({ ok: true, status: 200, json: () => Promise.resolve(PREVIEW_STUB) });
+        return Promise.resolve({
+          ok: true,
+          status: 200,
+          json: () => Promise.resolve(PREVIEW_STUB),
+        });
       }
       return Promise.reject(new Error("ECONNREFUSED"));
     });
 
     const onUpgradeStarted = vi.fn();
-    await act(async () => { renderDialog({ onUpgradeStarted }); });
+    await act(async () => {
+      renderDialog({ onUpgradeStarted });
+    });
     await waitForPreviewLoaded();
 
     await act(async () => {
@@ -519,12 +587,16 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
   it("does NOT double-submit on rapid clicks", async () => {
     mockFetchDispatch({ upgrade: null }); // upgrade never resolves
 
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     await waitForPreviewLoaded();
 
     const confirmBtn = screen.getByTestId("confirm-upgrade-confirm");
 
-    await act(async () => { fireEvent.click(confirmBtn); });
+    await act(async () => {
+      fireEvent.click(confirmBtn);
+    });
 
     // Count only upgrade calls (not preview)
     const upgradeCalls = () =>
@@ -533,7 +605,9 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
     expect(upgradeCalls()).toHaveLength(1);
     expect(confirmBtn).toBeDisabled();
 
-    await act(async () => { fireEvent.click(confirmBtn); }); // no-op — disabled
+    await act(async () => {
+      fireEvent.click(confirmBtn);
+    }); // no-op — disabled
     expect(upgradeCalls()).toHaveLength(1);
   });
 });
@@ -542,7 +616,9 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
 
 describe("ConfirmUpgradeDialog — a11y", () => {
   it("exposes role='dialog' + aria-modal + aria-labelledby", async () => {
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     const dialog = screen.getByTestId("confirm-upgrade-dialog");
     expect(dialog.getAttribute("role")).toBe("dialog");
     expect(dialog.getAttribute("aria-modal")).toBe("true");
@@ -556,12 +632,16 @@ describe("ConfirmUpgradeDialog — a11y", () => {
 
 describe("ConfirmUpgradeDialog — D9 cancel-pending auto-reactivate note", () => {
   it("does NOT render the reactivate note when isCancelPending is false (default)", async () => {
-    await act(async () => { renderDialog(); });
+    await act(async () => {
+      renderDialog();
+    });
     expect(screen.queryByTestId("confirm-upgrade-reactivate-note")).toBeNull();
   });
 
   it("renders the reactivate note when isCancelPending is true", async () => {
-    await act(async () => { renderDialog({ isCancelPending: true }); });
+    await act(async () => {
+      renderDialog({ isCancelPending: true });
+    });
     const note = screen.getByTestId("confirm-upgrade-reactivate-note");
     expect(note).toBeInTheDocument();
     expect(note.textContent).toMatch(/reactivate your subscription/i);

@@ -197,8 +197,10 @@ export function ConfirmUpgradeDialog({
 
   // Fetch preview once on dialog open. Props are stable for the lifetime of
   // this dialog instance — the parent unmounts and remounts on each selection.
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  useEffect(() => { void fetchPreview(); }, []);
+   
+  useEffect(() => {
+    void fetchPreview();
+  }, []);
 
   // Esc closes the dialog (unless we're mid-submit — avoids closing while a
   // network round-trip is in flight and stranding the customer in limbo).
@@ -343,10 +345,7 @@ export function ConfirmUpgradeDialog({
           {previewStatus === "loaded" && previewData && (
             <>
               <p className="text-xs tracking-wider text-white/40 uppercase">Charged today</p>
-              <p
-                className="mt-1 text-lg font-semibold text-white"
-                data-testid="proration-charge"
-              >
+              <p className="mt-1 text-lg font-semibold text-white" data-testid="proration-charge">
                 {chargedTodayLabel(previewData.prorationCents)}
               </p>
               <p className="mt-1 text-xs text-white/50" data-testid="proration-charge-subtext">
@@ -354,9 +353,7 @@ export function ConfirmUpgradeDialog({
               </p>
 
               <div className="mt-3 border-t border-white/5 pt-3">
-                <p className="text-xs tracking-wider text-white/40 uppercase">
-                  From next renewal
-                </p>
+                <p className="text-xs tracking-wider text-white/40 uppercase">From next renewal</p>
                 <p className="mt-1 text-sm text-white/80" data-testid="proration-monthly">
                   {formatUsdCents(previewData.newPriceCents)}/mo
                 </p>

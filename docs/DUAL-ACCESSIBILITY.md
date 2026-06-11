@@ -296,6 +296,7 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 | `substrate-banner-readonly-cta` | CTA inside read-only banner (F3) |
 | `keyrot-status` | Key-rotation status region (F6) |
 | `keyrot-status-error` | Error-reason detail (F6) |
+| `keyrot-limits` | Rate-limit notice displayed in the key-rotation panel ("2 rotation attempts per hour, 3 per day") |
 | `keyrot-restart` | Restart-rotation button (F6) |
 | `keyrot-status-reauth` | Re-auth-required alert banner shown inside `keyrot-status` when the rotation flow needs the user to re-authenticate before continuing (F6) |
 | `keyrot-reauth-cta` | "Re-authenticate" link/button inside `keyrot-status-reauth`; navigates to the re-auth flow (F6) |
@@ -324,9 +325,12 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 | `confirm-upgrade-close-icon` | "×" close icon in the dialog top-right; dismisses without confirming (sibling of `confirm-upgrade-cancel`; provided so agents/tests can target the icon variant separately from the textual Cancel button) |
 | `confirm-upgrade-cancel` | Cancel button |
 | `confirm-upgrade-confirm` | Confirm-and-charge button |
-| `proration-charge` | "Charge today" amount line |
-| `proration-monthly` | New monthly rate line |
-| `proration-full-line` | Full breakdown footnote ("X/mo starting …") |
+| `proration-loading` | Animated skeleton shown while the live Stripe proration preview is loading; Upgrade button is disabled in this state |
+| `proration-error` | Error panel shown when the proration preview fetch fails; contains a Retry button to re-fetch |
+| `proration-charge` | "Charged today" amount line — populated from the live `/upgrade/preview` response (e.g. "$6.33" or "No charge today") |
+| `proration-charge-subtext` | Subtext beneath the today charge explaining the proration (e.g. "Prorated for the remainder of your current billing period.") |
+| `proration-monthly` | New monthly rate line (e.g. "$29.00/mo") |
+| `proration-from-date` | From-date subtext beneath the monthly rate (e.g. "Your new monthly rate from July 1.") |
 | `dedicated-migration-warning` | Warning block shown when the target tier triggers a dedicated-cluster migration |
 | `confirm-upgrade-reactivate-note` | Amber notice rendered inside the confirm-upgrade dialog when the current subscription is in the `cancel_at_period_end: true` window. Explains that confirming will auto-reactivate the cancellation as part of the tier change (D9). Sprint 2026-05-18 E3. |
 
