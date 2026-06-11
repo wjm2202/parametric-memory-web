@@ -197,7 +197,7 @@ export function ConfirmUpgradeDialog({
 
   // Fetch preview once on dialog open. Props are stable for the lifetime of
   // this dialog instance — the parent unmounts and remounts on each selection.
-   
+
   useEffect(() => {
     void fetchPreview();
   }, []);
