@@ -206,6 +206,46 @@ export function prorationPreview(
   return `${formatUsdCents(prorationCents)} charged today, then ${formatUsdCents(monthlyCents)}/mo on ${monthFmt}`;
 }
 
+// ─── Upgrade preview — pricing block copy ────────────────────────────────────
+//
+// Used by ConfirmUpgradeDialog while it fetches and displays the live Stripe
+// proration preview. The dialog blocks the Upgrade button until preview loads
+// so the user always sees real figures before confirming a charge.
+
+export const PREVIEW_LOADING = "Loading pricing details…";
+export const PREVIEW_ERROR = "Couldn't load pricing details.";
+export const PREVIEW_RETRY_LABEL = "Retry";
+
+/**
+ * Primary "Charged today" label.
+ * Returns "No charge today" when proration is zero (e.g. upgrading at the
+ * very start of a billing period, or shared→shared at $0 difference).
+ */
+export function chargedTodayLabel(prorationCents: number): string {
+  return prorationCents === 0 ? "No charge today" : formatUsdCents(prorationCents);
+}
+
+/**
+ * Subtext beneath the "Charged today" label.
+ */
+export function chargedTodaySubtext(prorationCents: number): string {
+  if (prorationCents === 0) {
+    return "Your plan upgrades immediately. Full payment starts at your next renewal.";
+  }
+  return "Prorated for the remainder of your current billing period.";
+}
+
+/**
+ * Subtext beneath the monthly rate on the "next renewal" row.
+ * Example: "Your new monthly rate from May 17."
+ */
+export function fromDateSubtext(nextInvoiceDate: string | null): string {
+  if (!nextInvoiceDate) return "Your new monthly rate from next renewal.";
+  const d = new Date(nextInvoiceDate);
+  const formatted = d.toLocaleDateString("en-US", { month: "long", day: "numeric" });
+  return `Your new monthly rate from ${formatted}.`;
+}
+
 // ─── Limits delta formatters (used by ChangePlanSheet rows) ──────────────────
 //
 // Each delta formatter compares an upgrade option's cap against the customer's
