@@ -135,18 +135,15 @@ describe("ChangePlanButton — in-flight state", () => {
     "rolled_back",
   ];
 
-  it.each(ACTIVE_STATES)(
-    "swaps to 'Upgrade in progress…' and disables when state=%s",
-    (state) => {
-      renderButton({ pollResult: pollResultWithState(state) });
+  it.each(ACTIVE_STATES)("swaps to 'Upgrade in progress…' and disables when state=%s", (state) => {
+    renderButton({ pollResult: pollResultWithState(state) });
 
-      const btn = screen.getByTestId("change-plan-button");
-      expect(btn).toHaveTextContent(/upgrade in progress/i);
-      expect(btn).toBeDisabled();
-      expect(btn).toHaveAttribute("data-inflight", "true");
-      expect(btn).toHaveAttribute("aria-disabled", "true");
-    },
-  );
+    const btn = screen.getByTestId("change-plan-button");
+    expect(btn).toHaveTextContent(/upgrade in progress/i);
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute("data-inflight", "true");
+    expect(btn).toHaveAttribute("aria-disabled", "true");
+  });
 
   it.each(TERMINAL_UI_STATES)(
     "stays enabled with the default label when state=%s (retry must be possible)",
