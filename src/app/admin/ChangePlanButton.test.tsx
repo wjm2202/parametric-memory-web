@@ -120,27 +120,40 @@ describe("ChangePlanButton — idle state", () => {
 // ─── In-flight state ─────────────────────────────────────────────────────────
 
 describe("ChangePlanButton — in-flight state", () => {
-  // Cover all non-"none" states the hook can report. Disabled-disposed
-  // parametrised so a future enum addition trips this test.
-  const IN_FLIGHT_STATES: TierChangePollResult["state"][] = [
+  // ACTIVE states disable the button. Terminal states must NOT — the status
+  // endpoint reports the latest tier change forever, so treating terminal as
+  // in-flight permanently locks customers out of retrying a failed upgrade
+  // (2026-06-12 gleam-basin-mu7h incident).
+  const ACTIVE_STATES: TierChangePollResult["state"][] = [
     "payment_pending",
     "queued",
     "processing",
+  ];
+  const TERMINAL_UI_STATES: TierChangePollResult["state"][] = [
     "completed",
     "failed",
     "rolled_back",
   ];
 
-  it.each(IN_FLIGHT_STATES)(
-    "swaps to 'Upgrade in progress…' and disables when state=%s",
+  it.each(ACTIVE_STATES)("swaps to 'Upgrade in progress…' and disables when state=%s", (state) => {
+    renderButton({ pollResult: pollResultWithState(state) });
+
+    const btn = screen.getByTestId("change-plan-button");
+    expect(btn).toHaveTextContent(/upgrade in progress/i);
+    expect(btn).toBeDisabled();
+    expect(btn).toHaveAttribute("data-inflight", "true");
+    expect(btn).toHaveAttribute("aria-disabled", "true");
+  });
+
+  it.each(TERMINAL_UI_STATES)(
+    "stays enabled with the default label when state=%s (retry must be possible)",
     (state) => {
       renderButton({ pollResult: pollResultWithState(state) });
 
       const btn = screen.getByTestId("change-plan-button");
-      expect(btn).toHaveTextContent(/upgrade in progress/i);
-      expect(btn).toBeDisabled();
-      expect(btn).toHaveAttribute("data-inflight", "true");
-      expect(btn).toHaveAttribute("aria-disabled", "true");
+      expect(btn).toHaveTextContent("Change plan");
+      expect(btn).not.toBeDisabled();
+      expect(btn).toHaveAttribute("data-inflight", "false");
     },
   );
 
