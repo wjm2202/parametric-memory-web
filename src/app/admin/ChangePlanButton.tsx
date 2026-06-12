@@ -27,7 +27,11 @@
 "use client";
 
 import { useState } from "react";
-import { CHANGE_PLAN_BUTTON_IN_FLIGHT_LABEL, CHANGE_PLAN_BUTTON_LABEL } from "./tier-change-copy";
+import {
+  CHANGE_PLAN_BUTTON_IN_FLIGHT_LABEL,
+  CHANGE_PLAN_BUTTON_LABEL,
+  TERMINAL_STATES,
+} from "./tier-change-copy";
 import { ChangePlanSheet, type CurrentTierLimits } from "./ChangePlanSheet";
 import type { TierChangePollResult } from "@/hooks/useTierChangePoll";
 
@@ -63,12 +67,18 @@ interface Props {
 }
 
 /**
- * `state !== "none"` is the single predicate the hook's docstring asks
- * consumers to use. Centralised here (one call site) so a future refactor
- * changes it in one place.
+ * A tier change is in flight only while it is ACTIVE (payment_pending /
+ * queued / processing). Terminal states (completed / failed / rolled_back)
+ * must NOT disable the button: the status endpoint derives state from the
+ * substrate's LATEST tier-change + migration rows, so a historical
+ * rolled_back migration reports "rolled_back" forever — under the old
+ * `state !== "none"` predicate that permanently locked customers out of
+ * retrying a failed upgrade (found 2026-06-12, gleam-basin-mu7h launch-gate
+ * run). The banner still communicates the terminal outcome; the button must
+ * stay usable so the customer can try again.
  */
 function isInFlight(result: TierChangePollResult): boolean {
-  return result.state !== "none";
+  return result.state !== "none" && !TERMINAL_STATES.has(result.state);
 }
 
 export function ChangePlanButton({
