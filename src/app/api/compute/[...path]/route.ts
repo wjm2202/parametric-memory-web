@@ -17,6 +17,13 @@ const SESSION_COOKIE = "mmpm_session";
  *
  * CSRF: POST and DELETE are state-mutating session-auth proxies. Origin-checked
  * via verifyCsrfOrigin (P0-5, sprint 2026-05-18). GET is safe and skipped.
+ *
+ * AUTH (2026-06-13): every method requires a session cookie and returns 401 if
+ * absent — matching the /api/substrate(s) sibling proxies. Previously a missing
+ * cookie forwarded to compute with NO Authorization header (defense-in-depth
+ * gap: the BFF relied entirely on compute rejecting unauthenticated requests).
+ * For POST/DELETE the CSRF origin check runs FIRST (a cross-origin attacker is
+ * rejected with 403 before we ever look at the session), then the session guard.
  */
 
 async function getSessionToken(): Promise<string | undefined> {
@@ -30,6 +37,9 @@ export async function GET(
 ): Promise<NextResponse> {
   const { path } = await params;
   const sessionToken = await getSessionToken();
+  if (!sessionToken) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const subPath = path.join("/");
 
   const { response } = await computeProxy(`api/${subPath}`, {
@@ -50,6 +60,9 @@ export async function POST(
 
   const { path } = await params;
   const sessionToken = await getSessionToken();
+  if (!sessionToken) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const subPath = path.join("/");
 
   let body: unknown = {};
@@ -78,6 +91,9 @@ export async function DELETE(
 
   const { path } = await params;
   const sessionToken = await getSessionToken();
+  if (!sessionToken) {
+    return NextResponse.json({ error: "unauthorized" }, { status: 401 });
+  }
   const subPath = path.join("/");
 
   const { response } = await computeProxy(`api/${subPath}`, {

@@ -31,7 +31,7 @@
 
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { toast } from "sonner";
 import {
   DEDICATED_MIGRATION_WARNING_BODY,
@@ -160,7 +160,6 @@ export function ConfirmUpgradeDialog({
   substrateSlug,
   currentTier,
   option,
-  nextBillingDate,
   onClose,
   onUpgradeStarted,
   isCancelPending = false,
@@ -178,8 +177,11 @@ export function ConfirmUpgradeDialog({
    * retry. `substrateSlug` and `option.tier` are stable for the dialog's
    * lifetime so the useEffect below runs once (on mount = dialog open).
    */
-  async function fetchPreview() {
-    setPreviewStatus("loading");
+  // Caller sets previewStatus to "loading" (initial state is already "loading"
+  // on mount; the retry handler sets it explicitly). Keeping setState out of the
+  // synchronous path lets this run inside the mount effect without tripping
+  // react-hooks/set-state-in-effect — every setState below happens after await.
+  const fetchPreview = useCallback(async () => {
     try {
       const params = new URLSearchParams({ substrateSlug, tier: option.tier });
       const res = await fetch(`/api/billing/upgrade/preview?${params.toString()}`);
@@ -193,14 +195,17 @@ export function ConfirmUpgradeDialog({
     } catch {
       setPreviewStatus("error");
     }
-  }
+  }, [substrateSlug, option.tier]);
 
-  // Fetch preview once on dialog open. Props are stable for the lifetime of
-  // this dialog instance — the parent unmounts and remounts on each selection.
-
+  // Fetch preview once on dialog open. fetchPreview is stable (useCallback over
+  // the stable substrateSlug + option.tier), so this runs once on mount.
   useEffect(() => {
+    // Legitimate on-mount data fetch: every setState inside fetchPreview runs
+    // AFTER the awaited fetch (a later microtask), so there is no synchronous
+    // cascading render — the rule can't see past the await, so scope-disable it.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     void fetchPreview();
-  }, []);
+  }, [fetchPreview]);
 
   // Esc closes the dialog (unless we're mid-submit — avoids closing while a
   // network round-trip is in flight and stranding the customer in limbo).
@@ -334,7 +339,10 @@ export function ConfirmUpgradeDialog({
               <p className="text-sm text-white/50">{PREVIEW_ERROR}</p>
               <button
                 type="button"
-                onClick={() => void fetchPreview()}
+                onClick={() => {
+                  setPreviewStatus("loading");
+                  void fetchPreview();
+                }}
                 className="shrink-0 rounded-md px-3 py-1 text-xs font-medium text-indigo-400 ring-1 ring-indigo-500/40 transition-colors hover:bg-indigo-500/10"
               >
                 {PREVIEW_RETRY_LABEL}
