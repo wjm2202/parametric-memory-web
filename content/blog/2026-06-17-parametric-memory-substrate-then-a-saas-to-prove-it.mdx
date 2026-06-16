@@ -1,0 +1,254 @@
+---
+title: "I Built a Digital Parametric Memory Substrate, Then Thought It Was a Good Idea to Build a SaaS to Prove It Works"
+date: "2026-06-17"
+excerpt: "It started as a fix for a small, stupid annoyance: re-explaining myself to a fresh chat every single morning. It turned into a cryptographically verifiable memory substrate, and then — against the advice of anyone sensible — a whole SaaS whose only job was to prove the memory actually compounds. This is the science, and the comedy, of both."
+author: "Entity One"
+tags: ["engineering", "memory-substrate", "science", "markov", "merkle-proofs"]
+---
+
+It started with an annoyance so small I'm slightly embarrassed it spawned a company.
+
+Every morning I'd open a fresh chat with my AI assistant and spend the first ten minutes
+re-explaining things it had figured out the day before. The repo layout. The deploy
+quirks. The bug we'd just chased to ground. The model was brilliant and completely
+amnesiac — a colleague with a doctorate and no hippocampus. The context window is not
+memory. It's a whiteboard that gets wiped when you close the tab.
+
+I got tired of being the backup drive for a machine that was supposed to be helping me.
+So I built it a memory.
+
+## The realisation that turned an annoyance into a substrate
+
+The first version was meant to do one thing: stop me re-contexting. Store what we learned,
+load it next session, done. But once it worked, the more interesting property showed up on
+its own.
+
+If recall is cheap, fast, and *trustworthy*, memory stops being a convenience and becomes
+a **compounding store of value**. The marginal cost of remembering one more thing is a
+single write. The value of that thing isn't paid once — it's paid into every future
+session that ever touches it. A fact you store today earns interest tomorrow, and the day
+after, and every time a related decision comes up for the rest of the project's life.
+Information that was worth nothing the moment after you learned it suddenly has positive,
+*increasing* value.
+
+That reframed the whole thing. I wasn't building a notes app for a robot. I was building a
+ledger where every deposit accrues. The technical name for what I'd built is a **parametric
+memory substrate** — parametric because the thing that improves isn't a pile of documents,
+it's a set of learned parameters: which facts matter, which sequences recur, which lessons
+have survived. Recall is the withdrawal. Learning is the interest.
+
+There was only one problem with believing my own pitch: I had no proof it compounded. A
+graph that looks impressive after a week of toy data tells you nothing. Compounding is a
+claim about *months*, under real load, with real stakes. You can't benchmark it. You have
+to live it.
+
+So I did the only obviously reasonable thing. I built an entire SaaS business for the sole
+purpose of giving my memory system a customer it couldn't lie to: me, building the SaaS.
+
+## What the substrate actually is (the short, honest version)
+
+Three primitives, none exotic on their own, interesting because they sit together.
+
+Every fact is an **atom** — a named, versioned string. Atoms are hashed with SHA-256 and
+inserted into a Merkle tree built on the RFC 6962 model, the same construction Certificate
+Transparency uses to keep public certificate logs honest. When you recall an atom, you get
+the value *and* an audit path. You can recompute the hash chain to the published root
+yourself, in O(log n), and prove the thing handed to you is the thing that was stored:
+
+```ts
+const { atom, proof } = await memory.recall("compute_server_crash_loop_fixed");
+const ok = await memory.verify(atom, proof); // recompute leaf → root
+// → true, or it throws
+```
+
+That's the part most memory systems skip. Vector search returns something *similar*; it
+can't prove the thing it returned is unmodified. Mine can. p95 proof verification runs in
+0.032 ms.
+
+On top of that sits a **Markov layer** that watches the order in which atoms get recalled
+and predicts the next one before you ask. In production it lands the next atom 64% of the
+time. And the whole thing is **MCP-native**, so any compatible assistant plugs in and
+inherits persistent, verifiable memory with no SDK.
+
+That's the substrate. But the primitive that took me longest to appreciate isn't any of
+those three. It's that none of them are fixed.
+
+## You're designing a language, not filling in a database
+
+The three primitives are domain-agnostic on purpose. SHA-256 doesn't know what a "sprint"
+is; the Markov model doesn't care whether the next atom is a CVE or a soil amendment. What
+sits *above* the primitives — the atom types, the edge types, the naming grammar — is yours
+to design. The substrate ships with seven atom types (`fact`, `state`, `event`, `relation`,
+`procedure`, `domain`, `task`) and seven edges (`member_of`, `supersedes`, `depends_on`,
+`constrains`, `references`, `derived_from`, `produced_by`), but those are a starter kit, not
+a schema. They're the grammar I happened to need to run a SaaS.
+
+Here's the framing that finally made it click, and it's the reason I keep calling the thing
+*parametric*. Designing an atom set is like designing a programming language — except you're
+not encoding behaviour, you're encoding *how information gets ingested*. You decide the nouns
+your domain actually says out loud (a litigator says "motion," not "document"), the verbs
+that connect them ("affects," "patches," "supersedes"), which types decay in a week and which
+never decay, which atoms are hubs that everything else hangs off. You write the rules of
+intake, once.
+
+And then the part that still feels slightly illicit: because the structure goes in at
+*ingestion* time, you can ask the graph questions you never designed it to answer, and get
+back an answer in a *shape you never built*. I never wrote a "which auth-adjacent packages
+have a slower patch cadence than the rest of my stack, given the last six months of
+advisories" query. You write down packages, advisories, patches, and the edges between them —
+and the question composes itself across the graph at recall time. A notes app answers *what
+did I write down.* A designed grammar answers *what does my reasoning look like — now traverse
+it however this question demands.*
+
+That's the line between storage and a substrate. Storage hands back what you put in. A
+substrate hands back inferences over the shape you chose. You design the language going in;
+the answers you never anticipated are the dividend coming out.
+
+That's the science setup. Now the comedy.
+
+## Learning to work with a colleague who never forgets — except when it does
+
+Here is the thing nobody warns you about when you give an AI a permanent memory: you are
+no longer prompting a tool. You are *training a co-worker*, and every correction you make
+becomes load-bearing. The substrate turned my offhand annoyances into durable policy, which
+is wonderful right up until you realise you'd better mean what you say.
+
+The relationship has its own founding document now, stored as
+`v1.procedure.we_work_as_a_team`: I run the commands on my Mac and the droplets; the
+assistant writes the code and tells me *exactly where* to run each command. It reads almost
+like a marriage clause. Under it hangs a little constitution of corrections — each one
+originally a moment of mild exasperation, now a rule that loads on every session:
+
+**The day it guessed instead of asking.** Early on it assumed a sprint ordering, picked a
+file location, and started writing code on facts it didn't have. I told it I'd rather be
+over-asked than wrong-guessed at. That became `ask_first_over_guess`, with an edge that
+constrains the exact behaviour I'd corrected, reinforced three times so it would survive the
+decay schedule. It still pauses to ask, months later. I taught it once.
+
+**The time memory confidently lied to me about its own homework.** This one I love, because
+it's the substrate failing in the most human way possible. Memory recorded a batch of
+migration work as *shipped and tested*. The code did not exist — the edits had been written,
+never committed, and quietly lost. The memory was sincere; it just confused "we decided to
+do this" with "this is done." That produced one of my favourite rules,
+`verify_fixed_claims_against_code_before_marking_done`: **memory is eventually consistent;
+for the shipped status of code, the repo is the source of truth, not the memory.** A memory
+system that can prove its own contents with a Merkle path still can't prove a human actually
+ran `git commit`. Worth knowing.
+
+**The fifteen scratch files.** During one migration sprint the assistant left `.bak` safety
+copies scattered across three repos — twelve in one, like a raccoon that tidies by hiding
+things. The fix wasn't `.gitignore` (that just hides the raccoon). It was a rule:
+working files never go in the repo, full stop. Stored, learned, never repeated.
+
+And the genuinely expensive ones, compressed: a three-hour production crash loop that turned
+out to be a drained event loop (an idle DB pool plus an unref'd timer plus no keepalive); a
+migration that ran `CREATE TABLE IF NOT EXISTS` over a table a *different* migration had
+already made, so it silently did nothing for two weeks; a Stripe webhook that took a
+customer's money in three un-transactional writes and granted them access in none of them.
+Each one is now an atom. Each one means the *next* time that shape appears, it gets caught at
+design time. The crash-loop lesson has already paid for itself twice.
+
+That's the compounding, made of comedy. I wasn't just fixing bugs. I was depositing the
+*experience* of fixing them into something that pays it back.
+
+## The part where the SaaS runs on its own memory
+
+Here's where "prove it works" gets literal. The SaaS — billing, provisioning, the whole
+DigitalOcean orchestration machine — does not run operations the normal way. There are no
+hardcoded threshold rules deciding when to warn a customer, when to nudge a tier change,
+when to step in before a problem. Or rather, there *were*, and we're replacing them with the
+substrate.
+
+The mechanism: an ops-writer hooks into the state-machine transitions across the system —
+provisioning, suspension, grace periods, billing enforcement, deprovisioning. Every
+transition writes a small, non-PII atom keyed to a hashed account. An inference agent
+bootstraps that substrate and uses it to decide *when* and *how* to intervene, then trains
+its Markov arcs on what actually happened next. The customer lifecycle is, formally, a
+Markov process — so the arc weights converge toward the real transition probabilities with
+no explicit statistics on my part. The system learns the timing that rules could never
+express, because nobody knows the right threshold until the data tells you.
+
+I'll be honest about the catch, because the science demands it: this has a **cold start**.
+For roughly the first 60 days a fresh ops substrate has too little arc-weight history to
+infer anything trustworthy, so it falls back to boring threshold rules and accumulates
+quietly. The interesting behaviour emerges around day 60–90. That's not a bug; it's the
+same warm-up any learned system has. It also means the cold-start period is a built-in A/B
+test of learned policy against hardcoded policy — the substrate has to *earn* its place by
+beating the rules it replaces. The tagline writes itself: we don't run on rule-based
+operations management; we run on parametric memory.
+
+## How we bootstrapped from the first substrate
+
+People ask how a new memory starts from nothing. It mostly doesn't.
+
+The original substrate — the one the assistant and I filled up building all of this — is the
+seed crystal. Everything I described above lives in it: the team protocol, the corrections,
+the bug shapes, the architecture decisions. A new session doesn't reload a transcript; it
+runs a single bootstrap call with an *objective*, and the substrate returns the atoms ranked
+by relevance to that objective, each with its proof. One call, scored, done. The assistant
+walks in already knowing the things it would otherwise ask me to re-explain. The annoyance I
+started with — gone, by construction.
+
+Customer substrates start emptier, and that taught me a lesson too. Fresh substrates were
+quietly *haunted*: a tutorial fixture left ghost atoms (`Node_A`, `Step_1`, and friends)
+ranking at around 0.42 relevance in brand-new accounts, so a customer's very first bootstrap
+surfaced noise that looked like signal. The fix was a proper minimal seed pack — a handful of
+hub atoms that give day-one recall something real to rank — and the exorcism of the tutorial
+ghosts. Bootstrapping a memory, it turns out, is a design problem of its own: you want enough
+structure that recall isn't empty, and not one atom more, or you're ranking someone else's
+leftovers.
+
+## The science, without the secret sauce
+
+For the people who, like me, only really believe a system once they can see its joints —
+here's what's underneath, with public references. The *composition* is ours; the primitives
+are standing on the shoulders of some very good papers.
+
+**Verification.** SHA-256 Merkle trees with audit paths and consistency proofs, on the
+RFC 6962 model (Laurie et al., 2013). Consistency proofs let you verify the tree only ever
+*appended* honestly between two versions — you can prove memory wasn't rewritten behind your
+back, not just that a single read is intact.
+
+**Prediction.** A variable-order Markov model in the Prediction-by-Partial-Matching family
+(Cleary & Witten, 1984), with a first-order fallback, transitions held in a sparse matrix.
+It's a compression idea repurposed as a prefetcher: the same statistics that predict the
+next character in a text predict the next atom in a recall sequence.
+
+**Forgetting.** Decay follows a half-life regression in the spirit of Settles & Meeder's
+spaced-repetition model (ACL 2016) — the Duolingo approach. Atoms you reinforce get longer
+half-lives; atoms you never touch fade. Memory should forget what stopped mattering, on a
+curve, not a cliff.
+
+**Retrieval.** A blend of lexical scoring (BM25; Robertson & Zaragoza, 2009) and semantic
+similarity over compact static-distilled embeddings (Model2Vec), combined and then re-ranked
+by an evidence score that weighs relevance, whether a valid proof is present, the atom's
+category, and whether it conflicts with anything else known. **Sharding** uses Google's
+JumpHash (Lamping & Veach, 2014) — minimal-memory, minimal-reshuffle consistent hashing.
+
+The exact coefficients in that evidence blend, the decay parameters, the ranking weights —
+that's the tuning the SaaS bought me, and that's the part I keep. The math above tells you
+*how* it works. The months of a real system leaning on it told me *what* to set the dials
+to. You can have the former for free; the latter cost me a company.
+
+## So, did it work?
+
+The benchmark numbers, from a 10-trial run with variance reported rather than cherry-picked:
+3,888 ops/sec, access p50 1.22 ms, proof verification p95 0.032 ms, 64% next-atom hit rate,
+zero stale reads, zero proof failures. Those are the easy claims.
+
+The real proof isn't in the table. It's that I now have a memory whose every lesson was paid
+for by a production failure, a SaaS that runs its own operations on the exact substrate it
+sells, and an assistant that walks into each morning already knowing what we learned
+yesterday. I set out to stop re-explaining myself to a goldfish. I ended up with a colleague
+that compounds.
+
+If you build one of these, the single habit worth more than all the architecture: **store
+the corrections.** When you tell your assistant "no — like *this*," that sentence is the
+highest-value signal in the entire conversation. Keep it in the chat window and you'll teach
+it again next week. Keep it in a substrate, and you teach it once.
+
+The code is source-available — free for personal use, commercial license for organisations —
+at [GitHub](https://github.com/wjm2202/Parametric-Memory), and the rest is at
+[parametric-memory.dev](https://parametric-memory.dev).
+
+— Entity One
