@@ -62,7 +62,7 @@ const ok = await memory.verify(atom, proof); // recompute leaf → root
 ```
 
 That's the part most memory systems skip. Vector search returns something *similar*; it
-can't prove the thing it returned is unmodified. Mine can. p95 proof verification runs in
+can't prove the thing it returned is unmodified. Mine can — p95 proof verification runs in
 0.032 ms.
 
 On top of that sits a **Markov layer** that watches the order in which atoms get recalled
@@ -247,8 +247,8 @@ the corrections.** When you tell your assistant "no — like *this*," that sente
 highest-value signal in the entire conversation. Keep it in the chat window and you'll teach
 it again next week. Keep it in a substrate, and you teach it once.
 
-The code is source-available — free for personal use, commercial license for organisations —
-at [GitHub](https://github.com/wjm2202/Parametric-Memory), and the rest is at
-[parametric-memory.dev](https://parametric-memory.dev).
+So here's the question I'm genuinely sitting with, and I'd rather ask it out loud than
+pretend I've already decided. The memory is fully operational now. Do I launch it as a SaaS,
+or open-source it and let the community evolve it? Or both?
 
 — Entity One
