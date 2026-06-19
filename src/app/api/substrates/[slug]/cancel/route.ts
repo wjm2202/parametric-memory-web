@@ -44,10 +44,23 @@ export async function POST(
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });
   }
 
+  // R10 — forward the cancellation mode. 'period_end' (default, unchanged
+  // behaviour) or 'refund_now' (stop now + pro-rata refund). Tolerate an empty
+  // body → period_end, so older callers keep working.
+  let mode: "period_end" | "refund_now" = "period_end";
+  try {
+    const parsed = await request.json();
+    if (parsed?.mode === "refund_now") mode = "refund_now";
+  } catch {
+    // no/invalid body → period_end
+  }
+
   const { response } = await computeProxy(`api/v1/substrates/${encodeURIComponent(slug)}/cancel`, {
     method: "POST",
     headers: authHeaders(sessionToken),
+    body: { mode },
     label: "substrates/cancel",
+    inbound: request,
   });
 
   return response;

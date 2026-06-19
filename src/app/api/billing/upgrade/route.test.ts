@@ -123,6 +123,7 @@ describe("POST /api/billing/upgrade", () => {
     mockFetch.mockResolvedValue({
       status: 200,
       text: () => Promise.resolve(JSON.stringify(upstream)),
+      headers: new Headers(), // real fetch always returns Headers; the route forwards Retry-After
     });
 
     const res = await POST(
@@ -157,6 +158,7 @@ describe("POST /api/billing/upgrade", () => {
     mockFetch.mockResolvedValue({
       status: 200,
       text: () => Promise.resolve(JSON.stringify({ accepted: true })),
+      headers: new Headers(),
     });
 
     await POST(makeReq({ substrateSlug: "weird slug/with?chars", targetTier: "pro" }));
@@ -172,6 +174,7 @@ describe("POST /api/billing/upgrade", () => {
     mockFetch.mockResolvedValue({
       status: 409,
       text: () => Promise.resolve(JSON.stringify({ error: "upgrade_in_progress" })),
+      headers: new Headers(),
     });
 
     const res = await POST(makeReq({ substrateSlug: "bold-junction", targetTier: "pro" }));
@@ -179,6 +182,21 @@ describe("POST /api/billing/upgrade", () => {
 
     expect(res.status).toBe(409);
     expect(body.error).toBe("upgrade_in_progress");
+  });
+
+  it("forwards the Retry-After header on a 429 (R11 forwardHeaders)", async () => {
+    mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
+    mockFetch.mockResolvedValue({
+      status: 429,
+      text: () => Promise.resolve(JSON.stringify({ error: "rate_limited" })),
+      headers: new Headers({ "Retry-After": "42" }),
+    });
+
+    const res = await POST(makeReq({ substrateSlug: "bold-junction", targetTier: "pro" }));
+
+    expect(res.status).toBe(429);
+    // The BFF surfaces the upstream Retry-After so the UI can show a countdown.
+    expect(res.headers.get("retry-after")).toBe("42");
   });
 
   it("returns 502 when compute is unreachable", async () => {

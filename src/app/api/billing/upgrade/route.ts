@@ -86,6 +86,10 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
       body: upstreamBody,
       headers: authHeaders(sessionToken),
       label: "billing/upgrade",
+      // R11: compute sets Retry-After on a 429 (daily tier-change cap /
+      // dedicated-failure lockout). computeProxy only forwards allow-listed
+      // headers, so without this the client/tests never see it.
+      forwardHeaders: ["Retry-After"],
     },
   );
 

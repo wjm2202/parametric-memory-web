@@ -52,6 +52,12 @@ export async function POST(request: NextRequest): Promise<NextResponse> {
     headers: authHeaders(sessionToken),
     body,
     label: "checkout",
+    // Forward the client IP chain so compute's per-IP billing rate limit keys on
+    // the real client, not this BFF's IP. Without this, every checkout shares one
+    // global bucket (the BFF address) — collapsing the per-IP limit and tripping
+    // it under concurrent load (and from a single test IP). Matches the other
+    // mutating proxies in this app.
+    inbound: request,
   });
 
   return response;

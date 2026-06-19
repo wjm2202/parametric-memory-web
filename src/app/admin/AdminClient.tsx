@@ -19,6 +19,7 @@ import { FormattedDate } from "@/components/FormattedDate";
 import { FormattedNumber } from "@/components/FormattedNumber";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { useTierChangePoll } from "@/hooks/useTierChangePoll";
+import { useSubstrateEvents } from "@/hooks/useSubstrateEvents";
 import { TierChangeProgressBanner } from "./TierChangeProgressBanner";
 import { ChangePlanButton } from "./ChangePlanButton";
 import type { CurrentTierLimits } from "./ChangePlanSheet";
@@ -61,6 +62,7 @@ interface SubstrateInfo {
   status: string;
   mcpEndpoint: string | null;
   hostingModel: string;
+  personaName: string | null;
   provisioning: ProvisioningProgress | null;
   health: HealthInfo | null;
   maxAtoms: number;
@@ -123,6 +125,126 @@ function StatusBadge({ status }: { status: string }) {
   );
 }
 
+/**
+ * R10 slice 6 — inline "name your substrate" editor. Shows the current display
+ * name (falling back to the slug) with a Rename control; saving PATCHes
+ * /api/substrates/:slug/persona and calls onSaved so the parent re-fetches.
+ * Compute is the source of truth for validation (trim, <=80, control chars).
+ */
+const PERSONA_NAME_MAX = 80;
+
+export function PersonaNameEditor({
+  slug,
+  personaName,
+  onSaved,
+}: {
+  slug: string;
+  personaName: string | null;
+  onSaved: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState(personaName ?? "");
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const display = personaName && personaName.length > 0 ? personaName : slug;
+
+  async function save() {
+    setSaving(true);
+    setError(null);
+    try {
+      const res = await fetch(`/api/substrates/${slug}/persona`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: draft.trim() === "" ? null : draft.trim() }),
+      });
+      if (!res.ok) {
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        setError(
+          body.error === "persona_name_too_long"
+            ? `Name must be ${PERSONA_NAME_MAX} characters or fewer.`
+            : body.error === "persona_name_invalid_chars"
+              ? "Name can't contain line breaks or control characters."
+              : "Couldn't save the name. Please try again.",
+        );
+        return;
+      }
+      setEditing(false);
+      onSaved();
+    } catch {
+      setError("Couldn't save the name. Please try again.");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  if (!editing) {
+    return (
+      <div className="flex items-center gap-3" data-testid="persona-display">
+        <h1 className="font-[family-name:var(--font-syne)] text-2xl font-bold">{display}</h1>
+        <button
+          type="button"
+          data-testid="persona-edit-button"
+          onClick={() => {
+            setDraft(personaName ?? "");
+            setError(null);
+            setEditing(true);
+          }}
+          className="rounded-md border border-white/10 px-2 py-1 text-xs text-white/50 transition-colors hover:border-white/20 hover:text-white/80"
+        >
+          Rename
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col gap-2" data-testid="persona-editor">
+      <div className="flex flex-wrap items-center gap-2">
+        <input
+          type="text"
+          value={draft}
+          maxLength={PERSONA_NAME_MAX}
+          autoFocus
+          data-testid="persona-input"
+          onChange={(e) => setDraft(e.target.value)}
+          placeholder={slug}
+          className="w-64 rounded-lg border border-white/15 bg-black/30 px-3 py-2 text-lg font-semibold text-white outline-none focus:border-indigo-500/50"
+        />
+        <button
+          type="button"
+          data-testid="persona-save"
+          disabled={saving}
+          onClick={save}
+          className="rounded-lg border border-indigo-500/40 bg-indigo-500/10 px-3 py-2 text-sm text-indigo-200 transition-colors hover:border-indigo-500/60 disabled:opacity-50"
+        >
+          {saving ? "Saving…" : "Save"}
+        </button>
+        <button
+          type="button"
+          data-testid="persona-cancel"
+          disabled={saving}
+          onClick={() => {
+            setEditing(false);
+            setError(null);
+          }}
+          className="rounded-lg border border-white/10 px-3 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80"
+        >
+          Cancel
+        </button>
+      </div>
+      <p className="text-xs text-white/40">
+        A friendly name for this substrate. Leave blank to use the slug ({slug}).
+      </p>
+      {error && (
+        <p data-testid="persona-error" className="text-xs text-red-400">
+          {error}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function UsageBar({
   label,
   current,
@@ -160,7 +282,15 @@ function UsageBar({
   );
 }
 
-function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) {
+function CopyButton({
+  text,
+  label = "Copy",
+  testId,
+}: {
+  text: string;
+  label?: string;
+  testId?: string;
+}) {
   const [copied, setCopied] = useState(false);
 
   async function handleCopy() {
@@ -172,9 +302,50 @@ function CopyButton({ text, label = "Copy" }: { text: string; label?: string }) 
   return (
     <button
       onClick={handleCopy}
+      data-testid={testId}
       className="min-h-[40px] rounded-lg bg-indigo-600 px-3 py-2.5 text-sm font-medium text-white transition-colors hover:bg-indigo-500"
     >
       {copied ? "Copied!" : label}
+    </button>
+  );
+}
+
+/**
+ * Cancel-mode option button (period_end | refund_now). Module-level (not nested
+ * in the modal) so it isn't re-created every render — react-hooks/static-components.
+ * State it needs (current mode, disabled, selection handler) is passed in.
+ */
+function CancelOptionButton({
+  mode,
+  value,
+  title,
+  body,
+  disabled,
+  onSelect,
+}: {
+  mode: CancelMode;
+  value: CancelMode;
+  title: string;
+  body: string;
+  disabled: boolean;
+  onSelect: (value: CancelMode) => void;
+}) {
+  const selected = mode === value;
+  return (
+    <button
+      type="button"
+      onClick={() => onSelect(value)}
+      disabled={disabled}
+      data-testid={`cancel-mode-${value}`}
+      aria-pressed={selected}
+      className={`w-full rounded-lg border p-3 text-left transition-colors disabled:opacity-50 ${
+        selected
+          ? "border-red-500/50 bg-red-500/10"
+          : "border-white/10 bg-white/[0.02] hover:border-white/20"
+      }`}
+    >
+      <p className="text-sm font-medium text-white">{title}</p>
+      <p className="mt-0.5 text-xs text-white/50">{body}</p>
     </button>
   );
 }
@@ -291,6 +462,16 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
       };
     }
   }, [substrate?.status, fetchSubstrate]);
+
+  // R12 — live SSE updates layered on top of the 3s poll: a billing / tier-change
+  // / refund event refreshes the substrate immediately (≈1s) instead of waiting
+  // for the next poll tick. Degrades silently to the poll when the stream is
+  // unavailable (no event bus on compute, EventSource missing, transient drop).
+  useSubstrateEvents(slug, {
+    onEvent: () => {
+      void fetchSubstrate();
+    },
+  });
 
   // Poll rotation status
   useEffect(() => {
@@ -477,10 +658,12 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
     }
   }
 
-  async function handleCancel() {
+  async function handleCancel(mode: "period_end" | "refund_now") {
     try {
       const res = await fetch(`/api/substrates/${slug}/cancel`, {
         method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ mode }),
       });
       if (res.ok) {
         await fetchSubstrate();
@@ -566,10 +749,19 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
       <main className="relative mx-auto max-w-5xl px-6 py-10">
         {/* Substrate header */}
         <div className="mb-8">
-          <h1 className="mb-1 font-[family-name:var(--font-syne)] text-2xl font-bold">
-            {substrate?.slug || slug}
-          </h1>
-          <p className="text-sm text-white/40">Substrate administration and management</p>
+          {substrate?.slug ? (
+            <PersonaNameEditor
+              slug={substrate.slug}
+              personaName={substrate.personaName}
+              onSaved={() => void fetchSubstrate()}
+            />
+          ) : (
+            <h1 className="mb-1 font-[family-name:var(--font-syne)] text-2xl font-bold">{slug}</h1>
+          )}
+          <p className="mt-1 text-sm text-white/40">
+            {substrate?.personaName ? `${substrate.slug} · ` : ""}Substrate administration and
+            management
+          </p>
         </div>
 
         {/* Status section */}
@@ -797,10 +989,13 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                 <div className="mb-4">
                   <p className="mb-1.5 text-xs text-white/50">Endpoint URL</p>
                   <div className="flex items-center gap-2">
-                    <code className="flex-1 truncate rounded-lg border border-indigo-500/25 bg-black/30 px-3 py-2 font-mono text-sm text-indigo-200">
+                    <code
+                      data-testid="mcp-endpoint"
+                      className="flex-1 truncate rounded-lg border border-indigo-500/25 bg-black/30 px-3 py-2 font-mono text-sm text-indigo-200"
+                    >
                       {substrate.mcpEndpoint}
                     </code>
-                    <CopyButton text={substrate.mcpEndpoint} />
+                    <CopyButton text={substrate.mcpEndpoint} testId="mcp-endpoint-copy" />
                   </div>
                 </div>
 
@@ -1075,7 +1270,11 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
 
       {/* Cancel modal */}
       {cancelModalOpen && (
-        <CancelModal onClose={() => setCancelModalOpen(false)} onConfirm={handleCancel} />
+        <CancelModal
+          slug={slug}
+          onClose={() => setCancelModalOpen(false)}
+          onConfirm={handleCancel}
+        />
       )}
 
       {/* Deprovision modal */}
@@ -1100,24 +1299,85 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   );
 }
 
-function CancelModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: () => void }) {
-  const [step, setStep] = useState(1);
+/**
+ * R10 — cancellation choice (D2 + D7). The customer picks:
+ *   • period_end  — run out the paid period, no refund, reactivation allowed.
+ *   • refund_now  — stop immediately + pro-rata refund of the unused,
+ *                   non-provisioning time. Shows the EXACT refund (fetched from
+ *                   the read-only preview), warns that data loss is immediate
+ *                   and irreversible, states the provisioning fee is excluded,
+ *                   and gates the action behind a type-to-confirm.
+ */
+type CancelMode = "period_end" | "refund_now";
+
+interface RefundPreview {
+  refundCents: number;
+  withheldFeeCents: number;
+}
+
+function CancelModal({
+  slug,
+  onClose,
+  onConfirm,
+}: {
+  slug: string;
+  onClose: () => void;
+  onConfirm: (mode: CancelMode) => Promise<void> | void;
+}) {
+  const [mode, setMode] = useState<CancelMode>("period_end");
   const [loading, setLoading] = useState(false);
+  const [confirmText, setConfirmText] = useState("");
+  const [preview, setPreview] = useState<RefundPreview | null>(null);
+  const [previewStatus, setPreviewStatus] = useState<"idle" | "loading" | "loaded" | "error">(
+    "idle",
+  );
+
+  const fmtUsd = (cents: number) => `$${(Math.max(0, cents) / 100).toFixed(2)}`;
+  const CONFIRM_PHRASE = "CANCEL";
+
+  // Fetch the refund preview the first time the customer picks refund_now.
+  useEffect(() => {
+    if (mode !== "refund_now" || previewStatus !== "idle") return;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPreviewStatus("loading");
+    void (async () => {
+      try {
+        const res = await fetch(`/api/substrates/${slug}/cancel/refund-preview`);
+        if (!res.ok) {
+          setPreviewStatus("error");
+          return;
+        }
+        const data = (await res.json()) as Partial<RefundPreview>;
+        setPreview({
+          refundCents: data.refundCents ?? 0,
+          withheldFeeCents: data.withheldFeeCents ?? 0,
+        });
+        setPreviewStatus("loaded");
+      } catch {
+        setPreviewStatus("error");
+      }
+    })();
+  }, [mode, previewStatus, slug]);
+
+  // refund_now requires the preview to have loaded AND a matching type-to-confirm.
+  const refundNowConfirmed =
+    previewStatus === "loaded" && confirmText.trim().toUpperCase() === CONFIRM_PHRASE;
+  const canConfirm = mode === "period_end" || refundNowConfirmed;
 
   async function handleConfirm() {
-    if (step === 1) {
-      setStep(2);
-    } else {
-      setLoading(true);
-      await onConfirm();
-      setLoading(false);
-      onClose();
-    }
+    if (loading || !canConfirm) return;
+    setLoading(true);
+    await onConfirm(mode);
+    setLoading(false);
+    onClose();
   }
 
   return (
     <div className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div
+        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+        onClick={loading ? undefined : onClose}
+      />
       <div className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-[#0d0d14] p-6 shadow-2xl">
         <div className="mb-4 flex items-start gap-3">
           <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/15">
@@ -1139,37 +1399,107 @@ function CancelModal({ onClose, onConfirm }: { onClose: () => void; onConfirm: (
             <h2 className="font-[family-name:var(--font-syne)] text-base font-semibold text-white">
               Cancel subscription
             </h2>
-            <p className="mt-1 text-sm text-white/50">
-              Your substrate will be deprovisioned at the end of the current billing period.
-            </p>
+            <p className="mt-1 text-sm text-white/50">Choose how you&apos;d like to cancel.</p>
           </div>
         </div>
 
-        <div className="mb-4 space-y-2 text-sm text-white/70">
-          {step === 1 ? (
-            <p>Are you sure you want to cancel your subscription?</p>
-          ) : (
-            <>
-              <p className="font-medium">Please confirm you want to proceed.</p>
-              <p className="text-xs">You will lose access to your substrate.</p>
-            </>
-          )}
+        <div className="mb-4 space-y-2">
+          <CancelOptionButton
+            mode={mode}
+            value="period_end"
+            title="Cancel at period end"
+            body="Keep full access until your billing period ends, then your substrate is deprovisioned. No refund. You can reactivate any time before it ends."
+            disabled={loading}
+            onSelect={setMode}
+          />
+          <CancelOptionButton
+            mode={mode}
+            value="refund_now"
+            title="Cancel now and get a refund"
+            body="Stop immediately and refund the unused, non-provisioning portion of this period to your card."
+            disabled={loading}
+            onSelect={setMode}
+          />
         </div>
+
+        {/* refund_now detail: exact refund + irreversible warning + fee-excluded + type-to-confirm */}
+        {mode === "refund_now" && (
+          <div
+            className="mb-4 rounded-lg border border-red-500/30 bg-red-500/5 p-4"
+            data-testid="refund-now-detail"
+          >
+            {previewStatus === "loading" && (
+              <div
+                className="h-4 w-40 animate-pulse rounded bg-white/10"
+                data-testid="refund-preview-loading"
+              />
+            )}
+            {previewStatus === "error" && (
+              <p className="text-sm text-white/60" data-testid="refund-preview-error">
+                We couldn&apos;t calculate your refund right now. Please try again, or choose
+                &ldquo;Cancel at period end&rdquo;.
+              </p>
+            )}
+            {previewStatus === "loaded" && preview && (
+              <>
+                <p className="text-xs tracking-wider text-white/40 uppercase">
+                  Refund to your card
+                </p>
+                <p className="mt-1 text-lg font-semibold text-white" data-testid="refund-amount">
+                  {fmtUsd(preview.refundCents)}
+                </p>
+                {preview.withheldFeeCents > 0 && (
+                  <p className="mt-1 text-xs text-white/50" data-testid="refund-fee-excluded">
+                    Excludes the non-refundable provisioning fee ({fmtUsd(preview.withheldFeeCents)}
+                    ), already used for setup.
+                  </p>
+                )}
+                <p
+                  className="mt-3 text-xs font-medium text-red-300"
+                  data-testid="refund-irreversible-warning"
+                >
+                  Your substrate and its data are deleted immediately and cannot be recovered. This
+                  cannot be undone.
+                </p>
+                <label className="mt-3 block text-xs text-white/60">
+                  Type{" "}
+                  <span className="font-mono font-semibold text-white/80">{CONFIRM_PHRASE}</span> to
+                  confirm
+                  <input
+                    type="text"
+                    value={confirmText}
+                    onChange={(e) => setConfirmText(e.target.value)}
+                    disabled={loading}
+                    data-testid="refund-confirm-input"
+                    autoComplete="off"
+                    className="mt-1 w-full rounded-md border border-white/15 bg-transparent px-2 py-1.5 text-sm text-white outline-none focus:border-red-500/60"
+                  />
+                </label>
+              </>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-3">
           <button
             onClick={onClose}
             disabled={loading}
+            data-testid="cancel-modal-keep"
             className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
           >
             Keep subscription
           </button>
           <button
             onClick={handleConfirm}
-            disabled={loading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:opacity-50"
+            disabled={loading || !canConfirm}
+            data-testid="cancel-modal-confirm"
+            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
           >
-            {loading ? "Cancelling…" : step === 1 ? "Continue" : "Confirm cancel"}
+            {loading
+              ? "Cancelling…"
+              : mode === "refund_now"
+                ? "Cancel now & refund"
+                : "Cancel at period end"}
           </button>
         </div>
       </div>

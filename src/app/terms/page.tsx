@@ -195,10 +195,26 @@ export default async function TermsPage() {
 
           <h3>5.4 Refunds</h3>
           <p>
-            <strong>Refunds:</strong> Subscriptions are non-refundable except if you cancel within 7
-            days of initial purchase (full refund), or where mandatory consumer law in your
-            jurisdiction requires otherwise. No refund or service credit will be issued for periods
-            during which your account was suspended or terminated for cause under Section&nbsp;6.
+            <strong>Refunds:</strong> When you cancel (Section&nbsp;6.1) you choose how it takes
+            effect: run to the end of your current billing period with no refund, or stop
+            immediately and receive a pro-rata refund of the unused portion of the current period to
+            your original payment method. This automatic pro-rata refund is offered to all
+            customers, regardless of jurisdiction. You may also cancel within 7 days of initial
+            purchase for a full refund. The pro-rata refund is time-based (calculated from your
+            billing-period dates), never usage-based.
+          </p>
+          <p>
+            <strong>Provisioning fee:</strong> Dedicated plans include a one-time provisioning fee
+            (one third of the first billing period) that covers setting up your private instance.
+            This fee is <strong>non-refundable</strong> once your instance is provisioned and is
+            excluded from any pro-rata refund. If a tier change or provisioning fails on our side,
+            we refund everything charged for that change, the provisioning fee included.
+          </p>
+          <p>
+            No refund or service credit will be issued for periods during which your account was
+            suspended or terminated for cause under Section&nbsp;6. Where a charge is under dispute
+            with your card issuer, we resolve the dispute manually rather than issuing an automatic
+            refund.
           </p>
 
           <h2 data-testid="terms-section-6">6. Suspension, Cancellation &amp; Termination</h2>
@@ -206,9 +222,15 @@ export default async function TermsPage() {
           <h3>6.1 Cancellation by You</h3>
           <p>
             You may cancel your subscription at any time via account settings or by contacting{" "}
-            <a href="mailto:support@parametric-memory.dev">support@parametric-memory.dev</a>. Upon
-            cancellation:
+            <a href="mailto:support@parametric-memory.dev">support@parametric-memory.dev</a>. At
+            cancellation you choose between two options: <strong>cancel at period end</strong> (you
+            keep full access until your billing period ends, then the wind-down below begins, and
+            you may reactivate before it ends), or <strong>cancel now with a refund</strong> (we
+            stop the subscription immediately and refund the unused portion per Section&nbsp;5.4).
+            If you cancel now, deprovisioning begins right away and your data is deleted on the
+            timelines below &mdash; the immediate option is irreversible and cannot be reactivated.
           </p>
+          <p>For the period-end option, upon cancellation:</p>
           <ul>
             <li>
               <strong>30-day wind-down:</strong> You retain full API access

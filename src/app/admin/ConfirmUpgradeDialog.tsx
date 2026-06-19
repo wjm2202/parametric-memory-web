@@ -40,6 +40,10 @@ import {
   DIALOG_CONFIRM_LABEL,
   DIALOG_CONFIRM_LABEL_SUBMITTING,
   DIALOG_TITLE,
+  PROVISIONING_FEE_CONSENT_CHECKBOX,
+  PROVISIONING_FEE_CONSENT_TITLE,
+  provisioningFeeCents,
+  provisioningFeeConsentBody,
   PREVIEW_ERROR,
   PREVIEW_LOADING,
   PREVIEW_RETRY_LABEL,
@@ -167,10 +171,21 @@ export function ConfirmUpgradeDialog({
   const [submitting, setSubmitting] = useState(false);
   const [previewStatus, setPreviewStatus] = useState<PreviewStatus>("loading");
   const [previewData, setPreviewData] = useState<UpgradePreviewData | null>(null);
+  // R10/D7 — explicit consent to the non-refundable provisioning fee, required
+  // before a dedicated upgrade can be confirmed.
+  const [feeAcknowledged, setFeeAcknowledged] = useState(false);
 
   const fromLabel = getTierLabel(currentTier);
   const toLabel = option.name;
   const isDedicatedMigration = option.transitionKind === "shared_to_dedicated";
+
+  // The provisioning fee is one third of the first dedicated period (the new
+  // tier's monthly price). Display-only — the authoritative charge is R2,
+  // server-side. Shown once the preview supplies the new price.
+  const feeCents = previewData ? provisioningFeeCents(previewData.newPriceCents) : 0;
+  // Dedicated upgrades require fee consent; shared upgrades never do.
+  const consentRequired = isDedicatedMigration;
+  const consentSatisfied = !consentRequired || feeAcknowledged;
 
   /**
    * Fetch the live Stripe proration preview. Called on dialog open and on
@@ -218,7 +233,8 @@ export function ConfirmUpgradeDialog({
   }, [onClose, submitting]);
 
   async function handleUpgrade() {
-    if (submitting || previewStatus !== "loaded") return;
+    // Block until the preview loaded AND (for dedicated) the fee is acknowledged.
+    if (submitting || previewStatus !== "loaded" || !consentSatisfied) return;
     setSubmitting(true);
 
     try {
@@ -392,6 +408,33 @@ export function ConfirmUpgradeDialog({
           </div>
         )}
 
+        {/* R10 / D7 — provisioning-fee consent. Dedicated upgrades carry a
+            one-time NON-REFUNDABLE fee; the customer must see it AND check the
+            box before the Upgrade button enables. Rendered once the preview
+            supplies the new price (so the fee figure is real). */}
+        {consentRequired && previewStatus === "loaded" && previewData && (
+          <div
+            className="mb-4 rounded-lg border border-white/10 bg-white/[0.02] p-4"
+            data-testid="provisioning-fee-consent"
+          >
+            <p className="text-sm font-semibold text-white">{PROVISIONING_FEE_CONSENT_TITLE}</p>
+            <p className="mt-1 text-xs text-white/60" data-testid="provisioning-fee-body">
+              {provisioningFeeConsentBody(feeCents)}
+            </p>
+            <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-white/80">
+              <input
+                type="checkbox"
+                checked={feeAcknowledged}
+                onChange={(e) => setFeeAcknowledged(e.target.checked)}
+                disabled={submitting}
+                data-testid="provisioning-fee-consent-checkbox"
+                className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-transparent accent-indigo-500"
+              />
+              <span>{PROVISIONING_FEE_CONSENT_CHECKBOX}</span>
+            </label>
+          </div>
+        )}
+
         {/* D9 (sprint 2026-05-18): cancel-pending → upgrade auto-reactivates.
             Surfaced as a friendly inline note rather than a separate dialog
             step. Compute's upgrade handler unconditionally clears
@@ -418,7 +461,7 @@ export function ConfirmUpgradeDialog({
           </button>
           <button
             onClick={handleUpgrade}
-            disabled={submitting || previewStatus !== "loaded"}
+            disabled={submitting || previewStatus !== "loaded" || !consentSatisfied}
             data-testid="confirm-upgrade-confirm"
             className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
           >

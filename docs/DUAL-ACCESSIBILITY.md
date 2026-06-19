@@ -250,6 +250,11 @@ entry here **first**, before the PR that uses it.
 | `billing-portal-cta` | Open Stripe portal |
 | `cancel-substrate-modal-backdrop` | Modal backdrop for the cancel-substrate confirmation in the Dashboard substrate-list flow; click-to-dismiss target (sibling of the inner card whose `onClick={(e) => e.stopPropagation()}` keeps clicks inside the modal from bubbling) |
 | `substrate-card-cancel-<slug>` | Per-substrate "Cancel subscription" button on the dashboard substrate card. Opens `CancelSubstrateDialog` for that slug. Sprint 2026-05-18 E1. |
+| `substrate-card-<slug>` | Substrate card root container (slug-interpolated). WB-11 stubbed-lane hook. |
+| `substrate-slug-<slug>` | Substrate slug text inside the card (slug-interpolated). |
+| `substrate-status-<slug>` | Status-badge wrapper inside the substrate card (slug-interpolated). |
+| `substrate-manage-<slug>` | Card-body `<Link>` into `/admin?slug=<slug>` (slug-interpolated). |
+| `dashboard-billing-button` | Account-level "Manage billing →" button in the billing-widget header — opens the Stripe portal. |
 
 **Cancel-substrate confirmation dialog — `src/app/dashboard/CancelSubstrateDialog.tsx`:**
 
@@ -300,6 +305,34 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 | `keyrot-restart` | Restart-rotation button (F6) |
 | `keyrot-status-reauth` | Re-auth-required alert banner shown inside `keyrot-status` when the rotation flow needs the user to re-authenticate before continuing (F6) |
 | `keyrot-reauth-cta` | "Re-authenticate" link/button inside `keyrot-status-reauth`; navigates to the re-auth flow (F6) |
+| `mcp-endpoint` | `<code>` element showing the substrate's MCP endpoint URL in the MCP-Connection card (rendered when `status === "running"`). Paired with a `mcp-endpoint-copy` copy button (passed via the `CopyButton` `testId` prop). |
+
+**Persona naming — `src/app/admin/AdminClient.tsx` (R10 slice 6):**
+
+| testid | Element |
+|---|---|
+| `persona-display` | Persona-name display row with the inline "Rename" affordance |
+| `persona-edit-button` | "Rename" button that opens the inline persona editor |
+| `persona-editor` | Inline persona editor container (shown while renaming) |
+| `persona-input` | Persona-name text input (≤ 80 chars, no control chars) |
+| `persona-save` | Save button — PATCHes `/api/substrates/[slug]/persona` |
+| `persona-cancel` | Cancel button — closes the editor without saving |
+| `persona-error` | Inline validation/error region (`role="alert"`) |
+
+**Cancel + refund modal — `src/app/admin/AdminClient.tsx` (R5/R10):**
+
+| testid | Element |
+|---|---|
+| `cancel-mode-<mode>` | Cancel-mode option button — `period_end` or `refund_now` (`aria-pressed` reflects selection) |
+| `cancel-modal-keep` | "Keep subscription" button (closes the modal without cancelling) |
+| `cancel-modal-confirm` | Primary confirm button — POSTs `/api/substrates/[slug]/cancel` with the chosen mode |
+| `refund-now-detail` | `refund_now` detail block (shown only when `refund_now` is selected) |
+| `refund-amount` | Exact pro-rata refund amount from the live `/cancel/refund-preview` response |
+| `refund-fee-excluded` | Note that the non-refundable provisioning fee is excluded from the refund |
+| `refund-irreversible-warning` | Irreversible-action warning inside the `refund_now` detail |
+| `refund-confirm-input` | Type-to-confirm text input (must type "CANCEL" to enable confirm) |
+| `refund-preview-loading` | Loading state while the refund preview is fetched |
+| `refund-preview-error` | Error region when the refund-preview fetch fails |
 
 **Change-plan subflow — `src/app/admin/ChangePlanButton.tsx`, `ChangePlanSheet.tsx`:**
 
@@ -333,6 +366,9 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 | `proration-from-date` | From-date subtext beneath the monthly rate (e.g. "Your new monthly rate from July 1.") |
 | `dedicated-migration-warning` | Warning block shown when the target tier triggers a dedicated-cluster migration |
 | `confirm-upgrade-reactivate-note` | Amber notice rendered inside the confirm-upgrade dialog when the current subscription is in the `cancel_at_period_end: true` window. Explains that confirming will auto-reactivate the cancellation as part of the tier change (D9). Sprint 2026-05-18 E3. |
+| `provisioning-fee-consent` | Non-refundable provisioning-fee consent block (shown for shared→dedicated upgrades). Gates the confirm button (D7, R10 slice 1). |
+| `provisioning-fee-body` | Body copy inside the fee-consent block explaining the one-off non-refundable fee |
+| `provisioning-fee-consent-checkbox` | Consent checkbox — confirm stays disabled until it is ticked |
 
 **Tier-change progress banner — `src/app/admin/TierChangeProgressBanner.tsx`:**
 
