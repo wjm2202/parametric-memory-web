@@ -122,4 +122,32 @@ describe("Phase 2: testid reconciliation", () => {
       expect(src).not.toMatch(/Join with GitHub/);
     });
   });
+
+  describe("DashboardClient.tsx — substrate card testids (WB-11)", () => {
+    const src = read("src/app/dashboard/DashboardClient.tsx");
+
+    it("card / slug / status / manage carry per-slug testids", () => {
+      expect(src).toContain("`substrate-card-${substrate.slug}`");
+      expect(src).toContain("`substrate-slug-${substrate.slug}`");
+      expect(src).toContain("`substrate-status-${substrate.slug}`");
+      expect(src).toContain("`substrate-manage-${substrate.slug}`");
+    });
+
+    it("top-level billing action carries dashboard-billing-button", () => {
+      expect(src).toContain('data-testid="dashboard-billing-button"');
+    });
+  });
+
+  describe("AdminClient.tsx — connection + rotate testids (WB-12/13)", () => {
+    const src = read("src/app/admin/AdminClient.tsx");
+
+    it("MCP endpoint + its copy button carry testids", () => {
+      expect(src).toContain('data-testid="mcp-endpoint"');
+      expect(src).toContain('testId="mcp-endpoint-copy"');
+    });
+
+    it("rotate-key control carries admin-rotate-key", () => {
+      expect(src).toContain('data-testid="admin-rotate-key"');
+    });
+  });
 });

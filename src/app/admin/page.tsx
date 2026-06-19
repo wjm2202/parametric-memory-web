@@ -28,6 +28,7 @@ interface SubstrateDetail {
   status: string;
   mcpEndpoint: string | null;
   hostingModel: string;
+  personaName: string | null;
   provisioning: {
     queueStatus: string;
     phase: string | null;

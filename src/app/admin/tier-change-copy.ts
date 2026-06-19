@@ -152,6 +152,41 @@ export const DIALOG_CANCEL_LABEL = "Cancel";
 export const DIALOG_CONFIRM_LABEL = "Upgrade";
 export const DIALOG_CONFIRM_LABEL_SUBMITTING = "Starting upgrade…";
 
+// ─── Provisioning-fee consent (R10 / D7) ─────────────────────────────────────
+//
+// Dedicated upgrades carry a one-time, NON-REFUNDABLE provisioning fee = one
+// third of the first dedicated billing period. D7 requires the customer be told
+// this BEFORE they confirm payment. The fraction mirrors compute's
+// billing-advisor PROVISIONING_FEE_FRACTION; the authoritative charge is always
+// computed server-side (R2) — this is display + consent only.
+
+export const PROVISIONING_FEE_FRACTION = 1 / 3;
+
+/**
+ * Display value of the non-refundable provisioning fee, in cents, given the
+ * first dedicated period's total (the new tier's monthly price). Rounds like
+ * compute (never in the customer's favour) and is capped at the period total.
+ */
+export function provisioningFeeCents(firstPeriodCents: number): number {
+  if (firstPeriodCents <= 0) return 0;
+  return Math.min(firstPeriodCents, Math.round(firstPeriodCents * PROVISIONING_FEE_FRACTION));
+}
+
+export const PROVISIONING_FEE_CONSENT_TITLE = "One-time provisioning fee";
+
+/** Body explaining the fee. Interpolates the formatted fee amount. */
+export function provisioningFeeConsentBody(feeCents: number): string {
+  return (
+    `A one-time provisioning fee of ${formatUsdCents(feeCents)} is included in today's charge to set up ` +
+    `your dedicated instance. This fee is non-refundable. The rest of your payment is refundable ` +
+    `pro-rata if you cancel before your period ends.`
+  );
+}
+
+/** The explicit consent the customer must check before a dedicated upgrade. */
+export const PROVISIONING_FEE_CONSENT_CHECKBOX =
+  "I understand the provisioning fee is non-refundable.";
+
 // ─── Upgrade lifecycle toasts ────────────────────────────────────────────────
 //
 // Used by ConfirmUpgradeDialog (info toast on a successful in-place upgrade —

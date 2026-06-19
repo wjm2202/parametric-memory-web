@@ -333,6 +333,7 @@ function BillingWidget({
         </div>
         <button
           onClick={onBillingPortal}
+          data-testid="dashboard-billing-button"
           className="shrink-0 rounded-md border border-zinc-700 px-3 py-1.5 text-xs font-medium text-white/50 transition hover:border-zinc-500 hover:text-white"
         >
           Manage billing →
@@ -443,6 +444,7 @@ function SubstrateCard({
 
   return (
     <div
+      data-testid={`substrate-card-${substrate.slug}`}
       className={`group relative rounded-xl border bg-white/[0.02] transition-all duration-200 ${
         isHovered ? "border-indigo-500/50 bg-white/[0.05]" : "border-white/10"
       }`}
@@ -450,7 +452,11 @@ function SubstrateCard({
       onMouseLeave={() => setIsHovered(false)}
     >
       {/* Card body — navigates to admin */}
-      <Link href={`/admin?slug=${encodeURIComponent(substrate.slug)}`} className="block p-4 pb-3">
+      <Link
+        href={`/admin?slug=${encodeURIComponent(substrate.slug)}`}
+        data-testid={`substrate-manage-${substrate.slug}`}
+        className="block p-4 pb-3"
+      >
         {/* Slug + health dot */}
         <div className="mb-3 flex items-center gap-2 pr-6">
           {substrate.status === "running" && (
@@ -462,7 +468,12 @@ function SubstrateCard({
           {substrate.status === "provision_failed" && (
             <span className="h-2 w-2 shrink-0 rounded-full bg-red-500" title="Provision failed" />
           )}
-          <p className="font-mono text-sm break-all text-white/70">{substrate.slug}</p>
+          <p
+            data-testid={`substrate-slug-${substrate.slug}`}
+            className="font-mono text-sm break-all text-white/70"
+          >
+            {substrate.slug}
+          </p>
           {/* E2: persistent badge while cancel-pending. The banner below
               the card carries the dismissable detail + reactivate button;
               this pill just keeps the state visible after dismissal. */}
@@ -479,7 +490,7 @@ function SubstrateCard({
         </div>
 
         {/* Status badge */}
-        <div className="mb-4">
+        <div className="mb-4" data-testid={`substrate-status-${substrate.slug}`}>
           <StatusBadge status={substrate.status} />
         </div>
 

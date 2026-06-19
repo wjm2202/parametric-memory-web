@@ -647,3 +647,46 @@ describe("ConfirmUpgradeDialog — D9 cancel-pending auto-reactivate note", () =
     expect(note.textContent).toMatch(/reactivate your subscription/i);
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// R10 / D7 — provisioning-fee consent (dedicated upgrades only)
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("ConfirmUpgradeDialog — provisioning-fee consent (R10/D7)", () => {
+  it("shows the non-refundable fee + a consent checkbox for a dedicated upgrade", async () => {
+    await act(async () => {
+      renderDialog({ option: SLOW_PATH_OPTION });
+    });
+    await waitForPreviewLoaded();
+
+    const consent = screen.getByTestId("provisioning-fee-consent");
+    expect(consent).toBeInTheDocument();
+    // Fee = round(newPriceCents/3) = round(2900/3) = 967 → "$9.67".
+    expect(screen.getByTestId("provisioning-fee-body")).toHaveTextContent("$9.67");
+    expect(screen.getByTestId("provisioning-fee-body")).toHaveTextContent(/non-refundable/i);
+  });
+
+  it("blocks Upgrade until the fee is acknowledged, then enables it", async () => {
+    await act(async () => {
+      renderDialog({ option: SLOW_PATH_OPTION });
+    });
+    await waitForPreviewLoaded();
+
+    // Preview is loaded but consent not yet given → confirm disabled.
+    expect(screen.getByTestId("confirm-upgrade-confirm")).toBeDisabled();
+
+    fireEvent.click(screen.getByTestId("provisioning-fee-consent-checkbox"));
+
+    expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
+  });
+
+  it("does NOT gate a shared→shared upgrade (no consent block, confirm enabled once loaded)", async () => {
+    await act(async () => {
+      renderDialog({ option: FAST_PATH_OPTION });
+    });
+    await waitForPreviewLoaded();
+
+    expect(screen.queryByTestId("provisioning-fee-consent")).not.toBeInTheDocument();
+    expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
+  });
+});
