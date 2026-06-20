@@ -283,7 +283,7 @@ export function ConfirmUpgradeDialog({
       aria-modal="true"
       aria-labelledby="confirm-upgrade-title"
       data-testid="confirm-upgrade-dialog"
-      className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4"
+      className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4 py-6"
     >
       <div
         // Backdrop click closes the dialog. Disabled during submit so a stray
@@ -296,7 +296,7 @@ export function ConfirmUpgradeDialog({
         data-testid="confirm-upgrade-backdrop"
       />
 
-      <div className="relative w-full max-w-md rounded-2xl border border-indigo-500/30 bg-[#0d0d14] p-6 shadow-2xl">
+      <div className="relative flex max-h-[calc(100dvh-var(--site-nav-h)-3rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-indigo-500/30 bg-[#0d0d14] shadow-2xl">
         {/* × close button — top-right of the panel. Same handler as Cancel
             (parent's onClose), disabled mid-submit so a stray click during
             the in-flight POST doesn't strand the user with a spinner that
@@ -308,7 +308,7 @@ export function ConfirmUpgradeDialog({
           disabled={submitting}
           aria-label="Close"
           data-testid="confirm-upgrade-close-icon"
-          className="absolute top-3 right-3 inline-flex h-7 w-7 items-center justify-center rounded-md text-white/40 transition-colors hover:bg-white/5 hover:text-white/80 disabled:opacity-30"
+          className="absolute top-3 right-3 z-10 inline-flex h-7 w-7 items-center justify-center rounded-md text-white/40 transition-colors hover:bg-white/5 hover:text-white/80 disabled:opacity-30"
         >
           <svg
             xmlns="http://www.w3.org/2000/svg"
@@ -321,136 +321,151 @@ export function ConfirmUpgradeDialog({
           </svg>
         </button>
 
-        {/* Header */}
-        <div className="mb-5">
-          <h2
-            id="confirm-upgrade-title"
-            className="font-[family-name:var(--font-syne)] text-base font-semibold text-white"
-          >
-            {DIALOG_TITLE}
-          </h2>
-          <p className="mt-1 text-sm text-white/50">
-            Upgrading from <span className="font-medium text-white/80">{fromLabel}</span> to{" "}
-            <span className="font-medium text-indigo-300">{toLabel}</span>.
-          </p>
-        </div>
-
-        {/* Pricing block — shows live Stripe proration preview */}
-        <div className="mb-4 rounded-lg border border-white/10 bg-white/[0.02] p-4">
-          {previewStatus === "loading" && (
-            <div data-testid="proration-loading" aria-label={PREVIEW_LOADING}>
-              <div className="h-2.5 w-20 animate-pulse rounded bg-white/10" />
-              <div className="mt-2 h-6 w-28 animate-pulse rounded bg-white/10" />
-              <div className="mt-1.5 h-2 w-48 animate-pulse rounded bg-white/10" />
-              <div className="mt-3 border-t border-white/5 pt-3">
-                <div className="h-2.5 w-24 animate-pulse rounded bg-white/10" />
-                <div className="mt-2 h-4 w-20 animate-pulse rounded bg-white/10" />
-                <div className="mt-1.5 h-2 w-40 animate-pulse rounded bg-white/10" />
-              </div>
-            </div>
-          )}
-
-          {previewStatus === "error" && (
-            <div data-testid="proration-error" className="flex items-center justify-between gap-3">
-              <p className="text-sm text-white/50">{PREVIEW_ERROR}</p>
-              <button
-                type="button"
-                onClick={() => {
-                  setPreviewStatus("loading");
-                  void fetchPreview();
-                }}
-                className="shrink-0 rounded-md px-3 py-1 text-xs font-medium text-indigo-400 ring-1 ring-indigo-500/40 transition-colors hover:bg-indigo-500/10"
-              >
-                {PREVIEW_RETRY_LABEL}
-              </button>
-            </div>
-          )}
-
-          {previewStatus === "loaded" && previewData && (
-            <>
-              <p className="text-xs tracking-wider text-white/40 uppercase">Charged today</p>
-              <p className="mt-1 text-lg font-semibold text-white" data-testid="proration-charge">
-                {chargedTodayLabel(previewData.prorationCents)}
-              </p>
-              <p className="mt-1 text-xs text-white/50" data-testid="proration-charge-subtext">
-                {chargedTodaySubtext(previewData.prorationCents)}
-              </p>
-
-              <div className="mt-3 border-t border-white/5 pt-3">
-                <p className="text-xs tracking-wider text-white/40 uppercase">From next renewal</p>
-                <p className="mt-1 text-sm text-white/80" data-testid="proration-monthly">
-                  {formatUsdCents(previewData.newPriceCents)}/mo
-                </p>
-                <p className="mt-1 text-xs text-white/40" data-testid="proration-from-date">
-                  {fromDateSubtext(previewData.nextInvoiceDate)}
-                </p>
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* Dedicated-migration warning block */}
-        {isDedicatedMigration && (
-          <div
-            className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4"
-            data-testid="dedicated-migration-warning"
-          >
-            <p className="text-sm font-semibold text-amber-300">
-              {DEDICATED_MIGRATION_WARNING_TITLE}
+        {/* Scrollable body — everything except the action buttons lives here so
+            that on short viewports the content scrolls while the footer (and its
+            Upgrade button) stays pinned and reachable. Prevents the off-screen
+            button bug on small/zoomed screens. */}
+        <div data-testid="confirm-upgrade-scroll" className="flex-1 overflow-y-auto px-6 pt-6 pb-4">
+          {/* Header */}
+          <div className="mb-5">
+            <h2
+              id="confirm-upgrade-title"
+              className="font-[family-name:var(--font-syne)] text-base font-semibold text-white"
+            >
+              {DIALOG_TITLE}
+            </h2>
+            <p className="mt-1 text-sm text-white/50">
+              Upgrading from <span className="font-medium text-white/80">{fromLabel}</span> to{" "}
+              <span className="font-medium text-indigo-300">{toLabel}</span>.
             </p>
-            <p className="mt-1 text-xs text-white/60">{DEDICATED_MIGRATION_WARNING_BODY}</p>
-            <ol className="mt-3 space-y-1 text-xs text-white/50">
-              <li>• Confirm payment</li>
-              <li>• Provision a dedicated droplet for you</li>
-              <li>• Transfer your data (substrate briefly read-only)</li>
-              <li>• Cut over — your endpoint and API key stay the same</li>
-            </ol>
           </div>
-        )}
 
-        {/* R10 / D7 — provisioning-fee consent. Dedicated upgrades carry a
+          {/* Pricing block — shows live Stripe proration preview */}
+          <div className="mb-4 rounded-lg border border-white/10 bg-white/[0.02] p-4">
+            {previewStatus === "loading" && (
+              <div data-testid="proration-loading" aria-label={PREVIEW_LOADING}>
+                <div className="h-2.5 w-20 animate-pulse rounded bg-white/10" />
+                <div className="mt-2 h-6 w-28 animate-pulse rounded bg-white/10" />
+                <div className="mt-1.5 h-2 w-48 animate-pulse rounded bg-white/10" />
+                <div className="mt-3 border-t border-white/5 pt-3">
+                  <div className="h-2.5 w-24 animate-pulse rounded bg-white/10" />
+                  <div className="mt-2 h-4 w-20 animate-pulse rounded bg-white/10" />
+                  <div className="mt-1.5 h-2 w-40 animate-pulse rounded bg-white/10" />
+                </div>
+              </div>
+            )}
+
+            {previewStatus === "error" && (
+              <div
+                data-testid="proration-error"
+                className="flex items-center justify-between gap-3"
+              >
+                <p className="text-sm text-white/50">{PREVIEW_ERROR}</p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setPreviewStatus("loading");
+                    void fetchPreview();
+                  }}
+                  className="shrink-0 rounded-md px-3 py-1 text-xs font-medium text-indigo-400 ring-1 ring-indigo-500/40 transition-colors hover:bg-indigo-500/10"
+                >
+                  {PREVIEW_RETRY_LABEL}
+                </button>
+              </div>
+            )}
+
+            {previewStatus === "loaded" && previewData && (
+              <>
+                <p className="text-xs tracking-wider text-white/40 uppercase">Charged today</p>
+                <p className="mt-1 text-lg font-semibold text-white" data-testid="proration-charge">
+                  {chargedTodayLabel(previewData.prorationCents)}
+                </p>
+                <p className="mt-1 text-xs text-white/50" data-testid="proration-charge-subtext">
+                  {chargedTodaySubtext(previewData.prorationCents)}
+                </p>
+
+                <div className="mt-3 border-t border-white/5 pt-3">
+                  <p className="text-xs tracking-wider text-white/40 uppercase">
+                    From next renewal
+                  </p>
+                  <p className="mt-1 text-sm text-white/80" data-testid="proration-monthly">
+                    {formatUsdCents(previewData.newPriceCents)}/mo
+                  </p>
+                  <p className="mt-1 text-xs text-white/40" data-testid="proration-from-date">
+                    {fromDateSubtext(previewData.nextInvoiceDate)}
+                  </p>
+                </div>
+              </>
+            )}
+          </div>
+
+          {/* Dedicated-migration warning block */}
+          {isDedicatedMigration && (
+            <div
+              className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-4"
+              data-testid="dedicated-migration-warning"
+            >
+              <p className="text-sm font-semibold text-amber-300">
+                {DEDICATED_MIGRATION_WARNING_TITLE}
+              </p>
+              <p className="mt-1 text-xs text-white/60">{DEDICATED_MIGRATION_WARNING_BODY}</p>
+              <ol className="mt-3 space-y-1 text-xs text-white/50">
+                <li>• Confirm payment</li>
+                <li>• Provision a dedicated droplet for you</li>
+                <li>• Transfer your data (substrate briefly read-only)</li>
+                <li>• Cut over — your endpoint and API key stay the same</li>
+              </ol>
+            </div>
+          )}
+
+          {/* R10 / D7 — provisioning-fee consent. Dedicated upgrades carry a
             one-time NON-REFUNDABLE fee; the customer must see it AND check the
             box before the Upgrade button enables. Rendered once the preview
             supplies the new price (so the fee figure is real). */}
-        {consentRequired && previewStatus === "loaded" && previewData && (
-          <div
-            className="mb-4 rounded-lg border border-white/10 bg-white/[0.02] p-4"
-            data-testid="provisioning-fee-consent"
-          >
-            <p className="text-sm font-semibold text-white">{PROVISIONING_FEE_CONSENT_TITLE}</p>
-            <p className="mt-1 text-xs text-white/60" data-testid="provisioning-fee-body">
-              {provisioningFeeConsentBody(feeCents)}
-            </p>
-            <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-white/80">
-              <input
-                type="checkbox"
-                checked={feeAcknowledged}
-                onChange={(e) => setFeeAcknowledged(e.target.checked)}
-                disabled={submitting}
-                data-testid="provisioning-fee-consent-checkbox"
-                className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-transparent accent-indigo-500"
-              />
-              <span>{PROVISIONING_FEE_CONSENT_CHECKBOX}</span>
-            </label>
-          </div>
-        )}
+          {consentRequired && previewStatus === "loaded" && previewData && (
+            <div
+              className="mb-4 rounded-lg border border-white/10 bg-white/[0.02] p-4"
+              data-testid="provisioning-fee-consent"
+            >
+              <p className="text-sm font-semibold text-white">{PROVISIONING_FEE_CONSENT_TITLE}</p>
+              <p className="mt-1 text-xs text-white/60" data-testid="provisioning-fee-body">
+                {provisioningFeeConsentBody(feeCents)}
+              </p>
+              <label className="mt-3 flex cursor-pointer items-start gap-2 text-xs text-white/80">
+                <input
+                  type="checkbox"
+                  checked={feeAcknowledged}
+                  onChange={(e) => setFeeAcknowledged(e.target.checked)}
+                  disabled={submitting}
+                  data-testid="provisioning-fee-consent-checkbox"
+                  className="mt-0.5 h-4 w-4 shrink-0 rounded border-white/20 bg-transparent accent-indigo-500"
+                />
+                <span>{PROVISIONING_FEE_CONSENT_CHECKBOX}</span>
+              </label>
+            </div>
+          )}
 
-        {/* D9 (sprint 2026-05-18): cancel-pending → upgrade auto-reactivates.
+          {/* D9 (sprint 2026-05-18): cancel-pending → upgrade auto-reactivates.
             Surfaced as a friendly inline note rather than a separate dialog
             step. Compute's upgrade handler unconditionally clears
             cancel_at_period_end in the same .update() call, so the user
             doesn't need a separate Reactivate confirmation. */}
-        {isCancelPending && (
-          <div
-            data-testid="confirm-upgrade-reactivate-note"
-            className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200"
-          >
-            Upgrading will reactivate your subscription. The pending cancellation will be cleared.
-          </div>
-        )}
+          {isCancelPending && (
+            <div
+              data-testid="confirm-upgrade-reactivate-note"
+              className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200"
+            >
+              Upgrading will reactivate your subscription. The pending cancellation will be cleared.
+            </div>
+          )}
+        </div>
 
-        {/* Action buttons */}
-        <div className="flex gap-3">
+        {/* Action buttons — pinned footer, never scrolls, so the Upgrade button
+            is always visible regardless of viewport height. */}
+        <div
+          data-testid="confirm-upgrade-footer"
+          className="flex shrink-0 gap-3 border-t border-white/10 px-6 py-4"
+        >
           <button
             onClick={onClose}
             disabled={submitting}

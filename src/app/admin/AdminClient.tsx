@@ -806,17 +806,29 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                       SSL
                     </span>
 
-                    {/* MCP reachable */}
+                    {/* MCP — "active" means the customer has CLAIMED their API
+                        key, which is the real signal that MCP is usable end to
+                        end. The raw reachability probe can't present a Bearer
+                        token to the substrate, so it false-negatives even for a
+                        healthy, claimed substrate — which left this badge stuck
+                        red after a successful claim. Claim state is the source
+                        of truth: unclaimed → amber "claim to activate", claimed
+                        → green. */}
                     <span
+                      data-testid="mcp-status-pill"
+                      data-mcp-active={(!substrate.keyUnclaimed).toString()}
+                      title={
+                        substrate.keyUnclaimed
+                          ? "Claim your API key to activate MCP"
+                          : "MCP active — API key claimed"
+                      }
                       className={`inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium ${
-                        substrate.health.substrate.reachable === true
-                          ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
-                          : substrate.health.substrate.reachable === false
-                            ? "border-red-500/30 bg-red-500/10 text-red-400"
-                            : "border-zinc-600/50 bg-zinc-800/40 text-zinc-500"
+                        substrate.keyUnclaimed
+                          ? "border-amber-500/30 bg-amber-500/10 text-amber-400"
+                          : "border-emerald-500/30 bg-emerald-500/10 text-emerald-400"
                       }`}
                     >
-                      <span>{substrate.health.substrate.reachable === true ? "●" : "○"}</span>
+                      <span>{substrate.keyUnclaimed ? "○" : "●"}</span>
                       MCP
                     </span>
 

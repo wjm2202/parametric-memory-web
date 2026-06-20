@@ -690,3 +690,64 @@ describe("ConfirmUpgradeDialog — provisioning-fee consent (R10/D7)", () => {
     expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Responsive layout — tall content must not push the Upgrade button off-screen
+//
+// Regression: on short / zoomed viewports the un-bounded, vertically-centred
+// panel grew past the viewport and the action buttons fell off the bottom with
+// no way to scroll to them. The fix bounds the panel height, scrolls the body,
+// and pins the buttons in a non-scrolling footer. jsdom has no layout engine,
+// so these assert the structural contract that guarantees the buttons stay
+// reachable, using the tallest (dedicated + consent) variant.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("ConfirmUpgradeDialog — responsive layout", () => {
+  it("bounds the panel height and clips overflow so it can never exceed the viewport", async () => {
+    await act(async () => {
+      renderDialog();
+    });
+    const panel = screen
+      .getByTestId("confirm-upgrade-dialog")
+      .querySelector(":scope > div.relative");
+    expect(panel).toBeTruthy();
+    const cls = (panel as HTMLElement).className;
+    expect(cls).toContain("max-h-[calc(100dvh-var(--site-nav-h)-3rem)]");
+    expect(cls).toContain("overflow-hidden");
+    expect(cls).toContain("flex-col");
+  });
+
+  it("puts the long content in a scrollable body region", async () => {
+    await act(async () => {
+      renderDialog({ option: SLOW_PATH_OPTION });
+    });
+    await waitForPreviewLoaded();
+
+    const scroll = screen.getByTestId("confirm-upgrade-scroll");
+    expect(scroll.className).toContain("overflow-y-auto");
+    expect(scroll.className).toContain("flex-1");
+    // The tall blocks live inside the scroll region.
+    expect(scroll.querySelector('[data-testid="provisioning-fee-consent"]')).toBeTruthy();
+  });
+
+  it("pins the action buttons in a non-scrolling footer, outside the scroll region", async () => {
+    await act(async () => {
+      renderDialog({ option: SLOW_PATH_OPTION });
+    });
+    await waitForPreviewLoaded();
+
+    const footer = screen.getByTestId("confirm-upgrade-footer");
+    const scroll = screen.getByTestId("confirm-upgrade-scroll");
+    const confirm = screen.getByTestId("confirm-upgrade-confirm");
+    const cancel = screen.getByTestId("confirm-upgrade-cancel");
+
+    // Buttons live in the footer, NOT in the scrollable body.
+    expect(footer.contains(confirm)).toBe(true);
+    expect(footer.contains(cancel)).toBe(true);
+    expect(scroll.contains(confirm)).toBe(false);
+
+    // Footer itself must not scroll and must not shrink — it stays pinned.
+    expect(footer.className).toContain("shrink-0");
+    expect(footer.className).not.toContain("overflow-y-auto");
+  });
+});

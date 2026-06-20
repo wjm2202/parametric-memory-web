@@ -306,6 +306,7 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 | `keyrot-status-reauth` | Re-auth-required alert banner shown inside `keyrot-status` when the rotation flow needs the user to re-authenticate before continuing (F6) |
 | `keyrot-reauth-cta` | "Re-authenticate" link/button inside `keyrot-status-reauth`; navigates to the re-auth flow (F6) |
 | `mcp-endpoint` | `<code>` element showing the substrate's MCP endpoint URL in the MCP-Connection card (rendered when `status === "running"`). Paired with a `mcp-endpoint-copy` copy button (passed via the `CopyButton` `testId` prop). |
+| `mcp-status-pill` | The "MCP" health pill in the Billing card's status row. Reflects API-key CLAIM state (the real "MCP is usable" signal), not the raw reachability probe: amber/`data-mcp-active="false"` while the key is unclaimed, emerald/`data-mcp-active="true"` once claimed. |
 
 **Persona naming — `src/app/admin/AdminClient.tsx` (R10 slice 6):**
 
@@ -340,6 +341,8 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 |---|---|
 | `destroy-modal` | Modal container (`role="dialog"` + `aria-modal="true"`) for the unified Destroy & Unsubscribe flow |
 | `destroy-modal-backdrop` | Modal backdrop / click-to-dismiss target |
+| `destroy-modal-scroll` | Scrollable body of the modal — holds the timing options, refund preview, warning and confirm input; scrolls independently so tall content never pushes the action buttons off-screen on short/zoomed viewports |
+| `destroy-modal-footer` | Pinned, non-scrolling footer holding the Keep and Destroy buttons; stays visible regardless of viewport height |
 | `destroy-timing-<timing>` | Timing option button — `period_end` or `now` (`aria-pressed` reflects selection) |
 | `destroy-now-detail` | Detail block shown when "Destroy now" is selected (refund preview + warning + confirm) |
 | `destroy-preview-loading` | Loading state while the refund preview is fetched |
@@ -374,6 +377,8 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 |---|---|
 | `confirm-upgrade-dialog` | Confirmation dialog container (`role="dialog"`) |
 | `confirm-upgrade-backdrop` | Modal backdrop |
+| `confirm-upgrade-scroll` | Scrollable body of the dialog — holds the header, proration, warning and consent blocks; scrolls independently so tall content never pushes the action buttons off-screen on short/zoomed viewports |
+| `confirm-upgrade-footer` | Pinned, non-scrolling footer holding the Cancel and Upgrade buttons; stays visible regardless of viewport height (fix for off-screen Upgrade button) |
 | `confirm-upgrade-close-icon` | "×" close icon in the dialog top-right; dismisses without confirming (sibling of `confirm-upgrade-cancel`; provided so agents/tests can target the icon variant separately from the textual Cancel button) |
 | `confirm-upgrade-cancel` | Cancel button |
 | `confirm-upgrade-confirm` | Confirm-and-charge button |
