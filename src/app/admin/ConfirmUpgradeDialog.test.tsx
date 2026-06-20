@@ -60,7 +60,10 @@ vi.stubGlobal("fetch", mockFetch);
 
 // ─── Fixtures ─────────────────────────────────────────────────────────────────
 
-/** Returned by GET /api/billing/upgrade/preview. prorationCents: 633 = "$6.33". */
+/**
+ * Returned by GET /api/billing/upgrade/preview. Shared upgrade: prorationCents
+ * 633 = "$6.33", no provisioning fee, so chargedTodayCents == prorationCents.
+ */
 const PREVIEW_STUB = {
   currentTier: "indie",
   targetTier: "pro",
@@ -68,9 +71,24 @@ const PREVIEW_STUB = {
   currentPriceCents: 900,
   newPriceCents: 2900,
   prorationCents: 633,
+  provisioningFeeCents: 0,
+  chargedTodayCents: 633,
   currency: "usd",
   nextInvoiceDate: "2026-07-01T00:00:00.000Z",
   nextInvoiceTotalCents: 2900,
+};
+
+/**
+ * Dedicated upgrade preview: a non-refundable provisioning fee is charged today
+ * (967 = "$9.67"), so chargedTodayCents = prorationCents + fee. Used by the
+ * fee-consent and dedicated charged-today tests.
+ */
+const DEDICATED_PREVIEW_STUB = {
+  ...PREVIEW_STUB,
+  targetTier: "team",
+  transitionType: "shared_to_dedicated",
+  provisioningFeeCents: 967,
+  chargedTodayCents: 633 + 967, // 1600
 };
 
 const FAST_PATH_OPTION: UpgradeOption = {
@@ -239,7 +257,14 @@ describe("ConfirmUpgradeDialog — preview fetch", () => {
 
 describe("ConfirmUpgradeDialog — proration", () => {
   it("shows real prorationCents and newPriceCents from the preview response", async () => {
-    mockFetchDispatch({ preview: { ...PREVIEW_STUB, prorationCents: 633, newPriceCents: 2900 } });
+    mockFetchDispatch({
+      preview: {
+        ...PREVIEW_STUB,
+        prorationCents: 633,
+        chargedTodayCents: 633,
+        newPriceCents: 2900,
+      },
+    });
     await act(async () => {
       renderDialog();
     });
@@ -250,7 +275,7 @@ describe("ConfirmUpgradeDialog — proration", () => {
   });
 
   it("zero proration — renders 'No charge today'", async () => {
-    mockFetchDispatch({ preview: { ...PREVIEW_STUB, prorationCents: 0 } });
+    mockFetchDispatch({ preview: { ...PREVIEW_STUB, prorationCents: 0, chargedTodayCents: 0 } });
     await act(async () => {
       renderDialog();
     });
@@ -313,7 +338,8 @@ describe("ConfirmUpgradeDialog — preview error", () => {
         return Promise.resolve({
           ok: true,
           status: 200,
-          json: () => Promise.resolve({ ...PREVIEW_STUB, prorationCents: 400 }),
+          json: () =>
+            Promise.resolve({ ...PREVIEW_STUB, prorationCents: 400, chargedTodayCents: 400 }),
         });
       }
       return Promise.resolve({
@@ -654,6 +680,9 @@ describe("ConfirmUpgradeDialog — D9 cancel-pending auto-reactivate note", () =
 
 describe("ConfirmUpgradeDialog — provisioning-fee consent (R10/D7)", () => {
   it("shows the non-refundable fee + a consent checkbox for a dedicated upgrade", async () => {
+    // Fee now comes from the preview (server-authoritative), not derived from
+    // newPriceCents. DEDICATED_PREVIEW_STUB.provisioningFeeCents = 967 → "$9.67".
+    mockFetchDispatch({ preview: DEDICATED_PREVIEW_STUB });
     await act(async () => {
       renderDialog({ option: SLOW_PATH_OPTION });
     });
@@ -661,12 +690,29 @@ describe("ConfirmUpgradeDialog — provisioning-fee consent (R10/D7)", () => {
 
     const consent = screen.getByTestId("provisioning-fee-consent");
     expect(consent).toBeInTheDocument();
-    // Fee = round(newPriceCents/3) = round(2900/3) = 967 → "$9.67".
     expect(screen.getByTestId("provisioning-fee-body")).toHaveTextContent("$9.67");
     expect(screen.getByTestId("provisioning-fee-body")).toHaveTextContent(/non-refundable/i);
   });
 
+  it("dedicated upgrade with $0 proration still shows the fee as charged today (not 'No charge today')", async () => {
+    // The regression: chargedTodayCents ignored the fee, so a dedicated upgrade
+    // whose proration nets to $0 read "No charge today" while a $9.67 fee was in
+    // fact charged. chargedTodayCents = 0 + 967 must render as "$9.67".
+    mockFetchDispatch({
+      preview: { ...DEDICATED_PREVIEW_STUB, prorationCents: 0, chargedTodayCents: 967 },
+    });
+    await act(async () => {
+      renderDialog({ option: SLOW_PATH_OPTION });
+    });
+    await waitForPreviewLoaded();
+
+    expect(screen.getByTestId("proration-charge")).toHaveTextContent("$9.67");
+    expect(screen.getByTestId("proration-charge")).not.toHaveTextContent("No charge today");
+    expect(screen.getByTestId("proration-charge-subtext")).toHaveTextContent(/non-refundable/i);
+  });
+
   it("blocks Upgrade until the fee is acknowledged, then enables it", async () => {
+    mockFetchDispatch({ preview: DEDICATED_PREVIEW_STUB });
     await act(async () => {
       renderDialog({ option: SLOW_PATH_OPTION });
     });
@@ -726,8 +772,8 @@ describe("ConfirmUpgradeDialog — responsive layout", () => {
     const scroll = screen.getByTestId("confirm-upgrade-scroll");
     expect(scroll.className).toContain("overflow-y-auto");
     expect(scroll.className).toContain("flex-1");
-    // The tall blocks live inside the scroll region.
-    expect(scroll.querySelector('[data-testid="provisioning-fee-consent"]')).toBeTruthy();
+    // The pricing block (always present) lives inside the scroll region.
+    expect(scroll.querySelector('[data-testid="proration-charge"]')).toBeTruthy();
   });
 
   it("pins the action buttons in a non-scrolling footer, outside the scroll region", async () => {
@@ -749,5 +795,27 @@ describe("ConfirmUpgradeDialog — responsive layout", () => {
     // Footer itself must not scroll and must not shrink — it stays pinned.
     expect(footer.className).toContain("shrink-0");
     expect(footer.className).not.toContain("overflow-y-auto");
+  });
+
+  it("pins the fee-consent checkbox in the footer, ABOVE the Upgrade button (always visible)", async () => {
+    await act(async () => {
+      renderDialog({ option: SLOW_PATH_OPTION });
+    });
+    await waitForPreviewLoaded();
+
+    const footer = screen.getByTestId("confirm-upgrade-footer");
+    const scroll = screen.getByTestId("confirm-upgrade-scroll");
+    const consent = screen.getByTestId("provisioning-fee-consent");
+    const checkbox = screen.getByTestId("provisioning-fee-consent-checkbox");
+    const confirm = screen.getByTestId("confirm-upgrade-confirm");
+
+    // Consent now lives in the pinned footer, not the scrollable body — so the
+    // customer can never reach a disabled Upgrade button without seeing the gate.
+    expect(footer.contains(consent)).toBe(true);
+    expect(scroll.contains(consent)).toBe(false);
+
+    // The checkbox must come BEFORE the Upgrade button in DOM order (above it).
+    const position = checkbox.compareDocumentPosition(confirm);
+    expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 });

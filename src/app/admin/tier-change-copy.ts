@@ -253,17 +253,36 @@ export const PREVIEW_RETRY_LABEL = "Retry";
 
 /**
  * Primary "Charged today" label.
- * Returns "No charge today" when proration is zero (e.g. upgrading at the
- * very start of a billing period, or shared→shared at $0 difference).
+ *
+ * Takes the TRUE amount charged today (`chargedTodayCents` from the preview =
+ * proration + any non-refundable provisioning fee), NOT the proration alone.
+ * For a dedicated upgrade the fee is taken today even when proration is $0, so
+ * this must not read "No charge today" while a fee is in fact charged.
+ * Returns "No charge today" only when the real total is zero.
  */
-export function chargedTodayLabel(prorationCents: number): string {
-  return prorationCents === 0 ? "No charge today" : formatUsdCents(prorationCents);
+export function chargedTodayLabel(chargedTodayCents: number): string {
+  return chargedTodayCents === 0 ? "No charge today" : formatUsdCents(chargedTodayCents);
 }
 
 /**
  * Subtext beneath the "Charged today" label.
+ *
+ * Three cases, in priority order:
+ *   1. A provisioning fee is present (dedicated upgrade) → say so plainly,
+ *      because the customer IS charged today (fee, plus proration if any).
+ *   2. No fee and zero proration → nothing is taken now; full price at renewal.
+ *   3. No fee, positive proration → the usual prorated-remainder line.
  */
-export function chargedTodaySubtext(prorationCents: number): string {
+export function chargedTodaySubtext(opts: {
+  prorationCents: number;
+  provisioningFeeCents: number;
+}): string {
+  const { prorationCents, provisioningFeeCents } = opts;
+  if (provisioningFeeCents > 0) {
+    return prorationCents > 0
+      ? "Includes a one-time non-refundable provisioning fee, plus your plan prorated for the rest of this period."
+      : "A one-time non-refundable provisioning fee to set up your dedicated instance.";
+  }
   if (prorationCents === 0) {
     return "Your plan upgrades immediately. Full payment starts at your next renewal.";
   }
