@@ -42,7 +42,6 @@ import {
   DIALOG_TITLE,
   PROVISIONING_FEE_CONSENT_CHECKBOX,
   PROVISIONING_FEE_CONSENT_TITLE,
-  provisioningFeeCents,
   provisioningFeeConsentBody,
   PREVIEW_ERROR,
   PREVIEW_LOADING,
@@ -139,6 +138,14 @@ interface Props {
  */
 interface UpgradePreviewData {
   prorationCents: number;
+  /**
+   * Non-refundable provisioning fee charged today for a dedicated upgrade
+   * (0 for shared). Server-authoritative — equals exactly what compute's R2
+   * charge bills, so the displayed figure can't drift from the real charge.
+   */
+  provisioningFeeCents: number;
+  /** True total charged today = prorationCents + provisioningFeeCents. */
+  chargedTodayCents: number;
   newPriceCents: number;
   nextInvoiceDate: string | null;
   nextInvoiceTotalCents: number;
@@ -179,10 +186,10 @@ export function ConfirmUpgradeDialog({
   const toLabel = option.name;
   const isDedicatedMigration = option.transitionKind === "shared_to_dedicated";
 
-  // The provisioning fee is one third of the first dedicated period (the new
-  // tier's monthly price). Display-only — the authoritative charge is R2,
-  // server-side. Shown once the preview supplies the new price.
-  const feeCents = previewData ? provisioningFeeCents(previewData.newPriceCents) : 0;
+  // The provisioning fee comes straight from the preview (server-authoritative,
+  // equals what R2 actually bills) — no longer re-derived client-side, so the
+  // displayed fee can't drift from the charge. 0 for shared upgrades.
+  const feeCents = previewData ? previewData.provisioningFeeCents : 0;
   // Dedicated upgrades require fee consent; shared upgrades never do.
   const consentRequired = isDedicatedMigration;
   const consentSatisfied = !consentRequired || feeAcknowledged;
@@ -378,10 +385,13 @@ export function ConfirmUpgradeDialog({
               <>
                 <p className="text-xs tracking-wider text-white/40 uppercase">Charged today</p>
                 <p className="mt-1 text-lg font-semibold text-white" data-testid="proration-charge">
-                  {chargedTodayLabel(previewData.prorationCents)}
+                  {chargedTodayLabel(previewData.chargedTodayCents)}
                 </p>
                 <p className="mt-1 text-xs text-white/50" data-testid="proration-charge-subtext">
-                  {chargedTodaySubtext(previewData.prorationCents)}
+                  {chargedTodaySubtext({
+                    prorationCents: previewData.prorationCents,
+                    provisioningFeeCents: previewData.provisioningFeeCents,
+                  })}
                 </p>
 
                 <div className="mt-3 border-t border-white/5 pt-3">
@@ -418,13 +428,37 @@ export function ConfirmUpgradeDialog({
             </div>
           )}
 
-          {/* R10 / D7 — provisioning-fee consent. Dedicated upgrades carry a
-            one-time NON-REFUNDABLE fee; the customer must see it AND check the
-            box before the Upgrade button enables. Rendered once the preview
-            supplies the new price (so the fee figure is real). */}
+          {/* D9 (sprint 2026-05-18): cancel-pending → upgrade auto-reactivates.
+            Surfaced as a friendly inline note rather than a separate dialog
+            step. Compute's upgrade handler unconditionally clears
+            cancel_at_period_end in the same .update() call, so the user
+            doesn't need a separate Reactivate confirmation. */}
+          {isCancelPending && (
+            <div
+              data-testid="confirm-upgrade-reactivate-note"
+              className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200"
+            >
+              Upgrading will reactivate your subscription. The pending cancellation will be cleared.
+            </div>
+          )}
+        </div>
+
+        {/* Pinned footer — never scrolls, so the consent gate AND the Upgrade
+            button are always visible regardless of viewport height. The
+            provisioning-fee consent (R10/D7) lives here, directly ABOVE the
+            buttons, so the customer can never reach a disabled Upgrade button
+            without seeing the checkbox that unlocks it. */}
+        <div
+          data-testid="confirm-upgrade-footer"
+          className="flex shrink-0 flex-col gap-3 border-t border-white/10 px-6 py-4"
+        >
+          {/* Provisioning-fee consent. Dedicated upgrades carry a one-time
+              NON-REFUNDABLE fee; the customer must see it AND tick the box
+              before Upgrade enables. Rendered once the preview supplies the new
+              price (so the fee figure is real). */}
           {consentRequired && previewStatus === "loaded" && previewData && (
             <div
-              className="mb-4 rounded-lg border border-white/10 bg-white/[0.02] p-4"
+              className="rounded-lg border border-white/10 bg-white/[0.02] p-4"
               data-testid="provisioning-fee-consent"
             >
               <p className="text-sm font-semibold text-white">{PROVISIONING_FEE_CONSENT_TITLE}</p>
@@ -445,43 +479,25 @@ export function ConfirmUpgradeDialog({
             </div>
           )}
 
-          {/* D9 (sprint 2026-05-18): cancel-pending → upgrade auto-reactivates.
-            Surfaced as a friendly inline note rather than a separate dialog
-            step. Compute's upgrade handler unconditionally clears
-            cancel_at_period_end in the same .update() call, so the user
-            doesn't need a separate Reactivate confirmation. */}
-          {isCancelPending && (
-            <div
-              data-testid="confirm-upgrade-reactivate-note"
-              className="mb-4 rounded-lg border border-amber-500/30 bg-amber-500/5 p-3 text-xs text-amber-200"
+          {/* Action buttons */}
+          <div className="flex gap-3">
+            <button
+              onClick={onClose}
+              disabled={submitting}
+              data-testid="confirm-upgrade-cancel"
+              className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
             >
-              Upgrading will reactivate your subscription. The pending cancellation will be cleared.
-            </div>
-          )}
-        </div>
-
-        {/* Action buttons — pinned footer, never scrolls, so the Upgrade button
-            is always visible regardless of viewport height. */}
-        <div
-          data-testid="confirm-upgrade-footer"
-          className="flex shrink-0 gap-3 border-t border-white/10 px-6 py-4"
-        >
-          <button
-            onClick={onClose}
-            disabled={submitting}
-            data-testid="confirm-upgrade-cancel"
-            className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
-          >
-            {DIALOG_CANCEL_LABEL}
-          </button>
-          <button
-            onClick={handleUpgrade}
-            disabled={submitting || previewStatus !== "loaded" || !consentSatisfied}
-            data-testid="confirm-upgrade-confirm"
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
-          >
-            {submitting ? DIALOG_CONFIRM_LABEL_SUBMITTING : DIALOG_CONFIRM_LABEL}
-          </button>
+              {DIALOG_CANCEL_LABEL}
+            </button>
+            <button
+              onClick={handleUpgrade}
+              disabled={submitting || previewStatus !== "loaded" || !consentSatisfied}
+              data-testid="confirm-upgrade-confirm"
+              className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-indigo-600 py-2 text-sm font-medium text-white transition-colors hover:bg-indigo-500 disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {submitting ? DIALOG_CONFIRM_LABEL_SUBMITTING : DIALOG_CONFIRM_LABEL}
+            </button>
+          </div>
         </div>
       </div>
     </div>
