@@ -47,7 +47,7 @@
 
 "use client";
 
-import React, { useState } from "react";
+import { useState } from "react";
 
 import { SUPPORT_EMAIL } from "@/config/site";
 export interface SubstrateStateBannerProps {
