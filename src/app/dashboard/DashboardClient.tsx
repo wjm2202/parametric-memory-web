@@ -7,7 +7,7 @@ import { getTierLabel } from "@/config/tiers";
 import SubstrateStateBanner from "@/components/ui/SubstrateStateBanner";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { readReauthFlag, redirectToReauth } from "@/lib/reauth";
-import { CancelSubstrateDialog } from "./CancelSubstrateDialog";
+import { DestroyModal } from "@/app/admin/DestroyModal";
 import { CancelPendingBanner, CancelPendingBadge } from "./CancelPendingBanner";
 
 import { mailto } from "@/config/site";
@@ -676,6 +676,7 @@ export default function DashboardClient({
   const [activeCancelTarget, setActiveCancelTarget] = useState<{
     slug: string;
     endsOn: string;
+    canSchedulePeriodEnd: boolean;
   } | null>(null);
 
   const checkoutStatus = searchParams.get("checkout");
@@ -753,7 +754,8 @@ export default function DashboardClient({
     const sub = substrates.find((s) => s.slug === slug);
     if (!sub) return;
     const endsOn = sub.renewsAt ? formatDate(sub.renewsAt) : "your next billing date";
-    setActiveCancelTarget({ slug, endsOn });
+    // Already-scheduled cancels can't be re-scheduled; offer only immediate destroy.
+    setActiveCancelTarget({ slug, endsOn, canSchedulePeriodEnd: !sub.cancelAt });
   }
 
   function handleActiveCancelSuccess() {
@@ -788,14 +790,15 @@ export default function DashboardClient({
           onDismiss={() => setCancelWarning(null)}
         />
       )}
-      {/* E1 (sprint 2026-05-18): ACTIVE substrate cancel dialog — minimum
-          copy, on-site POST to /api/substrates/:slug/cancel. */}
+      {/* D2: unified Destroy & Unsubscribe modal for ACTIVE substrates —
+          on-site POST to /api/substrates/:slug/destroy (timing now|period_end). */}
       {activeCancelTarget && (
-        <CancelSubstrateDialog
+        <DestroyModal
           slug={activeCancelTarget.slug}
           endsOn={activeCancelTarget.endsOn}
-          onSuccess={handleActiveCancelSuccess}
+          canSchedulePeriodEnd={activeCancelTarget.canSchedulePeriodEnd}
           onClose={() => setActiveCancelTarget(null)}
+          onDestroyed={handleActiveCancelSuccess}
         />
       )}
       {/* Backdrop blur */}

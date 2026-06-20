@@ -5,6 +5,7 @@ import useSWR from "swr";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { toast } from "sonner";
+import { DestroyModal } from "./DestroyModal";
 import { getTierLabel } from "@/config/tiers";
 import { RotationStepper, type RotationStatus } from "@/components/ui/RotationStepper";
 import {
@@ -310,46 +311,6 @@ function CopyButton({
   );
 }
 
-/**
- * Cancel-mode option button (period_end | refund_now). Module-level (not nested
- * in the modal) so it isn't re-created every render — react-hooks/static-components.
- * State it needs (current mode, disabled, selection handler) is passed in.
- */
-function CancelOptionButton({
-  mode,
-  value,
-  title,
-  body,
-  disabled,
-  onSelect,
-}: {
-  mode: CancelMode;
-  value: CancelMode;
-  title: string;
-  body: string;
-  disabled: boolean;
-  onSelect: (value: CancelMode) => void;
-}) {
-  const selected = mode === value;
-  return (
-    <button
-      type="button"
-      onClick={() => onSelect(value)}
-      disabled={disabled}
-      data-testid={`cancel-mode-${value}`}
-      aria-pressed={selected}
-      className={`w-full rounded-lg border p-3 text-left transition-colors disabled:opacity-50 ${
-        selected
-          ? "border-red-500/50 bg-red-500/10"
-          : "border-white/10 bg-white/[0.02] hover:border-white/20"
-      }`}
-    >
-      <p className="text-sm font-medium text-white">{title}</p>
-      <p className="mt-0.5 text-xs text-white/50">{body}</p>
-    </button>
-  );
-}
-
 export default function AdminClient({ account, slug, initialSubstrate }: AdminClientProps) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -386,8 +347,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   const [keyRotating, setKeyRotating] = useState(false);
   const [showKeyReveal, setShowKeyReveal] = useState(false);
   const [revealedKey, setRevealedKey] = useState<string | null>(null);
-  const [cancelModalOpen, setCancelModalOpen] = useState(false);
-  const [deprovisionModalOpen, setDeprovisionModalOpen] = useState(false);
+  const [destroyModalOpen, setDestroyModalOpen] = useState(false);
   const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
   const beforeUnloadRef = useRef<((e: BeforeUnloadEvent) => void) | null>(null);
 
@@ -658,22 +618,6 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
     }
   }
 
-  async function handleCancel(mode: "period_end" | "refund_now") {
-    try {
-      const res = await fetch(`/api/substrates/${slug}/cancel`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode }),
-      });
-      if (res.ok) {
-        await fetchSubstrate();
-        setCancelModalOpen(false);
-      }
-    } catch {
-      // Error handling
-    }
-  }
-
   async function handleReactivate() {
     try {
       const res = await fetch(`/api/substrates/${slug}/reactivate`, {
@@ -681,29 +625,24 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
       });
       if (res.ok) {
         await fetchSubstrate();
+        toast.success("Subscription reactivated", {
+          description: "Your subscription will continue — it won't be cancelled.",
+        });
+        return;
       }
-    } catch {
-      // Error handling
-    }
-  }
-
-  async function handleDeprovision() {
-    try {
-      // The DeprovisionModal's type-"destroy" step IS the explicit
-      // confirmation, so we send cancelActiveSubscription: true — for a paid
-      // substrate this forfeits the remaining period and cancels the sub
-      // immediately (compute's SM-7 guard requires this flag to proceed).
-      const res = await fetch(`/api/substrates/${slug}/deprovision`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ cancelActiveSubscription: true }),
+      // NO SILENT BLOCK: surface every non-OK reactivate outcome.
+      const body = (await res.json().catch(() => null)) as {
+        error?: string;
+        message?: string;
+      } | null;
+      toast.error("Couldn't reactivate your subscription", {
+        description:
+          res.status >= 500
+            ? "Something went wrong and nothing changed. Please try again."
+            : (body?.message ?? body?.error ?? `Reactivation failed (HTTP ${res.status}).`),
       });
-      if (res.ok) {
-        await fetchSubstrate();
-        setDeprovisionModalOpen(false);
-      }
     } catch {
-      // Error handling
+      toast.error("Network error", { description: "Please try again." });
     }
   }
 
@@ -961,7 +900,7 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                     </p>
                     <div className="mt-4 flex gap-3">
                       <button
-                        onClick={() => setDeprovisionModalOpen(true)}
+                        onClick={() => setDestroyModalOpen(true)}
                         className="rounded-lg border border-red-500/30 px-4 py-2 text-sm text-red-400 transition-colors hover:border-red-500/50 hover:bg-red-500/10"
                       >
                         Deprovision &amp; start fresh
@@ -1228,28 +1167,15 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
                   Danger Zone
                 </p>
                 <div className="flex gap-2">
-                  {substrate.tier !== "free" &&
-                    !substrate.cancelAt &&
-                    substrate.status !== "provision_failed" && (
-                      <button
-                        onClick={() => setCancelModalOpen(true)}
-                        className="rounded-lg border border-red-500/20 px-4 py-2 text-sm text-red-400/70 transition-colors hover:border-red-500/40 hover:text-red-400"
-                      >
-                        Cancel Subscription
-                      </button>
-                    )}
-                  {/* SM-DEP: self-serve "Deprovision now" for ANY non-terminal
-                      substrate (paid included). The modal warns about
-                      irreversibility and offers the gentle Cancel path; for a
-                      paid substrate the confirmed action forfeits the remaining
-                      period and cancels the subscription immediately.
-                      provision_failed uses the callout above instead. */}
+                  {/* Unified Destroy & Unsubscribe (D2): one atomic action that
+                      keeps Stripe and the substrate in agreement — replaces the
+                      old Cancel Subscription + Deprovision Now pair. */}
                   {substrate.status !== "deprovisioned" && substrate.status !== "destroyed" && (
                     <button
-                      onClick={() => setDeprovisionModalOpen(true)}
+                      onClick={() => setDestroyModalOpen(true)}
                       className="rounded-lg border border-red-500/20 px-4 py-2 text-sm text-red-400/70 transition-colors hover:border-red-500/40 hover:text-red-400"
                     >
-                      Deprovision Now
+                      Destroy substrate
                     </button>
                   )}
                 </div>
@@ -1268,359 +1194,21 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
         )}
       </main>
 
-      {/* Cancel modal */}
-      {cancelModalOpen && (
-        <CancelModal
+      {/* Unified Destroy & Unsubscribe modal (D2) */}
+      {destroyModalOpen && substrate && (
+        <DestroyModal
           slug={slug}
-          onClose={() => setCancelModalOpen(false)}
-          onConfirm={handleCancel}
-        />
-      )}
-
-      {/* Deprovision modal */}
-      {deprovisionModalOpen && (
-        <DeprovisionModal
-          isPaid={!!substrate && substrate.tier !== "free"}
-          canCancelInstead={
-            !!substrate &&
-            substrate.tier !== "free" &&
-            !substrate.cancelAt &&
-            substrate.status !== "provision_failed"
+          canSchedulePeriodEnd={
+            substrate.tier !== "free" && !substrate.cancelAt && substrate.status === "running"
           }
-          onSwitchToCancel={() => {
-            setDeprovisionModalOpen(false);
-            setCancelModalOpen(true);
+          refundable={substrate.status !== "provision_failed"}
+          onClose={() => setDestroyModalOpen(false)}
+          onDestroyed={() => {
+            setDestroyModalOpen(false);
+            void fetchSubstrate();
           }}
-          onClose={() => setDeprovisionModalOpen(false)}
-          onConfirm={handleDeprovision}
         />
       )}
-    </div>
-  );
-}
-
-/**
- * R10 — cancellation choice (D2 + D7). The customer picks:
- *   • period_end  — run out the paid period, no refund, reactivation allowed.
- *   • refund_now  — stop immediately + pro-rata refund of the unused,
- *                   non-provisioning time. Shows the EXACT refund (fetched from
- *                   the read-only preview), warns that data loss is immediate
- *                   and irreversible, states the provisioning fee is excluded,
- *                   and gates the action behind a type-to-confirm.
- */
-type CancelMode = "period_end" | "refund_now";
-
-interface RefundPreview {
-  refundCents: number;
-  withheldFeeCents: number;
-}
-
-function CancelModal({
-  slug,
-  onClose,
-  onConfirm,
-}: {
-  slug: string;
-  onClose: () => void;
-  onConfirm: (mode: CancelMode) => Promise<void> | void;
-}) {
-  const [mode, setMode] = useState<CancelMode>("period_end");
-  const [loading, setLoading] = useState(false);
-  const [confirmText, setConfirmText] = useState("");
-  const [preview, setPreview] = useState<RefundPreview | null>(null);
-  const [previewStatus, setPreviewStatus] = useState<"idle" | "loading" | "loaded" | "error">(
-    "idle",
-  );
-
-  const fmtUsd = (cents: number) => `$${(Math.max(0, cents) / 100).toFixed(2)}`;
-  const CONFIRM_PHRASE = "CANCEL";
-
-  // Fetch the refund preview the first time the customer picks refund_now.
-  useEffect(() => {
-    if (mode !== "refund_now" || previewStatus !== "idle") return;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPreviewStatus("loading");
-    void (async () => {
-      try {
-        const res = await fetch(`/api/substrates/${slug}/cancel/refund-preview`);
-        if (!res.ok) {
-          setPreviewStatus("error");
-          return;
-        }
-        const data = (await res.json()) as Partial<RefundPreview>;
-        setPreview({
-          refundCents: data.refundCents ?? 0,
-          withheldFeeCents: data.withheldFeeCents ?? 0,
-        });
-        setPreviewStatus("loaded");
-      } catch {
-        setPreviewStatus("error");
-      }
-    })();
-  }, [mode, previewStatus, slug]);
-
-  // refund_now requires the preview to have loaded AND a matching type-to-confirm.
-  const refundNowConfirmed =
-    previewStatus === "loaded" && confirmText.trim().toUpperCase() === CONFIRM_PHRASE;
-  const canConfirm = mode === "period_end" || refundNowConfirmed;
-
-  async function handleConfirm() {
-    if (loading || !canConfirm) return;
-    setLoading(true);
-    await onConfirm(mode);
-    setLoading(false);
-    onClose();
-  }
-
-  return (
-    <div className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4">
-      <div
-        className="absolute inset-0 bg-black/70 backdrop-blur-sm"
-        onClick={loading ? undefined : onClose}
-      />
-      <div className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-[#0d0d14] p-6 shadow-2xl">
-        <div className="mb-4 flex items-start gap-3">
-          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/15">
-            <svg
-              className="h-5 w-5 text-red-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h2 className="font-[family-name:var(--font-syne)] text-base font-semibold text-white">
-              Cancel subscription
-            </h2>
-            <p className="mt-1 text-sm text-white/50">Choose how you&apos;d like to cancel.</p>
-          </div>
-        </div>
-
-        <div className="mb-4 space-y-2">
-          <CancelOptionButton
-            mode={mode}
-            value="period_end"
-            title="Cancel at period end"
-            body="Keep full access until your billing period ends, then your substrate is deprovisioned. No refund. You can reactivate any time before it ends."
-            disabled={loading}
-            onSelect={setMode}
-          />
-          <CancelOptionButton
-            mode={mode}
-            value="refund_now"
-            title="Cancel now and get a refund"
-            body="Stop immediately and refund the unused, non-provisioning portion of this period to your card."
-            disabled={loading}
-            onSelect={setMode}
-          />
-        </div>
-
-        {/* refund_now detail: exact refund + irreversible warning + fee-excluded + type-to-confirm */}
-        {mode === "refund_now" && (
-          <div
-            className="mb-4 rounded-lg border border-red-500/30 bg-red-500/5 p-4"
-            data-testid="refund-now-detail"
-          >
-            {previewStatus === "loading" && (
-              <div
-                className="h-4 w-40 animate-pulse rounded bg-white/10"
-                data-testid="refund-preview-loading"
-              />
-            )}
-            {previewStatus === "error" && (
-              <p className="text-sm text-white/60" data-testid="refund-preview-error">
-                We couldn&apos;t calculate your refund right now. Please try again, or choose
-                &ldquo;Cancel at period end&rdquo;.
-              </p>
-            )}
-            {previewStatus === "loaded" && preview && (
-              <>
-                <p className="text-xs tracking-wider text-white/40 uppercase">
-                  Refund to your card
-                </p>
-                <p className="mt-1 text-lg font-semibold text-white" data-testid="refund-amount">
-                  {fmtUsd(preview.refundCents)}
-                </p>
-                {preview.withheldFeeCents > 0 && (
-                  <p className="mt-1 text-xs text-white/50" data-testid="refund-fee-excluded">
-                    Excludes the non-refundable provisioning fee ({fmtUsd(preview.withheldFeeCents)}
-                    ), already used for setup.
-                  </p>
-                )}
-                <p
-                  className="mt-3 text-xs font-medium text-red-300"
-                  data-testid="refund-irreversible-warning"
-                >
-                  Your substrate and its data are deleted immediately and cannot be recovered. This
-                  cannot be undone.
-                </p>
-                <label className="mt-3 block text-xs text-white/60">
-                  Type{" "}
-                  <span className="font-mono font-semibold text-white/80">{CONFIRM_PHRASE}</span> to
-                  confirm
-                  <input
-                    type="text"
-                    value={confirmText}
-                    onChange={(e) => setConfirmText(e.target.value)}
-                    disabled={loading}
-                    data-testid="refund-confirm-input"
-                    autoComplete="off"
-                    className="mt-1 w-full rounded-md border border-white/15 bg-transparent px-2 py-1.5 text-sm text-white outline-none focus:border-red-500/60"
-                  />
-                </label>
-              </>
-            )}
-          </div>
-        )}
-
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            data-testid="cancel-modal-keep"
-            className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
-          >
-            Keep subscription
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={loading || !canConfirm}
-            data-testid="cancel-modal-confirm"
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            {loading
-              ? "Cancelling…"
-              : mode === "refund_now"
-                ? "Cancel now & refund"
-                : "Cancel at period end"}
-          </button>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-function DeprovisionModal({
-  onClose,
-  onConfirm,
-  isPaid,
-  canCancelInstead,
-  onSwitchToCancel,
-}: {
-  onClose: () => void;
-  onConfirm: () => void;
-  isPaid: boolean;
-  canCancelInstead: boolean;
-  onSwitchToCancel: () => void;
-}) {
-  const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const confirmed = input === "destroy";
-
-  async function handleConfirm() {
-    setLoading(true);
-    await onConfirm();
-    setLoading(false);
-    onClose();
-  }
-
-  return (
-    <div className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4">
-      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
-      <div className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-[#0d0d14] p-6 shadow-2xl">
-        <div className="mb-4 flex items-start gap-3">
-          <div className="mt-0.5 flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-red-500/15">
-            <svg
-              className="h-5 w-5 text-red-400"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={1.5}
-                d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z"
-              />
-            </svg>
-          </div>
-          <div>
-            <h2 className="font-[family-name:var(--font-syne)] text-base font-semibold text-white">
-              Deprovision now
-            </h2>
-            <p className="mt-1 text-sm text-white/60">
-              This immediately tears down the substrate — you lose access right away and it{" "}
-              <span className="font-semibold text-red-300">can&apos;t be undone</span> from your
-              dashboard. Your data is kept for 30 days for support-assisted recovery only, then{" "}
-              <span className="font-semibold text-red-300">permanently deleted</span>.
-            </p>
-          </div>
-        </div>
-
-        {isPaid && (
-          <p className="mb-4 rounded-lg border border-red-500/20 bg-red-500/5 px-3 py-2 text-xs text-red-200/80">
-            This also cancels your subscription immediately. The remaining paid period is{" "}
-            <span className="font-semibold">forfeited — no refund</span>.
-          </p>
-        )}
-
-        {canCancelInstead && (
-          <div className="mb-4 rounded-lg border border-white/10 bg-white/[0.03] px-3 py-3">
-            <p className="text-xs text-white/60">
-              Prefer to keep your data?{" "}
-              <span className="text-white/80">Cancel your subscription instead</span> — your
-              substrate stays read-only until your billing period ends, then it&apos;s deprovisioned
-              for you automatically.
-            </p>
-            <button
-              onClick={onSwitchToCancel}
-              disabled={loading}
-              className="mt-2 text-xs font-medium text-indigo-300 underline-offset-2 transition-colors hover:text-indigo-200 hover:underline disabled:opacity-40"
-            >
-              Cancel subscription instead →
-            </button>
-          </div>
-        )}
-
-        <div className="mb-4">
-          <label className="mb-1.5 block text-xs text-white/50">
-            Type <span className="font-mono text-red-400">destroy</span> to confirm
-          </label>
-          <input
-            type="text"
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && confirmed && handleConfirm()}
-            placeholder="destroy"
-            autoFocus
-            className="w-full rounded-lg border border-white/10 bg-white/[0.04] px-3 py-2 font-mono text-sm text-white placeholder-white/20 transition-colors focus:border-red-500/50 focus:ring-1 focus:ring-red-500/20 focus:outline-none"
-          />
-        </div>
-
-        <div className="flex gap-3">
-          <button
-            onClick={onClose}
-            disabled={loading}
-            className="flex-1 rounded-lg border border-white/10 py-2 text-sm text-white/50 transition-colors hover:border-white/20 hover:text-white/80 disabled:opacity-40"
-          >
-            Cancel
-          </button>
-          <button
-            onClick={handleConfirm}
-            disabled={!confirmed || loading}
-            className="flex flex-1 items-center justify-center gap-2 rounded-lg bg-red-600 py-2 text-sm font-medium text-white transition-colors hover:bg-red-500 disabled:cursor-not-allowed disabled:opacity-30"
-          >
-            {loading ? "Deprovisioning…" : "Deprovision"}
-          </button>
-        </div>
-      </div>
     </div>
   );
 }

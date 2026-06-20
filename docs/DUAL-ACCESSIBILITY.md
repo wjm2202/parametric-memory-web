@@ -334,6 +334,25 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 | `refund-preview-loading` | Loading state while the refund preview is fetched |
 | `refund-preview-error` | Error region when the refund-preview fetch fails |
 
+**Destroy & Unsubscribe modal — `src/app/admin/DestroyModal.tsx` (D2 — single atomic Destroy; supersedes the Cancel + refund modal above and the legacy Deprovision modal; used by both Admin and Dashboard):**
+
+| testid | Element |
+|---|---|
+| `destroy-modal` | Modal container (`role="dialog"` + `aria-modal="true"`) for the unified Destroy & Unsubscribe flow |
+| `destroy-modal-backdrop` | Modal backdrop / click-to-dismiss target |
+| `destroy-timing-<timing>` | Timing option button — `period_end` or `now` (`aria-pressed` reflects selection) |
+| `destroy-now-detail` | Detail block shown when "Destroy now" is selected (refund preview + warning + confirm) |
+| `destroy-preview-loading` | Loading state while the refund preview is fetched |
+| `destroy-preview-error` | Error region when the refund-preview fetch fails |
+| `destroy-refund-amount` | Exact pro-rata refund amount from the live `/cancel/refund-preview` response |
+| `destroy-fee-excluded` | Note that the non-refundable provisioning fee is excluded from the refund |
+| `destroy-no-charge` | "Nothing to refund" note for substrates that took no charge (e.g. provision_failed) |
+| `destroy-irreversible-warning` | Irreversible-action warning inside the "Destroy now" detail |
+| `destroy-confirm-input` | Type-to-confirm text input (must type "destroy" to enable confirm) |
+| `destroy-modal-error` | Inline error region for non-OK responses (manual-review / failure copy) — NO SILENT BLOCK |
+| `destroy-modal-keep` | "Keep subscription" button (closes the modal without destroying) |
+| `destroy-modal-confirm` | Primary confirm button — POSTs `/api/substrates/[slug]/destroy` with the chosen timing |
+
 **Change-plan subflow — `src/app/admin/ChangePlanButton.tsx`, `ChangePlanSheet.tsx`:**
 
 | testid | Element |

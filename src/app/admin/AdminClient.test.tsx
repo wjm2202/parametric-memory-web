@@ -297,27 +297,40 @@ describe("AdminClient — Danger Zone", () => {
     expect(screen.getByRole("button", { name: /deprovision/i })).toBeInTheDocument();
   });
 
-  it("shows Deprovision Now button for free tier", () => {
+  // D2: the unified "Destroy substrate" action replaces the old Cancel +
+  // Deprovision pair for any running substrate (free or paid).
+  it("shows Destroy button for free tier", () => {
     renderAdmin({ status: "running", tier: "free" });
-    expect(screen.getByRole("button", { name: /deprovision now/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /destroy substrate/i })).toBeInTheDocument();
   });
 
-  // SM-DEP: self-serve deprovision is now available for paid substrates too
-  // (the modal warns + offers the gentle Cancel path; confirming forfeits the
-  // remaining paid period). Previously this button was hidden for paid tiers.
-  it("shows Deprovision Now for a running paid tier (SM-DEP self-serve)", () => {
+  it("shows Destroy button for a running paid tier", () => {
     renderAdmin({ status: "running", tier: "starter", cancelAt: null });
-    expect(screen.getByRole("button", { name: /deprovision now/i })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: /destroy substrate/i })).toBeInTheDocument();
   });
 
-  it("does NOT show Cancel Subscription for provision_failed", () => {
-    renderAdmin({ status: "provision_failed", tier: "starter", cancelAt: null });
+  it("does NOT show the old Cancel Subscription button (folded into Destroy)", () => {
+    renderAdmin({ status: "running", tier: "starter", cancelAt: null });
     expect(screen.queryByRole("button", { name: /cancel subscription/i })).not.toBeInTheDocument();
   });
 
-  it("shows Cancel Subscription for running non-free tier without cancelAt", () => {
-    renderAdmin({ status: "running", tier: "starter", cancelAt: null });
-    expect(screen.getByRole("button", { name: /cancel subscription/i })).toBeInTheDocument();
+  it("danger-zone Destroy is hidden for provision_failed (callout owns cleanup)", () => {
+    renderAdmin({ status: "provision_failed", tier: "starter", cancelAt: null });
+    expect(screen.queryByRole("button", { name: /destroy substrate/i })).not.toBeInTheDocument();
+  });
+});
+
+// W6 — NO SILENT BLOCK: reactivate must surface failures (previously the handler
+// acted only inside `if (res.ok)` with an empty catch → a failed reactivate was
+// silent).
+describe("reactivate — NO SILENT BLOCK", () => {
+  stubFetch(); // global fetch → { ok: false }
+
+  it("surfaces an error toast when a reactivate call fails", async () => {
+    renderAdmin({ cancelAt: "2026-07-01T00:00:00Z" });
+    fireEvent.click(await screen.findByRole("button", { name: /reactivate/i }));
+    await waitFor(() => expect(h.mockToast.error).toHaveBeenCalled());
+    expect(h.mockToast.success).not.toHaveBeenCalled();
   });
 });
 
