@@ -105,4 +105,21 @@ test.describe("Destroy & Unsubscribe modal", () => {
     await expect(page.getByTestId("destroy-modal")).toHaveCount(0);
     await expect(page.getByTestId("destroy-modal-error")).toHaveCount(0);
   });
+
+  // Layout regression: on a short viewport the tall modal (two timing options +
+  // refund preview + irreversible warning + type-to-confirm input) used to push
+  // the action buttons off the bottom with no way to scroll to them. The footer
+  // is now pinned and the body scrolls — so the Destroy button must stay within
+  // the viewport. Read-only: we never click confirm (no destroy request).
+  test("layout: action buttons stay on-screen on a short viewport", async ({ page }) => {
+    await page.setViewportSize({ width: 800, height: 460 });
+    await mockRefundPreview(page);
+
+    // openDestroyNow opens the modal and selects "now" (the tallest content),
+    // returning the confirm button. It never submits.
+    const confirm = await openDestroyNow(page);
+
+    await expect(page.getByTestId("destroy-modal-footer")).toBeInViewport();
+    await expect(confirm).toBeInViewport();
+  });
 });

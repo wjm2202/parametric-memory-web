@@ -152,3 +152,47 @@ describe("DestroyModal", () => {
     expect(h.toastSuccess).toHaveBeenCalledWith("Cancellation scheduled", expect.any(Object));
   });
 });
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Responsive layout — tall content must not push the action buttons off-screen
+//
+// Same regression class as ConfirmUpgradeDialog: the un-bounded, vertically
+// centred panel could grow past the viewport (two timing options + refund
+// preview + irreversible warning + type-to-confirm input + error), pushing the
+// Keep/Destroy buttons off the bottom with no way to scroll to them. The fix
+// bounds the panel height, scrolls the body, and pins the buttons in a
+// non-scrolling footer. jsdom has no layout engine, so these assert the
+// structural contract that keeps the buttons reachable.
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe("DestroyModal — responsive layout", () => {
+  it("bounds the panel height and clips overflow so it can never exceed the viewport", () => {
+    render(<DestroyModal slug="brave-moon" onClose={vi.fn()} onDestroyed={vi.fn()} />);
+    const panel = screen.getByTestId("destroy-modal");
+    expect(panel.className).toContain("max-h-[calc(100dvh-var(--site-nav-h)-3rem)]");
+    expect(panel.className).toContain("overflow-hidden");
+    expect(panel.className).toContain("flex-col");
+  });
+
+  it("puts the long content in a scrollable body region", () => {
+    render(<DestroyModal slug="brave-moon" onClose={vi.fn()} onDestroyed={vi.fn()} />);
+    const scroll = screen.getByTestId("destroy-modal-scroll");
+    expect(scroll.className).toContain("overflow-y-auto");
+    expect(scroll.className).toContain("flex-1");
+  });
+
+  it("pins the action buttons in a non-scrolling footer, outside the scroll region", () => {
+    render(<DestroyModal slug="brave-moon" onClose={vi.fn()} onDestroyed={vi.fn()} />);
+    const footer = screen.getByTestId("destroy-modal-footer");
+    const scroll = screen.getByTestId("destroy-modal-scroll");
+    const confirm = screen.getByTestId("destroy-modal-confirm");
+    const keep = screen.getByTestId("destroy-modal-keep");
+
+    expect(footer.contains(confirm)).toBe(true);
+    expect(footer.contains(keep)).toBe(true);
+    expect(scroll.contains(confirm)).toBe(false);
+
+    expect(footer.className).toContain("shrink-0");
+    expect(footer.className).not.toContain("overflow-y-auto");
+  });
+});

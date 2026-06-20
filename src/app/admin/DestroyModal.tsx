@@ -178,126 +178,137 @@ export function DestroyModal({
       aria-modal="true"
       aria-labelledby="destroy-modal-title"
       data-testid="destroy-modal-backdrop"
-      className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4"
+      className="fixed top-[var(--site-nav-h)] right-0 bottom-0 left-0 z-40 flex items-center justify-center px-4 py-6"
     >
       <div
         className="absolute inset-0 bg-black/70 backdrop-blur-sm"
         onClick={loading ? undefined : onClose}
       />
       <div
-        className="relative w-full max-w-md rounded-2xl border border-red-500/30 bg-[#0d0d14] p-6 shadow-2xl"
+        className="relative flex max-h-[calc(100dvh-var(--site-nav-h)-3rem)] w-full max-w-md flex-col overflow-hidden rounded-2xl border border-red-500/30 bg-[#0d0d14] shadow-2xl"
         data-testid="destroy-modal"
       >
-        <h2 id="destroy-modal-title" className="font-semibold text-white">
-          Destroy {slug}
-        </h2>
-        <p className="mt-1 text-sm text-white/50">
-          This deprovisions the substrate and cancels your subscription together.
-        </p>
+        {/* Scrollable body — everything except the action buttons. On short or
+            zoomed viewports this scrolls while the footer stays pinned, so the
+            Destroy/Keep buttons are always reachable. */}
+        <div data-testid="destroy-modal-scroll" className="flex-1 overflow-y-auto px-6 pt-6 pb-4">
+          <h2 id="destroy-modal-title" className="font-semibold text-white">
+            Destroy {slug}
+          </h2>
+          <p className="mt-1 text-sm text-white/50">
+            This deprovisions the substrate and cancels your subscription together.
+          </p>
 
-        <div className="mt-4 space-y-2">
-          {canSchedulePeriodEnd && (
+          <div className="mt-4 space-y-2">
+            {canSchedulePeriodEnd && (
+              <DestroyOption
+                value="period_end"
+                current={timing}
+                disabled={loading}
+                onSelect={setTiming}
+                title="At period end"
+                body={
+                  endsOn
+                    ? `Keep full access until ${endsOn}, then it's destroyed and unsubscribed automatically. No refund. Reactivate any time before then.`
+                    : "Keep full access until your billing period ends, then it's destroyed and unsubscribed automatically. No refund. Reactivate any time before then."
+                }
+              />
+            )}
             <DestroyOption
-              value="period_end"
+              value="now"
               current={timing}
               disabled={loading}
               onSelect={setTiming}
-              title="At period end"
-              body={
-                endsOn
-                  ? `Keep full access until ${endsOn}, then it's destroyed and unsubscribed automatically. No refund. Reactivate any time before then.`
-                  : "Keep full access until your billing period ends, then it's destroyed and unsubscribed automatically. No refund. Reactivate any time before then."
-              }
+              title="Destroy now"
+              body="Stop immediately and refund the unused, non-provisioning portion of this period to your card."
             />
+          </div>
+
+          {timing === "now" && (
+            <div
+              className="mt-4 rounded-lg border border-red-500/30 bg-red-500/5 p-4"
+              data-testid="destroy-now-detail"
+            >
+              {!refundable ? (
+                <p className="text-xs text-white/60" data-testid="destroy-no-charge">
+                  No charge was taken for this substrate, so there&apos;s nothing to refund. This
+                  deprovisions it immediately.
+                </p>
+              ) : previewStatus === "loading" ? (
+                <div
+                  className="h-4 w-40 animate-pulse rounded bg-white/10"
+                  data-testid="destroy-preview-loading"
+                />
+              ) : previewStatus === "error" ? (
+                <p className="text-sm text-white/60" data-testid="destroy-preview-error">
+                  We couldn&apos;t calculate your refund right now. Please try again
+                  {canSchedulePeriodEnd ? ", or choose “At period end”" : ""}.
+                </p>
+              ) : previewStatus === "loaded" && preview ? (
+                <>
+                  <p className="text-xs tracking-wider text-white/40 uppercase">
+                    Refund to your card
+                  </p>
+                  <p
+                    className="mt-1 text-lg font-semibold text-white"
+                    data-testid="destroy-refund-amount"
+                  >
+                    {fmtUsd(preview.refundCents)}
+                  </p>
+                  {preview.withheldFeeCents > 0 && (
+                    <p className="mt-1 text-xs text-white/50" data-testid="destroy-fee-excluded">
+                      Excludes the non-refundable provisioning fee (
+                      {fmtUsd(preview.withheldFeeCents)}
+                      ), already used for setup.
+                    </p>
+                  )}
+                </>
+              ) : null}
+
+              {(!refundable || previewStatus === "loaded") && (
+                <>
+                  <p
+                    className="mt-3 text-xs font-medium text-red-300"
+                    data-testid="destroy-irreversible-warning"
+                  >
+                    Your substrate is deleted immediately — access ends now and it can&apos;t be
+                    self-served back. This can&apos;t be undone.
+                  </p>
+                  <label className="mt-3 block text-xs text-white/60">
+                    Type{" "}
+                    <span className="font-mono font-semibold text-white/80">{CONFIRM_PHRASE}</span>{" "}
+                    to confirm
+                    <input
+                      type="text"
+                      value={confirmText}
+                      onChange={(e) => setConfirmText(e.target.value)}
+                      disabled={loading}
+                      data-testid="destroy-confirm-input"
+                      autoComplete="off"
+                      className="mt-1 w-full rounded-md border border-white/15 bg-transparent px-2 py-1.5 text-sm text-white outline-none focus:border-red-500/60"
+                    />
+                  </label>
+                </>
+              )}
+            </div>
           )}
-          <DestroyOption
-            value="now"
-            current={timing}
-            disabled={loading}
-            onSelect={setTiming}
-            title="Destroy now"
-            body="Stop immediately and refund the unused, non-provisioning portion of this period to your card."
-          />
+
+          {error && (
+            <p
+              data-testid="destroy-modal-error"
+              className="mt-4 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-200"
+            >
+              {error}
+            </p>
+          )}
         </div>
 
-        {timing === "now" && (
-          <div
-            className="mt-4 rounded-lg border border-red-500/30 bg-red-500/5 p-4"
-            data-testid="destroy-now-detail"
-          >
-            {!refundable ? (
-              <p className="text-xs text-white/60" data-testid="destroy-no-charge">
-                No charge was taken for this substrate, so there&apos;s nothing to refund. This
-                deprovisions it immediately.
-              </p>
-            ) : previewStatus === "loading" ? (
-              <div
-                className="h-4 w-40 animate-pulse rounded bg-white/10"
-                data-testid="destroy-preview-loading"
-              />
-            ) : previewStatus === "error" ? (
-              <p className="text-sm text-white/60" data-testid="destroy-preview-error">
-                We couldn&apos;t calculate your refund right now. Please try again
-                {canSchedulePeriodEnd ? ", or choose “At period end”" : ""}.
-              </p>
-            ) : previewStatus === "loaded" && preview ? (
-              <>
-                <p className="text-xs tracking-wider text-white/40 uppercase">
-                  Refund to your card
-                </p>
-                <p
-                  className="mt-1 text-lg font-semibold text-white"
-                  data-testid="destroy-refund-amount"
-                >
-                  {fmtUsd(preview.refundCents)}
-                </p>
-                {preview.withheldFeeCents > 0 && (
-                  <p className="mt-1 text-xs text-white/50" data-testid="destroy-fee-excluded">
-                    Excludes the non-refundable provisioning fee ({fmtUsd(preview.withheldFeeCents)}
-                    ), already used for setup.
-                  </p>
-                )}
-              </>
-            ) : null}
-
-            {(!refundable || previewStatus === "loaded") && (
-              <>
-                <p
-                  className="mt-3 text-xs font-medium text-red-300"
-                  data-testid="destroy-irreversible-warning"
-                >
-                  Your substrate is deleted immediately — access ends now and it can&apos;t be
-                  self-served back. This can&apos;t be undone.
-                </p>
-                <label className="mt-3 block text-xs text-white/60">
-                  Type{" "}
-                  <span className="font-mono font-semibold text-white/80">{CONFIRM_PHRASE}</span> to
-                  confirm
-                  <input
-                    type="text"
-                    value={confirmText}
-                    onChange={(e) => setConfirmText(e.target.value)}
-                    disabled={loading}
-                    data-testid="destroy-confirm-input"
-                    autoComplete="off"
-                    className="mt-1 w-full rounded-md border border-white/15 bg-transparent px-2 py-1.5 text-sm text-white outline-none focus:border-red-500/60"
-                  />
-                </label>
-              </>
-            )}
-          </div>
-        )}
-
-        {error && (
-          <p
-            data-testid="destroy-modal-error"
-            className="mt-4 rounded-md border border-red-500/30 bg-red-500/5 px-3 py-2 text-xs text-red-200"
-          >
-            {error}
-          </p>
-        )}
-
-        <div className="mt-6 flex gap-3">
+        {/* Action buttons — pinned footer, never scrolls, so Keep/Destroy stay
+            visible regardless of viewport height. */}
+        <div
+          data-testid="destroy-modal-footer"
+          className="flex shrink-0 gap-3 border-t border-white/10 px-6 py-4"
+        >
           <button
             type="button"
             onClick={onClose}

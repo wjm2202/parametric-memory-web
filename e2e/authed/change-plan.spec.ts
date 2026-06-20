@@ -54,3 +54,34 @@ test("change-plan options render expected per-tier sub-testids", async ({ page }
 
   await page.getByTestId("change-plan-sheet-close").click();
 });
+
+// Layout regression: on a short viewport the ConfirmUpgradeDialog (pricing +
+// dedicated-hosting warning + provisioning-fee consent + buttons) used to push
+// the Upgrade button off-screen. The footer is now pinned and the body scrolls.
+//
+// Safety: clicking Select only OPENS the dialog (which fetches a read-only
+// proration preview). We NEVER click confirm-upgrade-confirm — that would
+// re-tier the live account — and close via Cancel.
+test("layout: confirm-upgrade action buttons stay on-screen on a short viewport", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 800, height: 460 });
+  await page.goto("/admin");
+
+  await page.getByTestId("change-plan-button").first().click();
+  await expect(page.getByTestId("change-plan-sheet-options")).toBeVisible();
+
+  // Open the confirm dialog for the first offered tier (read-only preview fetch).
+  await page
+    .locator("[data-testid^='change-plan-option-'][data-testid$='-select']")
+    .first()
+    .click();
+
+  await expect(page.getByTestId("confirm-upgrade-dialog")).toBeVisible();
+  await expect(page.getByTestId("confirm-upgrade-footer")).toBeInViewport();
+  await expect(page.getByTestId("confirm-upgrade-confirm")).toBeInViewport();
+
+  // Close WITHOUT confirming.
+  await page.getByTestId("confirm-upgrade-cancel").click();
+  await expect(page.getByTestId("confirm-upgrade-dialog")).toBeHidden();
+});

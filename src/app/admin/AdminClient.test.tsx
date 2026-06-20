@@ -439,7 +439,7 @@ describe("AdminClient — health badges", () => {
     expect(screen.getByText("SSL")).toBeInTheDocument();
   });
 
-  it("shows MCP badge when substrate.reachable is true", () => {
+  it("shows the MCP badge whenever health is present", () => {
     renderAdmin({ status: "running", health: fullHealth });
     expect(screen.getByText("MCP")).toBeInTheDocument();
   });
@@ -469,14 +469,42 @@ describe("AdminClient — health badges", () => {
     expect(sslBadge?.className).toContain("zinc");
   });
 
-  it("MCP badge is red when substrate.reachable is false", () => {
+  // ── MCP badge reflects KEY-CLAIM state, not the reachability probe ──────────
+  //
+  // Regression (2026-06): the MCP pill keyed off health.substrate.reachable,
+  // but the health probe can't authenticate against the substrate, so it
+  // false-negatives for a healthy-but-claimed substrate and the badge stayed
+  // red forever after a successful key claim. The pill now keys off
+  // `keyUnclaimed`: amber until claimed, green once claimed.
+
+  it("MCP badge is green once the API key is claimed (keyUnclaimed false)", () => {
+    renderAdmin({ status: "running", health: fullHealth, keyUnclaimed: false });
+    const pill = screen.getByTestId("mcp-status-pill");
+    expect(pill.dataset.mcpActive).toBe("true");
+    expect(pill.className).toContain("emerald");
+    expect(pill.className).not.toContain("red");
+    expect(pill.textContent).toContain("●");
+  });
+
+  it("MCP badge is amber (not green) while the API key is unclaimed", () => {
+    renderAdmin({ status: "running", health: fullHealth, keyUnclaimed: true });
+    const pill = screen.getByTestId("mcp-status-pill");
+    expect(pill.dataset.mcpActive).toBe("false");
+    expect(pill.className).toContain("amber");
+    expect(pill.className).not.toContain("emerald");
+    expect(pill.textContent).toContain("○");
+  });
+
+  it("MCP badge ignores the reachability probe — claimed stays green even if reachable is false", () => {
     const health = {
       ...fullHealth,
       substrate: { ...fullHealth.substrate, reachable: false },
     };
-    renderAdmin({ status: "running", health });
-    const mcpBadge = screen.getByText("MCP").closest("span");
-    expect(mcpBadge?.className).toContain("red");
+    renderAdmin({ status: "running", health, keyUnclaimed: false });
+    const pill = screen.getByTestId("mcp-status-pill");
+    expect(pill.dataset.mcpActive).toBe("true");
+    expect(pill.className).toContain("emerald");
+    expect(pill.className).not.toContain("red");
   });
 });
 
