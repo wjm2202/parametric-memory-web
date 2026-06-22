@@ -382,6 +382,7 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 | `confirm-upgrade-close-icon` | "×" close icon in the dialog top-right; dismisses without confirming (sibling of `confirm-upgrade-cancel`; provided so agents/tests can target the icon variant separately from the textual Cancel button) |
 | `confirm-upgrade-cancel` | Cancel button |
 | `confirm-upgrade-confirm` | Confirm-and-charge button |
+| `confirm-upgrade-error` | Inline failure notice (`role="alert"`) shown when the upgrade is refused — e.g. a declined card (402 "Payment failed — your card was declined"), a plan change already in progress, or a downgrade. The dialog stays open so the customer can fix their card and retry (v2 atomic-upgrade flow, 2026-06-21). |
 | `proration-loading` | Animated skeleton shown while the live Stripe proration preview is loading; Upgrade button is disabled in this state |
 | `proration-error` | Error panel shown when the proration preview fetch fails; contains a Retry button to re-fetch |
 | `proration-charge` | "Charged today" amount line — populated from the live `/upgrade/preview` response (e.g. "$6.33" or "No charge today") |

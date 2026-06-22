@@ -583,6 +583,46 @@ describe("ConfirmUpgradeDialog — Upgrade error paths", () => {
     expect(onUpgradeStarted).not.toHaveBeenCalled();
   });
 
+  it("shows an inline 'payment failed' notice on a declined card (402) and stays open", async () => {
+    mockFetchDispatch({ upgradeOk: false, upgrade: { error: "payment_failed" } });
+    const onUpgradeStarted = vi.fn();
+    await act(async () => {
+      renderDialog({ onUpgradeStarted });
+    });
+    await waitForPreviewLoaded();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
+    });
+
+    // Inline, testable failure notice with a card-specific message.
+    const notice = screen.getByTestId("confirm-upgrade-error");
+    expect(notice).toBeInTheDocument();
+    expect(notice.textContent ?? "").toMatch(/declined|payment failed/i);
+    // Dialog stays open + button re-enabled so the customer can fix their card.
+    expect(screen.getByTestId("confirm-upgrade-dialog")).toBeInTheDocument();
+    expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
+    expect(onUpgradeStarted).not.toHaveBeenCalled();
+  });
+
+  it("shows a 'plan change in progress' notice when a change is already running (409)", async () => {
+    mockFetchDispatch({ upgradeOk: false, upgrade: { error: "upgrade_in_progress" } });
+    const onUpgradeStarted = vi.fn();
+    await act(async () => {
+      renderDialog({ onUpgradeStarted });
+    });
+    await waitForPreviewLoaded();
+
+    await act(async () => {
+      fireEvent.click(screen.getByTestId("confirm-upgrade-confirm"));
+    });
+
+    const notice = screen.getByTestId("confirm-upgrade-error");
+    expect(notice.textContent ?? "").toMatch(/in progress/i);
+    expect(screen.getByTestId("confirm-upgrade-confirm")).not.toBeDisabled();
+    expect(onUpgradeStarted).not.toHaveBeenCalled();
+  });
+
   it("fires toast.error when upgrade fetch rejects (network failure)", async () => {
     mockFetch.mockImplementation((url: string) => {
       if (typeof url === "string" && url.includes("/api/billing/upgrade/preview")) {

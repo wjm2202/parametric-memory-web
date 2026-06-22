@@ -167,6 +167,32 @@ function makeIdempotencyKey(): string {
   return `upg_${Date.now()}_${Math.random().toString(36).slice(2, 10)}`;
 }
 
+/**
+ * Map an upgrade-commit failure (HTTP status + compute error code) to a clear,
+ * customer-facing message. The v2 atomic flow can refuse an upgrade in several
+ * ways, each of which must tell the customer exactly what happened — most
+ * importantly a declined card (402), where the subscription was left untouched
+ * and they just need a working card.
+ */
+function upgradeErrorMessage(status: number, code?: string): string {
+  if (status === 402 || code === "payment_failed") {
+    return "Payment failed — your card was declined. Update your payment method and try again.";
+  }
+  if (code === "already_on_target_tier" || code === "same_tier") {
+    return "You're already on this plan.";
+  }
+  if (code === "downgrade_not_supported") {
+    return "Downgrades aren't supported here. Contact support to move to a lower plan.";
+  }
+  if (code === "upgrade_in_progress" || code === "substrate_not_running") {
+    return "A plan change is already in progress for this substrate. Please wait for it to finish, then try again.";
+  }
+  if (status === 429) {
+    return "Too many plan changes right now. Please try again in a little while.";
+  }
+  return TOAST_SUBMIT_ERROR_BODY;
+}
+
 export function ConfirmUpgradeDialog({
   substrateSlug,
   currentTier,
@@ -176,6 +202,9 @@ export function ConfirmUpgradeDialog({
   isCancelPending = false,
 }: Props) {
   const [submitting, setSubmitting] = useState(false);
+  // Inline failure notice shown when the upgrade is refused (declined card, etc.)
+  // — the dialog stays open so the customer can fix their card and retry.
+  const [submitError, setSubmitError] = useState<string | null>(null);
   const [previewStatus, setPreviewStatus] = useState<PreviewStatus>("loading");
   const [previewData, setPreviewData] = useState<UpgradePreviewData | null>(null);
   // R10/D7 — explicit consent to the non-refundable provisioning fee, required
@@ -243,6 +272,7 @@ export function ConfirmUpgradeDialog({
     // Block until the preview loaded AND (for dedicated) the fee is acknowledged.
     if (submitting || previewStatus !== "loaded" || !consentSatisfied) return;
     setSubmitting(true);
+    setSubmitError(null); // clear any prior failure on retry
 
     try {
       const res = await fetch("/api/billing/upgrade", {
@@ -256,7 +286,12 @@ export function ConfirmUpgradeDialog({
       });
 
       if (!res.ok) {
-        toast.error(TOAST_SUBMIT_ERROR_TITLE, { description: TOAST_SUBMIT_ERROR_BODY });
+        const body = (await res.json().catch(() => ({}))) as { error?: string };
+        const message = upgradeErrorMessage(res.status, body.error);
+        // Inline notice (stays visible so the customer can fix their card and
+        // retry) + a toast for immediate feedback. The dialog stays open.
+        setSubmitError(message);
+        toast.error(TOAST_SUBMIT_ERROR_TITLE, { description: message });
         setSubmitting(false);
         return;
       }
@@ -279,6 +314,7 @@ export function ConfirmUpgradeDialog({
       // preferable to flickering back to "Upgrade" before unmount.
       onUpgradeStarted();
     } catch {
+      setSubmitError(TOAST_SUBMIT_ERROR_BODY);
       toast.error(TOAST_SUBMIT_ERROR_TITLE, { description: TOAST_SUBMIT_ERROR_BODY });
       setSubmitting(false);
     }
@@ -476,6 +512,19 @@ export function ConfirmUpgradeDialog({
                 />
                 <span>{PROVISIONING_FEE_CONSENT_CHECKBOX}</span>
               </label>
+            </div>
+          )}
+
+          {/* Failure notice — shown when the upgrade is refused (declined card,
+              etc.). The dialog stays open so the customer can update their card
+              and retry. role="alert" so screen readers announce it. */}
+          {submitError && (
+            <div
+              role="alert"
+              data-testid="confirm-upgrade-error"
+              className="rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-200"
+            >
+              {submitError}
             </div>
           )}
 
