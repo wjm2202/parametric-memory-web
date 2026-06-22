@@ -459,7 +459,7 @@ export function ConfirmUpgradeDialog({
                 <li>• Confirm payment</li>
                 <li>• Provision a dedicated droplet for you</li>
                 <li>• Transfer your data (substrate briefly read-only)</li>
-                <li>• Cut over — your endpoint and API key stay the same</li>
+                <li>• Cut over — your API key stays the same; your endpoint URL changes</li>
               </ol>
             </div>
           )}

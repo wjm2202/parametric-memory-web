@@ -382,7 +382,7 @@ describe("ConfirmUpgradeDialog — dedicated migration warning", () => {
     expect(panel).toBeInTheDocument();
     expect(panel).toHaveTextContent(/dedicated hosting/i);
     expect(panel).toHaveTextContent(/read-only for about 5 minutes/i);
-    expect(panel).toHaveTextContent(/MCP endpoint and API key won't change/i);
+    expect(panel).toHaveTextContent(/API key stays the same, but your MCP endpoint URL will change/i);
   });
 });
 

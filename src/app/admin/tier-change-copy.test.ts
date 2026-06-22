@@ -74,11 +74,11 @@ describe("tier-change-copy helpers", () => {
       expect(fastPathSuccessHeadline("Pro")).toContain("limits are active");
     });
 
-    it("slowPathSuccessHeadline reassures about API key + MCP endpoint", () => {
+    it("slowPathSuccessHeadline: API key unchanged, MCP endpoint URL changed", () => {
       const out = slowPathSuccessHeadline("Team");
       expect(out).toContain("Team");
-      expect(out).toContain("API key");
-      expect(out).toContain("MCP endpoint");
+      expect(out).toMatch(/API key is unchanged/i);
+      expect(out).toMatch(/MCP endpoint URL has changed/i);
     });
 
     it("failureBody names the tier the customer is still on", () => {

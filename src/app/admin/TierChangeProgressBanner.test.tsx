@@ -233,7 +233,9 @@ describe("TierChangeProgressBanner — success states", () => {
       />,
     );
     expect(screen.getByText(/on Team/)).toBeInTheDocument();
-    expect(screen.getByText(/API key and MCP endpoint are unchanged/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Your API key is unchanged, but your MCP endpoint URL has changed/i),
+    ).toBeInTheDocument();
   });
 
   it("fast path auto-dismisses after 5 seconds", () => {

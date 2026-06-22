@@ -153,6 +153,47 @@ describe("GET /api/billing/upgrade-options", () => {
     );
   });
 
+  it("strips the launch-disabled Team tier from the options (post-launch gate)", async () => {
+    mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
+
+    // Compute still offers Team; the website BFF must hide it until launch.
+    const upstream = {
+      currentTier: "pro",
+      availableUpgrades: [
+        {
+          tier: "pro",
+          name: "Professional",
+          amountCents: 2900,
+          hostingModel: "dedicated",
+          limits: { maxAtoms: 100000, maxBootstrapsPerMonth: 10000, maxStorageMB: 5000 },
+          transitionType: "shared_to_dedicated",
+        },
+        {
+          tier: "team",
+          name: "Team",
+          amountCents: 7900,
+          hostingModel: "dedicated",
+          limits: { maxAtoms: 500000, maxBootstrapsPerMonth: -1, maxStorageMB: 10240 },
+          transitionType: "dedicated_to_dedicated",
+        },
+      ],
+    };
+
+    mockFetch.mockResolvedValue({
+      ok: true,
+      status: 200,
+      headers: new Headers(),
+      text: () => Promise.resolve(JSON.stringify(upstream)),
+    });
+
+    const res = await GET(makeReq("bold-junction"));
+    const body = await res.json();
+
+    expect(res.status).toBe(200);
+    // Only the non-disabled tier survives; Team never reaches the dashboard.
+    expect(body.options.map((o: { tier: string }) => o.tier)).toEqual(["pro"]);
+  });
+
   it("URL-encodes unusual substrateSlug values into the path segment", async () => {
     mockCookies.mockResolvedValue(makeCookieStore("sess_abc123"));
     mockFetch.mockResolvedValue({

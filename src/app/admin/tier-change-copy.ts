@@ -98,11 +98,12 @@ export const SLOW_PATH_PHASES: { readonly phase: TierChangePhase; readonly label
 ];
 
 /**
- * Success headline for shared_to_dedicated. Reassures the customer that
- * their MCP endpoint and API key are unchanged.
+ * Success headline for shared_to_dedicated. Confirms the API key is unchanged,
+ * but tells the customer their MCP endpoint URL has changed (the dedicated dest
+ * gets a new slug), so they know to update their client.
  */
 export function slowPathSuccessHeadline(targetTierName: string): string {
-  return `Done! You're on ${targetTierName}, on a dedicated instance. Your API key and MCP endpoint are unchanged.`;
+  return `Done! You're on ${targetTierName}, on a dedicated instance. Your API key is unchanged, but your MCP endpoint URL has changed — update your client to the new address.`;
 }
 
 /**
@@ -138,7 +139,8 @@ export const DEDICATED_MIGRATION_WARNING_TITLE = "This tier runs on dedicated ho
 export const DEDICATED_MIGRATION_WARNING_BODY =
   "We'll provision a private droplet for you and migrate your data. " +
   "Your substrate will be read-only for about 5 minutes during migration. " +
-  "Your MCP endpoint and API key won't change.";
+  "Your API key stays the same, but your MCP endpoint URL will change — " +
+  "you'll need to point your client at the new address afterwards.";
 
 // ─── Sheet + dialog labels ───────────────────────────────────────────────────
 

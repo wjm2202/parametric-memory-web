@@ -129,6 +129,20 @@ function isComputeResponse(d: unknown): d is ComputeListUpgradeTiersResponse {
   return typeof r.currentTier === "string" && Array.isArray(r.availableUpgrades);
 }
 
+/**
+ * Launch gate (website-level only): tiers that exist in the catalog but must NOT
+ * be offered as an upgrade target yet. "team" is a post-launch feature — we strip
+ * it from the change-plan options here in the BFF so the dashboard never renders
+ * a Team row or its Select button. Compute still knows the tier; this is a
+ * deliberate website-side block. Remove "team" from this set to re-enable.
+ */
+export const LAUNCH_DISABLED_UPGRADE_TIERS: ReadonlySet<string> = new Set(["team"]);
+
+/** Drop launch-disabled tiers (see set above) from compute's upgrade list. */
+export function filterLaunchDisabledTiers(tiers: ComputeUpgradeTier[]): ComputeUpgradeTier[] {
+  return tiers.filter((t) => !LAUNCH_DISABLED_UPGRADE_TIERS.has(t.tier));
+}
+
 export async function GET(request: NextRequest): Promise<NextResponse> {
   const cookieStore = await cookies();
   const sessionToken = cookieStore.get(SESSION_COOKIE)?.value;
@@ -161,7 +175,9 @@ export async function GET(request: NextRequest): Promise<NextResponse> {
   // Happy path: transform and emit the dashboard's expected shape.
   const transformed: DashboardUpgradeOptionsResponse = {
     currentTier: result.data.currentTier,
-    options: result.data.availableUpgrades.map(transformOption),
+    // Launch gate: hide post-launch tiers (e.g. Team) so they can't be selected
+    // as an upgrade target from the dashboard. Website-level block only.
+    options: filterLaunchDisabledTiers(result.data.availableUpgrades).map(transformOption),
   };
 
   return NextResponse.json(transformed, { status: 200 });
