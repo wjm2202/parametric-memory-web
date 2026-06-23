@@ -25,9 +25,12 @@
 
 import { useEffect, useMemo, useState } from "react";
 import {
+  CUTOVER_STEP_LABEL,
+  CUTOVER_SUBSTEPS,
   FAST_PATH_STEPS,
   FAILURE_HEADLINE,
   FAILURE_SUPPORT_LINE,
+  MIGRATION_STAY_ON_PAGE_NOTE,
   SLOW_PATH_PHASES,
   failureBody,
   fastPathSuccessHeadline,
@@ -235,22 +238,56 @@ function SlowPathContent({
           {SLOW_PATH_UNIQUE_LABELS.map((label, idx) => {
             const isDone = activeBucket > idx;
             const isActive = activeBucket === idx;
+            const showCutoverSubsteps = label === CUTOVER_STEP_LABEL && (isActive || isDone);
             return (
               <li
                 key={label}
                 data-phase-state={isDone ? "done" : isActive ? "active" : "pending"}
-                className={`flex items-center gap-2 text-sm ${
-                  isDone ? "text-white/50" : isActive ? "font-medium text-white" : "text-white/30"
-                }`}
+                className="text-sm"
               >
-                <span className={`inline-flex h-4 w-4 items-center justify-center ${iconColor}`}>
-                  {isDone ? <CheckIcon /> : isActive ? <DotPulse /> : <DotPending />}
-                </span>
-                <span>{label}</span>
+                <div
+                  className={`flex items-center gap-2 ${
+                    isDone ? "text-white/50" : isActive ? "font-medium text-white" : "text-white/30"
+                  }`}
+                >
+                  <span className={`inline-flex h-4 w-4 items-center justify-center ${iconColor}`}>
+                    {isDone ? <CheckIcon /> : isActive ? <DotPulse /> : <DotPending />}
+                  </span>
+                  <span>{label}</span>
+                </div>
+
+                {/* Breakdown of what the handover does (not individually tracked). */}
+                {showCutoverSubsteps && (
+                  <ul className="mt-1.5 ml-6 space-y-1" data-testid="tier-change-cutover-substeps">
+                    {CUTOVER_SUBSTEPS.map((sub) => (
+                      <li key={sub} className="flex items-center gap-2 text-xs text-white/45">
+                        <span className={`h-1 w-1 shrink-0 rounded-full ${iconColor}`} />
+                        <span>{sub}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
               </li>
             );
           })}
         </ol>
+
+        {/* Keep-on-page warning — a navigate-away mid-migration is risky. */}
+        <p
+          className="mt-3 flex items-center gap-2 text-xs text-amber-300/90"
+          data-testid="tier-change-stay-note"
+        >
+          <svg aria-hidden="true" className="h-3.5 w-3.5 shrink-0" viewBox="0 0 24 24" fill="none">
+            <path
+              d="M12 9v4m0 3.5h.01M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
+          </svg>
+          <span>{MIGRATION_STAY_ON_PAGE_NOTE}</span>
+        </p>
       </div>
     </div>
   );

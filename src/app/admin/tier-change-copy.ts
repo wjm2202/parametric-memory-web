@@ -98,6 +98,33 @@ export const SLOW_PATH_PHASES: { readonly phase: TierChangePhase; readonly label
 ];
 
 /**
+ * The user-visible label for the final "cutting over" step (must match the
+ * `cutting_over` entry in SLOW_PATH_PHASES). The banner renders CUTOVER_SUBSTEPS
+ * beneath this step; kept as a constant so the banner matches it without
+ * hardcoding the string.
+ */
+export const CUTOVER_STEP_LABEL = "Cutting over…";
+
+/**
+ * Illustrative sub-steps shown beneath the "Cutting over…" step so the customer
+ * can see what the handover does. The backend reports a single `cutting_over`
+ * phase, so these are NOT individually tracked — they're a breakdown of what's
+ * happening (new address, SSL/TLS, connection switch).
+ */
+export const CUTOVER_SUBSTEPS: readonly string[] = [
+  "Registering your new address",
+  "Setting up your SSL certificate",
+  "Switching your connection over",
+];
+
+/**
+ * Note shown beneath the slow-path step list while a dedicated migration is in
+ * progress, asking the customer not to navigate away mid-migration.
+ */
+export const MIGRATION_STAY_ON_PAGE_NOTE =
+  "Please keep this page open while your upgrade completes — it usually takes a few minutes.";
+
+/**
  * Success headline for shared_to_dedicated. Confirms the API key is unchanged,
  * but tells the customer their MCP endpoint URL has changed (the dedicated dest
  * gets a new slug), so they know to update their client.

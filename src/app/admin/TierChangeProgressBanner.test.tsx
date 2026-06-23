@@ -195,6 +195,53 @@ describe("TierChangeProgressBanner — slow path (shared_to_dedicated)", () => {
     const counter = screen.getByTestId("tier-change-retry-counter");
     expect(counter).toHaveTextContent("Attempt 2 of 5");
   });
+
+  it("renders the cutover sub-steps (incl. SSL) when phase is cutting_over", () => {
+    render(
+      <TierChangeProgressBanner
+        result={result({
+          state: "processing",
+          transitionKind: "shared_to_dedicated",
+          phase: "cutting_over",
+          targetTier: "team",
+        })}
+        currentTierName="Pro"
+      />,
+    );
+    const substeps = screen.getByTestId("tier-change-cutover-substeps");
+    expect(substeps).toHaveTextContent(/Setting up your SSL certificate/i);
+    expect(substeps).toHaveTextContent(/Switching your connection over/i);
+  });
+
+  it("does NOT render cutover sub-steps before the cutting_over phase", () => {
+    render(
+      <TierChangeProgressBanner
+        result={result({
+          state: "processing",
+          transitionKind: "shared_to_dedicated",
+          phase: "transferring",
+          targetTier: "team",
+        })}
+        currentTierName="Pro"
+      />,
+    );
+    expect(screen.queryByTestId("tier-change-cutover-substeps")).not.toBeInTheDocument();
+  });
+
+  it("shows the 'keep this page open' warning while the migration is in progress", () => {
+    render(
+      <TierChangeProgressBanner
+        result={result({
+          state: "processing",
+          transitionKind: "shared_to_dedicated",
+          phase: "transferring",
+          targetTier: "team",
+        })}
+        currentTierName="Pro"
+      />,
+    );
+    expect(screen.getByTestId("tier-change-stay-note")).toHaveTextContent(/keep this page open/i);
+  });
 });
 
 describe("TierChangeProgressBanner — success states", () => {

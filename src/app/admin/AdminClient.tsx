@@ -359,6 +359,22 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
   const { result: tierChangeResult, startPolling: startTierChangePolling } =
     useTierChangePoll(slug);
 
+  // Deep-link to the new substrate when a shared→dedicated migration completes.
+  // A dedicated migration moves the substrate to a NEW slug (the connection URL
+  // changes; the API key does not). Navigating there lands the customer on their
+  // live substrate, and because the new slug has no in-flight tier-change row
+  // (state "none") the progress banner clears on its own. Fires once: after the
+  // replace, `slug` becomes newSlug so the guard no longer matches.
+  const completedNewSlug =
+    tierChangeResult.state === "completed"
+      ? (tierChangeResult.migrationProgress?.newSlug ?? null)
+      : null;
+  useEffect(() => {
+    if (completedNewSlug && completedNewSlug !== slug) {
+      router.replace(`/admin?slug=${encodeURIComponent(completedNewSlug)}`);
+    }
+  }, [completedNewSlug, slug, router]);
+
   // Translate the substrate's raw caps into the shape ChangePlanSheet wants.
   // Note the casing flip: SubstrateInfo uses `maxStorageMB`, the sheet uses
   // `maxStorageMb` (a tiny naming inconsistency we absorb at the boundary

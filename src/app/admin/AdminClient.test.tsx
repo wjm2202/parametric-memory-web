@@ -36,6 +36,7 @@ const h = vi.hoisted(() => {
     // The hook's re-arm trigger (2026-06-10 fix) — AdminClient must thread
     // this into ChangePlanButton's onUpgradeStarted.
     mockStartPolling: vi.fn(),
+    mockRouterReplace: vi.fn(),
     mockBannerRender: vi.fn(),
     mockButtonRender: vi.fn(),
     // mockToast is callable (neutral toast) AND carries .info/.success/.error
@@ -51,7 +52,7 @@ const h = vi.hoisted(() => {
 // ── Next.js mocks ─────────────────────────────────────────────────────────────
 
 vi.mock("next/navigation", () => ({
-  useRouter: () => ({ push: vi.fn() }),
+  useRouter: () => ({ push: vi.fn(), replace: h.mockRouterReplace }),
   usePathname: () => "/dashboard",
   useSearchParams: () => ({ get: h.mockSearchParamsGet }),
 }));
@@ -634,6 +635,55 @@ describe("AdminClient — tier-change wiring", () => {
     const lastBannerProps = h.mockBannerRender.mock.calls.at(-1)![0];
     expect(lastBannerProps.result.state).toBe("processing");
     expect(lastBannerProps.result.targetTier).toBe("pro");
+  });
+
+  it("deep-links to the new slug when a shared→dedicated migration completes", () => {
+    h.mockRouterReplace.mockClear();
+    const completed: TierChangePollResult = {
+      ...IDLE_TIER_CHANGE,
+      state: "completed",
+      targetTier: "pro",
+      transitionKind: "shared_to_dedicated",
+      migrationProgress: {
+        atomCountBefore: 49,
+        atomCountAfter: 49,
+        newDropletIp: "170.64.197.80",
+        newSlug: "hidden-isle-e5ag",
+      },
+    };
+    h.mockUseTierChangePoll.mockImplementation(() => ({
+      result: completed,
+      startPolling: h.mockStartPolling,
+    }));
+
+    // renderAdmin renders with a different current slug, so the guard fires.
+    renderAdmin({ status: "running", tier: "starter" });
+
+    expect(h.mockRouterReplace).toHaveBeenCalledWith("/admin?slug=hidden-isle-e5ag");
+  });
+
+  it("does NOT navigate while the migration is still in progress (only on completed)", () => {
+    h.mockRouterReplace.mockClear();
+    const inProgress: TierChangePollResult = {
+      ...IDLE_TIER_CHANGE,
+      state: "processing",
+      phase: "cutting_over",
+      transitionKind: "shared_to_dedicated",
+      migrationProgress: {
+        atomCountBefore: 49,
+        atomCountAfter: 49,
+        newDropletIp: "170.64.197.80",
+        newSlug: "hidden-isle-e5ag",
+      },
+    };
+    h.mockUseTierChangePoll.mockImplementation(() => ({
+      result: inProgress,
+      startPolling: h.mockStartPolling,
+    }));
+
+    renderAdmin({ status: "running", tier: "starter" });
+
+    expect(h.mockRouterReplace).not.toHaveBeenCalled();
   });
 
   it("mounts ChangePlanButton for running substrates with current limits derived from substrate", () => {

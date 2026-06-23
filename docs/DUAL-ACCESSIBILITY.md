@@ -401,6 +401,8 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 |---|---|
 | `tier-change-banner` | Root banner shown while a tier-change migration is in flight (`role="status"`) |
 | `tier-change-phase-list` | Ordered list of migration phases |
+| `tier-change-cutover-substeps` | Sub-list under the "Cutting over" phase showing what the handover does (new address, SSL, connection switch) |
+| `tier-change-stay-note` | "Keep this page open" warning shown beneath the phase list while the migration is in progress |
 | `tier-change-retry-counter` | Retry-count detail shown when a phase is retrying |
 
 ### Security — `src/app/admin/security/*`
