@@ -114,11 +114,7 @@ export default function AuditClient({ account }: AuditClientProps) {
             gate shows a "Sign in again" panel that re-affirms via identity
             provider (GitHub OAuth) rather than a magic-link email — mirrors the
             rotate-key reauth pattern in AdminClient. */}
-        <RecentAuthGate
-          email={account.email}
-          next="/admin/security/audit"
-          staleVariant="reauth"
-        >
+        <RecentAuthGate email={account.email} next="/admin/security/audit" staleVariant="reauth">
           <AuditFeed />
         </RecentAuthGate>
       </div>
