@@ -51,6 +51,10 @@ export interface TierChangeMigrationProgress {
   atomCountBefore: number | null;
   atomCountAfter: number | null;
   newDropletIp: string | null;
+  /** Slug of the new dedicated substrate. NULL until the dest is bound. On a
+   *  completed shared→dedicated migration the dashboard deep-links to this slug
+   *  (the connection URL changes; the API key does not). */
+  newSlug: string | null;
 }
 
 /**
