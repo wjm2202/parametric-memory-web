@@ -44,6 +44,12 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { useRecentAuth } from "@/hooks/useRecentAuth";
 import { triggerRecentAuthFlow } from "@/lib/recent-auth-flow";
+import {
+  buildReauthUrl,
+  REAUTH_REQUIRED_TITLE,
+  REAUTH_REQUIRED_BODY,
+  REAUTH_REQUIRED_CTA,
+} from "@/lib/reauth";
 
 export interface RecentAuthGateProps {
   /** The signed-in account's email. The page reads it from /api/auth/me. */
@@ -53,11 +59,29 @@ export interface RecentAuthGateProps {
    * the mmpm_redirect cookie. Allow-list checked by recent-auth-flow.
    */
   next: string;
+  /**
+   * How to re-verify when the recent-auth window has lapsed.
+   *
+   *   "email"  (default) — send a magic-link email and wait for the
+   *                        cross-tab clickthrough. Used by the TOTP gates.
+   *   "reauth"          — mirror the rotate-key pattern: render a "Sign in
+   *                        again" panel whose CTA bounces to /login
+   *                        (`buildReauthUrl`), where the user re-affirms with
+   *                        an identity provider (GitHub OAuth, which stamps a
+   *                        fresh recent-auth window) and is returned here. No
+   *                        magic-link email is sent. Used by the audit page.
+   */
+  staleVariant?: "email" | "reauth";
   /** What to render once recent-auth is fresh. */
   children: React.ReactNode;
 }
 
-export function RecentAuthGate({ email, next, children }: RecentAuthGateProps) {
+export function RecentAuthGate({
+  email,
+  next,
+  staleVariant = "email",
+  children,
+}: RecentAuthGateProps) {
   const router = useRouter();
   const { status, loading, error, refetch } = useRecentAuth();
   const [emailSent, setEmailSent] = useState<boolean>(false);
@@ -134,6 +158,31 @@ export function RecentAuthGate({ email, next, children }: RecentAuthGateProps) {
   // ─── Status fetched and fresh — render children ────────────────────────────
   if (status?.recentAuthFresh) {
     return <>{children}</>;
+  }
+
+  // ─── Stale + reauth variant — rotate-key-style "sign in again" panel ────────
+  // Mirrors AdminClient's rotate-key reauth panel: an identity-provider
+  // re-verify (no magic-link email). The CTA bounces to /login with a redirect
+  // back to this page; the user re-affirms with GitHub OAuth (which stamps a
+  // fresh recent-auth window), lands back here, and the gate flips open.
+  if (staleVariant === "reauth") {
+    return (
+      <div
+        data-testid="recent-auth-gate-reauth"
+        role="alert"
+        className="rounded-2xl border border-amber-500/30 bg-amber-500/[0.08] p-5 sm:p-6"
+      >
+        <h2 className="font-semibold text-amber-200">{REAUTH_REQUIRED_TITLE}</h2>
+        <p className="mt-1 text-sm text-amber-100/80">{REAUTH_REQUIRED_BODY}</p>
+        <a
+          href={buildReauthUrl()}
+          data-testid="recent-auth-gate-reauth-cta"
+          className="mt-4 inline-flex items-center rounded-lg bg-white px-4 py-2 text-sm font-medium text-black transition-opacity hover:opacity-90"
+        >
+          {REAUTH_REQUIRED_CTA}
+        </a>
+      </div>
+    );
   }
 
   // ─── Email already sent — "check your email" card ──────────────────────────

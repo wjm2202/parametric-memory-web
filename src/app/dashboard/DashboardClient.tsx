@@ -830,6 +830,18 @@ export default function DashboardClient({
               >
                 Billing
               </button>
+              {/* Recent activity — relocated out of /admin/security so the
+                  auth-event feed sits alongside Billing. The page is recent-auth
+                  gated; clicking through opens it directly when the recent-auth
+                  window is fresh, or prompts an identity-provider re-verify
+                  (no magic-link email) when it has lapsed. */}
+              <Link
+                href="/admin/security/audit"
+                data-testid="nav-recent-activity"
+                className="text-sm text-white/50 transition-colors hover:text-white/80"
+              >
+                Recent activity
+              </Link>
               <Link
                 href="/admin/security"
                 className="text-sm text-white/50 transition-colors hover:text-white/80"

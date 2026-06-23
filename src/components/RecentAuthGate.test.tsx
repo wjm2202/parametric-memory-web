@@ -144,6 +144,52 @@ describe("RecentAuthGate — recentAuthFresh=false", () => {
   });
 });
 
+// ─── Stale + reauth variant (audit page) ─────────────────────────────────────
+
+describe("RecentAuthGate — staleVariant='reauth'", () => {
+  it("renders the identity-provider reauth panel, not the magic-link email card", () => {
+    mockUseRecentAuth({ status: STALE_STATUS, loading: false, error: null, refetch: vi.fn() });
+    render(
+      <RecentAuthGate email="alice@example.com" next="/admin/security/audit" staleVariant="reauth">
+        <div data-testid="children">unlocked</div>
+      </RecentAuthGate>,
+    );
+
+    // The reauth panel shows …
+    expect(screen.getByTestId("recent-auth-gate-reauth")).toBeTruthy();
+    // … and never the magic-link email affordances.
+    expect(screen.queryByTestId("recent-auth-gate-stale")).toBeNull();
+    expect(screen.queryByTestId("recent-auth-gate-send-email")).toBeNull();
+    expect(screen.queryByTestId("children")).toBeNull();
+  });
+
+  it("the CTA bounces to /login (buildReauthUrl), not a magic-link email send", () => {
+    mockUseRecentAuth({ status: STALE_STATUS, loading: false, error: null, refetch: vi.fn() });
+    const triggerSpy = vi.spyOn(recentAuthFlow, "triggerRecentAuthFlow");
+    render(
+      <RecentAuthGate email="alice@example.com" next="/admin/security/audit" staleVariant="reauth">
+        <div>unlocked</div>
+      </RecentAuthGate>,
+    );
+
+    const cta = screen.getByTestId("recent-auth-gate-reauth-cta") as HTMLAnchorElement;
+    expect(cta.getAttribute("href")).toMatch(/^\/login\?redirect=/);
+    // No email round-trip is ever triggered from this variant.
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+
+  it("still renders children when recent-auth is fresh", () => {
+    mockUseRecentAuth({ status: FRESH_STATUS, loading: false, error: null, refetch: vi.fn() });
+    render(
+      <RecentAuthGate email="alice@example.com" next="/admin/security/audit" staleVariant="reauth">
+        <div data-testid="children">unlocked</div>
+      </RecentAuthGate>,
+    );
+    expect(screen.getByTestId("children")).toBeTruthy();
+    expect(screen.queryByTestId("recent-auth-gate-reauth")).toBeNull();
+  });
+});
+
 // ─── Email-sent state ────────────────────────────────────────────────────────
 
 describe("RecentAuthGate — email sent", () => {
