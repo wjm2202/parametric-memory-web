@@ -62,26 +62,10 @@ export default function SecurityClient({ account }: SecurityClientProps) {
           <TwoFactorStatusCard />
         </div>
 
-        {/* ── Auth audit feed ──
-            Sprint 7 of the TOTP rollout (docs/sprint-totp-implementation.md).
-            Read-only feed of every auth-relevant event tied to the account.
-            Lives at /admin/security/audit because the page is recent-auth
-            gated — same security bar as the TOTP card above, same magic-link
-            round-trip on a stale window. */}
-        <div className="mt-4">
-          <Link
-            href="/admin/security/audit"
-            data-testid="auth-audit-card-link"
-            className="block rounded-2xl border border-white/10 bg-white/[0.03] p-5 transition-colors hover:bg-white/[0.06] sm:p-6"
-          >
-            <h2 className="mb-0.5 font-semibold text-white">Recent activity</h2>
-            <p className="text-sm text-white/50">
-              See every sign-in, sign-out, and security setting change on your account. Useful for
-              spotting suspicious access — opens a recent-auth-gated audit page.
-            </p>
-            <p className="mt-2 text-sm text-white/70">View activity →</p>
-          </Link>
-        </div>
+        {/* Recent activity (the auth-event feed) was relocated out of this
+            page (sprint 2026-W26) — it now lives as a top-level nav entry
+            next to Billing on the dashboard. The page itself still lives at
+            /admin/security/audit and stays recent-auth gated. */}
       </div>
     </div>
   );

@@ -80,6 +80,17 @@ function stubFetch() {
 
 // ── Tests ─────────────────────────────────────────────────────────────────────
 
+describe("DashboardClient — header nav", () => {
+  stubFetch();
+
+  it("exposes a 'Recent activity' nav link to the audit page (relocated from Security)", () => {
+    render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
+    const link = screen.getByTestId("nav-recent-activity");
+    expect(link.getAttribute("href")).toBe("/admin/security/audit");
+    expect(link.textContent).toMatch(/recent activity/i);
+  });
+});
+
 describe("DashboardClient — StatusBadge", () => {
   stubFetch();
 

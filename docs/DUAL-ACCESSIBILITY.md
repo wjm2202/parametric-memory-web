@@ -163,6 +163,7 @@ entry here **first**, before the PR that uses it.
 | `nav-drawer-dashboard` | Dashboard link inside the drawer's account section (signed-in users) | (visible text "Dashboard") |
 | `nav-drawer-billing` | Billing-portal trigger inside the drawer's account section — opens Stripe portal in the same tab | (visible text "Billing") |
 | `nav-drawer-security` | Security link to `/admin/security` inside the drawer's account section | (visible text "Security") |
+| `nav-recent-activity` | "Recent activity" link in the dashboard header nav (next to Billing) → `/admin/security/audit`; relocated out of the Security page (sprint 2026-W26) | (visible text "Recent activity") |
 | `nav-drawer-signout` | Sign-out button inside the drawer's account section — POSTs to `/api/auth/logout` then redirects to `/login` | (visible text "Sign out") |
 
 **Immersive variant (`/visualise`, `/knowledge`):**
@@ -446,6 +447,8 @@ The gate wraps any TOTP-mutating UI. Renders children when `recentAuthFresh: tru
 | `recent-auth-gate-email-sent` | "Check your email" card after a successful send |
 | `recent-auth-gate-resend` | "resend" link inside the email-sent card |
 | `recent-auth-gate-recheck` | "I clicked the link" button — manual refetch fallback when `visibilitychange` doesn't fire (mobile) |
+| `recent-auth-gate-reauth` | Stale-state panel for `staleVariant="reauth"` (audit page) — identity-provider re-verify, no magic-link email (`role="alert"`) |
+| `recent-auth-gate-reauth-cta` | "Sign in again" CTA inside the reauth panel; bounces to `/login` (`buildReauthUrl`) where GitHub OAuth re-affirms recent-auth |
 
 **Enrolment sub-flow — wizard steps for `not-enrolled → enrolled`:**
 
@@ -527,7 +530,6 @@ Read-only audit feed of every auth-relevant event tied to the signed-in account.
 
 | testid | Element |
 |---|---|
-| `auth-audit-card-link` | The "Recent activity" card on `/admin/security` that links to the audit page |
 | `auth-audit-feed` | Outer container of the feed (rendered after RecentAuthGate passes) |
 | `auth-audit-back-to-security` | "← Back to security" link in the page header |
 | `auth-audit-kind-filter` | `<select>` for narrowing the feed by event-kind group |
