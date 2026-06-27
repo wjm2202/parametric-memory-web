@@ -1,0 +1,141 @@
+<svg viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg" font-family="'Outfit','Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#07182c"/>
+      <stop offset="1" stop-color="#0a2942"/>
+    </linearGradient>
+    <radialGradient id="amberglow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fcd34d"/><stop offset="1" stop-color="#f59e0b"/>
+    </radialGradient>
+    <radialGradient id="nodeglow" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#36aaf5"/><stop offset="1" stop-color="#0070c4"/>
+    </radialGradient>
+    <radialGradient id="nodefaint" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#2b6491"/><stop offset="1" stop-color="#163a5a"/>
+    </radialGradient>
+    <marker id="chev" markerWidth="12" markerHeight="12" refX="4" refY="5" orient="auto">
+      <path d="M0,0 L6,5 L0,10" fill="none" stroke="#fcd34d" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    </marker>
+  </defs>
+
+  <rect width="1200" height="1200" fill="url(#bg)"/>
+
+  <!-- logo composited here at (80,70) 96x96 -->
+  <text x="196" y="118" font-size="40" font-weight="700" fill="#ffffff" letter-spacing="-0.5">Parametric Memory</text>
+  <text x="198" y="156" font-size="22" font-weight="500" fill="#fcd34d" letter-spacing="0.5">memory with proof.</text>
+
+  <!-- headline -->
+  <text x="600" y="210" text-anchor="middle" font-size="36" font-weight="700" fill="#cbd5e1" letter-spacing="-0.5">Capture knowledge once.</text>
+  <text x="600" y="254" text-anchor="middle" font-size="36" font-weight="700" fill="#67e8f9" letter-spacing="-0.5">Compound it every session.</text>
+
+  <!-- ===== BAND 1: compounding graph ===== -->
+  <!-- Session 1 -->
+  <g>
+    <rect x="80" y="288" width="322" height="330" rx="18" fill="#0e2238" stroke="#27405c" stroke-width="2"/>
+    <text x="241" y="330" text-anchor="middle" font-size="22" font-weight="700" fill="#cbd5e1">Session 1</text>
+    <text x="241" y="356" text-anchor="middle" font-size="16" fill="#7e93ab">a few atoms</text>
+    <g stroke="#3a577a" stroke-width="2">
+      <line x1="191" y1="445" x2="301" y2="475"/>
+      <line x1="301" y1="475" x2="221" y2="540"/>
+      <line x1="191" y1="445" x2="221" y2="540"/>
+    </g>
+    <g stroke="#7cc8fb" stroke-width="1.5">
+      <circle cx="191" cy="445" r="17" fill="url(#nodefaint)"/>
+      <circle cx="301" cy="475" r="17" fill="url(#nodefaint)"/>
+      <circle cx="221" cy="540" r="17" fill="url(#nodefaint)"/>
+    </g>
+  </g>
+
+  <!-- Session 12 -->
+  <g>
+    <rect x="438" y="288" width="322" height="330" rx="18" fill="#0e2238" stroke="#27405c" stroke-width="2"/>
+    <text x="599" y="330" text-anchor="middle" font-size="22" font-weight="700" fill="#e2e8f0">Session 12</text>
+    <text x="599" y="356" text-anchor="middle" font-size="16" fill="#94a3b8">patterns forming</text>
+    <g stroke="#1f6fb0" stroke-width="3">
+      <line x1="599" y1="478" x2="520" y2="418"/>
+      <line x1="599" y1="478" x2="680" y2="422"/>
+      <line x1="599" y1="478" x2="532" y2="542"/>
+      <line x1="599" y1="478" x2="672" y2="540"/>
+      <line x1="520" y1="418" x2="680" y2="422"/>
+    </g>
+    <g stroke="#7cc8fb" stroke-width="2">
+      <circle cx="520" cy="418" r="17" fill="url(#nodeglow)"/>
+      <circle cx="680" cy="422" r="17" fill="url(#nodeglow)"/>
+      <circle cx="532" cy="542" r="17" fill="url(#nodeglow)"/>
+      <circle cx="672" cy="540" r="17" fill="url(#nodeglow)"/>
+      <circle cx="599" cy="478" r="22" fill="url(#amberglow)" stroke="#fde68a" stroke-width="2"/>
+    </g>
+  </g>
+
+  <!-- Session 40 -->
+  <g>
+    <rect x="796" y="288" width="322" height="330" rx="18" fill="#0d2c4a" stroke="#0c8ee6" stroke-width="2.5"/>
+    <text x="957" y="330" text-anchor="middle" font-size="22" font-weight="700" fill="#ffffff">Session 40</text>
+    <text x="957" y="356" text-anchor="middle" font-size="16" fill="#67e8f9">your working model</text>
+    <g stroke="#2a7fc0" stroke-width="3">
+      <line x1="957" y1="478" x2="884" y2="408"/>
+      <line x1="957" y1="478" x2="1030" y2="412"/>
+      <line x1="957" y1="478" x2="872" y2="478"/>
+      <line x1="957" y1="478" x2="1042" y2="480"/>
+      <line x1="957" y1="478" x2="892" y2="548"/>
+      <line x1="957" y1="478" x2="1022" y2="548"/>
+      <line x1="957" y1="478" x2="957" y2="560"/>
+    </g>
+    <g stroke="#36aaf5" stroke-width="6" stroke-linecap="round">
+      <line x1="957" y1="478" x2="1030" y2="412"/>
+      <line x1="957" y1="478" x2="892" y2="548"/>
+    </g>
+    <g stroke="#7cc8fb" stroke-width="2">
+      <circle cx="884" cy="408" r="16" fill="url(#nodeglow)"/>
+      <circle cx="1030" cy="412" r="16" fill="url(#nodeglow)"/>
+      <circle cx="872" cy="478" r="16" fill="url(#nodeglow)"/>
+      <circle cx="1042" cy="480" r="16" fill="url(#nodeglow)"/>
+      <circle cx="892" cy="548" r="16" fill="url(#nodeglow)"/>
+      <circle cx="1022" cy="548" r="16" fill="url(#nodeglow)"/>
+      <circle cx="957" cy="560" r="16" fill="url(#nodeglow)"/>
+      <circle cx="957" cy="478" r="24" fill="url(#amberglow)" stroke="#fde68a" stroke-width="2.5"/>
+    </g>
+  </g>
+
+  <!-- compound arrows between panels -->
+  <g>
+    <line x1="406" y1="470" x2="430" y2="470" stroke="#fcd34d" stroke-width="3" marker-end="url(#chev)"/>
+    <line x1="764" y1="470" x2="788" y2="470" stroke="#fcd34d" stroke-width="3" marker-end="url(#chev)"/>
+  </g>
+
+  <text x="600" y="660" text-anchor="middle" font-size="18" fill="#94a3b8">Paths you use get heavier; the ones you don't decay on a half-life. The graph sharpens, not just grows.</text>
+
+  <!-- ===== BAND 2: pre-load ===== -->
+  <g>
+    <rect x="80" y="700" width="1040" height="300" rx="18" fill="#0d2c4a" stroke="#0c8ee6" stroke-width="2.5"/>
+    <text x="110" y="746" font-size="22" font-weight="700" fill="#36aaf5" letter-spacing="0.5">AT THE START OF THE NEXT SESSION — BEFORE YOU ASK</text>
+
+    <!-- col 1 -->
+    <g transform="translate(150,790)">
+      <circle cx="22" cy="22" r="22" fill="none" stroke="#67e8f9" stroke-width="3"/>
+      <circle cx="22" cy="22" r="12" fill="none" stroke="#67e8f9" stroke-width="3"/>
+      <circle cx="22" cy="22" r="3" fill="#67e8f9"/>
+      <text x="0" y="86" font-size="22" font-weight="700" fill="#e2e8f0">Ranked to your role</text>
+      <text x="0" y="118" font-size="17" fill="#94a3b8">the context that matters</text>
+      <text x="0" y="142" font-size="17" fill="#94a3b8">right now, surfaced first</text>
+    </g>
+    <!-- col 2 -->
+    <g transform="translate(500,790)">
+      <path d="M2,8 L26,22 L2,36 Z" fill="none" stroke="#fcd34d" stroke-width="3" stroke-linejoin="round"/>
+      <path d="M22,8 L46,22 L22,36" fill="none" stroke="#fcd34d" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>
+      <text x="0" y="86" font-size="22" font-weight="700" fill="#e2e8f0">Predicts your next atom</text>
+      <text x="0" y="118" font-size="17" fill="#94a3b8">64% hit rate in our</text>
+      <text x="0" y="142" font-size="17" fill="#94a3b8">benchmarks, each with a proof</text>
+    </g>
+    <!-- col 3 -->
+    <g transform="translate(850,790)">
+      <path d="M22,2 L27,17 L42,22 L27,27 L22,42 L17,27 L2,22 L17,17 Z" fill="#36aaf5"/>
+      <text x="0" y="86" font-size="22" font-weight="700" fill="#67e8f9">What you didn't</text>
+      <text x="0" y="114" font-size="22" font-weight="700" fill="#67e8f9">know to ask for</text>
+      <text x="0" y="146" font-size="17" fill="#94a3b8">adjacent facts the graph</text>
+      <text x="0" y="170" font-size="17" fill="#94a3b8">knows travel together</text>
+    </g>
+  </g>
+
+  <text x="1120" y="1058" text-anchor="end" font-size="18" fill="#64809e">parametric-memory.dev</text>
+</svg>

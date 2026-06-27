@@ -67,6 +67,19 @@ describe("Terms of Service — required protective clauses", () => {
     expect(TERMS_SRC).toMatch(/30 days(?:&rsquo;|')? advance notice/);
   });
 
+  it("declares downgrades unsupported and prohibited (§5.5)", () => {
+    // Downgrades are not a supported product flow: the platform provisions
+    // per-tier resources and never reduces a running instance in place. The
+    // clause must state all three: not technically feasible, not supported,
+    // and contractually prohibited — and preserve the cancellation carveout.
+    expect(TERMS_SRC).toContain('data-testid="terms-no-downgrades"');
+    expect(TERMS_SRC).toContain("5.5 Plan Changes");
+    expect(TERMS_FLAT).toMatch(/Downgrades to a lower-priced tier are not technically feasible/);
+    expect(TERMS_FLAT).toMatch(/not supported, and are expressly prohibited/);
+    expect(TERMS_FLAT).toMatch(/must not attempt to effect a downgrade/);
+    expect(TERMS_FLAT).toMatch(/you may always cancel/);
+  });
+
   it("declares suspension rights at sole and reasonable discretion (§6.2)", () => {
     expect(TERMS_SRC).toContain('data-testid="terms-suspension"');
     expect(TERMS_SRC).toContain("6.2 Suspension by MMPM");
@@ -124,6 +137,7 @@ describe("Terms of Service — required protective clauses", () => {
 
   it("includes pricing-change and suspension rows in the quick-reference summary", () => {
     expect(TERMS_SRC).toMatch(/"Pricing Changes"/);
+    expect(TERMS_SRC).toMatch(/"Plan Changes"/);
     expect(TERMS_SRC).toMatch(/"Suspension"/);
     expect(TERMS_SRC).toMatch(/"Indemnification"/);
     expect(TERMS_SRC).toMatch(/"Force Majeure"/);

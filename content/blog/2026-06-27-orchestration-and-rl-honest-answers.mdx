@@ -1,0 +1,69 @@
+---
+title: "Honest Answers: Can a Memory Substrate Orchestrate Agents or Do Reinforcement Learning?"
+date: "2026-06-27"
+excerpt: "Two questions we keep getting about Parametric Memory: can it orchestrate agentic workflows, and can it help with reinforcement learning? Here are the honest answers to both — because the honest version is more useful than the pitch."
+author: "Glen Osborne"
+tags: ["engineering", "multi-agent", "reinforcement-learning", "memory-substrate"]
+coverImage: "/blog/launch-honest-answers.png"
+---
+
+Two questions keep coming up about our memory substrate: can it orchestrate agentic workflows, and can it help with reinforcement learning? Here are honest answers to both — because the honest version is more useful than the pitch, and because the precise answer tells you exactly where this belongs in your stack.
+
+## On orchestration: not the way people usually mean it
+
+Parametric Memory is not a scheduler and not a message bus. It will not replace your LangGraph or Temporal graph, and you shouldn't try to make it. If you need to fan out tasks, retry steps, or sequence a workflow, keep the tool you already have.
+
+What it *is* is the layer underneath that control plane: the **shared state** that multiple agents read and write against.
+
+That layer is where multi-agent systems usually break. Two agents update the same fact and the last writer wins silently. An agent reads stale state and acts on it. Nobody can say which agent wrote what, or when. Coordination memory is the unglamorous part everyone under-invests in, and then debugs at 2am.
+
+So it's worth being precise about what we put there:
+
+- **Every fact carries provenance** — which agent, which task wrote it — as an immutable edge.
+- **Contradictory writes get flagged**, not silently overwritten. The conflicting version is surfaced so a human or a policy decides, instead of one agent quietly clobbering another.
+- **The Markov layer learns your workflow transitions** and predicts the next atom an agent needs 64% of the time in our benchmarks, each prediction with its own Merkle proof.
+
+```ts
+// Two agents, one shared substrate. Every write is attributed and provable.
+await session_checkpoint({
+  atoms: [{
+    atom: "v1.state.invoice_run_2026_06_reconciled",
+    payload: "Reconciler agent verified 0 unmatched charges for June.",
+  }],
+  edges: [{
+    source: "v1.state.invoice_run_2026_06_reconciled",
+    target: "v1.task.month_end_close",
+    type: "produced_by",          // immutable provenance: who/what wrote this
+  }],
+  taskContext: "v1.task.month_end_close",
+});
+```
+
+Coordination memory, not a control plane. If your orchestrator is the nervous system, this is the shared memory the agents reach into — and unlike a scratch table, every entry in it can be verified and traced.
+
+## On reinforcement learning: also worth being precise
+
+Our reinforcement is **Hebbian**: it strengthens the arcs that fire together, with a decay half-life. That is not reward-driven RL. It will not train a policy, and you shouldn't let anyone tell you it does. There's no reward signal, no gradient, no value function — just "paths you use get stronger, paths you don't fade."
+
+Where it *does* fit an RL loop is upstream, as a **verifiable trajectory store**.
+
+Every episode an agent logs is hashed into an RFC 6962 Merkle tree. That gives you something the training pipeline usually can't: cryptographic proof that the experience your policy learned from was never altered between logging and training. You can hand an auditor a consistency proof showing the trajectory store evolved honestly — no episodes inserted, none rewritten.
+
+```ts
+// Prove the trajectory store between two versions wasn't tampered with.
+const ok = await memory_verify_consistency({
+  fromVersion: 1840,
+  toVersion: 1921,
+});
+// ok === true  → RFC 6962 consistency proof holds: append-only, no rewrites.
+```
+
+Provable training-data lineage is a real problem — "where did this policy's experience come from, and can you show it wasn't tampered with?" — and very few people are solving it at the memory layer. If your RL story has to survive an audit, the substrate is the part that lets it.
+
+## The throughline
+
+For both questions the answer rhymes: **provable shared state, for agents that don't fully trust each other or their own logs.** Not the orchestrator. Not the optimizer. The verifiable ground truth they all stand on.
+
+If you're running multi-agent systems today — where does your shared state actually live, and could you prove it hasn't been tampered with?
+
+*Parametric Memory is MCP-native, with RFC 6962 consistency proofs and 25+ tools. Read the [concepts](/docs) or wire it into your agents to give them shared memory they can verify.*

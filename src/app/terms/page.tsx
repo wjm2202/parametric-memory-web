@@ -217,6 +217,34 @@ export default async function TermsPage() {
             refund.
           </p>
 
+          <h3 data-testid="terms-no-downgrades">5.5 Plan Changes; Upgrades Only (No Downgrades)</h3>
+          <p>
+            You may <strong>upgrade</strong> to a higher tier at any time through the in-app billing
+            flow.{" "}
+            <strong>
+              Downgrades to a lower-priced tier are not technically feasible on the Service, are not
+              supported, and are expressly prohibited.
+            </strong>{" "}
+            Each plan provisions and isolates compute, memory, and storage resources sized to that
+            tier; the Service does not perform an in-place reduction of a running instance to a
+            lower tier, and no downgrade path is offered through the application.
+          </p>
+          <p>
+            You must not attempt to effect a downgrade by any means, including by modifying,
+            re-pricing, or substituting the underlying subscription directly through the payment
+            provider or any third party. Any such attempt is a breach of these Terms; we may reject,
+            reverse, or disregard it, may continue to bill the original tier, and are not liable for
+            any loss of service, data, configuration, endpoint, or connectivity resulting from an
+            attempted downgrade. To use a lower tier, cancel your current subscription under
+            Section&nbsp;6.1 and subscribe anew at the desired tier &mdash; this provisions a
+            separate instance with its own endpoint and does not migrate your existing data, memory
+            atoms, API key, or subdomain.
+          </p>
+          <p>
+            Nothing in this Section limits your cancellation rights under Section&nbsp;6.1 or any
+            mandatory consumer-protection rights in your jurisdiction: you may always cancel.
+          </p>
+
           <h2 data-testid="terms-section-6">6. Suspension, Cancellation &amp; Termination</h2>
 
           <h3>6.1 Cancellation by You</h3>
@@ -616,6 +644,10 @@ export default async function TermsPage() {
                     [
                       "Pricing Changes",
                       "We may change prices for supplier-cost, operational, currency, tax, or fair-use reasons; 30-day notice for increases on existing subs",
+                    ],
+                    [
+                      "Plan Changes",
+                      "Upgrades only; downgrades are not technically feasible, unsupported, and prohibited — cancel and re-subscribe to use a lower tier",
                     ],
                     [
                       "Suspension",

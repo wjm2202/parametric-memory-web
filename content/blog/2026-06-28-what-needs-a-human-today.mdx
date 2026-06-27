@@ -1,0 +1,68 @@
+---
+title: "What Needs a Human Today? Running a Company on an Ops Substrate"
+date: "2026-06-28"
+excerpt: "I run a SaaS company mostly by myself. Every morning I ask it one question — what needs a human today? — and the answer doesn't come from a dashboard. It comes from memory: an ops substrate where every operational event becomes a proof-carrying atom you can interrogate in plain language."
+author: "Glen Osborne"
+tags: ["engineering", "memory-substrate", "operations", "business-intelligence"]
+coverImage: "/blog/what-needs-a-human-today.png"
+---
+
+I run a SaaS company mostly by myself. Every morning I ask it one question: *what needs a human today?*
+
+The answer doesn't come from a dashboard. It comes from memory.
+
+An autonomous fleet does the actual work — provisioning, billing, migrations, refunds, teardowns. Every meaningful thing that happens emits a structured signal: a charge captured, a migration rolled back, a refund the system decided *not* to issue on its own, a host hitting capacity. Those signals don't go to a log file that scrolls past at three in the morning. They go into an **ops substrate** — a Parametric Memory instance, the same memory-with-proof system we sell.
+
+## Business intelligence enters the same way a question does
+
+In that substrate, each event becomes an **atom**: a typed, timestamped, linked fact inserted into a SHA-256 Merkle tree, carrying a cryptographic proof and the provenance of whatever produced it. The workers that run the system write their own observations in too. So operational intelligence enters the system the same way a *question* does — as a prompt — and it accumulates as durable, verifiable memory instead of vanishing into a log.
+
+Here's a worker recording the kind of judgment call I actually want to see in the morning — a refund it deliberately withheld:
+
+```ts
+// The reconciler captured a charge it would not auto-refund.
+// It writes that decision into the ops substrate as a fact, with provenance.
+await session_checkpoint({
+  atoms: [{
+    atom: "v1.event.refund_withheld_acct_8fec_2026_06_28",
+    payload: "Refund of $42.00 withheld: customer past auto-refund window; needs review.",
+  }],
+  edges: [{
+    source: "v1.event.refund_withheld_acct_8fec_2026_06_28",
+    target: "v1.task.daily_human_review",
+    type: "produced_by",            // immutable: which worker, which run wrote this
+  }],
+  taskContext: "v1.task.daily_human_review",
+});
+```
+
+Nothing about that write is special on its own. What matters is that it lands in a structured, queryable, *provable* memory — not a metrics counter, not a Slack message, not a row in a table no one reads.
+
+## "What needs a human today?" is answerable because the memory is
+
+A dashboard hands you two hundred green checks and three red ones, and your job is to find the three. That's the wrong shape for one person. The ops substrate inverts it. When I ask it the morning question, it doesn't return a wall of status — it returns the judgment calls:
+
+```ts
+const review = await memory_search({
+  query: "what needs a human today: withheld refunds, stuck provisions, capacity decisions",
+  taskContext: "v1.task.daily_human_review",
+  maxResults: 10,
+});
+// → the customers the reconciler flagged but wouldn't auto-refund,
+//   the provision that's stuck, the capacity I have to decide on —
+//   each atom returned with its Merkle proof.
+```
+
+Everything the fleet could handle, it already handled. What's left is the short list that genuinely needs a person — and each item comes back with a proof against the tree root, so I can act on "the system withheld this refund" without re-checking the underlying charge. The trust isn't a vibe; it's an audit path.
+
+## Why the proof is load-bearing here
+
+It would be easy to do a weaker version of this with a database and a daily cron that posts a summary. The reason we run it on a memory-with-proof substrate is that operational decisions are exactly where you can't afford a confident-but-wrong summary. When the memory tells me a customer was double-charged, or a migration rolled back after the point of no return, I need to trust that without re-deriving it from raw events — because every fact carries its own verification, and contradictory writes are flagged rather than silently overwritten. An RFC 6962 consistency proof shows the operational record evolved honestly over time, which is the difference between "our logs say…" and "we can prove…".
+
+## The real change isn't automation
+
+Automation, on its own, just gives you *more to watch* — more services, more dashboards, more alerts to triage. This gives you *less*: one question, and an answer you can trust, because every fact under it carries a proof. The fleet does the work, the memory does the noticing, and I do the deciding. That division is what lets one person run something that used to need an operations team.
+
+So here's the question I'd put to anyone building lean: how small could a company be, if its operational memory could tell you exactly what needs you — and prove it?
+
+*We run our own billing, provisioning, and operations on Parametric Memory. It's MCP-native, so you can point Claude, Cursor, or your own agents at the same substrate and ask your operation questions in plain language. See the [docs](/docs) to set up your own.*

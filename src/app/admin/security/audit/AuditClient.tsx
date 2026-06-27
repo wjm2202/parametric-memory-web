@@ -49,6 +49,7 @@ import useSWRInfinite from "swr/infinite";
 import { RecentAuthGate } from "@/components/RecentAuthGate";
 import { formatAuthEvent, formatActorIp, type AuthEvent } from "@/lib/format-auth-event";
 import { parseUserAgent } from "@/lib/parse-user-agent";
+import { BillingHistorySection } from "../../BillingHistorySection";
 
 interface AccountInfo {
   id: string;
@@ -94,12 +95,22 @@ const KIND_FILTERS: Array<{ value: string; label: string }> = [
 ];
 
 export default function AuditClient({ account }: AuditClientProps) {
+  // Two tabs under "Recent activity": the auth-event Activity feed and account
+  // Billing (Stripe-authoritative invoices). Both sit behind the recent-auth
+  // gate — and the fresh recent-auth window also lets the Billing tab's "Manage
+  // billing" portal link open without a second prompt.
+  const [tab, setTab] = useState<"activity" | "billing">("activity");
+
+  const tabClass = (active: boolean) =>
+    "rounded-lg px-3 py-1.5 text-sm transition-colors " +
+    (active ? "bg-white/10 text-white" : "text-white/50 hover:text-white/80");
+
   return (
     <div className="min-h-screen bg-[#030712] text-white">
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="mb-6 flex items-center justify-between">
           <h1 className="font-[family-name:var(--font-syne)] text-2xl font-semibold text-white">
-            Recent activity on your account
+            Recent activity
           </h1>
           <Link
             href="/admin/security"
@@ -110,12 +121,33 @@ export default function AuditClient({ account }: AuditClientProps) {
           </Link>
         </div>
 
+        <div role="tablist" aria-label="Recent activity" className="mb-6 flex gap-2">
+          <button
+            role="tab"
+            aria-selected={tab === "activity"}
+            data-testid="recent-tab-activity"
+            onClick={() => setTab("activity")}
+            className={tabClass(tab === "activity")}
+          >
+            Activity
+          </button>
+          <button
+            role="tab"
+            aria-selected={tab === "billing"}
+            data-testid="recent-tab-billing"
+            onClick={() => setTab("billing")}
+            className={tabClass(tab === "billing")}
+          >
+            Billing
+          </button>
+        </div>
+
         {/* staleVariant="reauth": when the recent-auth window has lapsed, the
             gate shows a "Sign in again" panel that re-affirms via identity
             provider (GitHub OAuth) rather than a magic-link email — mirrors the
             rotate-key reauth pattern in AdminClient. */}
         <RecentAuthGate email={account.email} next="/admin/security/audit" staleVariant="reauth">
-          <AuditFeed />
+          {tab === "activity" ? <AuditFeed /> : <BillingHistorySection />}
         </RecentAuthGate>
       </div>
     </div>

@@ -1,0 +1,91 @@
+<svg width="1200" height="1200" viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg" font-family="Liberation Sans, Arial, sans-serif">
+  <defs>
+    <radialGradient id="blueGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#36aaf5" stop-opacity="0.34"/>
+      <stop offset="38%" stop-color="#1f6fd0" stop-opacity="0.13"/>
+      <stop offset="100%" stop-color="#1f6fd0" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="amberGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#f59e0b" stop-opacity="0.30"/>
+      <stop offset="45%" stop-color="#f59e0b" stop-opacity="0.09"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="nodeGlow" cx="50%" cy="50%" r="50%">
+      <stop offset="0%" stop-color="#fbbf24" stop-opacity="0.9"/>
+      <stop offset="100%" stop-color="#f59e0b" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="cardBg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#0f1a30"/>
+      <stop offset="100%" stop-color="#0b1322"/>
+    </linearGradient>
+    <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
+      <path d="M 60 0 L 0 0 0 60" fill="none" stroke="#1b2742" stroke-width="1" stroke-opacity="0.35"/>
+    </pattern>
+  </defs>
+
+  <!-- base -->
+  <rect width="1200" height="1200" fill="#070b16"/>
+  <rect width="1200" height="1200" fill="url(#grid)"/>
+  <ellipse cx="1190" cy="-70" rx="560" ry="500" fill="url(#blueGlow)"/>
+  <ellipse cx="-70" cy="1260" rx="470" ry="410" fill="url(#amberGlow)"/>
+
+  <!-- constellation motif (echo of OG) -->
+  <g stroke="#36aaf5" stroke-opacity="0.28" stroke-width="1.4" fill="none">
+    <path d="M980,300 L1080,470 L980,640 L820,640 L760,470 L860,330 Z"/>
+    <line x1="980" y1="300" x2="980" y2="640"/>
+    <line x1="760" y1="470" x2="1080" y2="470"/>
+    <line x1="860" y1="330" x2="820" y2="640"/>
+    <line x1="1080" y1="470" x2="980" y2="300"/>
+    <circle cx="920" cy="470" r="150" stroke-opacity="0.18"/>
+  </g>
+  <g fill="#7cc8fb">
+    <circle cx="980" cy="300" r="6"/>
+    <circle cx="1080" cy="470" r="6"/>
+    <circle cx="980" cy="640" r="6"/>
+    <circle cx="820" cy="640" r="6"/>
+    <circle cx="760" cy="470" r="6"/>
+    <circle cx="860" cy="330" r="5"/>
+    <circle cx="1040" cy="380" r="3" fill-opacity="0.7"/>
+    <circle cx="790" cy="560" r="3" fill-opacity="0.7"/>
+  </g>
+  <!-- central orange node -->
+  <circle cx="920" cy="470" r="46" fill="url(#nodeGlow)"/>
+  <circle cx="920" cy="470" r="13" fill="#f59e0b"/>
+  <circle cx="920" cy="470" r="13" fill="none" stroke="#fcd34d" stroke-width="2"/>
+
+  <!-- eyebrow -->
+  <text x="80" y="150" fill="#36aaf5" font-size="22" font-weight="bold" letter-spacing="4">BUILDING IN PUBLIC</text>
+
+  <!-- headline -->
+  <text x="78" y="262" fill="#ffffff" font-size="66" font-weight="bold">Three hard questions</text>
+  <text x="78" y="334" fill="#ffffff" font-size="66" font-weight="bold">about verifiable AI memory.</text>
+  <text x="78" y="416" fill="#36aaf5" font-size="54" font-weight="bold">We answered all three honestly.</text>
+
+  <!-- chips -->
+  <!-- chip 1 -->
+  <g>
+    <rect x="80" y="500" width="1040" height="150" rx="16" fill="url(#cardBg)" stroke="#1b2742" stroke-width="1.5"/>
+    <text x="112" y="565" fill="#fbbf24" font-size="40" font-weight="bold">01</text>
+    <text x="190" y="558" fill="#ffffff" font-size="32" font-weight="bold">Why prove memory cryptographically?</text>
+    <text x="190" y="605" fill="#94a3b8" font-size="24">A bet on where AI regulation is heading — and it's near-free to add.</text>
+  </g>
+  <!-- chip 2 -->
+  <g>
+    <rect x="80" y="674" width="1040" height="150" rx="16" fill="url(#cardBg)" stroke="#1b2742" stroke-width="1.5"/>
+    <text x="112" y="739" fill="#fbbf24" font-size="40" font-weight="bold">02</text>
+    <text x="190" y="732" fill="#ffffff" font-size="32" font-weight="bold">Why your type system — what if it's wrong?</text>
+    <text x="190" y="779" fill="#94a3b8" font-size="24">It's a default, not a cage. Bring your own structure.</text>
+  </g>
+  <!-- chip 3 -->
+  <g>
+    <rect x="80" y="848" width="1040" height="150" rx="16" fill="url(#cardBg)" stroke="#1b2742" stroke-width="1.5"/>
+    <text x="112" y="913" fill="#fbbf24" font-size="40" font-weight="bold">03</text>
+    <text x="190" y="906" fill="#ffffff" font-size="32" font-weight="bold">Why not just write my own prompt?</text>
+    <text x="190" y="953" fill="#94a3b8" font-size="24">At small scale, you should. The substrate wins as it grows.</text>
+  </g>
+
+  <!-- footer -->
+  <line x1="80" y1="1095" x2="1120" y2="1095" stroke="#1b2742" stroke-width="1.5"/>
+  <text x="80" y="1140" fill="#cbd5e1" font-size="26" font-weight="bold">parametric-memory.dev</text>
+  <text x="1120" y="1140" fill="#36aaf5" font-size="26" font-weight="bold" text-anchor="end">memory with proof.</text>
+</svg>
