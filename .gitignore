@@ -47,6 +47,7 @@ Thumbs.db
 # droplet setup guide. (Previously a blanket `/docs/` ignore here was
 # contradicted by 63 already-tracked files; replaced with targeted rules.)
 docs/archive/
+docs/linkedin/
 docs/*.docx
 docs/WEB-DROPLET-SETUP-GUIDE.md
 

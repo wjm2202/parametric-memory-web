@@ -541,6 +541,29 @@ Read-only audit feed of every auth-relevant event tied to the signed-in account.
 | `auth-audit-error` | Inline error region (network failure, 401, malformed response) |
 | `auth-audit-retry` | Retry button inside the error region |
 
+**Recent-activity tabs — `src/app/admin/security/audit/AuditClient.tsx`:**
+
+The audit page has two tabs above the gated content: "Activity" (the auth-event feed above) and "Billing" (the invoice/refund history below). Both sit behind the recent-auth gate.
+
+| testid | Element |
+|---|---|
+| `recent-tab-activity` | "Activity" tab button — selects the auth-event feed (`auth-audit-feed`) |
+| `recent-tab-billing` | "Billing" tab button — selects the Stripe-authoritative billing history (`billing-history`) |
+
+**Billing history — `src/app/admin/BillingHistorySection.tsx`:**
+
+Rendered by the "Billing" tab on `/admin/security/audit`. Lists the account's Stripe-authoritative invoices + refunds and a portal link. (Uses the `billing-*` prefix as an admin-scoped alias — it is only ever rendered inside `/admin/*`.)
+
+| testid | Element |
+|---|---|
+| `billing-history` | Outer container of the billing-history panel |
+| `billing-history-loading` | "Loading…" paragraph while invoices are fetched |
+| `billing-history-error` | Error paragraph (amber `role`-status copy) shown when the fetch fails |
+| `billing-history-empty` | "No invoices yet." empty-state paragraph |
+| `billing-invoice` | One row per invoice (instance-multiple; tests scope via `within`) |
+| `billing-refunds` | Refunds sub-panel listing refund line items |
+| `billing-manage` | "Manage billing" button — opens the Stripe customer portal |
+
 ### Verify page — `src/app/verify/*`
 
 Cryptographic snapshot verifier. The drop zone is the primary affordance (handled by a hidden `<input type="file">` inside a `<label>`, no testid needed because the input itself is the interactive element and the label wraps it). Additional surfaces:
@@ -629,6 +652,7 @@ deletion of a clause fails CI.
 |---|---|
 | `terms-section-5` | `<h2>` Section 5 (Subscription Plans & Payment) on `/terms` |
 | `terms-pricing-changes` | `<h3>` Section 5.3 (Right to Change Pricing) on `/terms` |
+| `terms-no-downgrades` | `<h3>` Section 5.5 (Plan Changes; Upgrades Only — No Downgrades) on `/terms`. Asserted by `legal-clauses.test.ts` — guards the clause stating downgrades are not technically feasible, unsupported, and prohibited. |
 | `terms-section-6` | `<h2>` Section 6 (Suspension, Cancellation & Termination) on `/terms` |
 | `terms-suspension` | `<h3>` Section 6.2 (Suspension by MMPM) on `/terms` |
 | `terms-termination` | `<h3>` Section 6.3 (Termination by MMPM) on `/terms` |

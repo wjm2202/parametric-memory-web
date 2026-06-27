@@ -1,0 +1,83 @@
+---
+title: "Frozen Model, Living Memory: Updating What Your LLM Knows Without Touching Its Weights"
+date: "2026-06-25"
+excerpt: "Every LLM is frozen the day training ends — it carries yesterday's facts and yesterday's mistakes into today's work. You can't retrain a frozen model on your own news, but you can give it a memory that isn't frozen, with a proof for every fact it acts on."
+author: "Glen Osborne"
+tags: ["engineering", "memory-substrate", "llm", "merkle-proofs"]
+coverImage: "/blog/frozen-model-living-memory.png"
+---
+
+Every LLM you use is frozen in time. Its weights stopped learning the day training ended, so it carries yesterday's facts — and yesterday's mistakes — into every conversation you have today. Ask it about a price that changed last week, a teammate who left, or a decision you reversed yesterday, and it will answer with confidence from a world that no longer exists.
+
+You can't retrain a frozen model on your own news. Fine-tuning is slow, expensive, and lossy, and it still bakes in a new cutoff the moment it finishes. But the model doesn't have to be the thing that remembers. You can give it a memory that isn't frozen, and let the weights stay exactly as they shipped.
+
+That is what Parametric Memory does. The model is untouched. What changes is *what it knows at the moment it answers*.
+
+## The cutoff is a property of the weights, not of the task
+
+A model's knowledge cutoff is a wall built into the parameters. Retrieval moved the wall by stuffing documents into the prompt, but most retrieval is a similarity guess against a vector store — it returns what's *near* your query, with no notion of what's *true now* versus what was true last quarter.
+
+We treat memory differently. Every fact your agent learns is stored as an **atom**: a named, versioned string inserted into a SHA-256 Merkle tree. New events get captured as they happen, and the next time the agent works, the relevant atoms are already loaded into context. The cutoff stops being a wall and becomes a timestamp — one you keep moving forward.
+
+```ts
+// Capture a fact the model could never have known — it happened after training.
+await session_checkpoint({
+  atoms: [{
+    atom: "v1.fact.primary_region_is_syd1",
+    payload: "Production substrate host moved to syd1 on 2026-06-20.",
+  }],
+});
+```
+
+That alone isn't novel — a notes file does roughly the same thing. The hard part is what happens when new information *contradicts* the old.
+
+## The part that matters: contradiction, not accumulation
+
+A frozen model will repeat a stale belief forever, fluently, with no signal that it's wrong. A notes file or a vector store will happily hold both the old fact and the new one and let the retriever flip a coin. Neither tells you which version is live.
+
+In Parametric Memory, a new fact that conflicts with an existing one is **flagged, not silently overwritten**. You tombstone the version that's no longer true — it's replaced in the tree with a tombstone hash (64 zeros) that preserves the proofs of its siblings — and the agent stops acting on it. The history isn't erased; it's superseded, and you can prove which version the agent is allowed to use right now.
+
+```ts
+// The region changed again. Supersede the old fact and prove the new one is live.
+await session_checkpoint({
+  atoms: [{
+    atom: "v1.fact.primary_region_is_fra1",
+    payload: "Production substrate host moved to fra1 on 2026-06-24.",
+  }],
+  tombstone: ["v1.fact.primary_region_is_syd1"],
+  edges: [{
+    source: "v1.fact.primary_region_is_fra1",
+    target: "v1.fact.primary_region_is_syd1",
+    type: "supersedes",
+  }],
+});
+```
+
+Now when the agent recalls the region, it gets the live atom back **with a Merkle proof** — an audit path from the leaf to the tree root that you can verify in `O(log n)` without trusting the server:
+
+```json
+{
+  "atom": "v1.fact.primary_region_is_fra1",
+  "payload": "Production substrate host moved to fra1 on 2026-06-24.",
+  "proof": { "leaf": "9f2c…", "root": "a4e1…", "auditPath": ["…","…"], "index": 41 }
+}
+```
+
+The stale `syd1` atom is still in the tree's history — tombstoned — so an auditor can see that it existed and was retired, and an RFC 6962 consistency proof shows the tree evolved honestly between the two versions. The agent never sees it as a live fact again.
+
+## Closing the loop
+
+Put together, the loop is simple and it never stops turning:
+
+1. Something happens in the real world.
+2. You record it as an atom — and if it contradicts what was known, you tombstone the old version.
+3. It feeds back into the next session's context, ranked to the agent's objective.
+4. The agent reasons on today's reality instead of last year's training data.
+
+The model stays frozen. The memory stays alive. And because every fact carries its own proof, you don't have to choose between "current" and "trustworthy" — you get both, and you can show your work.
+
+Frozen model. Living memory.
+
+So here's the question worth asking about your own stack: what's the most expensive thing your AI still believes because nobody told it the world changed — and could you prove, today, which version of that belief it's acting on?
+
+*Parametric Memory is MCP-native — Claude, Cursor, and other compatible clients connect and gain persistent, verifiable memory immediately. See the [docs](/docs) to set up your own substrate.*

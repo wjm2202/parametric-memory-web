@@ -1,0 +1,186 @@
+<svg viewBox="0 0 1200 1200" xmlns="http://www.w3.org/2000/svg" font-family="'Outfit','Helvetica Neue',Arial,sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#07182c"/>
+      <stop offset="1" stop-color="#0a2942"/>
+    </linearGradient>
+    <linearGradient id="memband" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a3a63"/>
+      <stop offset="1" stop-color="#072849"/>
+    </linearGradient>
+    <radialGradient id="amberglow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fcd34d"/>
+      <stop offset="1" stop-color="#f59e0b"/>
+    </radialGradient>
+    <radialGradient id="nodeglow" cx="0.5" cy="0.4" r="0.6">
+      <stop offset="0" stop-color="#36aaf5"/>
+      <stop offset="1" stop-color="#0070c4"/>
+    </radialGradient>
+    <marker id="arrow" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#67e8f9"/>
+    </marker>
+    <marker id="arrowUp" markerWidth="10" markerHeight="10" refX="7" refY="3" orient="auto">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#94a3b8"/>
+    </marker>
+    <clipPath id="leftHalf"><rect x="-50" y="-50" width="50" height="100"/></clipPath>
+    <clipPath id="rightHalf"><rect x="0" y="-50" width="50" height="100"/></clipPath>
+  </defs>
+
+  <rect width="1200" height="1200" fill="url(#bg)"/>
+
+  <!-- ===== HEADER / BRANDING ===== -->
+  <g transform="translate(80,72)">
+    <!-- logo mark: brain | graph split circle -->
+    <g transform="translate(46,46)">
+      <circle r="46" fill="#0b2240" stroke="#0c8ee6" stroke-width="2"/>
+      <g clip-path="url(#leftHalf)">
+        <circle r="44" fill="#e3a18f"/>
+        <g fill="none" stroke="#7a3b2e" stroke-width="3" stroke-linecap="round">
+          <path d="M-30,-20 q12,-6 22,2"/>
+          <path d="M-34,-2 q14,-8 28,0"/>
+          <path d="M-32,16 q14,8 26,-2"/>
+          <path d="M-20,-30 q6,14 -2,26"/>
+        </g>
+      </g>
+      <g clip-path="url(#rightHalf)">
+        <line x1="14" y1="-18" x2="30" y2="-2" stroke="#36aaf5" stroke-width="3"/>
+        <line x1="14" y1="-18" x2="12" y2="14" stroke="#36aaf5" stroke-width="3"/>
+        <line x1="30" y1="-2" x2="30" y2="24" stroke="#36aaf5" stroke-width="3"/>
+        <line x1="12" y1="14" x2="30" y2="24" stroke="#36aaf5" stroke-width="3"/>
+        <circle cx="14" cy="-18" r="6.5" fill="#36aaf5"/>
+        <circle cx="30" cy="-2" r="6.5" fill="url(#amberglow)"/>
+        <circle cx="12" cy="14" r="6.5" fill="#36aaf5"/>
+        <circle cx="30" cy="24" r="6.5" fill="#36aaf5"/>
+      </g>
+      <line x1="0" y1="-46" x2="0" y2="46" stroke="#0b2240" stroke-width="3"/>
+    </g>
+    <text x="118" y="36" font-size="42" font-weight="700" fill="#ffffff" letter-spacing="-0.5">Parametric Memory</text>
+    <text x="120" y="74" font-size="23" font-weight="500" fill="#fcd34d" letter-spacing="0.5">memory with proof.</text>
+  </g>
+
+  <text x="600" y="225" text-anchor="middle" font-size="30" font-weight="600" fill="#cbd5e1">Where does your agents' shared state live —</text>
+  <text x="600" y="262" text-anchor="middle" font-size="30" font-weight="700" fill="#67e8f9">and can you prove it wasn't tampered with?</text>
+
+  <!-- ===== CONTROL PLANE (not us) ===== -->
+  <g transform="translate(80,300)">
+    <rect x="0" y="0" width="1040" height="210" rx="18" fill="#0e2238" stroke="#475569" stroke-width="2" stroke-dasharray="9 7"/>
+    <text x="26" y="36" font-size="20" font-weight="700" fill="#94a3b8" letter-spacing="1.5">CONTROL PLANE</text>
+    <text x="26" y="64" font-size="18" font-weight="400" fill="#7e93ab">your orchestrator — LangGraph · Temporal · CrewAI  (Parametric Memory does not replace this)</text>
+
+    <!-- agent cards -->
+    <g>
+      <!-- A -->
+      <g transform="translate(70,92)">
+        <rect width="280" height="92" rx="14" fill="#16314e" stroke="#3f5b7a" stroke-width="2"/>
+        <circle cx="46" cy="46" r="22" fill="#1e293b" stroke="#67e8f9" stroke-width="2"/>
+        <circle cx="39" cy="43" r="3.5" fill="#67e8f9"/><circle cx="53" cy="43" r="3.5" fill="#67e8f9"/>
+        <line x1="46" y1="24" x2="46" y2="16" stroke="#67e8f9" stroke-width="2"/><circle cx="46" cy="14" r="3" fill="#67e8f9"/>
+        <text x="84" y="40" font-size="23" font-weight="700" fill="#e2e8f0">Agent A</text>
+        <text x="84" y="68" font-size="16" fill="#94a3b8">reads · writes</text>
+      </g>
+      <!-- B -->
+      <g transform="translate(380,92)">
+        <rect width="280" height="92" rx="14" fill="#16314e" stroke="#3f5b7a" stroke-width="2"/>
+        <circle cx="46" cy="46" r="22" fill="#1e293b" stroke="#67e8f9" stroke-width="2"/>
+        <circle cx="39" cy="43" r="3.5" fill="#67e8f9"/><circle cx="53" cy="43" r="3.5" fill="#67e8f9"/>
+        <line x1="46" y1="24" x2="46" y2="16" stroke="#67e8f9" stroke-width="2"/><circle cx="46" cy="14" r="3" fill="#67e8f9"/>
+        <text x="84" y="40" font-size="23" font-weight="700" fill="#e2e8f0">Agent B</text>
+        <text x="84" y="68" font-size="16" fill="#94a3b8">reads · writes</text>
+      </g>
+      <!-- C -->
+      <g transform="translate(690,92)">
+        <rect width="280" height="92" rx="14" fill="#16314e" stroke="#3f5b7a" stroke-width="2"/>
+        <circle cx="46" cy="46" r="22" fill="#1e293b" stroke="#67e8f9" stroke-width="2"/>
+        <circle cx="39" cy="43" r="3.5" fill="#67e8f9"/><circle cx="53" cy="43" r="3.5" fill="#67e8f9"/>
+        <line x1="46" y1="24" x2="46" y2="16" stroke="#67e8f9" stroke-width="2"/><circle cx="46" cy="14" r="3" fill="#67e8f9"/>
+        <text x="84" y="40" font-size="23" font-weight="700" fill="#e2e8f0">Agent C</text>
+        <text x="84" y="68" font-size="16" fill="#94a3b8">reads · writes</text>
+      </g>
+    </g>
+  </g>
+
+  <!-- connector arrows (read + write) -->
+  <g stroke-width="3">
+    <line x1="266" y1="592" x2="266" y2="648" stroke="#67e8f9" marker-end="url(#arrow)"/>
+    <line x1="296" y1="648" x2="296" y2="592" stroke="#94a3b8" marker-end="url(#arrowUp)"/>
+    <line x1="586" y1="592" x2="586" y2="648" stroke="#67e8f9" marker-end="url(#arrow)"/>
+    <line x1="616" y1="648" x2="616" y2="592" stroke="#94a3b8" marker-end="url(#arrowUp)"/>
+    <line x1="906" y1="592" x2="906" y2="648" stroke="#67e8f9" marker-end="url(#arrow)"/>
+    <line x1="936" y1="648" x2="936" y2="592" stroke="#94a3b8" marker-end="url(#arrowUp)"/>
+  </g>
+
+  <!-- ===== SHARED STATE PLANE — Parametric Memory ===== -->
+  <g transform="translate(80,650)">
+    <rect x="0" y="0" width="1040" height="378" rx="18" fill="url(#memband)" stroke="#0c8ee6" stroke-width="2.5"/>
+    <text x="26" y="40" font-size="20" font-weight="700" fill="#36aaf5" letter-spacing="1.5">SHARED STATE PLANE</text>
+    <text x="26" y="68" font-size="18" fill="#bae0fd">Parametric Memory — the verifiable graph your agents coordinate through</text>
+
+    <!-- proof callout -->
+    <g transform="translate(694,26)">
+      <rect width="322" height="42" rx="21" fill="#072849" stroke="#22d3ee" stroke-width="1.5"/>
+      <circle cx="27" cy="21" r="11" fill="none" stroke="#22d3ee" stroke-width="2.5"/>
+      <path d="M21,21 l4,5 l8,-10" fill="none" stroke="#22d3ee" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="48" y="27" font-size="16" font-weight="600" fill="#a5f3fc">every atom carries a Merkle proof</text>
+    </g>
+
+    <!-- atom graph -->
+    <g>
+      <!-- edges -->
+      <g stroke="#1f6fb0" stroke-width="3">
+        <line x1="520" y1="240" x2="270" y2="150"/>
+        <line x1="520" y1="240" x2="790" y2="150"/>
+        <line x1="520" y1="240" x2="230" y2="300"/>
+        <line x1="520" y1="240" x2="820" y2="300"/>
+        <line x1="520" y1="240" x2="560" y2="320"/>
+      </g>
+      <!-- predicted-next dashed arc -->
+      <path d="M270,150 Q400,150 505,222" fill="none" stroke="#fcd34d" stroke-width="3" stroke-dasharray="3 8" stroke-linecap="round" marker-end="url(#arrow)"/>
+      <g transform="translate(300,118)">
+        <rect width="220" height="34" rx="17" fill="#3b2c07" stroke="#f59e0b" stroke-width="1.5"/>
+        <text x="110" y="23" text-anchor="middle" font-size="16" font-weight="700" fill="#fcd34d">predicts next · 64%</text>
+      </g>
+
+      <!-- nodes -->
+      <g font-size="14" font-weight="600" fill="#e0effe" text-anchor="middle">
+        <circle cx="270" cy="150" r="26" fill="url(#nodeglow)" stroke="#7cc8fb" stroke-width="2"/><text x="270" y="186">fact</text>
+        <circle cx="790" cy="150" r="26" fill="url(#nodeglow)" stroke="#7cc8fb" stroke-width="2"/><text x="790" y="186">state</text>
+        <circle cx="230" cy="300" r="26" fill="url(#nodeglow)" stroke="#7cc8fb" stroke-width="2"/><text x="230" y="336">event</text>
+        <circle cx="820" cy="300" r="26" fill="url(#nodeglow)" stroke="#7cc8fb" stroke-width="2"/><text x="820" y="336">procedure</text>
+        <circle cx="560" cy="320" r="22" fill="url(#nodeglow)" stroke="#7cc8fb" stroke-width="2"/>
+        <!-- center amber atom -->
+        <circle cx="520" cy="240" r="34" fill="url(#amberglow)" stroke="#fde68a" stroke-width="2.5"/>
+        <text x="520" y="246" font-size="15" font-weight="700" fill="#3b2c07">atom</text>
+      </g>
+      <!-- tiny proof check badges -->
+      <g>
+        <circle cx="292" cy="128" r="9" fill="#072849" stroke="#22d3ee" stroke-width="2"/>
+        <path d="M288,128 l3,3.5 l5,-7" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="812" cy="128" r="9" fill="#072849" stroke="#22d3ee" stroke-width="2"/>
+        <path d="M808,128 l3,3.5 l5,-7" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        <circle cx="546" cy="216" r="9" fill="#072849" stroke="#22d3ee" stroke-width="2"/>
+        <path d="M542,216 l3,3.5 l5,-7" fill="none" stroke="#22d3ee" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- ===== FEATURE STRIP ===== -->
+  <g transform="translate(80,1058)">
+    <g transform="translate(0,0)">
+      <rect width="336" height="76" rx="14" fill="#0e2238" stroke="#334b66" stroke-width="1.5"/>
+      <text x="24" y="34" font-size="20" font-weight="700" fill="#36aaf5">Provenance</text>
+      <text x="24" y="60" font-size="16" fill="#94a3b8">which agent wrote each fact</text>
+    </g>
+    <g transform="translate(352,0)">
+      <rect width="336" height="76" rx="14" fill="#0e2238" stroke="#334b66" stroke-width="1.5"/>
+      <text x="24" y="34" font-size="20" font-weight="700" fill="#22d3ee">Proof</text>
+      <text x="24" y="60" font-size="16" fill="#94a3b8">RFC 6962 Merkle, verifiable</text>
+    </g>
+    <g transform="translate(704,0)">
+      <rect width="336" height="76" rx="14" fill="#0e2238" stroke="#334b66" stroke-width="1.5"/>
+      <text x="24" y="34" font-size="20" font-weight="700" fill="#fcd34d">Prediction</text>
+      <text x="24" y="60" font-size="16" fill="#94a3b8">next atom, 64% hit rate</text>
+    </g>
+  </g>
+
+  <text x="1120" y="1170" text-anchor="end" font-size="17" fill="#64809e">parametric-memory.dev</text>
+</svg>

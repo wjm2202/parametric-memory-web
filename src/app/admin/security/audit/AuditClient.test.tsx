@@ -265,3 +265,42 @@ describe("AuditClient — error paths", () => {
     });
   });
 });
+
+describe("AuditClient — Recent tabs (Activity + Billing)", () => {
+  it("switches to the Billing tab and loads account billing history", async () => {
+    fetchMock().mockImplementation(async (url: string) => {
+      if (typeof url === "string" && url.includes("/api/billing/history")) {
+        return jsonResponse(200, {
+          invoices: [
+            {
+              id: "in_1",
+              number: "PM-1",
+              createdIso: "2026-06-26T00:00:00.000Z",
+              status: "paid",
+              totalCents: 3367,
+              amountPaidCents: 3367,
+              currency: "USD",
+              hostedInvoiceUrl: null,
+              invoicePdfUrl: null,
+              lines: [{ description: "Provisioning fee", amountCents: 967 }],
+            },
+          ],
+          refunds: [],
+        });
+      }
+      // Default: the auth-event feed (empty).
+      return jsonResponse(200, { events: [], nextCursor: null });
+    });
+
+    renderAudit(ACCOUNT);
+
+    // Default tab is Activity → the audit feed renders.
+    await waitFor(() => expect(screen.getByTestId("auth-audit-empty")).toBeTruthy());
+
+    // Switch to Billing → the account billing history mounts + fetches.
+    fireEvent.click(screen.getByTestId("recent-tab-billing"));
+    await waitFor(() => expect(screen.getByTestId("billing-invoice")).toBeTruthy());
+    expect(screen.getByText("Provisioning fee")).toBeTruthy();
+    expect(screen.getByTestId("billing-manage")).toBeTruthy();
+  });
+});
