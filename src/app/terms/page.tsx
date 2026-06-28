@@ -132,9 +132,9 @@ export default async function TermsPage() {
           </div>
 
           <p>
-            Listed prices are exclusive of any applicable taxes (including GST, VAT, sales tax,
-            withholding tax, or similar levies), which will be added at checkout or on invoice where
-            required by law.
+            All prices are stated and charged in US dollars (USD). Listed prices are exclusive of
+            any applicable taxes (including GST, VAT, sales tax, withholding tax, or similar
+            levies), which will be added at checkout or on invoice where required by law.
           </p>
 
           <h3>5.2 Payment &amp; Auto-Renewal</h3>

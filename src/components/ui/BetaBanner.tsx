@@ -28,7 +28,7 @@ export function BetaBanner() {
       </span>
 
       <span className="text-brand-200/60 text-xs">
-        Dedicated AI memory with cryptographic proofs. From $5/mo.
+        Dedicated AI memory with cryptographic proofs. From $5/mo USD.
       </span>
 
       <a

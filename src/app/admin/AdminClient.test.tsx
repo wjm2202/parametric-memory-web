@@ -218,6 +218,32 @@ function renderAdmin(substrateOverrides: Partial<Record<string, unknown>> = {}) 
 // groups below layer their own beforeEach/afterEach on top (for fetch stubbing
 // and URL reset), but resetting the spies up here keeps things predictable.
 
+// jsdom makes `window.location.assign` non-configurable, so `vi.spyOn` throws
+// ("Cannot redefine property: assign"). Replace the whole `location` object
+// (which IS configurable on window) with a stub exposing an assign spy. The
+// shared afterEach restores REAL_LOCATION so other tests are unaffected.
+const REAL_LOCATION = window.location;
+function stubLocationAssign(): ReturnType<typeof vi.fn> {
+  const assign = vi.fn();
+  Object.defineProperty(window, "location", {
+    configurable: true,
+    value: {
+      assign,
+      replace: vi.fn(),
+      reload: vi.fn(),
+      href: "http://localhost/admin",
+      origin: "http://localhost",
+      protocol: "http:",
+      host: "localhost",
+      hostname: "localhost",
+      pathname: "/admin",
+      search: "",
+      hash: "",
+    },
+  });
+  return assign;
+}
+
 beforeEach(() => {
   h.mockSearchParamsGet.mockReset();
   h.mockSearchParamsGet.mockImplementation(() => null);
@@ -236,6 +262,8 @@ beforeEach(() => {
 });
 
 afterEach(async () => {
+  // Restore window.location if a location-nav test stubbed it (idempotent).
+  Object.defineProperty(window, "location", { configurable: true, value: REAL_LOCATION });
   // AdminClient kicks off an async billing-status fetch on mount. The
   // synchronous toast/callout tests assert and return before that promise
   // resolves, so its setState lands outside act() and React warns. Flush the
@@ -637,8 +665,11 @@ describe("AdminClient — tier-change wiring", () => {
     expect(lastBannerProps.result.targetTier).toBe("pro");
   });
 
-  it("deep-links to the new slug when a shared→dedicated migration completes", () => {
-    h.mockRouterReplace.mockClear();
+  it("deep-links (hard nav) to the new slug when a shared→dedicated migration completes", () => {
+    // Hard navigation (window.location.assign), NOT router.replace: `substrate`
+    // is seeded into useState on mount and won't re-sync on a soft nav, so a full
+    // load is required to render the new substrate (regression 2026-06-28).
+    const assignSpy = stubLocationAssign();
     const completed: TierChangePollResult = {
       ...IDLE_TIER_CHANGE,
       state: "completed",
@@ -659,11 +690,11 @@ describe("AdminClient — tier-change wiring", () => {
     // renderAdmin renders with a different current slug, so the guard fires.
     renderAdmin({ status: "running", tier: "starter" });
 
-    expect(h.mockRouterReplace).toHaveBeenCalledWith("/admin?slug=hidden-isle-e5ag");
+    expect(assignSpy).toHaveBeenCalledWith("/admin?slug=hidden-isle-e5ag");
   });
 
   it("does NOT navigate while the migration is still in progress (only on completed)", () => {
-    h.mockRouterReplace.mockClear();
+    const assignSpy = stubLocationAssign();
     const inProgress: TierChangePollResult = {
       ...IDLE_TIER_CHANGE,
       state: "processing",
@@ -683,7 +714,7 @@ describe("AdminClient — tier-change wiring", () => {
 
     renderAdmin({ status: "running", tier: "starter" });
 
-    expect(h.mockRouterReplace).not.toHaveBeenCalled();
+    expect(assignSpy).not.toHaveBeenCalled();
   });
 
   it("mounts ChangePlanButton for running substrates with current limits derived from substrate", () => {

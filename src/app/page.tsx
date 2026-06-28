@@ -60,7 +60,7 @@ const landingJsonLd = {
   name: "Parametric Memory — Home",
   url: "https://parametric-memory.dev",
   description:
-    "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances from $5/mo.",
+    "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances from $5/mo USD.",
   datePublished: "2025-01-01",
   dateModified: new Date().toISOString().split("T")[0],
   inLanguage: "en-US",
@@ -112,7 +112,7 @@ const homeFaqJsonLd = {
       name: "What is Parametric Memory?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Parametric Memory (MMPM) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as named atoms in a SHA-256 Merkle tree, provides RFC 6962 consistency proofs on every read, and uses a Markov chain prediction layer to pre-fetch context before you ask for it. Dedicated instances from $5/month.",
+        text: "Parametric Memory (MMPM) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as named atoms in a SHA-256 Merkle tree, provides RFC 6962 consistency proofs on every read, and uses a Markov chain prediction layer to pre-fetch context before you ask for it. Dedicated instances from $5/month USD.",
       },
     },
     {
@@ -144,7 +144,7 @@ const homeFaqJsonLd = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day), Solo at $9/month (10,000 memories, up to 33 sessions/day), Professional at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month.",
+        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day), Solo at $9/month (10,000 memories, up to 33 sessions/day), Professional at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month. All prices in US dollars (USD).",
       },
     },
     {
@@ -311,7 +311,7 @@ const stats = [
   { value: "0.045ms", label: "p50 recall latency" },
   { value: "64%", label: "Markov hit rate" },
   { value: "37%", label: "token savings (compact proofs)" },
-  { value: "$5/mo", label: "dedicated instance, starting" },
+  { value: "$5/mo", label: "dedicated instance, starting (USD)" },
   { value: "<60s", label: "instance setup time" },
 ];
 
@@ -780,7 +780,7 @@ export default async function HomePage() {
 
             {/* Microcopy — removes friction */}
             <p className="text-surface-400 text-sm">
-              Starting at $5/month · 30-day money-back guarantee · Cancel anytime
+              Starting at $5/month USD · 30-day money-back guarantee · Cancel anytime
             </p>
 
             {/* Tier hint */}

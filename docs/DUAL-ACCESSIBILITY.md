@@ -390,6 +390,7 @@ Renders for any substrate whose subscription is in the `cancel_at_period_end: tr
 | `proration-charge-subtext` | Subtext beneath the today charge explaining the proration (e.g. "Prorated for the remainder of your current billing period.") |
 | `proration-monthly` | New monthly rate line (e.g. "$29.00/mo") |
 | `proration-from-date` | From-date subtext beneath the monthly rate (e.g. "Your new monthly rate from July 1.") |
+| `upgrade-currency-note` | "All amounts are in US dollars (USD)." note beneath the upgrade pricing preview |
 | `dedicated-migration-warning` | Warning block shown when the target tier triggers a dedicated-cluster migration |
 | `confirm-upgrade-reactivate-note` | Amber notice rendered inside the confirm-upgrade dialog when the current subscription is in the `cancel_at_period_end: true` window. Explains that confirming will auto-reactivate the cancellation as part of the tier change (D9). Sprint 2026-05-18 E3. |
 | `provisioning-fee-consent` | Non-refundable provisioning-fee consent block (shown for shared→dedicated upgrades). Gates the confirm button (D7, R10 slice 1). |
@@ -561,6 +562,7 @@ Rendered by the "Billing" tab on `/admin/security/audit`. Lists the account's St
 | `billing-history-error` | Error paragraph (amber `role`-status copy) shown when the fetch fails |
 | `billing-history-empty` | "No invoices yet." empty-state paragraph |
 | `billing-invoice` | One row per invoice (instance-multiple; tests scope via `within`) |
+| `billing-history-currency-note` | "All amounts are in US dollars (USD)." note above the invoice list |
 | `billing-refunds` | Refunds sub-panel listing refund line items |
 | `billing-manage` | "Manage billing" button — opens the Stripe customer portal |
 
