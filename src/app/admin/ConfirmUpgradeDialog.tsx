@@ -441,6 +441,10 @@ export function ConfirmUpgradeDialog({
                     {fromDateSubtext(previewData.nextInvoiceDate)}
                   </p>
                 </div>
+
+                <p className="mt-3 text-xs text-white/40" data-testid="upgrade-currency-note">
+                  All amounts are in US dollars (USD).
+                </p>
               </>
             )}
           </div>

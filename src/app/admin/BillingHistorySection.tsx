@@ -140,6 +140,9 @@ export function BillingHistorySection() {
 
       {!loading && !error && data && !isEmpty && (
         <div className="space-y-4">
+          <p className="text-xs text-white/40" data-testid="billing-history-currency-note">
+            All amounts are in US dollars (USD).
+          </p>
           {shown.map((inv) => (
             <div
               key={inv.id}

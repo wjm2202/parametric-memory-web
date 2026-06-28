@@ -93,7 +93,8 @@ export default function CompetitorComparison() {
     >
       <h2 className="mb-3 text-2xl font-bold text-white sm:text-3xl">vs. Competitors</h2>
       <p className="text-surface-200 mb-8 text-sm sm:text-base">
-        Parametric Memory Professional ($29/mo) vs. Mem0 Starter ($19/mo) vs. Zep Flex ($25/mo)
+        Parametric Memory Professional ($29/mo) vs. Mem0 Starter ($19/mo) vs. Zep Flex ($25/mo) ·
+        all prices in US dollars (USD)
       </p>
 
       {/* ── Desktop / tablet (≥ md): original table ──────────────────── */}

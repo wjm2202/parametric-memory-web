@@ -142,7 +142,7 @@ function renderPricingSection(): string {
   const tiers = getAllPublicTiers();
   const lines: string[] = ["## Pricing", ""];
   lines.push(
-    "All paid plans include a 30-day money-back guarantee. Cancel anytime from your dashboard.",
+    "All prices are in US dollars (USD). All paid plans include a 30-day money-back guarantee. Cancel anytime from your dashboard.",
   );
   lines.push("");
   for (const t of tiers) {

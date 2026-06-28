@@ -8,9 +8,9 @@ import { CapacityInquiryForm } from "./CapacityInquiryForm";
 import CompetitorComparison from "./CompetitorComparison";
 
 export const metadata: Metadata = {
-  title: "Pricing — Plans from $5/mo",
+  title: "Pricing — Plans from $5/mo USD",
   description:
-    "Persistent AI memory for developers — flat monthly subscription, no per-query costs. Plans from $5/mo Starter to $79/mo Team.",
+    "Persistent AI memory for developers — flat monthly subscription, no per-query costs. Plans from $5/mo Starter to $79/mo Team. All prices in US dollars (USD).",
   alternates: {
     canonical: "https://parametric-memory.dev/pricing",
   },
@@ -24,9 +24,9 @@ export const metadata: Metadata = {
     "verifiable memory pricing",
   ],
   openGraph: {
-    title: "Parametric Memory Pricing — Plans from $5/mo",
+    title: "Parametric Memory Pricing — Plans from $5/mo USD",
     description:
-      "Persistent AI memory from $5/month. Flat rate subscription — no per-query costs, no credits. Starter, Solo, Professional, and Team plans. Merkle proofs, Markov prediction, MCP native.",
+      "Persistent AI memory from $5/month USD. Flat rate subscription — no per-query costs, no credits. Starter, Solo, Professional, and Team plans. Merkle proofs, Markov prediction, MCP native.",
     url: "https://parametric-memory.dev/pricing",
     images: [
       {
@@ -108,7 +108,7 @@ const faqSchema = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day, 30-day money-back guarantee), Solo at $9/month (10,000 memories, up to 33 Claude sessions/day), Professional at $29/month (100,000 memories, up to 333 Claude sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). All plans billed monthly, cancel anytime, no contracts.",
+        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day, 30-day money-back guarantee), Solo at $9/month (10,000 memories, up to 33 Claude sessions/day), Professional at $29/month (100,000 memories, up to 333 Claude sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). All prices are in US dollars (USD). All plans billed monthly, cancel anytime, no contracts.",
       },
     },
     {
@@ -256,7 +256,7 @@ export default async function PricingPage() {
                       <div className="mb-6">
                         <div className="flex items-baseline gap-1">
                           <span className="text-4xl font-bold text-white">${tier.price}</span>
-                          <span className="text-surface-200/85 text-sm">/month</span>
+                          <span className="text-surface-200/85 text-sm">/month USD</span>
                         </div>
                       </div>
                       <CapacityInquiryForm tier="team" variant="primary" />
@@ -278,7 +278,7 @@ export default async function PricingPage() {
                       <div className="mb-6">
                         <div className="flex items-baseline gap-1">
                           <span className="text-4xl font-bold text-white">${tier.price}</span>
-                          <span className="text-surface-200/85 text-sm">/month</span>
+                          <span className="text-surface-200/85 text-sm">/month USD</span>
                         </div>
                         <p className="text-surface-400 mt-1.5 text-xs">
                           Billed monthly · cancel anytime from your dashboard
@@ -317,7 +317,8 @@ export default async function PricingPage() {
           </div>
 
           <p className="text-surface-500 mt-6 text-center text-xs">
-            All plans billed monthly. Cancel anytime from your dashboard. No contracts, no lock-in.
+            All prices are in US dollars (USD). All plans billed monthly. Cancel anytime from your
+            dashboard. No contracts, no lock-in.
           </p>
         </section>
 

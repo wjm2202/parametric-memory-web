@@ -25,6 +25,28 @@ import {
   type TierDeployment,
 } from "@/config/tiers";
 
+// ── Currency ───────────────────────────────────────────────────────────────
+
+/**
+ * The single currency all published prices are denominated in. Every price the
+ * site shows a human is in USD; making that explicit avoids surprising
+ * customers in other countries at checkout. JSON-LD already carries
+ * priceCurrency: "USD" — these constants make the same fact visible in copy.
+ */
+export const PRICE_CURRENCY = "USD" as const;
+
+/**
+ * Reusable, human-readable currency disclaimer. Drop this next to any price
+ * surface (pricing cards, checkout, dashboard, admin, docs, terms) so the
+ * currency is unambiguous at the point of decision.
+ */
+export const PRICE_CURRENCY_NOTE = "All prices are in US dollars (USD).";
+
+/** Format a monthly price with an explicit USD qualifier, e.g. "$5/mo USD". */
+export function formatMonthlyUsd(price: number): string {
+  return `$${price}/mo ${PRICE_CURRENCY}`;
+}
+
 // ── Tier filtering ─────────────────────────────────────────────────────────
 
 /** All publicly-sold billing tiers (excludes the post-trial "free" fallback). */
@@ -83,18 +105,18 @@ export function getHighestPublicPrice(): number {
  * Headline marketing line that adapts to the current tiering model.
  *
  * Examples:
- *   - shared+dedicated:  "Dedicated from $29/mo, shared from $5/mo"
- *   - dedicated only:    "Dedicated instances from $29/mo"
- *   - shared only:       "From $5/mo"
+ *   - shared+dedicated:  "Dedicated from $29/mo, shared from $5/mo USD"
+ *   - dedicated only:    "Dedicated instances from $29/mo USD"
+ *   - shared only:       "From $5/mo USD"
  */
 export function getMarketingPriceLine(): string {
   const dedicated = getCheapestDedicatedPrice();
   const shared = getCheapestSharedPrice();
   if (dedicated !== null && shared !== null && dedicated !== shared) {
-    return `Dedicated from $${dedicated}/mo, shared from $${shared}/mo`;
+    return `Dedicated from $${dedicated}/mo, shared from $${shared}/mo ${PRICE_CURRENCY}`;
   }
-  if (dedicated !== null) return `Dedicated instances from $${dedicated}/mo`;
-  if (shared !== null) return `From $${shared}/mo`;
+  if (dedicated !== null) return `Dedicated instances from $${dedicated}/mo ${PRICE_CURRENCY}`;
+  if (shared !== null) return `From $${shared}/mo ${PRICE_CURRENCY}`;
   throw new Error("No public tiers configured");
 }
 
@@ -108,8 +130,8 @@ export function getMetaPriceHook(): string {
   const cheapest = getCheapestPublicPrice();
   const tier = getPublicBillingTiers().find((t) => t.price === cheapest)!;
   return tier.deployment === "dedicated"
-    ? `Dedicated instances from $${cheapest}/mo`
-    : `From $${cheapest}/mo (shared) — dedicated from $${getCheapestDedicatedPrice() ?? "?"}/mo`;
+    ? `Dedicated instances from $${cheapest}/mo ${PRICE_CURRENCY}`
+    : `From $${cheapest}/mo (shared) — dedicated from $${getCheapestDedicatedPrice() ?? "?"}/mo ${PRICE_CURRENCY}`;
 }
 
 /**
@@ -213,7 +235,7 @@ export function getOffersJsonLd(inputs: OfferJsonLdInputs): OfferJsonLd[] {
 
 export interface PricingTableRow {
   name: string;
-  priceLabel: string; // "$5/mo" or "Custom"
+  priceLabel: string; // "$5/mo USD" or "Custom"
   atomsLabel: string; // "1,000" or "Unlimited"
   retentionLabel: string; // "12 months", "36 months", "Unlimited"
   deployment: TierDeployment | "self-hosted";
@@ -248,7 +270,7 @@ export function getPricingTableRows(): PricingTableRow[] {
         : (t as Tier).deployment;
     return {
       name: t.name,
-      priceLabel: `$${t.price}/mo`,
+      priceLabel: `$${t.price}/mo ${PRICE_CURRENCY}`,
       atomsLabel,
       retentionLabel: RETENTION_BY_TIER_ID[t.id] ?? "—",
       deployment,
@@ -298,5 +320,5 @@ export function getAggregateOfferData(): AggregateOfferData {
  * Used by layout.tsx openGraph.images[].alt.
  */
 export function getOgImageAltText(): string {
-  return `Parametric Memory — Persistent, verifiable AI memory. 0.045ms recall · 64% Markov hit rate · From $${getCheapestPublicPrice()}/mo.`;
+  return `Parametric Memory — Persistent, verifiable AI memory. 0.045ms recall · 64% Markov hit rate · From $${getCheapestPublicPrice()}/mo ${PRICE_CURRENCY}.`;
 }

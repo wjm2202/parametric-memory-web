@@ -383,7 +383,7 @@ function OptionRow({
             className="mt-1 text-sm text-white/60"
             data-testid={`change-plan-option-${option.tier}-price`}
           >
-            {formatUsdCents(option.amountCents)}/mo
+            {formatUsdCents(option.amountCents)}/mo USD
           </p>
         </div>
         <span

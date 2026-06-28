@@ -361,19 +361,24 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
 
   // Deep-link to the new substrate when a shared→dedicated migration completes.
   // A dedicated migration moves the substrate to a NEW slug (the connection URL
-  // changes; the API key does not). Navigating there lands the customer on their
-  // live substrate, and because the new slug has no in-flight tier-change row
-  // (state "none") the progress banner clears on its own. Fires once: after the
-  // replace, `slug` becomes newSlug so the guard no longer matches.
+  // changes; the API key does not).
+  //
+  // HARD navigation, not router.replace: `substrate` is seeded into useState on
+  // mount (above) and the slug-keyed data (SWR + tier-change poll) only re-keys
+  // if the RSC actually re-runs with the new slug. A soft `router.replace` left
+  // BOTH stale — the page kept showing the OLD substrate's name + endpoint URL
+  // until a manual refresh (observed 2026-06-28 on a starter→pro migration). A
+  // full load remounts AdminClient with the new substrate's name, endpoint, and
+  // Pro limits. It's a once-per-migration event, so a reload is the right cost.
   const completedNewSlug =
     tierChangeResult.state === "completed"
       ? (tierChangeResult.migrationProgress?.newSlug ?? null)
       : null;
   useEffect(() => {
-    if (completedNewSlug && completedNewSlug !== slug) {
-      router.replace(`/admin?slug=${encodeURIComponent(completedNewSlug)}`);
+    if (completedNewSlug && completedNewSlug !== slug && typeof window !== "undefined") {
+      window.location.assign(`/admin?slug=${encodeURIComponent(completedNewSlug)}`);
     }
-  }, [completedNewSlug, slug, router]);
+  }, [completedNewSlug, slug]);
 
   // Translate the substrate's raw caps into the shape ChangePlanSheet wants.
   // Note the casing flip: SubstrateInfo uses `maxStorageMB`, the sheet uses
