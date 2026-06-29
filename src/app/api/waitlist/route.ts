@@ -2,11 +2,28 @@ import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
 import { SUPPORT_EMAIL } from "@/config/site";
+import { verifyCsrfOrigin } from "@/lib/csrf";
+import { clientIp, makeFixedWindowLimiter } from "@/lib/rate-limit";
+
 /** Simple email validation */
 const isValidEmail = (email: string) =>
   /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) && email.length <= 254;
 
+// ── Abuse limits ────────────────────────────────────────────────────────────
+// This route sends TWO emails per call — one internal, one to the CALLER-SUPPLIED
+// address — so without a cap it is an email-bomb (spam arbitrary third parties
+// with our branded mail) and a Resend cost-amplifier. Two dimensions:
+//   • per-IP burst — 5 / minute (a human signs up once)
+//   • per-email     — 1 / 10 min (can't bomb one address, or loop on it)
+// In-process backstop; the real ceiling is the edge limit (nginx/Cloudflare).
+const ipLimited = makeFixedWindowLimiter({ windowMs: 60_000, max: 5 });
+const emailLimited = makeFixedWindowLimiter({ windowMs: 10 * 60_000, max: 1 });
+
 export async function POST(req: NextRequest) {
+  // CSRF: this mutating, email-sending route must not be drivable cross-site.
+  const csrfError = verifyCsrfOrigin(req);
+  if (csrfError) return csrfError;
+
   try {
     // Instantiate inside try-catch so a missing/invalid key returns a proper
     // JSON error response rather than an empty 500 with no body.
@@ -16,6 +33,15 @@ export async function POST(req: NextRequest) {
 
     if (!email || !isValidEmail(email)) {
       return NextResponse.json({ error: "Invalid email address." }, { status: 400 });
+    }
+
+    // Rate limit AFTER validation (a malformed body shouldn't burn a token) and
+    // BEFORE any send (the abuse path must cost nothing). Either dimension trips.
+    if (ipLimited(clientIp(req)) || emailLimited(email)) {
+      return NextResponse.json(
+        { error: "Too many requests. Please try again in a few minutes." },
+        { status: 429 },
+      );
     }
 
     // 1. Notify us — internal waitlist notification
