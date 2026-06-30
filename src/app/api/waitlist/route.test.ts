@@ -50,7 +50,9 @@ describe("POST /api/waitlist — abuse prevention", () => {
   });
 
   it("rejects a cross-site request (foreign Origin) with 403 and sends nothing", async () => {
-    const res = await POST(req({ email: "x@evil.com", ip: "10.0.0.2", origin: "https://evil.example" }));
+    const res = await POST(
+      req({ email: "x@evil.com", ip: "10.0.0.2", origin: "https://evil.example" }),
+    );
     expect(res.status).toBe(403);
     expect(sendMock).not.toHaveBeenCalled();
   });
