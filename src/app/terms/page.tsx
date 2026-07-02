@@ -143,8 +143,8 @@ export default async function TermsPage() {
             are processed via Stripe. By providing a payment method, you authorize us to charge the
             applicable fees (and any applicable taxes) to that method on each renewal until you
             cancel. If a payment fails, we retry 3&ndash;5 times over 10 days; if unsuccessful, your
-            subscription is suspended (see Section&nbsp;6.2) and data retained for 30 days before
-            deletion.
+            subscription is suspended (see Section&nbsp;6.2); if it remains unresolved, your
+            instance is deprovisioned and snapshotted under the recovery terms in Section&nbsp;6.1.
           </p>
 
           <h3 data-testid="terms-pricing-changes">5.3 Right to Change Pricing</h3>
@@ -252,27 +252,40 @@ export default async function TermsPage() {
             You may cancel your subscription at any time via account settings or by contacting{" "}
             <a href="mailto:support@parametric-memory.dev">support@parametric-memory.dev</a>. At
             cancellation you choose between two options: <strong>cancel at period end</strong> (you
-            keep full access until your billing period ends, then the wind-down below begins, and
-            you may reactivate before it ends), or <strong>cancel now with a refund</strong> (we
-            stop the subscription immediately and refund the unused portion per Section&nbsp;5.4).
-            If you cancel now, deprovisioning begins right away and your data is deleted on the
-            timelines below &mdash; the immediate option is irreversible and cannot be reactivated.
+            keep full access until your billing period ends, then your instance is deprovisioned;
+            you may reactivate any time before period end), or{" "}
+            <strong>cancel now with a refund</strong> (we stop the subscription immediately and
+            refund the unused portion per Section&nbsp;5.4). Once deprovisioning occurs,
+            cancellation is irreversible and the account cannot be reactivated.
           </p>
-          <p>For the period-end option, upon cancellation:</p>
+          <p>
+            Upon deprovisioning &mdash; at the end of your billing period, or immediately if you
+            cancel now:
+          </p>
           <ul>
             <li>
-              <strong>30-day wind-down:</strong> You retain full API access
+              <strong>Deprovision and snapshot:</strong> Your live instance is torn down and a
+              point-in-time snapshot of your data is taken. Your API access ends immediately &mdash;
+              there is <strong>no read-only grace period</strong>, and we do not retain your live
+              data after termination.
             </li>
             <li>
-              <strong>Data export:</strong> You may export or delete your data during the 30-day
-              period
+              <strong>Export first:</strong> If you want to keep your data, export it before you
+              cancel (or before your period ends). After termination we are not obliged to provide
+              your data except through the paid recovery below.
             </li>
             <li>
-              <strong>90-day backup purge:</strong> Automated backups are purged 90 days after
-              cancellation
+              <strong>7-day paid recovery window:</strong> For <strong>7 days</strong> after
+              termination you may request recovery from the snapshot. Recovery is a best-effort,{" "}
+              <strong>paid service billed at our actual engineering cost</strong> (including DevOps
+              engineer time), quoted to and authorized by you before any work begins. It is provided
+              at our discretion and subject to further conditions, including your account being in
+              good standing, no breach of these Terms, and technical feasibility. Recovery is not
+              guaranteed.
             </li>
             <li>
-              <strong>No forensic recovery</strong> after the 90-day backup purge
+              <strong>Permanent deletion:</strong> After the 7-day window the snapshot is
+              permanently deleted and no recovery of any kind is possible.
             </li>
           </ul>
 
@@ -463,10 +476,11 @@ export default async function TermsPage() {
 
           <h3>9.3 Data Deletion &amp; Forensic Recovery</h3>
           <p>
-            Deletion removes access to your data within 24 hours. Automated backups are purged
-            within 90 days. After 90 days, we provide no forensic recovery guarantee. Cold-storage
-            data older than 2 years is not recoverable.{" "}
-            <strong>MMPM is not a backup system.</strong>
+            Deletion removes access to your data within 24 hours. At termination we take a
+            point-in-time snapshot; for 7 days it may be recovered as a paid, at-cost service
+            (Section&nbsp;6.1). After the 7-day window the snapshot is permanently deleted and we
+            provide no recovery of any kind. We do not keep long-term backups or cold storage of
+            terminated instances. <strong>MMPM is not a backup system.</strong>
           </p>
 
           <h3>9.4 No Automated Decision-Making</h3>
@@ -640,7 +654,10 @@ export default async function TermsPage() {
                     ["Warranty", "AS-IS; no accuracy, uptime, or recovery guarantee"],
                     ["Memory Atoms", "Probabilistic — may be inaccurate or inferred"],
                     ["Liability Cap", "12 months of fees paid (or $100 minimum)"],
-                    ["Auto-Renewal", "Monthly; cancel anytime with 30-day wind-down"],
+                    [
+                      "Auto-Renewal",
+                      "Monthly; cancel anytime — deprovision + snapshot at termination",
+                    ],
                     [
                       "Pricing Changes",
                       "We may change prices for supplier-cost, operational, currency, tax, or fair-use reasons; 30-day notice for increases on existing subs",
@@ -663,7 +680,7 @@ export default async function TermsPage() {
                     ],
                     [
                       "Data Deletion",
-                      "30-day access removal; 90-day backup purge; no forensic guarantee",
+                      "Deprovision + snapshot at termination; 7-day at-cost paid recovery; then permanent deletion",
                     ],
                     ["B2B Disputes", "NZ courts; UNCITRAL arbitration in Auckland"],
                     ["Consumer Disputes", "Home-country courts retained per mandatory local law"],

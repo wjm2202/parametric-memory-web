@@ -174,8 +174,13 @@ const NAV_ITEMS: NavItem[] = [
   // EU AI Act / FedRAMP audiences pattern-match "signed snapshot verifier"
   // as the architecture vocabulary they already speak).
   { href: "/verify", label: "Verify", testid: "nav-link-verify" },
+  // Enterprise — high-intent sales page (operational memory). Kept in the
+  // primary desktop nav for discoverability; About is demoted below md to keep
+  // the desktop row from overcrowding as the site grows (IA: top nav stays
+  // lean; the full page list lives in the footer).
+  { href: "/enterprise", label: "Enterprise", testid: "nav-link-enterprise" },
   { href: "/docs", label: "Docs", testid: "nav-link-docs" },
-  { href: "/about", label: "About", testid: "nav-link-about" },
+  { href: "/about", label: "About", testid: "nav-link-about", desktopHiddenBelow: "md" },
   { href: "/blog", label: "Blog", testid: "nav-link-blog", desktopHiddenBelow: "md" },
   { href: "/pricing", label: "Pricing", testid: "nav-link-pricing" },
   { href: "/faq", label: "FAQ", testid: "nav-link-faq", desktopHiddenBelow: "md" },

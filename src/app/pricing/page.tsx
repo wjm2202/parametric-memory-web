@@ -108,7 +108,7 @@ const faqSchema = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day, 30-day money-back guarantee), Solo at $9/month (10,000 memories, up to 33 Claude sessions/day), Professional at $29/month (100,000 memories, up to 333 Claude sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). All prices are in US dollars (USD). All plans billed monthly, cancel anytime, no contracts.",
+        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day, 7-day money-back guarantee), Solo at $9/month (10,000 memories, up to 33 Claude sessions/day), Professional at $29/month (100,000 memories, up to 333 Claude sessions/day), and Team at $79/month (500,000 memories, up to 667 sessions/day). All prices are in US dollars (USD). All plans billed monthly, cancel anytime, no contracts.",
       },
     },
     {
@@ -124,7 +124,7 @@ const faqSchema = {
       name: "Can I switch plans?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Upgrade or downgrade anytime from your dashboard. Upgrades apply immediately. Downgrades take effect at the end of your billing period.",
+        text: "Upgrades apply immediately from your dashboard. Plans are upgrade-only — a larger substrate can't be moved onto a smaller one without losing atoms, so to use a lower tier you export your data, cancel, and sign up fresh at the smaller plan.",
       },
     },
     {
@@ -132,7 +132,7 @@ const faqSchema = {
       name: "Can I cancel?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Cancel anytime from the Billing section in your dashboard. Takes 30 seconds, no calls, no emails. Your memories are preserved for 90 days after cancellation.",
+        text: "Yes. Cancel anytime from the Billing section in your dashboard. Takes 30 seconds, no calls, no emails. Your instance runs to the end of your billing period, then it's deprovisioned and snapshotted — there is no ongoing free retention. For 7 days after termination we can attempt to recover your snapshot as a paid, at-cost service (quoted first), after which it is permanently deleted. Export your data before cancelling if you want to keep it.",
       },
     },
     {

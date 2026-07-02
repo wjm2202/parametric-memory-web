@@ -199,7 +199,9 @@ function CheckEmailView({
           <div className="rounded-xl border border-emerald-500/20 bg-emerald-500/5 p-4 text-center">
             <p className="text-sm text-emerald-400">
               Account created — your substrate is provisioning at{" "}
-              <span className="font-mono">{signupData.slug}.mmpm.co.nz</span>
+              <span className="font-mono">
+                {signupData.mcpEndpoint.replace(/^https?:\/\//, "").replace(/\/mcp$/, "")}
+              </span>
             </p>
           </div>
 
@@ -297,6 +299,9 @@ function SignupForm({
     setError(null);
 
     const trimmedEmail = email.trim();
+    // Carry the tier chosen on the pricing page (e.g. /signup?tier=pro). Compute
+    // validates it against the publicly-sold tiers and defaults to Starter.
+    const urlTier = new URLSearchParams(window.location.search).get("tier");
     let isNewAccount = false;
     let signupData: SignupResult | null = null;
 
@@ -309,6 +314,7 @@ function SignupForm({
           email: trimmedEmail,
           agreedToTerms: true, // validated by checkbox (required=true)
           termsVersion: "2026-04-05", // current ToS version date
+          ...(urlTier ? { tier: urlTier } : {}),
         }),
       });
 

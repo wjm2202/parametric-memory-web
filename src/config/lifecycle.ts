@@ -1,42 +1,28 @@
 /**
  * Customer-lifecycle constants.
  *
- * Single source of truth for the grace-period / cold-storage / cancellation
- * timing values referenced from the dashboard, the docs, and the compute-side
- * deprovisioning timers. Anchored to DECISIONS.md D1 (grace) and D7 (cold
- * storage).
+ * Single source of truth for post-cancellation timing, referenced from the
+ * dashboard, the docs, and the compute-side deprovisioning / snapshot timers.
+ * Anything that hardcodes one of these values must import the constant instead.
  *
- * Anything that hardcodes one of these values (e.g. "Memory preserved for 30
- * days") is a Sprint-1 violation — import the constant instead. The
- * `check-docs-vs-canonical.ts` Guard 2 enforces that every "preserved for
- * N days" / "wind-down" / "grace period" mention in MDX matches what's here.
+ * MODEL (owner decision 2026-07-01, supersedes DECISIONS.md D1 grace + D7
+ * cold-storage): On cancellation, access runs to the end of the paid billing
+ * period (or ends immediately if the customer cancels-now for a pro-rata refund
+ * per Terms §5.4). At termination the instance is DEPROVISIONED and a
+ * point-in-time SNAPSHOT is taken. There is NO free read-only grace period and
+ * NO cold-storage tier. Recovery of the snapshot is a best-effort, PAID,
+ * at-cost, discretionary service available only within
+ * SNAPSHOT_RECOVERY_WINDOW_DAYS of termination; after that the snapshot is
+ * permanently deleted. See Terms §6.1.
  */
 
 /**
- * Grace period after subscription cancellation, in days. Per D1 (locked
- * 2026-05-03). The substrate stays read-only for this many days after the
- * subscription is cancelled — the customer can read their atoms, export
- * data, and resubscribe to restore writes; after this window expires, the
- * substrate is deprovisioned.
+ * Days after termination during which a paid, at-cost, discretionary snapshot
+ * recovery may be requested. After this window the snapshot is permanently
+ * deleted and no recovery is possible.
  *
- * Compute-side deprovisioning timer MUST match. If you change this value,
- * update DECISIONS.md D1 with the new value and rerun the Sprint 1
- * grandfathering query (audit-baselines/2026-05-03/baseline-db-runbook,
- * Q3) to identify any in-flight cancellations whose badge promised the
- * old value.
+ * The compute-side snapshot-retention timer MUST match this value. If you
+ * change it, update Terms §6.1, the dashboard copy, and the docs under
+ * content/docs/ that describe cancellation.
  */
-export const GRACE_PERIOD_DAYS = 30;
-
-/**
- * Cold-storage retention after grace period ends, in days. Per D7 (cold
- * storage tier). After grace ends without resubscription, atoms migrate
- * from the live droplet to a cold-storage droplet for this many additional
- * days; after that they are permanently deleted.
- *
- * Customer-facing: "preserved for 30 days, then 30 more days in cold
- * storage". Resubscribe at any time during EITHER window restores writes.
- *
- * NOT YET WIRED — S2.11 builds the cold-storage infrastructure. This
- * constant is declared here so docs/dashboard can begin referencing it.
- */
-export const COLD_STORAGE_RETENTION_DAYS = 30;
+export const SNAPSHOT_RECOVERY_WINDOW_DAYS = 7;

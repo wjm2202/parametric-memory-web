@@ -1,0 +1,181 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=5" />
+<title>Enterprise — Operational Memory · Parametric Memory (mock)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Outfit:wght@300;400;500&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: #030712; color: #cbd5e1;
+    font-family: 'Outfit', sans-serif; font-weight: 300;
+    -webkit-font-smoothing: antialiased; line-height: 1.6;
+  }
+  .wrap { max-width: 1120px; margin: 0 auto; padding: 0 24px; }
+  h1, h2, h3 { font-family: 'Syne', sans-serif; font-weight: 800; color: #f8fafc; letter-spacing: -0.03em; margin: 0; }
+  .eyebrow { font-family: 'JetBrains Mono', monospace; font-size: 11px; text-transform: uppercase; letter-spacing: 0.22em; color: #38bdf8; margin: 0 0 16px; }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  p { margin: 0 0 16px; }
+  a { color: #38bdf8; text-decoration: none; }
+  .btn { display: inline-flex; align-items: center; gap: 8px; border-radius: 12px; padding: 13px 24px; font-family: 'Outfit'; font-weight: 500; font-size: 14px; }
+  .btn-primary { background: #0c8ee6; color: #fff; box-shadow: 0 0 36px rgba(12,142,230,0.4); }
+  .btn-ghost { border: 1px solid rgba(148,163,184,0.16); color: #e2e8f0; background: rgba(15,23,42,0.5); }
+  .card { background: rgba(11,18,32,0.55); border: 1px solid rgba(148,163,184,0.1); border-radius: 20px; padding: 28px; }
+  .muted { color: #94a3b8; }
+  .faint { color: #64748b; }
+  .tag { display: inline-block; font-family: 'JetBrains Mono', monospace; font-size: 10px; text-transform: uppercase; letter-spacing: 0.14em; color: #f59e0b; border: 1px solid rgba(245,158,11,0.3); border-radius: 999px; padding: 3px 9px; }
+  nav.top { display: flex; align-items: center; justify-content: space-between; padding: 20px 0; }
+  .navlinks a { color: #94a3b8; margin-left: 22px; font-size: 14px; }
+  .grid { display: grid; gap: 20px; }
+  @media (min-width: 760px) { .g2 { grid-template-columns: 1fr 1fr; } .g5 { grid-template-columns: repeat(5, 1fr); } }
+  section { padding: 64px 0; }
+  .rule { border-top: 1px solid rgba(148,163,184,0.1); }
+  .kicker { color: #22d3ee; }
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <nav class="top">
+    <span style="font-family:'Syne';font-weight:800;color:#f8fafc;font-size:18px;">Parametric&nbsp;Memory</span>
+    <span class="navlinks"><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/verify">Verify</a><a href="/blog">Blog</a><a href="/contact" style="color:#e2e8f0;">Talk to us</a></span>
+  </nav>
+</div>
+
+<!-- HERO -->
+<section style="padding-top:40px;">
+  <div class="wrap" style="max-width:820px;">
+    <p class="eyebrow">For enterprise · Operational memory</p>
+    <h1 style="font-size:clamp(34px,5vw,60px);line-height:1.05;">Your operations, remembered —<br /><span style="background:linear-gradient(135deg,#36aaf5,#22d3ee 60%,#f59e0b);-webkit-background-clip:text;-webkit-text-fill-color:transparent;">and provable.</span></h1>
+    <p style="font-size:clamp(16px,1.9vw,19px);color:#cbd5e1;margin-top:22px;max-width:680px;">
+      Parametric Memory captures every operational signal as a cryptographically sealed, connected memory — then reasons over it to surface what needs a human. You stay in control; the noise doesn&rsquo;t.
+    </p>
+    <div style="display:flex;gap:14px;flex-wrap:wrap;margin-top:28px;">
+      <a class="btn btn-primary" href="/contact">Talk to us →</a>
+      <a class="btn btn-ghost" href="/verify">See how we run on it →</a>
+    </div>
+    <p class="mono" style="font-size:12px;color:#64748b;margin-top:28px;">
+      Running in production on our own SaaS — provisioning, billing, churn &amp; security — every decision Merkle-proofed.
+    </p>
+  </div>
+</section>
+
+<!-- CORE CAPABILITY -->
+<section class="rule">
+  <div class="wrap">
+    <p class="eyebrow">The capability</p>
+    <h2 style="font-size:clamp(24px,3vw,34px);max-width:640px;">One verifiable memory for how your business actually runs.</h2>
+    <div class="grid g5" style="margin-top:36px;">
+      <div><p class="mono kicker" style="font-size:12px;">Capture</p><p class="muted" style="font-size:14px;">Every event and decision becomes a typed, connected atom.</p></div>
+      <div><p class="mono kicker" style="font-size:12px;">Verify</p><p class="muted" style="font-size:14px;">Each atom sealed in an RFC&nbsp;6962 Merkle tree — tamper-evident, provable.</p></div>
+      <div><p class="mono kicker" style="font-size:12px;">Learn</p><p class="muted" style="font-size:14px;">Markov arcs learn your normal patterns. No rules to write.</p></div>
+      <div><p class="mono kicker" style="font-size:12px;">Ask</p><p class="muted" style="font-size:14px;">Natural-language questions over everything captured.</p></div>
+      <div><p class="mono kicker" style="font-size:12px;">Prioritize</p><p class="muted" style="font-size:14px;">A ranked &ldquo;what needs a human today.&rdquo;</p></div>
+    </div>
+  </div>
+</section>
+
+<!-- WE RUN ON IT -->
+<section class="rule">
+  <div class="wrap grid g2" style="align-items:center;">
+    <div>
+      <p class="eyebrow">Proof, not a promise</p>
+      <h2 style="font-size:clamp(24px,3vw,34px);">We don&rsquo;t demo it.<br />We operate on it.</h2>
+      <p class="muted" style="margin-top:16px;">
+        Every provisioning run, billing event, churn signal and security check in this business is a Merkle-sealed atom in a live substrate. One question returns the day&rsquo;s briefing — revenue, and what needs attention, by severity. The most convincing proof of a memory substrate is that it runs the company that sells it.
+      </p>
+    </div>
+    <div class="card">
+      <p class="mono faint" style="font-size:11px;text-transform:uppercase;letter-spacing:0.18em;">ask_ops · today</p>
+      <p class="mono" style="color:#34d399;font-size:13px;margin-top:12px;">› what needs a human today, by severity</p>
+      <p class="muted" style="font-size:14px;margin-top:14px;">Ranked action queue · churn risk · security posture · business KPIs — returned as sealed, inspectable atoms.</p>
+      <p class="mono faint" style="font-size:11px;margin-top:16px;">Verifiable operational memory · in production · every decision auditable</p>
+    </div>
+  </div>
+</section>
+
+<!-- USE CASES -->
+<section class="rule">
+  <div class="wrap">
+    <p class="eyebrow">What you can do with it</p>
+    <h2 style="font-size:clamp(24px,3vw,34px);max-width:640px;">Four things logs, dashboards and wikis can&rsquo;t.</h2>
+    <div class="grid g2" style="margin-top:36px;">
+
+      <div class="card">
+        <span class="tag">Integration</span>
+        <h3 style="font-size:19px;margin:14px 0 6px;">Observability for a fleet of autonomous agents</h3>
+        <p class="muted" style="font-size:15px;">
+          Instrument each agent as connected atoms. Query fleet <b style="color:#e2e8f0;">state</b> in plain language, watch the real <b style="color:#e2e8f0;">path</b> each agent walks, trace every <b style="color:#e2e8f0;">error</b> to its root cause — and detect behavioral <b style="color:#e2e8f0;">drift</b> when an agent diverges from its learned norm. Every action sealed for audit.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:19px;margin:0 0 6px;">Operational oversight, without the noise</h3>
+        <p class="muted" style="font-size:15px;">
+          The substrate ingests every signal and tells you the few things that need judgment today. Alert fatigue and dashboard sprawl, replaced by one ranked &ldquo;what needs a human.&rdquo; The human decides — the noise is gone.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:19px;margin:0 0 6px;">Ask questions you never designed for</h3>
+        <p class="muted" style="font-size:15px;">
+          Because everything is general memory, not a fixed schema, you ask the novel question <i>after the fact</i> — &ldquo;which customers hit a spend cap <i>and</i> a provisioning failure?&rdquo; — and get an answer from what was already captured. No new pipeline, no new dashboard.
+        </p>
+      </div>
+
+      <div class="card">
+        <h3 style="font-size:19px;margin:0 0 6px;">Verifiable knowledge &amp; documentation</h3>
+        <p class="muted" style="font-size:15px;">
+          Decisions, runbooks and docs become durable, provenance-tracked memory that humans and agents share. It beats a wiki or vector DB on three axes: <b style="color:#e2e8f0;">provable</b> (nothing was altered), <b style="color:#e2e8f0;">connected</b> (relationships, not chunks), and <b style="color:#e2e8f0;">predictive</b> (the right context before you ask).
+        </p>
+      </div>
+
+    </div>
+  </div>
+</section>
+
+<!-- MOAT -->
+<section class="rule">
+  <div class="wrap">
+    <p class="eyebrow">Why it holds up</p>
+    <div class="grid g2" style="grid-template-columns:1fr;gap:0;max-width:820px;">
+      <p style="font-size:clamp(20px,2.4vw,28px);color:#f8fafc;font-family:'Syne';font-weight:800;letter-spacing:-0.02em;">Verifiable. Compounding. Self-proven.</p>
+      <p class="muted" style="margin-top:16px;">
+        <b style="color:#e2e8f0;">Verifiable</b> — RFC&nbsp;6962 Merkle proofs give a <i>provable</i> decision trail, which is what compliance actually buys. <b style="color:#e2e8f0;">Compounding</b> — it learns your operational patterns, so it gets more useful the longer it runs. <b style="color:#e2e8f0;">Self-proven</b> — we operate our own SaaS on it, and every decision is inspectable.
+      </p>
+    </div>
+  </div>
+</section>
+
+<!-- HONEST GUARDRAIL -->
+<section style="padding:40px 0;">
+  <div class="wrap" style="max-width:820px;">
+    <p class="faint" style="font-size:13px;border-left:2px solid rgba(148,163,184,0.2);padding-left:16px;">
+      Advisory by design: the substrate surfaces and proves — a human decides and acts. Agent-fleet observability is the same engine we run our operations on, applied to your domain through instrumentation. We&rsquo;ll scope it with you.
+    </p>
+  </div>
+</section>
+
+<!-- FINAL CTA -->
+<section class="rule" style="text-align:center;">
+  <div class="wrap" style="max-width:640px;">
+    <p class="eyebrow" style="color:#38bdf8;">Enterprise &amp; self-hosted</p>
+    <h2 style="font-size:clamp(28px,3.4vw,40px);">Bring your operations into memory.</h2>
+    <p class="muted" style="margin-top:14px;">Dedicated or self-hosted deployment, verifiable by design. Tell us what you operate and we&rsquo;ll map it to the substrate.</p>
+    <div style="margin-top:24px;"><a class="btn btn-primary" href="/contact">Talk to us →</a></div>
+  </div>
+</section>
+
+<footer class="rule">
+  <div class="wrap" style="padding:32px 0;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+    <span class="muted" style="font-size:13px;">Parametric Memory</span>
+    <span class="navlinks" style="font-size:13px;"><a href="/docs">Docs</a><a href="/pricing">Pricing</a><a href="/verify">Verify</a><a href="/terms">Terms</a></span>
+  </div>
+</footer>
+
+</body>
+</html>

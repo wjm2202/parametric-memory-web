@@ -62,38 +62,26 @@ describe("Phase 1 — pricing consistency (no more $9/mo contradictions)", () =>
     expect(agg.offerCount).toBe(String(PUBLIC_OFFER_COUNT));
   });
 
-  it("stats bar does not surface a non-cheapest tier as the starting price", () => {
-    // The "stats bar" is rendered from `const stats = [...]` in page.tsx
-    // (search for "// ── Stats ──"). Each entry is `{ value: "$X/mo", label: ... }`,
-    // and one entry has label "dedicated instance, starting". Any `$X/mo`
-    // value that lives inside this array MUST reference the cheapest tier
-    // price — surfacing the second-cheapest there would be misleading
-    // marketing on the landing surface.
-    //
-    // Anchor on the array literal directly rather than the whole page source.
-    // Other price strings ($X/mo) appear elsewhere on the page legitimately
-    // (pricing JSON-LD, tier cards) — scoping to the stats array is what
-    // makes this guard meaningful instead of just "$X appears somewhere".
-    const statsMatch = pageSrc.match(/const stats\s*=\s*\[([\s\S]*?)\];/);
+  it("proof band does not surface a non-cheapest tier as the starting price", () => {
+    // 2026-07-01 redesign: the old `stats` array is now `proofBand` and no
+    // longer surfaces a tier PRICE at all — it shows performance metrics
+    // ("0.045ms", "64%", …) and "Your own / isolated substrate". The starting
+    // price now lives in the hero CTA and the pricing preview. The guard's
+    // intent survives: the proof band must not advertise a NON-cheapest tier
+    // price as the "starting" number. Anchor on the array literal directly.
+    const bandMatch = pageSrc.match(/const proofBand\s*=\s*\[([\s\S]*?)\];/);
     expect(
-      statsMatch,
-      "Could not locate `const stats = [...]` in page.tsx — has it been renamed or restructured? Update this test's anchor.",
+      bandMatch,
+      "Could not locate `const proofBand = [...]` in page.tsx — has it been renamed or restructured? Update this test's anchor.",
     ).not.toBeNull();
-    const statsBlock = statsMatch![1];
+    const bandBlock = bandMatch![1];
 
-    const cheapestRegex = new RegExp(`"\\$${CHEAPEST_PRICE}\\/mo"`);
-    const secondCheapestRegex = new RegExp(`"\\$${SECOND_CHEAPEST}\\/mo"`);
-
-    // The cheapest tier price must appear inside the stats array.
-    expect(statsBlock).toMatch(cheapestRegex);
-
-    // The second-cheapest price MAY appear elsewhere on the page (it's a
-    // valid tier surfaced on /pricing, JSON-LD, tier cards) but it must NOT
-    // appear inside the stats array — that would mean the stats bar is
-    // advertising a more expensive tier as the starting price. This is the
-    // regression this test exists to prevent.
+    // The second-cheapest price must NOT appear in the proof band — that would
+    // mean it's advertising a pricier tier as the starting number. Prices
+    // legitimately appear elsewhere (hero CTA, pricing preview, JSON-LD).
     if (CHEAPEST_PRICE !== SECOND_CHEAPEST) {
-      expect(statsBlock).not.toMatch(secondCheapestRegex);
+      const secondCheapestRegex = new RegExp(`"\\$${SECOND_CHEAPEST}\\/mo"`);
+      expect(bandBlock).not.toMatch(secondCheapestRegex);
     }
   });
 

@@ -219,7 +219,7 @@ const webApplicationJsonLd = {
   operatingSystem: "Linux, Docker",
   browserRequirements: "MCP-compatible AI client (Claude, Cowork, etc.)",
   description:
-    "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond access (0.045ms p50). Self-hosted on dedicated instances.",
+    "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond access (0.045ms p50). Isolated per-customer substrates; dedicated instances on Professional and Team.",
   offers: {
     "@type": "AggregateOffer",
     lowPrice: "5",
@@ -231,10 +231,10 @@ const webApplicationJsonLd = {
     "Cryptographic Merkle proofs (RFC 6962)",
     "Markov-chain predictive recall (64% hit rate)",
     "Sub-millisecond access latency (0.045ms p50)",
-    "MCP-native integration (25+ tools)",
+    "MCP-native integration (11 tools)",
     "Compact proofs (37% token savings)",
     "LevelDB with JumpHash sharding (4 shards)",
-    "Self-hosted dedicated instances",
+    "Dedicated instances (Professional and Team)",
     "OAuth2 and Bearer token authentication",
     "Streamable HTTP MCP transport",
   ],
@@ -245,7 +245,7 @@ const webApplicationJsonLd = {
  *   - 1 critical: Missing field "image"  (per Offer)
  *   - 2 warnings: Missing "shippingDetails" + "hasMerchantReturnPolicy"
  * For digital SaaS the canonical pattern is zero-cost instant delivery and
- * a finite return window matching the 30-day money-back guarantee. Hoisted as
+ * a finite return window matching the 7-day money-back guarantee. Hoisted as
  * constants so every Offer references the same policy — single source of
  * truth, single line to update if the return window changes.
  */
@@ -274,7 +274,7 @@ const FREE_TRIAL_RETURN_POLICY = {
   "@type": "MerchantReturnPolicy",
   applicableCountry: "US",
   returnPolicyCategory: "https://schema.org/MerchantReturnFiniteReturnWindow",
-  merchantReturnDays: 14,
+  merchantReturnDays: 7,
   returnMethod: "https://schema.org/ReturnByMail",
   returnFees: "https://schema.org/FreeReturn",
 };
@@ -298,19 +298,19 @@ const softwareApplicationJsonLd = {
   operatingSystem: "Linux, Docker, Any (SaaS)",
   inLanguage: "en",
   description:
-    "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances, MCP-native, no shared infrastructure.",
+    "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Isolated per-customer substrates; dedicated on Professional and Team; MCP-native.",
   featureList: [
     "Cryptographic Merkle proofs (RFC 6962 SHA-256)",
     "Markov-chain predictive recall (64% hit rate)",
     "Sub-millisecond access latency (0.045ms p50, 1.2ms p99)",
     "6,423 ops/sec throughput",
-    "MCP-native integration (25+ tools, Streamable HTTP)",
+    "MCP-native integration (11 tools, Streamable HTTP)",
     "Compact proofs (37% token savings — 4,102 → 2,580 tokens)",
     "LevelDB with JumpHash sharding (4 independent Merkle shards)",
-    "Dedicated instances — zero shared infrastructure",
+    "Dedicated instances on Professional and Team; isolated substrate on every tier",
     "OAuth2 and Bearer token authentication",
     "Knowledge graph edges with semantic relationships",
-    "30-day money-back guarantee on all paid plans",
+    "7-day money-back guarantee on all paid plans",
     "Docker Compose deployment (DigitalOcean + nginx + Let's Encrypt)",
   ],
   publisher: {

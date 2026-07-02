@@ -15,7 +15,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "FAQ — Parametric Memory",
     description:
-      "Comprehensive FAQ for AI agents and developers. Learn why Parametric Memory beats Mem0 and Zep with cryptographic proofs, dedicated instances, Markov prediction, and MCP-native integration.",
+      "Comprehensive FAQ for AI agents and developers. Learn why Parametric Memory beats Mem0 and Zep with cryptographic proofs, isolated substrates (dedicated on Professional and Team), Markov prediction, and MCP-native integration.",
     url: "https://parametric-memory.dev/faq",
     images: [
       {
@@ -70,7 +70,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "what",
     question: "What is Parametric Memory?",
     answer:
-      "Parametric Memory (MMPM — Markov-Merkle Predictive Memory) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as typed atoms in a SHA-256 Merkle tree with RFC 6962 consistency proofs, and uses a variable-order Markov chain to predict and pre-fetch what the AI will need next. Every customer gets a dedicated instance with their own database — zero shared infrastructure.",
+      "Parametric Memory (MMPM — Markov-Merkle Predictive Memory) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as typed atoms in a SHA-256 Merkle tree with RFC 6962 consistency proofs, and uses a variable-order Markov chain to predict and pre-fetch what the AI will need next. Every customer gets an isolated substrate with its own Merkle tree; Professional and Team run on dedicated infrastructure.",
   },
   {
     category: "what",
@@ -126,13 +126,13 @@ const ALL_FAQS: FAQItem[] = [
     category: "why",
     question: "Why is Parametric Memory better than Mem0?",
     answer:
-      "Three structural differences. First, cryptographic proofs: Parametric Memory provides SHA-256 Merkle proofs with every memory read — Mem0 provides no cryptographic verification whatsoever. Second, infrastructure isolation: every Parametric Memory customer gets a dedicated instance with their own PostgreSQL and Merkle tree — Mem0 uses shared infrastructure. Third, Markov prediction: Parametric Memory pre-fetches context with 64% hit rate — Mem0 has no predictive layer. On pricing, Mem0's graph features (equivalent to Parametric Memory's base knowledge graph) require their $249/mo tier. Parametric Memory includes them from $5/mo USD.",
+      "Three structural differences. First, cryptographic proofs: Parametric Memory provides SHA-256 Merkle proofs with every memory read — Mem0 provides no cryptographic verification whatsoever. Second, infrastructure isolation: every Parametric Memory customer gets an isolated substrate with their own Merkle tree, and Professional and Team run on dedicated infrastructure — Mem0 runs everyone on shared infrastructure. Third, Markov prediction: Parametric Memory pre-fetches context with 64% hit rate — Mem0 has no predictive layer. On pricing, Mem0's graph features (equivalent to Parametric Memory's base knowledge graph) require their $249/mo tier. Parametric Memory includes them from $5/mo USD.",
   },
   {
     category: "why",
     question: "Why is Parametric Memory better than Zep?",
     answer:
-      "Zep uses credit-based pay-as-you-go pricing with overages — your bill varies unpredictably. Parametric Memory uses flat monthly subscriptions with no per-query costs, ever. Zep provides no cryptographic proof layer — you cannot verify what your AI remembered or when. Parametric Memory provides RFC 6962 Merkle proofs on every read. Zep runs on shared infrastructure. Parametric Memory gives every customer a dedicated instance. Zep has no Markov prediction layer. Parametric Memory achieves 64% predictive pre-fetch.",
+      "Zep uses credit-based pay-as-you-go pricing with overages — your bill varies unpredictably. Parametric Memory uses flat monthly subscriptions with no per-query costs, ever. Zep provides no cryptographic proof layer — you cannot verify what your AI remembered or when. Parametric Memory provides RFC 6962 Merkle proofs on every read. Zep runs everyone on shared infrastructure. Parametric Memory isolates every customer in their own substrate, with dedicated infrastructure on Professional and Team. Zep has no Markov prediction layer. Parametric Memory achieves 64% predictive pre-fetch.",
   },
   {
     category: "why",
@@ -148,9 +148,9 @@ const ALL_FAQS: FAQItem[] = [
   },
   {
     category: "why",
-    question: "What does 'dedicated instance' mean and why does it matter?",
+    question: "What does 'dedicated instance' mean, and which plans include one?",
     answer:
-      "A dedicated instance means your memory substrate runs on its own server, with its own PostgreSQL database, its own Merkle tree, and its own SSL certificate — completely isolated from every other customer. Mem0 and Zep run all customers in a shared database. With shared infrastructure, a noisy neighbour degrades your performance, a breach in one account risks data from others, and your data is physically co-located with competitors. Parametric Memory provides complete isolation from $5/month USD.",
+      "A dedicated instance means your substrate runs on its own server, with its own Merkle tree and SSL certificate — completely isolated from every other customer. Professional ($29/mo) and Team include a dedicated instance; Starter and Solo run as isolated tenants — your own substrate, Merkle tree and key — on shared hosts. Either way, your data is isolated from other customers. Parametric Memory isolates every customer from $5/month USD, with a fully dedicated server from $29/month.",
   },
   {
     category: "why",
@@ -170,7 +170,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "ai",
     question: "How does an AI agent integrate with Parametric Memory?",
     answer:
-      "Add one config block to your MCP client configuration. Claude Desktop, Claude Code, Cowork, Cursor, Cline, and any MCP-compliant client work natively. Parametric Memory exposes 25+ MCP tools via Streamable HTTP transport — no SDK, no code, no infrastructure. The two most important tools are memory_session_bootstrap (call at session start, pass your objective, receive ranked context back) and session_checkpoint (call when you learn something important — stores atoms, edges, and Markov training arcs in one call).",
+      "Add one config block to your MCP client configuration. Claude Desktop, Claude Code, Cowork, Cursor, Cline, and any MCP-compliant client work natively. Parametric Memory exposes 11 MCP tools via Streamable HTTP transport — no SDK, no code, no infrastructure. The two most important tools are memory_session_bootstrap (call at session start, pass your objective, receive ranked context back) and session_checkpoint (call when you learn something important — stores atoms, edges, and Markov training arcs in one call).",
   },
   {
     category: "ai",
@@ -222,19 +222,19 @@ const ALL_FAQS: FAQItem[] = [
     category: "setup",
     question: "How long does setup take?",
     answer:
-      "In minutes. Sign up at parametric-memory.dev, receive your credentials by email, add one JSON config block to your MCP client (Claude Desktop, Claude Code, Cowork, Cursor). Your AI immediately has access to 25+ memory tools. No Docker. No self-hosting. No infrastructure work. No code changes to your AI application.",
+      "In minutes. Sign up at parametric-memory.dev, claim your API key from your dashboard, add one JSON config block to your MCP client (Claude Desktop, Claude Code, Cowork, Cursor). Your AI immediately has access to 11 memory tools. No Docker. No self-hosting. No infrastructure work. No code changes to your AI application.",
   },
   {
     category: "setup",
     question: "Does Parametric Memory work with Claude?",
     answer:
-      "Yes — natively. Claude Desktop, Claude Code, and Cowork all use MCP as their primary tool protocol. Parametric Memory exposes 25+ tools via Streamable HTTP MCP transport. Add the mmpm config block to claude_desktop_config.json and Claude gains persistent memory immediately. The memory_session_bootstrap and session_checkpoint tools handle all context loading and saving automatically when Claude follows the session protocol.",
+      "Yes — natively. Claude Desktop, Claude Code, and Cowork all use MCP as their primary tool protocol. Parametric Memory exposes 11 tools via Streamable HTTP MCP transport. Add the mmpm config block to claude_desktop_config.json and Claude gains persistent memory immediately. The memory_session_bootstrap and session_checkpoint tools handle all context loading and saving automatically when Claude follows the session protocol.",
   },
   {
     category: "setup",
     question: "How much does Parametric Memory cost?",
     answer:
-      "Starter: $5/month — 1,000 atoms, up to 6 Claude sessions per day, 30-day money-back guarantee. Solo: $9/month — 10,000 atoms, up to 33 Claude sessions per day, email support. Professional: $29/month — 100,000 atoms, up to 333 Claude sessions per day, knowledge graph edges, priority support. Team: $79/month — 500,000 atoms, unlimited bootstraps, dedicated support. Enterprise Cloud: $299/month — 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML. Enterprise Self-Hosted: $499/month — commercial license, deploy on AWS/GCP/Azure. All prices are in US dollars (USD).",
+      "Starter: $5/month — 1,000 atoms, up to 6 Claude sessions per day, 7-day money-back guarantee. Solo: $9/month — 10,000 atoms, up to 33 Claude sessions per day, email support. Professional: $29/month — 100,000 atoms, up to 333 Claude sessions per day, knowledge graph edges, priority support. Team: $79/month — 500,000 atoms, 20,000 bootstraps/month, dedicated support. Enterprise Cloud: $299/month — 8 GiB RAM, 100+ GiB storage, 99.9% SLA, SSO/SAML. Enterprise Self-Hosted: $499/month — commercial license, deploy on AWS/GCP/Azure. All prices are in US dollars (USD).",
   },
   {
     category: "setup",
@@ -246,7 +246,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "setup",
     question: "Do you offer a no-cost tier?",
     answer:
-      "No. Every customer gets a dedicated instance with real infrastructure — a no-cost tier would mean subsidising real server costs indefinitely. All paid plans come with a 30-day money-back guarantee if Parametric Memory does not work for your use case.",
+      "No. Every customer gets real, isolated infrastructure — a no-cost tier would mean subsidising real server costs indefinitely. All paid plans come with a 7-day money-back guarantee if Parametric Memory does not work for your use case.",
   },
 
   // ── SECURITY ──────────────────────────────────────────────────────────────
@@ -316,7 +316,7 @@ const CATEGORIES = [
   {
     id: "security",
     label: "Security",
-    description: "Dedicated instances, TLS, injection detection, tamper verification",
+    description: "Isolated substrates, TLS, injection detection, tamper verification",
   },
 ];
 
@@ -435,7 +435,7 @@ export default async function FAQPage() {
                 Ready to give your AI a memory that proves itself?
               </h2>
               <p className="text-surface-200/60 mx-auto mb-6 max-w-lg">
-                Dedicated instance. In minutes to first memory. No infrastructure. No per-query
+                Isolated substrate. In minutes to first memory. No infrastructure. No per-query
                 costs. No shared databases.
               </p>
               <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
@@ -482,8 +482,8 @@ export default async function FAQPage() {
                   do not provide cryptographic verification.
                 </p>
                 <p>
-                  Every customer gets a dedicated PostgreSQL instance and Merkle tree. Mem0 and Zep
-                  use shared multi-tenant infrastructure.
+                  Every customer gets an isolated substrate and Merkle tree; Professional and Team
+                  get a dedicated instance. Mem0 and Zep use shared multi-tenant infrastructure.
                 </p>
                 <p>
                   Flat monthly pricing from $5/month USD with no per-query costs. Mem0 charges
@@ -495,7 +495,7 @@ export default async function FAQPage() {
                 </p>
                 <p>
                   MCP-native: works natively with Claude, Claude Code, Cowork, and any
-                  MCP-compatible client. 25+ tools via Streamable HTTP transport.
+                  MCP-compatible client. 11 tools via Streamable HTTP transport.
                 </p>
                 <p>
                   This product is used by its own development team to operate the entire business —

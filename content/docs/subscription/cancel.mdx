@@ -1,55 +1,43 @@
 ---
 title: Cancel Subscription
-description: What happens when you cancel — the 30-day grace period, what you can and cannot do, and how to recover your data before it's deleted.
+description: What happens when you cancel — deprovisioning, the snapshot, the 7-day paid recovery window, and how to keep your data.
 section: Subscription Management
 order: 3
 ---
 
 # Cancel Subscription
 
-Cancelling your subscription starts a 30-day grace period. Your instance does not disappear immediately — you have 30 days of read-only access to retrieve your data.
+Cancelling ends your instance. There is **no read-only grace period** — when your subscription terminates, your instance is deprovisioned and a snapshot is taken. **Export your data before you cancel** if you want to keep it.
 
 ## How to cancel
 
 1. Go to **Dashboard → Billing → Manage Subscription**
 2. You will be redirected to the Stripe Billing Portal
 3. Select **Cancel Subscription**
-4. Choose whether to cancel immediately or at the end of the current period
+4. Choose whether to **cancel at the end of the current period** or **cancel now**
 5. Confirm the cancellation
 
-If you cancel at the end of the current period, your instance stays fully active (read and write) until that date. When the period ends, the subscription is terminated and the grace period begins.
+- **Cancel at period end:** your instance stays fully active (read and write) until the period ends. You may reactivate any time before then. When the period ends, the instance is terminated.
+- **Cancel now:** the subscription stops immediately and we refund the unused portion of the current period (see [Refunds](#refund-policy)). Deprovisioning happens right away.
 
-## The 30-day grace period
+## What happens at termination
 
-When your subscription ends, your instance enters `read_only` mode for 30 days.
+When your subscription terminates (at period end, or immediately if you cancel now):
 
-### What you can do during the grace period
+- Your live instance is **deprovisioned** and a **point-in-time snapshot** of your data is taken.
+- Your API access ends immediately. There is **no read-only grace period** and we do not keep your live data running after termination.
 
-- **Read** existing atoms — all your stored knowledge is still accessible
-- **Verify** Merkle proofs — cryptographic verification still works
-- **Export** your atoms via the API — use `GET /api/v1/atoms` to retrieve all stored atoms
-- **Resubscribe** — start a new subscription at any time and your full access is restored
+## The 7-day recovery window
 
-### What you cannot do during the grace period
+For **7 days after termination** you may request recovery from your snapshot. Recovery is a **best-effort, paid service billed at our actual engineering cost** (including DevOps engineer time), **quoted to and authorized by you before any work begins**. It is provided at our discretion and subject to further conditions — your account being in good standing, no breach of the Terms, and technical feasibility. Recovery is **not guaranteed**.
 
-- **Write** new atoms — `session_checkpoint` and all write operations return `403 read_only`
-- **Call bootstraps** — `memory_session_bootstrap` returns `403 read_only`
-- **Use the MCP server** for writes — tool calls that write will fail
-
-### Your account tier during grace period
-
-Your account is moved to an internal expired state during the grace period. This is not a publicly sold tier — it exists purely to retain your atom limits at a read-only level until the 30 days expire.
-
-## Timeline after cancellation
-
-| Day | Event |
+| When | What |
 |---|---|
-| Day 0 | Subscription ends. Instance moves to `read_only`. |
-| Day 29 | **Data purge warning email** sent to your account address. |
-| Day 30 | **24-hour notice** — final warning before deprovisioning. |
-| Day 31 | Instance deprovisioned. All atoms and data permanently deleted. |
+| At termination | Instance deprovisioned; snapshot taken; API access ends. |
+| Within 7 days | Paid, at-cost recovery may be requested (quoted first, discretionary). |
+| After 7 days | Snapshot **permanently deleted** — no recovery of any kind. |
 
-> **There is no recovery after deprovisioning.** Once your instance is destroyed, your atoms cannot be retrieved. Export your data during the grace period if you may want it later.
+> **Export first.** The reliable way to keep your data is to export it before you cancel (or before your period ends). Do not rely on paid recovery — it is discretionary and not guaranteed.
 
 ## Exporting your atoms before cancellation
 
@@ -66,17 +54,8 @@ This returns a paginated list of all atoms in your substrate. For large exports,
 
 ## Resubscribing
 
-You can resubscribe at any time — during the grace period or before your instance is deprovisioned.
+You can resubscribe at any time. Resubscription provisions a **brand new instance from scratch** — your atoms from the previous subscription are **not** carried over. If you exported your atoms before cancelling, re-import them via the API after your new instance is running.
 
-1. Go to **Dashboard** and click **Resubscribe**
-2. Complete the Stripe Checkout for your chosen plan
-3. A new instance is provisioned from scratch
+## Refund policy {#refund-policy}
 
-> **Important:** Resubscription provisions a brand new instance. Your atoms from the previous subscription are not automatically migrated. If you exported your atoms before cancelling, you can re-import them via the API after your new instance is running.
-
-If you resubscribe while still in the grace period (before deprovisioning), your old instance data is still available for read during the gap — but your new instance starts empty. There is no automatic carry-over.
-
-## Refund policy
-
-Payments are non-refundable. Cancellation stops future billing but does not refund the current period. If you believe you were charged in error, contact support.
-
+If you **cancel now**, we refund the unused portion of the current period on a pro-rata basis to your original payment method. You may also cancel within **7 days of your initial purchase for a full refund**. Any one-time provisioning fee (dedicated plans) is non-refundable once your instance is provisioned. See Terms §5.4 for the full policy. If you believe you were charged in error, contact support.

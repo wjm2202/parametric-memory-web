@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet data-dc-atomics>
+  <meta name="design_doc_mode" content="canvas" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    body { margin: 0; background: #0b0f17; font-family: 'Outfit', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+    .dv-turn { padding: 40px 44px 40px; border-bottom: 1px solid rgba(255,255,255,.08); scroll-margin-top: 16px; }
+    .dv-thd { display: flex; align-items: baseline; gap: 10px; margin: 0 0 26px; }
+    .dv-tid { font: 600 10px 'JetBrains Mono', monospace; padding: 3px 7px; background: #38bdf8; color: #04121f; border-radius: 4px; text-decoration: none; }
+    .dv-tname { font: 600 13px/1.2 'Outfit', sans-serif; color: #e2e8f0; }
+    .dv-opts { display: flex; flex-direction: column; gap: 40px; align-items: flex-start; }
+    .dv-opt { flex: none; display: flex; flex-direction: column; gap: 11px; scroll-margin-top: 16px; }
+    .dv-oid { font: 600 10.5px 'JetBrains Mono', monospace; padding: 3px 7px; background: rgba(255,255,255,.08); color: #cbd5e1; border-radius: 5px; text-decoration: none; }
+    .dv-olabel { display: flex; align-items: baseline; gap: 9px; font: 400 12px/1.4 'Outfit', sans-serif; color: rgba(255,255,255,.5); max-width: 1360px; }
+    .dv-card { max-width: 100%; border-radius: 16px; overflow: hidden; border: 1px solid rgba(148,163,184,.12); box-shadow: 0 24px 70px rgba(0,0,0,.45); }
+    .dv-opt:target .dv-oid { background: #38bdf8; color: #04121f; }
+    .dv-next { margin: 30px 0 0; font: 12.5px/1.6 'Outfit', sans-serif; color: rgba(255,255,255,.5); }
+    .dv-next a { color: #7dd3fc; }
+  </style>
+</helmet>
+
+<section class="dv-turn" id="t1">
+  <div class="dv-thd">
+    <a class="dv-tid" href="#t1">1</a>
+    <span class="dv-tname">Homepage hero + positioning — 3 directions</span>
+  </div>
+  <div class="dv-opts">
+
+    <!-- ════════════════════ 1a ════════════════════ -->
+    <div class="dv-opt" id="1a">
+      <div class="dv-olabel"><a class="dv-oid" href="#1a">1a</a> Outcome-first, centered. Leads with the benefit; the metrics become an honest proof band at the foot, not the headline.</div>
+      <div class="dv-card" style="width: 1360px;">
+        <div style="background: radial-gradient(ellipse 66% 62% at 50% -12%, rgba(56,189,248,0.16), transparent 62%), #030712;">
+
+          <!-- nav -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 22px 44px; border-bottom: 1px solid rgba(148,163,184,0.08);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #22d3ee);"></div>
+              <span style="font-family: 'Syne', sans-serif; font-weight: 700; color: #e2e8f0; font-size: 15px;">Parametric Memory</span>
+            </div>
+            <div style="display: flex; gap: 28px; align-items: center; font-size: 14px; color: #94a3b8;">
+              <span>Docs</span><span>Pricing</span><span>Verify</span>
+              <span style="padding: 8px 16px; border: 1px solid rgba(148,163,184,0.2); border-radius: 9px; color: #e2e8f0;">Sign in</span>
+            </div>
+          </div>
+
+          <!-- hero body -->
+          <div style="text-align: center; padding: 92px 40px 52px; max-width: 900px; margin: 0 auto;">
+            <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.28em; text-transform: uppercase; color: #38bdf8; margin: 0 0 26px;">Persistent memory for AI agents</p>
+            <h1 style="font-family: 'Syne', sans-serif; font-weight: 800; font-size: 62px; line-height: 1.04; letter-spacing: -0.035em; color: #f8fafc; margin: 0 0 26px;">
+              Your AI remembers everything now.<br />
+              <span style="display: inline-block; background: linear-gradient(135deg, #38bdf8 0%, #22d3ee 60%, #f59e0b 120%); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">And it can prove it.</span>
+            </h1>
+            <p style="font-size: 19px; line-height: 1.62; color: #94a3b8; margin: 0 auto 38px; max-width: 640px; font-weight: 300;">
+              A permanent, private memory for any AI agent — one that survives every session, tool and restart. Every recall comes with a cryptographic proof that nothing was altered behind your back. Add one config block; your AI never starts from zero again.
+            </p>
+            <div style="display: flex; gap: 18px; align-items: center; justify-content: center;">
+              <span style="background: #0c8ee6; color: #fff; padding: 15px 28px; border-radius: 12px; font-weight: 600; font-size: 15px; box-shadow: 0 0 36px rgba(12,142,230,0.4);">Get your instance — $5/mo</span>
+              <span style="color: #7dd3fc; font-weight: 500; font-size: 15px;">Watch it verify itself →</span>
+            </div>
+          </div>
+
+          <!-- honest proof band -->
+          <div style="border-top: 1px solid rgba(148,163,184,0.1); background: rgba(15,23,42,0.45);">
+            <div style="display: flex; justify-content: center; gap: 56px; padding: 26px 40px 14px; flex-wrap: wrap;">
+              <div style="text-align: center;"><p style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 22px; color: #f1f5f9; margin: 0;">0.045<span style="font-size: 13px; color: #64748b;">ms</span></p><p style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; color: #64748b; margin: 4px 0 0;">recall, p50</p></div>
+              <div style="text-align: center;"><p style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 22px; color: #f1f5f9; margin: 0;">64%</p><p style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; color: #64748b; margin: 4px 0 0;">recalled before you ask</p></div>
+              <div style="text-align: center;"><p style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 22px; color: #f1f5f9; margin: 0;">Every read</p><p style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; color: #64748b; margin: 4px 0 0;">carries a proof</p></div>
+              <div style="text-align: center;"><p style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 22px; color: #f1f5f9; margin: 0;">Zero</p><p style="font-family: 'JetBrains Mono', monospace; font-size: 10.5px; letter-spacing: 0.08em; color: #64748b; margin: 4px 0 0;">shared infrastructure</p></div>
+            </div>
+            <p style="text-align: center; font-family: 'JetBrains Mono', monospace; font-size: 10.5px; color: #475569; margin: 0; padding: 0 40px 20px;">Latency and hit-rate measured on our own production substrate — not a customer benchmark.</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════ 1b ════════════════════ -->
+    <div class="dv-opt" id="1b">
+      <div class="dv-olabel"><a class="dv-oid" href="#1b">1b</a> Problem-led split. Names the pain first, then the fix — with room for a product visual. The most emotionally direct of the three.</div>
+      <div class="dv-card" style="width: 1360px;">
+        <div style="background: radial-gradient(ellipse 60% 70% at 88% 0%, rgba(56,189,248,0.12), transparent 60%), #030712;">
+
+          <!-- nav -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 22px 44px; border-bottom: 1px solid rgba(148,163,184,0.08);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #22d3ee);"></div>
+              <span style="font-family: 'Syne', sans-serif; font-weight: 700; color: #e2e8f0; font-size: 15px;">Parametric Memory</span>
+            </div>
+            <div style="display: flex; gap: 28px; align-items: center; font-size: 14px; color: #94a3b8;">
+              <span>Docs</span><span>Pricing</span><span>Verify</span>
+              <span style="padding: 8px 16px; border: 1px solid rgba(148,163,184,0.2); border-radius: 9px; color: #e2e8f0;">Sign in</span>
+            </div>
+          </div>
+
+          <!-- hero body: split -->
+          <div style="display: grid; grid-template-columns: 1.05fr 0.95fr; gap: 56px; align-items: center; padding: 72px 56px;">
+            <div>
+              <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.26em; text-transform: uppercase; color: #38bdf8; margin: 0 0 22px;">The memory layer for AI</p>
+              <h1 style="font-family: 'Syne', sans-serif; font-weight: 800; font-size: 50px; line-height: 1.06; letter-spacing: -0.03em; color: #f8fafc; margin: 0 0 24px;">
+                Every new chat, your assistant forgets who you are.
+              </h1>
+              <p style="font-size: 18px; line-height: 1.62; color: #94a3b8; margin: 0 0 28px; font-weight: 300; max-width: 46ch;">
+                It re-learns your stack, your preferences and your history — every single time. Parametric Memory is the persistent layer that fixes it: one dedicated instance your agent writes to and reads from forever, verifiable on every recall.
+              </p>
+              <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 32px;">
+                <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #38bdf8;"></span><span style="font-size: 15px; color: #cbd5e1;">Survives every session, tool and restart</span></div>
+                <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #22d3ee;"></span><span style="font-size: 15px; color: #cbd5e1;">Your own instance — not a row in a shared table</span></div>
+                <div style="display: flex; align-items: center; gap: 11px;"><span style="width: 6px; height: 6px; border-radius: 50%; background: #10b981;"></span><span style="font-size: 15px; color: #cbd5e1;">Tamper-evident: every read carries a cryptographic proof</span></div>
+              </div>
+              <div style="display: flex; gap: 18px; align-items: center;">
+                <span style="background: #0c8ee6; color: #fff; padding: 15px 28px; border-radius: 12px; font-weight: 600; font-size: 15px; box-shadow: 0 0 36px rgba(12,142,230,0.4);">Get your instance — $5/mo</span>
+                <span style="color: #7dd3fc; font-weight: 500; font-size: 15px;">Read the docs →</span>
+              </div>
+            </div>
+
+            <!-- visual placeholder -->
+            <div style="border-radius: 16px; border: 1px solid rgba(148,163,184,0.14); background: repeating-linear-gradient(135deg, rgba(56,189,248,0.05) 0 13px, transparent 13px 26px), #0a1220; display: flex; align-items: center; justify-content: center; min-height: 400px;">
+              <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #64748b; letter-spacing: 0.06em; text-align: center; padding: 0 24px;">[ before / after memory<br />— product visual or demo loop ]</span>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+    <!-- ════════════════════ 1c ════════════════════ -->
+    <div class="dv-opt" id="1c">
+      <div class="dv-olabel"><a class="dv-oid" href="#1c">1c</a> Trust &amp; agent-operable. Leads with verifiability and surfaces the buried dual human/AI differentiator (finding A1), with an honest live-proof card.</div>
+      <div class="dv-card" style="width: 1360px;">
+        <div style="background: radial-gradient(ellipse 70% 60% at 20% -10%, rgba(16,185,129,0.10), transparent 55%), radial-gradient(ellipse 60% 60% at 90% 10%, rgba(56,189,248,0.12), transparent 55%), #030712;">
+
+          <!-- nav -->
+          <div style="display: flex; align-items: center; justify-content: space-between; padding: 22px 44px; border-bottom: 1px solid rgba(148,163,184,0.08);">
+            <div style="display: flex; align-items: center; gap: 10px;">
+              <div style="width: 22px; height: 22px; border-radius: 50%; background: linear-gradient(135deg, #38bdf8, #22d3ee);"></div>
+              <span style="font-family: 'Syne', sans-serif; font-weight: 700; color: #e2e8f0; font-size: 15px;">Parametric Memory</span>
+            </div>
+            <div style="display: flex; gap: 28px; align-items: center; font-size: 14px; color: #94a3b8;">
+              <span>Docs</span><span>Pricing</span><span>Verify</span>
+              <span style="padding: 8px 16px; border: 1px solid rgba(148,163,184,0.2); border-radius: 9px; color: #e2e8f0;">Sign in</span>
+            </div>
+          </div>
+
+          <!-- hero body: copy + proof card -->
+          <div style="display: grid; grid-template-columns: 1.1fr 0.9fr; gap: 52px; align-items: center; padding: 68px 56px;">
+            <div>
+              <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.24em; text-transform: uppercase; color: #38bdf8; margin: 0 0 22px;">Persistent · Private · Provable</p>
+              <h1 style="font-family: 'Syne', sans-serif; font-weight: 800; font-size: 52px; line-height: 1.05; letter-spacing: -0.03em; color: #f8fafc; margin: 0 0 24px;">
+                Memory for AI you don't have to take on trust.
+              </h1>
+              <p style="font-size: 18px; line-height: 1.62; color: #94a3b8; margin: 0 0 28px; font-weight: 300; max-width: 48ch;">
+                Most AI memory asks you to believe it kept your data intact. Parametric Memory hands your agent the value <em style="color: #cbd5e1; font-style: normal;">and</em> a cryptographic proof it's genuine — on every read. A dedicated instance, MCP-native, and operable by humans and AI agents alike: every action has a stable handle and an API equal.
+              </p>
+              <div style="display: flex; flex-wrap: wrap; gap: 9px; margin-bottom: 30px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #7dd3fc; border: 1px solid rgba(56,189,248,0.25); background: rgba(56,189,248,0.07); padding: 6px 12px; border-radius: 999px;">MCP-native</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #6ee7b7; border: 1px solid rgba(16,185,129,0.25); background: rgba(16,185,129,0.07); padding: 6px 12px; border-radius: 999px;">Agent-operable by design</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #fcd34d; border: 1px solid rgba(245,158,11,0.25); background: rgba(245,158,11,0.07); padding: 6px 12px; border-radius: 999px;">RFC 6962 proofs</span>
+              </div>
+              <div style="display: flex; gap: 18px; align-items: center;">
+                <span style="background: #0c8ee6; color: #fff; padding: 15px 28px; border-radius: 12px; font-weight: 600; font-size: 15px; box-shadow: 0 0 36px rgba(12,142,230,0.4);">Get your instance — $5/mo</span>
+                <span style="color: #7dd3fc; font-weight: 500; font-size: 15px;">Verify a snapshot yourself →</span>
+              </div>
+            </div>
+
+            <!-- honest live-proof card -->
+            <div style="border-radius: 20px; border: 1px solid rgba(16,185,129,0.18); background: rgba(6,15,30,0.6); padding: 28px;">
+              <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 14px;">
+                <span style="width: 8px; height: 8px; border-radius: 50%; background: #34d399;"></span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: #34d399;">Our live substrate</span>
+              </div>
+              <p style="font-family: 'Syne', sans-serif; font-weight: 800; font-size: 44px; letter-spacing: -0.03em; color: #f8fafc; margin: 0;">821<span style="color: #34d399;">+</span></p>
+              <p style="font-family: 'JetBrains Mono', monospace; font-size: 11.5px; color: #64748b; margin: 6px 0 22px;">atoms sealed · Merkle-verified · since Mar 2026</p>
+              <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+                <div style="border: 1px solid rgba(148,163,184,0.12); border-radius: 12px; padding: 13px;"><p style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; color: #22d3ee; margin: 0;">0.045ms</p><p style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #64748b; margin: 3px 0 0;">recall p50</p></div>
+                <div style="border: 1px solid rgba(148,163,184,0.12); border-radius: 12px; padding: 13px;"><p style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; color: #f59e0b; margin: 0;">64%</p><p style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #64748b; margin: 3px 0 0;">predictive hit</p></div>
+                <div style="border: 1px solid rgba(148,163,184,0.12); border-radius: 12px; padding: 13px;"><p style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; color: #38bdf8; margin: 0;">Every read</p><p style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #64748b; margin: 3px 0 0;">proof attached</p></div>
+                <div style="border: 1px solid rgba(148,163,184,0.12); border-radius: 12px; padding: 13px;"><p style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 17px; color: #34d399; margin: 0;">None</p><p style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #64748b; margin: 3px 0 0;">shared infra</p></div>
+              </div>
+              <p style="font-family: 'JetBrains Mono', monospace; font-size: 10px; color: #475569; margin: 16px 0 0; line-height: 1.5;">Figures from our own production instance. Don't trust them — verify a snapshot yourself.</p>
+            </div>
+          </div>
+
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <p class="dv-next">Try next: "take <a class="dv-oid" href="#1a">1a</a>'s headline into <a class="dv-oid" href="#1c">1c</a>'s layout" · "make <a class="dv-oid" href="#1b">1b</a> the direction and draft the full page below the hero" · "new headline directions for <a class="dv-oid" href="#1a">1a</a>" · "turn the winner into a developer handoff"</p>
+</section>
+</x-dc>
+</body>
+</html>

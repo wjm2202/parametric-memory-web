@@ -43,7 +43,7 @@ Once running, your instance is available at `https://{your-slug}.droplet-mcp.nz/
 
 ### Subscription activation
 
-Your subscription is active the moment Stripe confirms your payment. You have full access to your chosen tier's limits immediately. You can upgrade or downgrade at any time from the Dashboard.
+Your subscription is active the moment Stripe confirms your payment. You have full access to your chosen tier's limits immediately. You can upgrade at any time from the Dashboard; plans are upgrade-only.
 
 ---
 
@@ -87,15 +87,7 @@ You can upgrade at any time from your dashboard. Click "Manage Subscription" to 
 
 ### Downgrading your tier
 
-Downgrades work differently from upgrades. When you request a downgrade, it is scheduled for the start of your next billing cycle so you get the full value of what you have already paid. You can cancel a pending downgrade at any time before it takes effect.
-
-**When the downgrade activates**, the same mechanics apply as upgrades but in reverse:
-
-**Shared-to-shared downgrades** restart your container with lower limits. Takes under 30 seconds.
-
-**Dedicated-to-shared downgrades** (Team → lower tier) provision a new shared container while your dedicated server enters read-only mode. The dedicated server is kept available for 48 hours after migration completes to ensure data integrity, then decommissioned.
-
-**What happens to excess atoms:** If you have more atoms than your new tier allows (for example, 5,000 atoms when downgrading from Solo to Starter's 1,000 limit), your atoms are not deleted. They remain readable. However, you cannot write new atoms until your count drops below the new limit. Overage charges of $0.001 per atom above your tier limit apply until you reduce your count. To avoid overage charges, tombstone unneeded atoms before your downgrade takes effect.
+**Plans are upgrade-only — downgrades are not supported.** A request to move to a lower tier returns `downgrade_not_supported`. A larger substrate cannot be fitted onto a smaller one without dropping atoms, and we do not delete your memory. If you need a smaller plan, export your atoms, cancel, and sign up fresh at the lower tier (see [Downgrade Plan](/docs/subscription/downgrade) and [Cancel Subscription](/docs/subscription/cancel)).
 
 ### Your substrate
 
@@ -126,7 +118,7 @@ You can also set a custom spend cap below the platform ceiling. Both your subscr
 
 While paused, API requests return a 503 error with a "cap_paused" message. To resume, either wait for your billing cycle to reset (caps reset on your billing date), raise your custom cap, or upgrade to a tier with a higher ceiling.
 
-**Practical example:** On Starter ($5/month subscription, $9 ceiling), you have $4 of headroom for overages. At $0.001 per excess atom, that is 4,000 atoms above your tier limit before hitting the ceiling.
+**Practical example:** On Starter ($5/month subscription, $9 ceiling), you have $4 of headroom for overages. At $0.01 per excess atom, that is 400 atoms above your tier limit before hitting the ceiling.
 
 ### Low balance warnings
 
@@ -142,7 +134,7 @@ If a monthly charge fails, your instance keeps running. Stripe automatically ret
 
 During this period, your dashboard shows a "past due" banner. The single most important thing to do is update your payment method in the Stripe billing portal (accessible from your dashboard). Once a retry succeeds or you update your card, the banner clears automatically.
 
-If all retries are exhausted without success, Stripe cancels your subscription. At that point your instance enters the 30-day grace period described in Phase 5 below. You can resubscribe at any time to get a new instance.
+If all retries are exhausted without success, Stripe cancels your subscription. At that point your instance is deprovisioned and a snapshot is taken — there is no read-only grace period (see Cancellation below). You can resubscribe at any time to get a new instance.
 
 ---
 
@@ -150,7 +142,7 @@ If all retries are exhausted without success, Stripe cancels your subscription. 
 
 ### Exporting your atoms
 
-You can export your atoms at any time — whether your instance is running or in read-only mode during a grace period. Use the Atoms API endpoint with your API key:
+You can export your atoms at any time while your instance is running. Export **before you cancel** — there is no read-only access after termination. Use the Atoms API endpoint with your API key:
 
 ```bash
 curl -H "Authorization: Bearer YOUR_API_KEY" \
@@ -161,23 +153,19 @@ This returns all your atoms in NDJSON format (one JSON object per line). Save th
 
 ### Cancelling your subscription
 
-You can cancel from the Stripe billing portal via your dashboard. Your instance immediately moves to read-only mode. You retain full read access for 30 days — you can still retrieve atoms, verify Merkle proofs, and run exports.
+You can cancel from the Stripe billing portal via your dashboard. If you cancel at period end, your instance stays fully active until the period ends; if you cancel now, it stops immediately and we refund the unused portion (Terms §5.4). There is **no read-only grace period**.
 
-During the grace period, you cannot write new atoms or call bootstraps (these return a 403 "read_only" error).
+At termination, your instance is deprovisioned and a point-in-time snapshot is taken. Your API access ends immediately — export your atoms before you cancel if you want to keep them.
 
-The timeline after cancellation: on day 29, you receive a data purge warning. On day 30, a final 24-hour notice. On day 31, your instance is permanently deprovisioned and all data is deleted.
-
-**Trial cancellation** works differently — there is no 30-day grace period. Your instance is deprovisioned immediately and no charge is made.
+For 7 days after termination, the snapshot may be recovered as a **paid, at-cost service** (quoted first, discretionary); after 7 days it is permanently deleted.
 
 ### Resubscribing after cancellation
 
-If you resubscribe during the 30-day grace period, you get a brand-new instance. Atoms are not automatically migrated from the old read-only instance. If you need your old data, export it before the grace period expires and re-import it into your new instance using the Atoms API import endpoint.
-
-If the grace period has expired and your instance has been deprovisioned, your data is permanently gone. Resubscribing still works, but you start completely fresh.
+Resubscribe at any time — you get a brand-new instance and your atoms are not carried over. To keep your old data, export it before you cancel and re-import it into your new instance using the Atoms API import endpoint.
 
 ### Refunds
 
-Current-period subscription fees are not refunded upon cancellation. If you are on a higher tier and want to reduce costs, downgrade first (which takes effect at the next billing cycle) rather than cancelling.
+If you cancel now, the unused portion of the current period is refunded pro-rata (see Terms §5.4). Plans are upgrade-only, so there is no downgrade to reduce costs — to move to a smaller plan, export your data, cancel, and sign up fresh at the lower tier.
 
 ---
 
@@ -186,7 +174,7 @@ Current-period subscription fees are not refunded upon cancellation. If you are 
 | Instance state | Read atoms | Write atoms | Bootstrap | Export | Change tier | Cancel |
 |---|---|---|---|---|---|---|
 | Running | Yes | Yes | Yes | Yes | Yes | Yes |
-| Read-only (grace period) | Yes | No | No | Yes | No (resubscribe instead) | Already cancelled |
+| Read-only (tier migration) | Yes | No | No | Yes | No (resubscribe instead) | During a tier change |
 | Suspended (billing) | No | No | No | No | Resolve payment first | Yes |
 | Paused (spend cap) | No | No | No | No | Yes (raise cap or upgrade) | Yes |
 | Deprovisioned | No | No | No | No | Resubscribe for new instance | N/A |
@@ -204,14 +192,14 @@ You have hit your spend cap. Either wait for the monthly reset, raise your custo
 ### "I upgraded to Team but my old MCP URL stopped working"
 Team tier uses a dedicated server with a new URL. Check your dashboard for the updated MCP endpoint and paste it into your AI client configuration.
 
-### "I want to downgrade but I have too many atoms"
-Your atoms will not be deleted. But you will be charged $0.001/atom/month for each atom above your new tier's limit until you reduce the count. Tombstone unneeded atoms before the downgrade activates to avoid these charges.
+### "I want to downgrade"
+Plans are upgrade-only — downgrades are not supported, precisely because a larger substrate cannot fit onto a smaller one without losing atoms. If cost is the concern, tombstoning unused atoms lowers your metered overage but not your base tier price. To genuinely move to a smaller plan, export your atoms, cancel, and sign up fresh at the lower tier.
 
 ### "My payment failed — is my data safe?"
-Yes. Your instance keeps running during Stripe's retry window (about 10 days). Update your payment method as soon as possible. If retries fail, your instance goes read-only with a 30-day window to export.
+Yes. Your instance keeps running during Stripe's retry window (about 10 days). Update your payment method as soon as possible. If retries fail, your subscription is cancelled and your instance is deprovisioned and snapshotted — export your data before then.
 
 ### "I cancelled but I want to come back"
-Resubscribe before the 30-day grace period ends. You will get a new instance — export your atoms from the old one first if you need them.
+Resubscribe at any time. You will get a new instance — export your atoms before cancelling if you need them, since there is no grace period after termination.
 
 ### "Can I have multiple memory substrates?"
 Each account currently has one active substrate. If you need to work across multiple projects, you can use atom naming conventions (prefixes) to organise different knowledge domains within a single substrate.

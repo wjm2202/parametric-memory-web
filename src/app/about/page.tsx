@@ -890,7 +890,7 @@ export default async function AboutPage() {
             <p className="font-syne mb-3 text-lg font-semibold text-[#e8e8f0]">
               Your AI has been waiting to remember you.
             </p>
-            <p className="mb-8 text-sm text-[#8888aa]">30-day money-back guarantee.</p>
+            <p className="mb-8 text-sm text-[#8888aa]">7-day money-back guarantee.</p>
             <div className="flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
               <Link
                 href="/signup"

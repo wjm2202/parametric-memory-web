@@ -7,7 +7,7 @@ order: 2
 
 # Plans
 
-Parametric Memory offers four paid tiers. Every customer gets a dedicated instance with real infrastructure — there is no unpaid access level.
+Parametric Memory offers four paid tiers. Every customer gets their own isolated substrate on real infrastructure — Professional and Team run on a dedicated droplet, while Starter and Solo run as isolated tenants on a shared host. There is no unpaid access level.
 
 ## The tiers
 
@@ -15,10 +15,10 @@ Parametric Memory offers four paid tiers. Every customer gets a dedicated instan
 |---|---|---|---|---|
 | **Price (USD)** | $5 / month | $9 / month | $29 / month | $79 / month |
 | **Atoms** | 1,000 | 10,000 | 100,000 | 500,000 |
-| **Bootstraps / month** | 200 (~6/day) | 1,000 (~33/day) | 10,000 (~333/day) | Unlimited (~667+/day) |
+| **Bootstraps / month** | 200 (~6/day) | 1,000 (~33/day) | 10,000 (~333/day) | 20,000 (~667/day) |
 | **Storage** | 100 MB | 500 MB | 2 GB | 10 GB |
-| **Substrates** | 1 | 1 | 1 | 1 |
-| **Hosting** | Shared host | Shared host | Shared host | Dedicated droplet |
+| **Substrates** | 1 | 2 | 3 | 5 |
+| **Hosting** | Shared host | Shared host | Dedicated droplet | Dedicated droplet |
 
 All prices are in US dollars (USD).
 
@@ -32,7 +32,7 @@ An atom is one named piece of memory — one key/value pair. 1,000 atoms covers 
 
 ### Overage pricing
 
-If you exceed your atom limit, atoms are charged at **$0.001 per atom** above your tier limit. Overages are reported to Stripe via metered billing and appear on your next invoice. You can set a [spend cap](/docs/spend-caps) to prevent unexpected overage charges.
+If you write above your atom limit via the API, those atoms are charged at **$0.01 per atom** above your tier limit — the MCP tools enforce the limit by default. Overages are reported to Stripe via metered billing and appear on your next invoice. You can set a [spend cap](/docs/spend-caps) to prevent unexpected overage charges.
 
 ### Starter vs Solo — which should I choose?
 
@@ -46,19 +46,19 @@ If you exceed your atom limit, atoms are charged at **$0.001 per atom** above yo
 
 ### When to choose Team
 
-Team gives you a dedicated DigitalOcean droplet rather than a shared container. Choose Team when:
+Professional and Team both run on a dedicated DigitalOcean droplet rather than a shared container. Choose **Team** (over Professional) when:
 - You need guaranteed compute isolation from other customers — your instance runs on its own server with no shared resources
 - You want 500,000+ atoms for large-scale institutional memory
 - Multiple people on your team will share the same memory instance
 - You need multiple memory substrates for different projects or teams (multi-substrate is rolling out to Team customers — contact us)
 - You want the best possible response times for bootstraps and large batch operations
 
-**What "dedicated" means in practice:** On shared tiers, your container runs alongside other customers on the same server. Resources are allocated per container, but you share the underlying host. On Team, you get an entire server to yourself — provisioned from a pre-built image for faster startup, running in your chosen region, with full CPU and memory exclusively for your workloads.
+**What "dedicated" means in practice:** On shared tiers (Starter and Solo), your container runs alongside other customers on the same server. Resources are allocated per container, but you share the underlying host. On Professional and Team, you get an entire server to yourself — provisioned from a pre-built image for faster startup, running in your chosen region, with full CPU and memory exclusively for your workloads.
 
 ## Money-back guarantee
 
-All paid plans include a 30-day money-back guarantee. If Parametric Memory does not work for your use case, contact support within 30 days of your first payment for a full refund.
+All paid plans include a 7-day money-back guarantee. If Parametric Memory does not work for your use case, contact support within 7 days of your first payment for a full refund.
 
 ## Changing plans
 
-You can upgrade or downgrade at any time from the Dashboard. See [Upgrade Plan](/docs/subscription/upgrade) and [Downgrade Plan](/docs/subscription/downgrade) for the full details of what happens to your instance during each transition.
+You can upgrade at any time from the Dashboard (upgrades apply immediately). Plans are **upgrade-only** — downgrades are not supported. See [Upgrade Plan](/docs/subscription/upgrade) and [Downgrade Plan](/docs/subscription/downgrade) (why downgrades aren't supported, and what to do instead).

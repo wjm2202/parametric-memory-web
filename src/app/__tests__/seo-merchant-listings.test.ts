@@ -32,7 +32,7 @@ const TEST_INPUTS = {
   },
   returnPolicy: {
     "@type": "MerchantReturnPolicy",
-    merchantReturnDays: 14,
+    merchantReturnDays: 7,
   },
   priceValidUntil: defaultPriceValidUntil(),
 };
