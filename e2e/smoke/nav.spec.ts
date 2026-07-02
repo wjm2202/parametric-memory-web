@@ -21,18 +21,29 @@ test.describe("navigation", () => {
     await page.goto("/");
     await expect(page.getByTestId("nav-home")).toBeVisible();
 
-    // Some links live inside the drawer on smaller viewports — desktop tests
-    // assume the wider layout where they're inline.
-    const expected = [
-      "nav-link-pricing",
+    // 2026-07-02 declutter: primary links + the Knowledge accent chip are
+    // inline on desktop; secondary links (Blog/FAQ/About) live behind the
+    // "More" disclosure. Some links also live inside the drawer on small
+    // viewports — desktop tests assume the wider layout where they're inline.
+    const inline = [
+      "nav-link-verify",
+      "nav-link-enterprise",
       "nav-link-docs",
-      "nav-link-blog",
-      "nav-link-faq",
-      "nav-link-about",
+      "nav-link-pricing",
       "nav-link-knowledge",
     ];
-    for (const tid of expected) {
+    for (const tid of inline) {
       await expect(page.getByTestId(tid).first()).toBeVisible();
+    }
+
+    // Secondary links are in the DOM at all times (crawler/agent visible) but
+    // visually collapsed until the disclosure is opened.
+    const moreTrigger = page.getByTestId("nav-more-trigger");
+    await expect(moreTrigger).toBeVisible();
+    await moreTrigger.click();
+    const moreMenu = page.getByTestId("nav-more-menu");
+    for (const tid of ["nav-link-blog", "nav-link-faq", "nav-link-about"]) {
+      await expect(moreMenu.getByTestId(tid)).toBeVisible();
     }
   });
 
@@ -129,7 +140,6 @@ test.describe("mobile parity — hamburger present everywhere", () => {
     await expect(drawer.getByTestId("nav-link-docs")).toBeVisible();
   });
 });
-
 
 /* ─── Knowledge / Visualise canvas full-screen guard ─────────────────────────
  *

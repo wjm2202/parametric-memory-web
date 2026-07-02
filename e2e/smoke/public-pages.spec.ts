@@ -20,10 +20,14 @@ const PUBLIC_PAGES: Array<{ path: string; expect: string }> = [
   { path: "/blog", expect: "nav-link-blog" },
   { path: "/docs", expect: "nav-link-docs" },
   { path: "/contact", expect: "capacity-form" },
-  { path: "/privacy", expect: "nav-link-privacy" },
-  { path: "/terms", expect: "nav-link-legal" },
-  { path: "/dpa", expect: "nav-link-legal" },
-  { path: "/aup", expect: "nav-link-legal" },
+  // 2026-07-02: Legal/Privacy left the top nav (now in the footer sitemap as
+  // footer-link-*). Anchor these on nav-home, which the SiteNavbar renders on
+  // every page — still proves the page hydrated. Footer legal links are
+  // covered by SiteFooter.test.tsx.
+  { path: "/privacy", expect: "nav-home" },
+  { path: "/terms", expect: "nav-home" },
+  { path: "/dpa", expect: "nav-home" },
+  { path: "/aup", expect: "nav-home" },
   // Sprint 2026-W18 — closed-source migration: /copyright page
   // is the public NZ-jurisdiction copyright statement. Anchored on
   // its H1 testid because there is no nav-link-copyright (the page
