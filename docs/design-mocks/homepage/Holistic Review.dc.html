@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@600;700;800&family=Outfit:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body { margin: 0; padding: 0; }
+    body { background: #030712; }
+    ::selection { background: rgba(54,170,245,0.28); }
+    .rvw-scroll::-webkit-scrollbar { width: 10px; height: 10px; }
+    .rvw-scroll::-webkit-scrollbar-thumb { background: rgba(148,163,184,0.18); border-radius: 6px; }
+  </style>
+</helmet>
+
+<div class="rvw-scroll" style="min-height: 100vh; background: radial-gradient(ellipse 90% 55% at 50% -8%, rgba(54,170,245,0.10) 0%, transparent 60%), #030712; color: #e2e8f0; font-family: 'Outfit', system-ui, sans-serif; -webkit-font-smoothing: antialiased; padding: 0 24px 96px;">
+
+  <div style="max-width: 1080px; margin: 0 auto;">
+
+    <!-- ── HEADER ────────────────────────────────────────────────── -->
+    <header style="padding: 72px 0 40px; border-bottom: 1px solid rgba(148,163,184,0.12);">
+      <p style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.28em; text-transform: uppercase; color: #36aaf5; margin: 0 0 22px;">
+        Holistic Review · parametric-memory.dev
+      </p>
+      <h1 style="font-family: 'Syne', sans-serif; font-weight: 800; font-size: 46px; line-height: 1.06; letter-spacing: -0.03em; color: #f8fafc; margin: 0 0 24px; max-width: 20ch;">
+        The engineering is ahead of the story.
+      </h1>
+      <p style="font-size: 18px; line-height: 1.6; color: #94a3b8; margin: 0; max-width: 62ch; font-weight: 300;">
+        This is a solidly engineered, security-literate, SEO-mature product — the foundation most seed-stage teams wish they had. The weak link isn't the code; it's that the marketing sells the machinery instead of the outcome, and states beta metrics as proven fact. Close the story gap and it reads like a company three rounds further along than it is.
+      </p>
+      <p style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #64748b; margin: 28px 0 0; letter-spacing: 0.02em;">
+        Reviewed Jul 1 2026 · from source, docs &amp; copy · 19 findings across 6 dimensions
+      </p>
+    </header>
+
+    <!-- ── SCORECARD ─────────────────────────────────────────────── -->
+    <section aria-label="Severity summary" style="padding: 40px 0 0;">
+      <p style="font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.22em; text-transform: uppercase; color: #64748b; margin: 0 0 16px;">Tap a tile or an area to filter</p>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 12px;">
+        <sc-for list="{{ tiles }}" as="tile" hint-placeholder-count="5">
+          <button type="button" onClick="{{ tile.onClick }}" style="position: relative; text-align: left; cursor: pointer; appearance: none; border: 1px solid rgba(148,163,184,0.14); background: rgba(15,23,42,0.45); border-radius: 16px; padding: 20px;">
+            <sc-if value="{{ tile.active }}" hint-placeholder-val="{{ false }}">
+              <span aria-hidden="true" style="position: absolute; inset: -1px; border-radius: 16px; border: 1px solid {{ tile.color }}; background: {{ tile.tintBg }}; pointer-events: none;"></span>
+            </sc-if>
+            <span style="position: relative; display: block; font-family: 'Syne', sans-serif; font-weight: 800; font-size: 40px; line-height: 1; letter-spacing: -0.03em; color: {{ tile.color }};">{{ tile.value }}</span>
+            <span style="position: relative; display: block; font-family: 'JetBrains Mono', monospace; font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; color: #94a3b8; margin-top: 10px;">{{ tile.label }}</span>
+          </button>
+        </sc-for>
+      </div>
+    </section>
+
+    <!-- ── DIMENSION FILTER ──────────────────────────────────────── -->
+    <section aria-label="Filter by area" style="padding: 28px 0 8px; display: flex; flex-wrap: wrap; gap: 9px; align-items: center;">
+      <sc-for list="{{ chips }}" as="chip" hint-placeholder-count="7">
+        <button type="button" onClick="{{ chip.onClick }}" style="position: relative; cursor: pointer; appearance: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; letter-spacing: 0.02em; padding: 8px 14px; border-radius: 999px; border: 1px solid rgba(148,163,184,0.16); background: transparent; color: #cbd5e1;">
+          <sc-if value="{{ chip.active }}" hint-placeholder-val="{{ false }}">
+            <span aria-hidden="true" style="position: absolute; inset: -1px; border-radius: 999px; border: 1px solid #38bdf8; background: rgba(56,189,248,0.14); pointer-events: none;"></span>
+          </sc-if>
+          <span style="position: relative;">{{ chip.label }} <span style="opacity: 0.5;">{{ chip.count }}</span></span>
+        </button>
+      </sc-for>
+    </section>
+
+    <!-- ── RESULTS COUNT ─────────────────────────────────────────── -->
+    <div style="display: flex; align-items: baseline; gap: 14px; padding: 22px 2px 18px;">
+      <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px; color: #64748b; letter-spacing: 0.04em;">
+        Showing <span style="color: {{ accent }};">{{ shown }}</span> of {{ total }}
+      </span>
+      <sc-if value="{{ isFiltered }}" hint-placeholder-val="{{ true }}">
+        <button type="button" onClick="{{ reset }}" style="cursor: pointer; appearance: none; background: none; border: none; font-family: 'JetBrains Mono', monospace; font-size: 12px; color: {{ accent }}; text-decoration: underline; text-underline-offset: 3px; padding: 0;">clear filters</button>
+      </sc-if>
+    </div>
+
+    <!-- ── FINDINGS ──────────────────────────────────────────────── -->
+    <section aria-label="Findings" style="display: flex; flex-direction: column; gap: {{ listGap }};">
+      <sc-for list="{{ findings }}" as="f" hint-placeholder-count="6">
+        <article style="border: 1px solid rgba(148,163,184,0.13); border-left: 3px solid {{ f.accent }}; background: rgba(11,18,32,0.72); border-radius: 16px; padding: {{ pad }};">
+
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 20px;">
+            <div style="min-width: 0;">
+              <div style="display: flex; flex-wrap: wrap; align-items: center; gap: 8px; margin-bottom: 12px;">
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 500; color: {{ f.accent }}; background: {{ f.tint }}; padding: 4px 9px; border-radius: 6px;">{{ f.sevLabel }}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.12em; text-transform: uppercase; color: #94a3b8; border: 1px solid rgba(148,163,184,0.18); padding: 4px 9px; border-radius: 6px;">{{ f.dim }}</span>
+                <span style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #475569;">{{ f.id }}</span>
+              </div>
+              <h3 style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 21px; line-height: 1.22; letter-spacing: -0.02em; color: #f1f5f9; margin: 0;">{{ f.title }}</h3>
+            </div>
+            <span style="flex-shrink: 0; font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #94a3b8; white-space: nowrap; background: rgba(148,163,184,0.07); padding: 6px 11px; border-radius: 999px;">{{ f.effortLabel }}</span>
+          </div>
+
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 22px; margin-top: 20px;">
+            <div>
+              <p style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: #64748b; margin: 0 0 8px;">{{ f.sawLabel }}</p>
+              <p style="font-size: 15px; line-height: 1.62; color: #cbd5e1; margin: 0 0 10px; font-weight: 300;">{{ f.saw }}</p>
+              <p style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: #475569; margin: 0; word-break: break-word;">{{ f.ref }}</p>
+            </div>
+            <div>
+              <p style="font-family: 'JetBrains Mono', monospace; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: {{ f.accent }}; margin: 0 0 8px;">{{ f.recLabel }}</p>
+              <p style="font-size: 15px; line-height: 1.62; color: #e2e8f0; margin: 0; font-weight: 300;">{{ f.rec }}</p>
+            </div>
+          </div>
+
+        </article>
+      </sc-for>
+      <sc-if value="{{ empty }}" hint-placeholder-val="{{ false }}">
+        <div style="border: 1px dashed rgba(148,163,184,0.22); border-radius: 16px; padding: 40px 28px; text-align: center;">
+          <p style="font-family: 'Syne', sans-serif; font-weight: 700; font-size: 18px; color: #cbd5e1; margin: 0 0 8px;">No findings in this slice</p>
+          <p style="font-size: 14px; color: #64748b; margin: 0; font-weight: 300;">No finding matches this severity + area combination. Adjust the filters above.</p>
+        </div>
+      </sc-if>
+    </section>
+
+    <!-- ── FOOTER ────────────────────────────────────────────────── -->
+    <footer style="margin-top: 56px; padding-top: 28px; border-top: 1px solid rgba(148,163,184,0.12);">
+      <p style="font-size: 14px; line-height: 1.6; color: #64748b; margin: 0; max-width: 64ch; font-weight: 300;">
+        Severity reflects impact on launch readiness and conversion, not code correctness. Effort is a rough build estimate. Strengths are listed deliberately — a review that only lists problems tells you what to change but not what to protect.
+      </p>
+    </footer>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props="{&quot;density&quot;: {&quot;editor&quot;: &quot;enum&quot;, &quot;options&quot;: [&quot;comfortable&quot;, &quot;compact&quot;], &quot;default&quot;: &quot;comfortable&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Display&quot;}, &quot;accent&quot;: {&quot;editor&quot;: &quot;color&quot;, &quot;options&quot;: [&quot;#38bdf8&quot;, &quot;#34d399&quot;, &quot;#f59e0b&quot;, &quot;#a78bfa&quot;], &quot;default&quot;: &quot;#38bdf8&quot;, &quot;tsType&quot;: &quot;string&quot;, &quot;section&quot;: &quot;Display&quot;}}">
+class Component extends DCLogic {
+  state = { sev: "all", dim: "all" };
+
+  sevMeta = {
+    high:   { label: "High",     color: "#f59e0b", tint: "rgba(245,158,11,0.13)",  rank: 0 },
+    medium: { label: "Medium",   color: "#38bdf8", tint: "rgba(56,189,248,0.12)",  rank: 1 },
+    low:    { label: "Low",      color: "#94a3b8", tint: "rgba(148,163,184,0.13)", rank: 2 },
+    praise: { label: "Strength", color: "#34d399", tint: "rgba(52,211,153,0.12)",  rank: 3 },
+  };
+
+  effortMeta = { S: "Quick win", M: "Moderate lift", L: "Bigger project" };
+
+  raw = [
+    { id: "P1", sev: "high", dim: "Positioning", effort: "M",
+      title: "The page sells the mechanism, not the outcome",
+      saw: `The hero and all four feature cards lead with cryptography — Merkle proofs, RFC 6962, JumpHash sharding, variable-order Markov chains. A buyer who just wants their AI to remember them has to decode a systems paper first.`,
+      ref: "src/app/page.tsx · features[], hero",
+      rec: `Add a plain-language outcome layer above the math: what actually changes for the user ("Your AI remembers every project — and can prove it wasn't tampered with"). Keep the proofs as the credibility layer underneath, not the lead.` },
+
+    { id: "P2", sev: "high", dim: "Positioning", effort: "S",
+      title: "Production claims outrun a beta product",
+      saw: `"64% hit rate in production", "821+ atoms sealed… in production since March 2026", and "0.045ms p50" are stated as fact — while a site-wide BetaBanner ships and the pricing page still runs waitlist and capacity-inquiry forms.`,
+      ref: "page.tsx · stats / trust · components/ui/BetaBanner",
+      rec: `Either substantiate with a linked benchmark/methodology, or reframe as "in our own production use." Hard numbers a customer can't reproduce are a credibility — and advertising-claims — liability.` },
+
+    { id: "A1", sev: "high", dim: "Accessibility", effort: "M",
+      title: "Your rarest differentiator is buried in a doc",
+      saw: `The dual human/AI accessibility system — semantic-HTML mandate, stable data-testids, aria names, /.well-known/actions.json, llms.txt, an ai-content-declaration meta — is genuinely uncommon and valuable. It lives in a markdown doc and head tags, invisible to a human visitor.`,
+      ref: "docs/DUAL-ACCESSIBILITY.md · layout.tsx head",
+      rec: `Make "agent-operable by design" a first-class homepage pillar. In an agent-buying world, "Operator, Atlas and Claude can drive every button" is a claim almost nobody else can make.` },
+
+    { id: "P3", sev: "medium", dim: "Positioning", effort: "M",
+      title: "Social proof only points at yourself",
+      saw: `The trust section is "We trust it with ours" — 821 of your own atoms. No third-party logos, quotes, design-partner names, or case studies appear anywhere on the page.`,
+      ref: "page.tsx · social-proof section",
+      rec: `One or two real design-partner sentences will outperform this entire block. Until you have them, lean on the verifiability angle ("don't trust us — verify the proof yourself") rather than borrowed self-trust.` },
+
+    { id: "P4", sev: "medium", dim: "Positioning", effort: "M",
+      title: "Six tiers is a choice-overload risk",
+      saw: `Starter $5 · Solo $9 · Professional $29 · Team $79 · Enterprise Cloud $299 · Self-Hosted $499 — six price points in one line, none flagged as the default.`,
+      ref: "page.tsx · final-CTA tier hint",
+      rec: `Anchor one tier as "Most popular" and collapse the two enterprise options behind a single "Talk to us." Fewer, clearer choices convert better than a full matrix.` },
+
+    { id: "U1", sev: "medium", dim: "UX", effort: "S",
+      title: "\u201CNo downgrades\u201D quietly punishes retention",
+      saw: `Terms 5.5 makes plan changes upgrade-only — downgrades are "not technically feasible… and prohibited," enforced in CI via the terms-no-downgrades clause guard.`,
+      ref: "src/app/terms · terms-no-downgrades",
+      rec: `A customer who would have downgraded churns instead. Allow a downgrade at period end, or at minimum surface the constraint before purchase — not in section 5.5.` },
+
+    { id: "U2", sev: "medium", dim: "UX", effort: "S",
+      title: "Signup asks for a tier before value is proven",
+      saw: `The signup form includes a required tier radio group (signup-tier-select) — the visitor commits to a price bracket before they've seen the product do anything.`,
+      ref: "src/app/signup/SignupClient.tsx",
+      rec: `Default to Starter (or the most-popular tier) and let them change it in-app. Every required decision before first value is a drop-off point.` },
+
+    { id: "D1", sev: "medium", dim: "Design", effort: "M",
+      title: "The hero rides on a heavy WebGL scene",
+      saw: `The landing hero mounts a React-Three-Fiber canvas with postprocessing and d3-force-3d (three, @react-three/fiber, @react-three/postprocessing all shipped client-side). The testid notes also reference a hero-video variant that replaced a static ring.`,
+      ref: "components/landing/HeroSceneWrapper · package.json",
+      rec: `Confirm a reduced-motion + low-power fallback, and pick one hero (3D or video) rather than carrying both. This is the single biggest mobile-perf and battery lever on the page.` },
+
+    { id: "D2", sev: "medium", dim: "Design", effort: "M",
+      title: "Every section shouts at the same volume",
+      saw: `Features, How-it-works, Trust, Live-demo and Final-CTA are all full-width, similarly weighted card blocks with mono eyebrows. There's little rest and no single focal moment after the hero.`,
+      ref: "page.tsx · section rhythm",
+      rec: `Give one proof point real dominance and let the rest recede — smaller, quieter. Hierarchy is as much about what you make smaller as what you enlarge.` },
+
+    { id: "X1", sev: "medium", dim: "Security", effort: "S",
+      title: "Verify prod isn't on a Stripe test key",
+      saw: `Environment config suggests checkout may be wired to a Stripe test (pk_test_) publishable key. In production that means checkout renders but takes no real money — a silent revenue failure.`,
+      ref: "deployment env · docker-compose / CI secrets",
+      rec: `Confirm production injects live (pk_live_ + live secret) keys, and that they're supplied at deploy time rather than living on disk. Rotate any credential that has ever sat in a shared location.` },
+
+    { id: "X2", sev: "low", dim: "Positioning", effort: "S",
+      title: "Public contact is a personal Gmail",
+      saw: `A personal gmail.com address is wired in as the sales AND technical-support contactPoint in the Organization JSON-LD, and as the copyright / licensing contact.`,
+      ref: "layout.tsx · organizationJsonLd · config/site",
+      rec: `A support@ / sales@ address on the domain costs nothing and reads far more trustworthy in structured data and legal pages — especially to enterprise buyers.` },
+
+    { id: "S1", sev: "low", dim: "SEO", effort: "S",
+      title: "The keywords meta array is dead weight",
+      saw: `The homepage sets a 20+ entry metadata.keywords array ("Mem0 alternative", "Merkle proof memory", …). Google has ignored the keywords meta for over a decade; a long list mostly signals effort spent in the wrong place.`,
+      ref: "page.tsx · metadata.keywords",
+      rec: `Cull it. Redirect that intent into H2s, FAQ answers and body copy — where your (already strong) structured data actually earns rankings.` },
+
+    { id: "X3", sev: "low", dim: "Security", effort: "S",
+      title: "Route protection is cookie-presence only (by design)",
+      saw: `proxy.ts redirects /admin and /dashboard when the session cookie is missing but doesn't validate it — real validation happens per-page via the auth API. This is documented clearly.`,
+      ref: "src/proxy.ts",
+      rec: `Fine as a model. Just verify an expired-but-present cookie doesn't flash a protected shell before the page-level bounce — that's the one UX seam in this approach.` },
+
+    { id: "K1", sev: "praise", dim: "UX", effort: "-",
+      title: "Checkout and billing coverage is production-grade",
+      saw: `Embedded Stripe with a hosted fallback, adblock-availability probing, a cap-reached actionable card, live proration previews, cancel/reactivate-window handling, refund previews and full TOTP 2FA — each with tests.`,
+      ref: "app/pricing/* · app/admin/* · app/billing/*",
+      rec: `This is far past MVP. Don't let a redesign regress it — the edge-case handling here is the moat, not the hero animation.` },
+
+    { id: "K2", sev: "praise", dim: "Security", effort: "-",
+      title: "The CSRF model is correct — and you removed the footgun",
+      saw: `Origin/Referer validation paired with SameSite=lax, mutating-methods-only, with a clear rationale. The old x-mmpm-internal bypass was deliberately deleted because any future header-setter could have skipped the check. Client IP chains are forwarded so per-IP rate limits don't collapse onto the BFF.`,
+      ref: "src/lib/csrf.ts · app/api/checkout/route.ts",
+      rec: `Exactly the reasoning you want in security-sensitive code. Keep writing the "why we removed it" comments — that one is worth more than the code.` },
+
+    { id: "K3", sev: "praise", dim: "SEO", effort: "-",
+      title: "AEO / structured data is ahead of most funded startups",
+      saw: `FAQPage, SoftwareApplication, WebApplication, AggregateOffer with merchant-listing shipping + return fixes, BreadcrumbList, llms.txt, actions.json and an ai-content-declaration meta — all consistent and current.`,
+      ref: "layout.tsx · page.tsx · public/llms.txt",
+      rec: `A real, compounding asset for AI-answer visibility. The gap isn't the schema — it's the human-facing story sitting on top of it.` },
+
+    { id: "K4", sev: "praise", dim: "Design", effort: "-",
+      title: "The type and colour system is restrained and cohesive",
+      saw: `Syne for display, Outfit for body, JetBrains Mono for eyebrows and metrics; a dark slate ground with a single brand blue and sparing accent hues. Consistent card, border and glow language throughout.`,
+      ref: "layout.tsx fonts · globals.css @theme",
+      rec: `The craft is here. It's carrying a message that hasn't caught up to it — fix the words, not the look.` },
+
+    { id: "K5", sev: "praise", dim: "Accessibility", effort: "-",
+      title: "Accessibility is enforced in CI, not aspirational",
+      saw: `A semantic-HTML-first mandate (never a div-button), maximumScale of 5 (pinch-zoom preserved — no WCAG zoom failure), axe-core button-name/link-name gates, and a testid guard that fails the build on unlabeled interactive elements.`,
+      ref: "DUAL-ACCESSIBILITY.md · viewport · scripts/check-testids.mjs",
+      rec: `Most teams write this doc and never enforce it. Yours fails the build. Keep the guard wired into preflight.` },
+
+    { id: "D3", sev: "low", dim: "Design", effort: "M",
+      title: "Brand colours are hand-typed, not tokenized",
+      saw: `The homepage is full of literal hex / rgba values — the same brand blue and slate repeated inline across gradients, glows and shadows — while theme tokens already exist in globals.css (Tailwind v4 @theme).`,
+      ref: "page.tsx inline styles vs globals.css",
+      rec: `Route the repeated brand values through the existing tokens. Right now a palette tweak is a find-and-replace across dozens of inline strings — easy to miss one.` },
+  ];
+
+  pick(kind, val) {
+    this.setState((s) => {
+      const next = s[kind] === val && val !== "all" ? "all" : val;
+      return { [kind]: next };
+    });
+  }
+
+  renderVals() {
+    const accent = this.props.accent || "#38bdf8";
+    const density = this.props.density || "comfortable";
+    const compact = density === "compact";
+    const { sev, dim } = this.state;
+    const data = this.raw;
+
+    const counts = { high: 0, medium: 0, low: 0, praise: 0 };
+    data.forEach((f) => counts[f.sev]++);
+
+    const dimNames = ["Positioning", "UX", "Design", "Security", "SEO", "Accessibility"];
+    const dimCount = {};
+    dimNames.forEach((d) => (dimCount[d] = data.filter((f) => f.dim === d).length));
+
+    const list = data
+      .filter((f) => (sev === "all" || f.sev === sev) && (dim === "all" || f.dim === dim))
+      .sort((a, b) => this.sevMeta[a.sev].rank - this.sevMeta[b.sev].rank);
+
+    const findings = list.map((f) => {
+      const m = this.sevMeta[f.sev];
+      const praise = f.sev === "praise";
+      return {
+        ...f,
+        accent: m.color,
+        tint: m.tint,
+        sevLabel: m.label,
+        sawLabel: praise ? "What's working" : "What I saw",
+        recLabel: praise ? "Keep doing" : "Recommendation",
+        effortLabel: praise ? "Strength" : this.effortMeta[f.effort] || f.effort,
+      };
+    });
+
+    const tileDefs = [
+      { key: "all", label: "All findings", value: data.length, color: "#e2e8f0" },
+      { key: "high", label: "High priority", value: counts.high, color: "#f59e0b" },
+      { key: "medium", label: "Medium", value: counts.medium, color: "#38bdf8" },
+      { key: "low", label: "Low", value: counts.low, color: "#94a3b8" },
+      { key: "praise", label: "Strengths", value: counts.praise, color: "#34d399" },
+    ];
+    const tiles = tileDefs.map((t) => ({
+      ...t,
+      active: sev === t.key,
+      tintBg: t.color + "16",
+      onClick: () => this.pick("sev", t.key),
+    }));
+
+    const chipDefs = [{ label: "All areas", value: "all", count: data.length }].concat(
+      dimNames.map((d) => ({ label: d, value: d, count: dimCount[d] })),
+    );
+    const chips = chipDefs.map((c) => ({
+      ...c,
+      active: dim === c.value,
+      onClick: () => this.pick("dim", c.value),
+    }));
+
+    return {
+      findings,
+      tiles,
+      chips,
+      shown: findings.length,
+      total: data.length,
+      accent,
+      isFiltered: sev !== "all" || dim !== "all",
+      empty: findings.length === 0,
+      reset: () => this.setState({ sev: "all", dim: "all" }),
+      pad: compact ? "16px 18px" : "24px 28px",
+      listGap: compact ? "10px" : "16px",
+    };
+  }
+}
+</script>
+</body>
+</html>

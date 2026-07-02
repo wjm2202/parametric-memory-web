@@ -35,9 +35,9 @@ You receive an email from Stripe after each failed attempt with a link to update
 Your instance continues running normally during the retry window. The billing status on your Dashboard will show `past_due` but all API operations remain available. This is intentional — a single failed payment should not interrupt your work.
 
 If the final retry fails, Stripe cancels your subscription and our system begins the cancellation flow:
-1. Your instance moves to `read_only` (30-day grace period begins)
+1. Your instance is deprovisioned and a snapshot is taken — there is no read-only grace period
 2. You receive a notification that your subscription has ended
-3. From this point, the [cancellation flow](/docs/subscription/cancel) applies
+3. From this point, the [cancellation flow](/docs/subscription/cancel) applies (7-day paid at-cost recovery, then permanent deletion)
 
 ## Resolving a payment failure
 
@@ -54,11 +54,11 @@ If the payment succeeds, your subscription returns to `active` status and the `p
 
 If all Stripe retries are exhausted and the subscription is cancelled:
 
-- Your instance moves to `read_only` within seconds
-- The 30-day grace period starts (see [Cancel Subscription](/docs/subscription/cancel))
-- You have 30 days to resubscribe and start a new instance
+- Your instance is deprovisioned and a point-in-time snapshot is taken within seconds — there is no read-only grace period
+- For 7 days after termination the snapshot may be recovered as a paid, at-cost service (see [Cancel Subscription](/docs/subscription/cancel)); after that it is permanently deleted
+- You can resubscribe at any time to start a new instance
 
-To resubscribe, go to the Dashboard and complete a new Stripe Checkout. Note that resubscription creates a new instance — your previous atoms are in the read-only instance but are not automatically migrated. Export them during the grace period if needed.
+To resubscribe, go to the Dashboard and complete a new Stripe Checkout. Note that resubscription creates a new instance — your previous atoms are not carried over. To keep your data, export it before your instance is terminated.
 
 ## Adding credits to resolve suspension
 

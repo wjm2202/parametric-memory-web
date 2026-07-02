@@ -71,41 +71,12 @@ describe("SEO meta — home page (src/app/page.tsx)", () => {
     expect(homeMetadata.description).not.toMatch(/trial/i);
   });
 
-  it("keywords contain the hot commercial-intent terms (Mem0 + Zep alternative)", () => {
-    const kw = homeMetadata.keywords as string[];
-    expect(kw).toContain("Mem0 alternative");
-    expect(kw).toContain("Zep alternative");
-  });
-
-  it("keywords contain the uncontested differentiator terms", () => {
-    const kw = homeMetadata.keywords as string[];
-    expect(kw).toContain("verifiable AI memory");
-    expect(kw).toContain("Merkle proof memory");
-    expect(kw).toContain("RFC 6962 Merkle proof");
-    expect(kw).toContain("tamper-evident agent memory");
-    expect(kw).toContain("single-tenant AI memory");
-    expect(kw).toContain("anticipatory recall");
-  });
-
-  it("keywords contain the MCP-native + Claude Code positioning terms", () => {
-    const kw = homeMetadata.keywords as string[];
-    expect(kw).toContain("MCP memory server");
-    expect(kw).toContain("MCP-native memory");
-    expect(kw).toContain("AI memory for Claude Code");
-  });
-
-  it("keywords no longer contain the dropped low-leverage terms", () => {
-    const kw = homeMetadata.keywords as string[];
-    // Dropped from competitor research: too generic / saturated / brand-only
-    expect(kw).not.toContain("AI memory"); // generic, no buyer-intent
-    expect(kw).not.toContain("MMPM"); // brand-only, no SERP volume
-    expect(kw).not.toContain("cryptographic memory"); // matches encryption SERPs
-  });
-
-  it("keyword set is conservative — between 12 and 18 terms", () => {
-    const kw = homeMetadata.keywords as string[];
-    expect(kw.length).toBeGreaterThanOrEqual(12);
-    expect(kw.length).toBeLessThanOrEqual(18);
+  it("keywords meta is culled (S1, holistic review 2026-07-01)", () => {
+    // Google has ignored the keywords meta for over a decade. The homepage's
+    // 20+ entry keywords array was dead weight; ranking intent now lives in
+    // the H2s, FAQ answers and structured data. Assert it's gone so it can't
+    // silently creep back.
+    expect(homeMetadata.keywords).toBeUndefined();
   });
 });
 

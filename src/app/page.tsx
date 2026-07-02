@@ -11,30 +11,9 @@ export const metadata: Metadata = {
   title: "Parametric Memory — Persistent, Verifiable Memory for AI",
   description: getHomeMetaDescription(),
   alternates: { canonical: "https://parametric-memory.dev" },
-  keywords: [
-    // Hot commercial intent — Mem0/Zep comparison SERPs
-    "Mem0 alternative",
-    "Zep alternative",
-    // Uncontested differentiators (zero commercial competition for these terms)
-    "verifiable AI memory",
-    "Merkle proof memory",
-    "RFC 6962 Merkle proof",
-    "tamper-evident agent memory",
-    "single-tenant AI memory",
-    "anticipatory recall",
-    // Owned positioning
-    "MCP memory server",
-    "MCP-native memory",
-    "AI memory for Claude Code",
-    "parametric memory",
-    "AI memory substrate",
-    "Claude memory",
-    // AI-discovery — digital brain / agent & harness positioning
-    "digital brain for AI",
-    "Claude digital memory",
-    "AI harness memory",
-    "non-file-based AI memory",
-  ],
+  // S1 (holistic review): the metadata.keywords array was deleted 2026-07-01.
+  // Google has ignored the keywords meta for over a decade; ranking intent
+  // lives in the H2s, FAQ answers and structured data instead.
   openGraph: {
     title: "Parametric Memory — Persistent, Verifiable Memory for AI",
     description: getHomeMetaDescription(),
@@ -60,7 +39,7 @@ const landingJsonLd = {
   name: "Parametric Memory — Home",
   url: "https://parametric-memory.dev",
   description:
-    "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Dedicated instances from $5/mo USD.",
+    "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Isolated substrates from $5/mo USD; dedicated on Professional and Team.",
   datePublished: "2025-01-01",
   dateModified: new Date().toISOString().split("T")[0],
   inLanguage: "en-US",
@@ -84,9 +63,9 @@ const landingJsonLd = {
       "Cryptographic Merkle proofs (RFC 6962)",
       "Markov-chain predictive recall (64% hit rate)",
       "Sub-millisecond access latency (0.045ms p50)",
-      "MCP-native integration (25+ tools)",
+      "MCP-native integration (11 tools)",
       "Compact proofs (37% token savings)",
-      "Dedicated instances — no shared infrastructure",
+      "Dedicated instances on Professional and Team; isolated substrate on every tier",
     ],
     publisher: {
       "@type": "Organization",
@@ -112,7 +91,7 @@ const homeFaqJsonLd = {
       name: "What is Parametric Memory?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Parametric Memory (MMPM) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as named atoms in a SHA-256 Merkle tree, provides RFC 6962 consistency proofs on every read, and uses a Markov chain prediction layer to pre-fetch context before you ask for it. Dedicated instances from $5/month USD.",
+        text: "Parametric Memory (MMPM) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as named atoms in a SHA-256 Merkle tree, provides RFC 6962 consistency proofs on every read, and uses a Markov chain prediction layer to pre-fetch context before you ask for it. Isolated substrates from $5/month USD; dedicated on Professional and Team.",
       },
     },
     {
@@ -120,7 +99,7 @@ const homeFaqJsonLd = {
       name: "How is Parametric Memory different from Mem0 or Zep?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Parametric Memory provides cryptographic Merkle proofs on every memory read — Mem0 and Zep do not. Every customer gets a dedicated instance with their own PostgreSQL and Merkle tree — Mem0 and Zep use shared infrastructure. Markov-chain prediction pre-fetches context with a 64% hit rate. Knowledge graph edges are included at every tier, not paywalled.",
+        text: "Parametric Memory provides cryptographic Merkle proofs on every memory read — Mem0 and Zep do not. Every customer gets an isolated substrate with their own Merkle tree and API key, and Professional and Team run on fully dedicated infrastructure. Markov-chain prediction pre-fetches context with a 64% hit rate. Knowledge graph edges are included at every tier, not paywalled.",
       },
     },
     {
@@ -136,7 +115,7 @@ const homeFaqJsonLd = {
       name: "Does Parametric Memory work with Claude?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Yes. Parametric Memory ships with a Model Context Protocol (MCP) server with 25+ tools. Add one config block to claude_desktop_config.json and Claude gains persistent memory immediately — no SDK required. It also works with Claude Code, Cowork, Cursor, Cline, and any MCP-compatible client.",
+        text: "Yes. Parametric Memory ships with a Model Context Protocol (MCP) server with 11 tools. Add one config block to claude_desktop_config.json and Claude gains persistent memory immediately — no SDK required. It also works with Claude Code, Cowork, Cursor, Cline, and any MCP-compatible client.",
       },
     },
     {
@@ -144,7 +123,7 @@ const homeFaqJsonLd = {
       name: "How much does Parametric Memory cost?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day), Solo at $9/month (10,000 memories, up to 33 sessions/day), Professional at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, unlimited sessions). Enterprise Cloud starts at $299/month. All prices in US dollars (USD).",
+        text: "Four plans: Starter at $5/month (1,000 memories, up to 6 Claude sessions/day), Solo at $9/month (10,000 memories, up to 33 sessions/day), Professional at $29/month (100,000 memories, up to 333 sessions/day), and Team at $79/month (500,000 memories, up to 667 sessions/day). Enterprise and self-hosted deployments are available — talk to us. All prices in US dollars (USD).",
       },
     },
     {
@@ -152,7 +131,7 @@ const homeFaqJsonLd = {
       name: "How long does setup take?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "In minutes. Sign up, receive your instance credentials by email, add one config block to your MCP client, and your AI has persistent memory. No Docker, no self-hosting, no infrastructure work required.",
+        text: "In minutes. Sign up, claim your API key from your dashboard, add one config block to your MCP client, and your AI has persistent memory. No Docker, no self-hosting, no infrastructure work required.",
       },
     },
   ],
@@ -186,133 +165,147 @@ function Logomark({ size = 24 }: { size?: number }) {
   );
 }
 
-// ── Feature data ───────────────────────────────────────────────────────────
-const features = [
-  {
-    icon: (
-      <svg
-        width="20"
-        height="20"
-        fill="none"
-        stroke="#36aaf5"
-        strokeWidth="1.5"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z"
-        />
-      </svg>
-    ),
-    accent: "text-brand-400",
-    label: "Merkle Proofs",
-    headline: "Every atom is cryptographically committed.",
-    body: "RFC 6962-compliant SHA-256 Merkle tree. Tamper with one atom — the root hash changes. AI clients verify integrity without trusting the server.",
-    stat: "37% token savings vs raw proofs",
-  },
-  {
-    icon: (
-      <svg
-        width="20"
-        height="20"
-        fill="none"
-        stroke="#f59e0b"
-        strokeWidth="1.5"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5"
-        />
-      </svg>
-    ),
-    accent: "text-amber-400",
-    label: "Markov Prediction",
-    headline: "Your next memory is already warm.",
-    body: "Variable-order Markov chain predicts which atoms you'll access next. Pre-fetches context before the query arrives. Weights decay at 0.5^(days/7) — recency matters.",
-    stat: "64% hit rate in production",
-  },
-  {
-    icon: (
-      <svg
-        width="20"
-        height="20"
-        fill="none"
-        stroke="#22d3ee"
-        strokeWidth="1.5"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z"
-        />
-      </svg>
-    ),
-    accent: "text-cyan-400",
-    label: "Sub-ms Recall",
-    headline: "0.045ms p50. Not a typo.",
-    body: "LevelDB with JumpHash sharding across 4 independent Merkle trees. Dedicated instance means zero contention. No shared cluster, no noisy neighbours.",
-    stat: "0.045ms p50 · 1.2ms p99",
-  },
-  {
-    icon: (
-      <svg
-        width="20"
-        height="20"
-        fill="none"
-        stroke="#36aaf5"
-        strokeWidth="1.5"
-        viewBox="0 0 24 24"
-      >
-        <path
-          strokeLinecap="round"
-          strokeLinejoin="round"
-          d="M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5"
-        />
-      </svg>
-    ),
-    accent: "text-brand-400",
-    label: "MCP-Native",
-    headline: "25+ tools. Plug in, don't integrate.",
-    body: "Streamable HTTP MCP transport. Works with Claude, Cowork, and any MCP-compatible client. OAuth2 + Bearer auth. The client your AI already speaks.",
-    stat: "25 MCP tools · Streamable HTTP",
-  },
+// ── Arrow icon ─────────────────────────────────────────────────────────────
+function ArrowIcon({ className = "h-4 w-4" }: { className?: string }) {
+  return (
+    <svg
+      className={className}
+      fill="none"
+      viewBox="0 0 24 24"
+      strokeWidth={2}
+      stroke="currentColor"
+      aria-hidden="true"
+    >
+      <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
+    </svg>
+  );
+}
+
+// ── Hero honest proof band (P2 — every metric qualified) ────────────────────
+const proofBand = [
+  { value: "0.045ms", label: "recall, p50" },
+  { value: "64%", label: "recalled before you ask" },
+  { value: "Every read", label: "carries a proof" },
+  { value: "Your own", label: "isolated substrate" },
 ];
 
-// ── How it works steps ─────────────────────────────────────────────────────
-const steps = [
+// ── Setup steps ─────────────────────────────────────────────────────────────
+const setupSteps = [
   {
     n: "01",
-    title: "Atom arrives",
-    desc: "API call or MCP tool deposits a memory atom. Immediately hashed and committed to the Merkle tree.",
+    text: "Sign up and pick a plan — your substrate provisions automatically.",
+  },
+  { n: "02", text: "Claim your API key in your dashboard — your config block is ready to copy." },
+  { n: "03", text: "Paste one MCP config block. Your AI has memory — permanently." },
+];
+
+const setupConfig = `{
+  "mcpServers": {
+    "parametric-memory": {
+      "type": "streamable-http",
+      "url": "https://silver-flat-6czf.droplet-mcp.nz/mcp",
+      "headers": {
+        "Authorization": "Bearer mmk_••••••"
+      }
+    }
+  }
+}`;
+
+// ── Capabilities (P1 — benefit-first heading, mechanism + honest stat below) ─
+const capabilities = [
+  {
+    accent: "text-brand-400",
+    iconStroke: "#36aaf5",
+    iconPath:
+      "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z",
+    headline: "It never forgets",
+    sub: "Every fact, kept and committed.",
+    body: "Each memory is written to a SHA-256 Merkle tree the moment it arrives. Tamper with one atom and the root hash changes — so your AI can verify its own memory without trusting the server.",
+    stat: "RFC 6962 Merkle proofs · 37% smaller than raw",
   },
   {
-    n: "02",
-    title: "JumpHash routes to shard",
-    desc: "The atom key is deterministically routed to one of 4 LevelDB shards via JumpHash — O(1), no coordination.",
+    accent: "text-amber-400",
+    iconStroke: "#f59e0b",
+    iconPath:
+      "M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5",
+    headline: "It's warm before you ask",
+    sub: "The next memory is already loaded.",
+    body: "A Markov chain learns which memories tend to follow which, and pre-fetches the context before the query lands. Recent memories weigh more; old paths decay.",
+    stat: "64% predictive hit rate on our substrate",
   },
   {
-    n: "03",
-    title: "Markov arc fires",
-    desc: "The transition is recorded. The Markov predictor updates its weight table and schedules predictive prefetch.",
+    accent: "text-cyan-400",
+    iconStroke: "#22d3ee",
+    iconPath: "M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z",
+    headline: "It answers instantly",
+    sub: "Recall in a fraction of a millisecond.",
+    body: "LevelDB sharded across four independent Merkle trees keeps recall sub-millisecond. Professional and Team run on a dedicated droplet — zero contention, no noisy neighbours; every tier stays an isolated substrate.",
+    stat: "0.045ms p50 · 1.2ms p99, measured in production",
   },
   {
-    n: "04",
-    title: "Proof returned",
-    desc: "On read, the atom comes with a Merkle audit path. Client verifies root hash. Tamper-evident, always.",
+    accent: "text-brand-400",
+    iconStroke: "#36aaf5",
+    iconPath: "M17.25 6.75 22.5 12l-5.25 5.25m-10.5 0L1.5 12l5.25-5.25m7.5-3-4.5 16.5",
+    headline: "You plug in, you don't integrate",
+    sub: "The client your AI already speaks.",
+    body: "A Model Context Protocol server with 11 tools over streamable HTTP. Works with Claude, Claude Code, Cursor, Cline and any MCP-compatible client. No SDK to learn.",
+    stat: "11 MCP tools · OAuth2 + Bearer",
   },
 ];
 
-// ── Stats ──────────────────────────────────────────────────────────────────
-const stats = [
-  { value: "0.045ms", label: "p50 recall latency" },
-  { value: "64%", label: "Markov hit rate" },
-  { value: "37%", label: "token savings (compact proofs)" },
-  { value: "$5/mo", label: "dedicated instance, starting (USD)" },
-  { value: "<60s", label: "instance setup time" },
+// ── Agent-operable pillars (A1 — surface the dual human/AI accessibility) ────
+const agentPillars = [
+  {
+    title: "Every action, twice",
+    body: "A UI control and an API endpoint that does exactly the same thing.",
+  },
+  {
+    title: "Discoverable",
+    body: "A published actions manifest and llms.txt so agents can find their way.",
+  },
+  {
+    title: "Accessible, enforced",
+    body: "Semantic HTML and labels checked in CI — the build fails without them.",
+  },
+];
+
+// ── Pricing preview (P4 — 4 tiers, Professional anchored, enterprise collapsed)
+// The $1 entry tier (id "free" in tiers.ts) is intentionally NOT advertised
+// here — owner directive 2026-07-01: never advertise the $1 tier to humans
+// or AI. Advertised tiers start at Starter ($5).
+const pricingPreview = [
+  {
+    slug: "starter",
+    name: "Starter",
+    price: "$5",
+    memories: "1,000 memories",
+    features: ["Up to 6 sessions/day", "Merkle proofs included", "MCP-native"],
+    popular: false,
+  },
+  {
+    slug: "solo",
+    name: "Solo",
+    price: "$9",
+    memories: "10,000 memories",
+    features: ["Up to 33 sessions/day", "Knowledge-graph edges", "Everything in Starter"],
+    popular: false,
+  },
+  {
+    slug: "pro",
+    name: "Professional",
+    price: "$29",
+    memories: "100,000 memories",
+    features: ["Up to 333 sessions/day", "Priority provisioning", "Everything in Solo"],
+    popular: true,
+  },
+  {
+    slug: "team",
+    name: "Team",
+    price: "$79",
+    memories: "500,000 memories",
+    features: ["Up to 667 sessions/day", "Shared substrate access", "Everything in Professional"],
+    popular: false,
+  },
 ];
 
 // ── Page ───────────────────────────────────────────────────────────────────
@@ -344,7 +337,7 @@ export default async function HomePage() {
           className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden pt-20"
           aria-label="Hero — Parametric Memory"
         >
-          {/* R3F canvas — full bleed behind content */}
+          {/* R3F canvas — full bleed behind content (reduced-motion aware) */}
           <HeroSceneWrapper />
 
           {/* Gradient vignette — softens edges, ensures text legibility */}
@@ -360,7 +353,7 @@ export default async function HomePage() {
             aria-hidden="true"
           />
 
-          {/* Animated hero sequence — taglines → close (client component) */}
+          {/* Hero content (server component — LCP-friendly) */}
           <HeroAnimatedSequence />
 
           {/* Scroll cue */}
@@ -380,190 +373,151 @@ export default async function HomePage() {
           </div>
         </section>
 
-        {/* ── STATS BAR ─────────────────────────────────────────────────── */}
+        {/* ── HONEST PROOF BAND (P2) ────────────────────────────────────── */}
         <section
           className="border-surface-800/50 bg-surface-900/40 border-y backdrop-blur-sm"
           aria-label="Key metrics"
         >
           <div className="mx-auto max-w-5xl px-6 py-10">
-            <dl className="grid grid-cols-2 gap-8 lg:grid-cols-5">
-              {stats.map((s) => (
-                <div key={s.value} className="text-center">
-                  <dt className="text-surface-500 mb-2 font-mono text-[11px] tracking-widest uppercase">
-                    {s.label}
-                  </dt>
+            <dl className="grid grid-cols-2 gap-8 lg:grid-cols-4">
+              {proofBand.map((s) => (
+                <div key={s.label} className="text-center">
                   <dd
                     className="font-display text-3xl font-bold text-white"
                     style={{ letterSpacing: "-0.03em" }}
                   >
                     {s.value}
                   </dd>
+                  <dt className="text-surface-400 mt-2 font-mono text-[11px] tracking-widest uppercase">
+                    {s.label}
+                  </dt>
                 </div>
               ))}
             </dl>
+            <p className="text-surface-500 mt-8 text-center font-mono text-[11px] tracking-wide">
+              Latency and hit-rate measured on our own production substrate — not a customer
+              benchmark.
+            </p>
           </div>
         </section>
 
-        {/* ── FEATURES ──────────────────────────────────────────────────── */}
-        <section className="mx-auto max-w-6xl px-6 py-24" aria-labelledby="features-heading">
-          {/* Section header */}
-          <div className="mb-16 max-w-xl">
+        {/* ── SETUP ─────────────────────────────────────────────────────── */}
+        <section className="mx-auto max-w-6xl px-6 py-24" aria-labelledby="setup-heading">
+          <div className="mb-14 max-w-xl">
             <p className="text-brand-400 mb-3 font-mono text-[11px] tracking-widest uppercase">
-              Capabilities
+              Setup
             </p>
             <h2
-              id="features-heading"
+              id="setup-heading"
               className="font-display mb-4 text-3xl font-bold text-white lg:text-4xl"
               style={{ letterSpacing: "-0.025em" }}
             >
-              Built on verifiable mathematics.
+              From signup to remembering, in under a minute.
             </h2>
             <p className="font-body text-surface-400 text-base leading-relaxed">
-              Not approximations or fuzzy similarity search. Every claim is provable, every number
-              is measured in production.
+              No Docker. No self-hosting. No SDK. Sign up, claim your key from your dashboard, and
+              paste one config block into the AI client you already use.
             </p>
           </div>
 
-          <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
-            {features.map((f) => (
-              <article
-                key={f.label}
-                className="group border-surface-800 bg-surface-900/50 hover:border-brand-500/30 hover:bg-surface-900/80 relative rounded-2xl border p-6 transition-colors"
-              >
-                {/* Top-edge shimmer on hover */}
-                <div
-                  className="pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-2xl opacity-0 transition-opacity group-hover:opacity-100"
-                  style={{
-                    background:
-                      "linear-gradient(90deg, transparent, rgba(54,170,245,0.5), transparent)",
-                  }}
-                  aria-hidden="true"
-                />
-
-                {/* Icon */}
-                <div className="border-surface-800 bg-surface-800/60 mb-4 flex h-10 w-10 items-center justify-center rounded-xl border">
-                  {f.icon}
-                </div>
-
-                {/* Label pill */}
-                <p className="text-surface-500 mb-3 font-mono text-[11px] tracking-widest uppercase">
-                  {f.label}
-                </p>
-
-                <h3
-                  className="font-display mb-2 text-[15px] leading-snug font-semibold text-white"
-                  style={{ letterSpacing: "-0.01em" }}
-                >
-                  {f.headline}
-                </h3>
-
-                <p className="text-surface-400 mb-4 text-sm leading-relaxed">{f.body}</p>
-
-                <p className={`font-mono text-xs ${f.accent}`}>{f.stat}</p>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* ── HOW IT WORKS ──────────────────────────────────────────────── */}
-        <section
-          className="border-surface-800/50 bg-surface-900/30 border-t py-24"
-          aria-labelledby="how-heading"
-        >
-          <div className="mx-auto max-w-6xl px-6">
-            <div className="mb-16 max-w-xl">
-              <p className="text-brand-400 mb-3 font-mono text-[11px] tracking-widest uppercase">
-                Architecture
-              </p>
-              <h2
-                id="how-heading"
-                className="font-display mb-4 text-3xl font-bold text-white lg:text-4xl"
-                style={{ letterSpacing: "-0.025em" }}
-              >
-                From atom to proof in four steps.
-              </h2>
-              <p className="font-body text-surface-400 text-base leading-relaxed">
-                No black boxes. Every stage is deterministic, measurable, and verifiable.
-              </p>
-            </div>
-
-            <ol className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4" aria-label="How MMPM works">
-              {steps.map((step, i) => (
-                <li key={step.n} className="relative">
-                  {/* Connector line (desktop) */}
-                  {i < steps.length - 1 && (
-                    <div
-                      className="absolute top-6 left-full z-10 hidden h-px w-6 lg:block"
-                      style={{
-                        background: "linear-gradient(90deg, rgba(54,170,245,0.3), transparent)",
-                      }}
-                      aria-hidden="true"
-                    />
-                  )}
-                  <div className="border-surface-800 bg-surface-900/50 h-full rounded-2xl border p-6">
-                    <span className="text-surface-800 mb-4 block font-mono text-3xl font-bold select-none">
-                      {step.n}
-                    </span>
-                    <h3
-                      className="font-display mb-2 text-base font-semibold text-white"
-                      style={{ letterSpacing: "-0.01em" }}
-                    >
-                      {step.title}
-                    </h3>
-                    <p className="text-surface-400 text-sm leading-relaxed">{step.desc}</p>
-                  </div>
+          <div className="grid gap-8 lg:grid-cols-2 lg:items-center">
+            {/* Steps */}
+            <ol className="flex flex-col gap-6">
+              {setupSteps.map((step) => (
+                <li key={step.n} className="flex gap-4">
+                  <span className="text-brand-400 font-mono text-sm font-bold select-none">
+                    {step.n}
+                  </span>
+                  <p className="text-surface-300 text-base leading-relaxed">{step.text}</p>
                 </li>
               ))}
             </ol>
 
-            {/* Architecture CTA — text link only */}
-            <div className="mt-10 flex flex-col items-center gap-5 sm:flex-row sm:justify-between">
-              <Link
-                href="/docs"
-                className="font-body text-brand-400 hover:text-brand-300 inline-flex items-center gap-2 text-sm transition-colors"
-              >
-                Full architecture documentation
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-                  />
-                </svg>
-              </Link>
-
-              {/* Repeated primary CTA */}
-              <Link
-                href="/pricing"
-                className="bg-brand-500 hover:bg-brand-400 inline-flex items-center gap-2 rounded-xl px-6 py-3 text-sm font-semibold text-white shadow-[0_0_20px_rgba(12,142,230,0.25)] transition-all hover:shadow-[0_0_32px_rgba(54,170,245,0.4)]"
-              >
-                Get Your Instance
-                <svg
-                  className="h-4 w-4"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  strokeWidth={2}
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-                  />
-                </svg>
-              </Link>
+            {/* Config code card */}
+            <div className="border-surface-800 bg-surface-950/80 overflow-hidden rounded-2xl border">
+              <div className="border-surface-800 bg-surface-900/60 flex items-center gap-2 border-b px-4 py-3">
+                <span className="h-2.5 w-2.5 rounded-full bg-[#f59e0b]" aria-hidden="true" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#22d3ee]" aria-hidden="true" />
+                <span className="h-2.5 w-2.5 rounded-full bg-[#34d399]" aria-hidden="true" />
+                <span className="text-surface-500 ml-2 font-mono text-xs">
+                  claude_desktop_config.json
+                </span>
+              </div>
+              <pre className="text-surface-300 overflow-x-auto p-5 font-mono text-xs leading-relaxed">
+                {setupConfig}
+              </pre>
             </div>
           </div>
         </section>
 
-        {/* ── SOCIAL PROOF — We trust it with ours ──────────────────────── */}
-        <section className="mx-auto max-w-6xl px-6 py-24" aria-labelledby="trust-heading">
+        {/* ── CAPABILITIES (P1) ─────────────────────────────────────────── */}
+        <section
+          className="border-surface-800/50 bg-surface-900/30 border-t py-24"
+          aria-labelledby="features-heading"
+          data-testid="landing-section-features"
+        >
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="mb-16 max-w-xl">
+              <p className="text-brand-400 mb-3 font-mono text-[11px] tracking-widest uppercase">
+                What your AI gets
+              </p>
+              <h2
+                id="features-heading"
+                className="font-display mb-4 text-3xl font-bold text-white lg:text-4xl"
+                style={{ letterSpacing: "-0.025em" }}
+              >
+                Four things it couldn&apos;t do before.
+              </h2>
+              <p className="font-body text-surface-400 text-base leading-relaxed">
+                The benefit first. The mathematics that make it true, underneath.
+              </p>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2">
+              {capabilities.map((f) => (
+                <article
+                  key={f.headline}
+                  className="group border-surface-800 bg-surface-900/50 hover:border-brand-500/30 hover:bg-surface-900/80 relative rounded-2xl border p-7 transition-colors"
+                >
+                  <div
+                    className="pointer-events-none absolute inset-x-0 top-0 h-px rounded-t-2xl opacity-0 transition-opacity group-hover:opacity-100"
+                    style={{
+                      background:
+                        "linear-gradient(90deg, transparent, rgba(54,170,245,0.5), transparent)",
+                    }}
+                    aria-hidden="true"
+                  />
+                  <div className="border-surface-800 bg-surface-800/60 mb-4 flex h-10 w-10 items-center justify-center rounded-xl border">
+                    <svg
+                      width="20"
+                      height="20"
+                      fill="none"
+                      stroke={f.iconStroke}
+                      strokeWidth="1.5"
+                      viewBox="0 0 24 24"
+                      aria-hidden="true"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" d={f.iconPath} />
+                    </svg>
+                  </div>
+
+                  <h3
+                    className="font-display text-lg font-semibold text-white"
+                    style={{ letterSpacing: "-0.01em" }}
+                  >
+                    {f.headline}
+                  </h3>
+                  <p className="text-surface-300 mt-1 mb-3 text-sm font-medium">{f.sub}</p>
+                  <p className="text-surface-400 mb-4 text-sm leading-relaxed">{f.body}</p>
+                  <p className={`font-mono text-xs ${f.accent}`}>{f.stat}</p>
+                </article>
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* ── AGENT-OPERABLE (A1) ───────────────────────────────────────── */}
+        <section className="mx-auto max-w-6xl px-6 py-24" aria-labelledby="agent-heading">
           <div
             className="relative overflow-hidden rounded-3xl border p-10 lg:p-16"
             style={{
@@ -571,160 +525,183 @@ export default async function HomePage() {
               borderColor: "rgba(54,170,245,0.15)",
             }}
           >
-            {/* Corner glow */}
             <div
               className="pointer-events-none absolute -top-20 -right-20 h-64 w-64 rounded-full opacity-20"
               style={{ background: "radial-gradient(circle, #36aaf5, transparent 70%)" }}
               aria-hidden="true"
             />
+            <div className="relative max-w-2xl">
+              <p className="text-brand-400 mb-3 font-mono text-[11px] tracking-widest uppercase">
+                Built for who&apos;s actually using it
+              </p>
+              <h2
+                id="agent-heading"
+                className="font-display mb-5 text-3xl font-bold text-white lg:text-4xl"
+                style={{ letterSpacing: "-0.025em" }}
+              >
+                Operable by the humans and the agents.
+              </h2>
+              <p className="font-body text-surface-300 text-base leading-relaxed">
+                Increasingly, the thing driving your dashboard isn&apos;t a person — it&apos;s
+                Claude-in-Chrome, Operator, Atlas. So every button here has a stable handle and a
+                documented API equal, and every page ships a machine-readable action manifest. A
+                human clicks it; an agent calls it. Both just work.
+              </p>
+            </div>
 
-            <div className="relative grid gap-12 lg:grid-cols-2 lg:items-center">
-              {/* Left — the story */}
-              <div>
-                <p className="text-brand-400 mb-4 font-mono text-[11px] tracking-widest uppercase">
-                  Built on our own product
-                </p>
-                <h2
-                  id="trust-heading"
-                  className="font-display mb-6 text-3xl font-bold text-white lg:text-4xl"
-                  style={{ letterSpacing: "-0.025em", lineHeight: 1.15 }}
-                >
-                  We don&apos;t just sell you a second brain.
-                  <br />
-                  <span
-                    style={{
-                      background: "linear-gradient(135deg, #36aaf5 0%, #22d3ee 100%)",
-                      WebkitBackgroundClip: "text",
-                      WebkitTextFillColor: "transparent",
-                    }}
-                  >
-                    We trust it with ours.
-                  </span>
-                </h2>
-                <p className="font-body text-surface-400 mb-6 text-base leading-relaxed">
-                  Every billing event, health check, customer signup, and architecture decision at
-                  Parametric Memory is a Merkle-sealed atom in our own MMPM substrate. The same
-                  proofs that protect your data protect our audit trail.
-                </p>
-                <p className="font-body text-surface-400 text-base leading-relaxed">
-                  If we trust it to run our company, you can trust it with your AI&apos;s memory.
-                </p>
-              </div>
-
-              {/* Right — live proof indicators */}
-              <div className="flex flex-col gap-4">
-                {/* Live atom indicator */}
+            <div className="relative mt-10 grid gap-6 sm:grid-cols-3">
+              {agentPillars.map((p) => (
                 <div
-                  className="rounded-2xl border p-6"
-                  style={{
-                    background: "rgba(16,185,129,0.05)",
-                    borderColor: "rgba(16,185,129,0.15)",
-                  }}
+                  key={p.title}
+                  className="border-surface-800 bg-surface-900/50 rounded-2xl border p-6"
                 >
-                  <div className="mb-3 flex items-center gap-2">
-                    <span
-                      className="h-2 w-2 animate-pulse rounded-full bg-emerald-400"
-                      aria-hidden="true"
-                    />
-                    <span className="font-mono text-[11px] tracking-widest text-emerald-500 uppercase">
-                      Our live substrate
-                    </span>
-                  </div>
-                  <p
-                    className="font-display text-4xl font-bold text-white"
-                    style={{ letterSpacing: "-0.03em" }}
-                  >
-                    821+
-                  </p>
-                  <p className="text-surface-500 mt-1 font-mono text-xs">
-                    atoms sealed · Merkle-verified · in production since March 2026
-                  </p>
+                  <h3 className="font-display mb-2 text-base font-semibold text-white">
+                    {p.title}
+                  </h3>
+                  <p className="text-surface-400 text-sm leading-relaxed">{p.body}</p>
                 </div>
-
-                {/* Proof points */}
-                <div className="grid grid-cols-2 gap-4">
-                  {[
-                    { label: "Markov hit rate", value: "64%", color: "#f59e0b" },
-                    { label: "Recall latency p50", value: "0.045ms", color: "#22d3ee" },
-                    { label: "Merkle proofs issued", value: "Every read", color: "#36aaf5" },
-                    { label: "Shared infrastructure", value: "None. Zero.", color: "#10b981" },
-                  ].map((item) => (
-                    <div
-                      key={item.label}
-                      className="border-surface-800 bg-surface-900/50 rounded-xl border p-4"
-                    >
-                      <p
-                        className="font-display text-lg font-bold text-white"
-                        style={{ color: item.color }}
-                      >
-                        {item.value}
-                      </p>
-                      <p className="text-surface-500 mt-0.5 font-mono text-[11px] tracking-wide">
-                        {item.label}
-                      </p>
-                    </div>
-                  ))}
-                </div>
-              </div>
+              ))}
             </div>
           </div>
         </section>
 
-        {/* ── LIVE DEMO CTA ─────────────────────────────────────────────── */}
-        <section className="mx-auto max-w-6xl px-6 pb-24" aria-labelledby="demo-heading">
-          <div
-            className="border-brand-500/20 relative overflow-hidden rounded-3xl border p-10 text-center lg:p-16"
-            style={{
-              background:
-                "radial-gradient(ellipse 80% 60% at 50% 0%, rgba(54,170,245,0.06) 0%, transparent 70%), #0f172a",
-            }}
-          >
-            <div
-              className="pointer-events-none absolute inset-x-0 top-0 h-px"
-              style={{
-                background:
-                  "linear-gradient(90deg, transparent, rgba(54,170,245,0.4), transparent)",
-              }}
-              aria-hidden="true"
-            />
-
+        {/* ── VERIFY (P3 — replaces self-referential social proof) ──────── */}
+        <section className="border-surface-800/50 border-t py-24" aria-labelledby="verify-heading">
+          <div className="mx-auto max-w-2xl px-6 text-center">
             <p className="text-brand-400 mb-4 font-mono text-[11px] tracking-widest uppercase">
-              Live Demo
+              Trust, earned not asked
             </p>
             <h2
-              id="demo-heading"
-              className="font-display mb-4 text-3xl font-bold text-white lg:text-4xl"
-              style={{ letterSpacing: "-0.025em" }}
+              id="verify-heading"
+              className="font-display mb-5 text-3xl font-bold text-white lg:text-4xl"
+              style={{ letterSpacing: "-0.025em", lineHeight: 1.15 }}
             >
-              Watch the memory substrate live.
+              Don&apos;t take our word for it. Take the proof.
             </h2>
-            <p className="font-body text-surface-400 mx-auto mb-8 max-w-lg text-base leading-relaxed">
-              Real atoms. Real Merkle rehash cascades. Real Markov arc predictions. Connect to a
-              live MMPM instance and watch memory form in real time.
+            <p className="font-body text-surface-400 mx-auto mb-8 max-w-xl text-base leading-relaxed">
+              Drop a signed memory snapshot into your browser and verify it yourself — no API key,
+              no account, not one line of our code in the loop. If a single atom was altered, the
+              check fails in front of you. That&apos;s the whole point: you shouldn&apos;t have to
+              trust us.
             </p>
-            <a
-              href="/knowledge"
-              className="border-surface-700 bg-surface-800/60 text-surface-200 hover:border-brand-500/40 inline-flex items-center gap-2.5 rounded-xl border px-8 py-4 text-sm font-semibold backdrop-blur-sm transition-all hover:text-white"
-            >
-              <svg
-                className="text-brand-400 h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
+            <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
+              <Link
+                href="/verify"
+                data-testid="landing-verify-cta"
+                aria-label="Verify a snapshot yourself"
+                className="bg-brand-500 hover:bg-brand-400 inline-flex items-center gap-2 rounded-xl px-7 py-3.5 text-sm font-semibold text-white shadow-[0_0_36px_rgba(12,142,230,0.4)] transition-all hover:shadow-[0_0_48px_rgba(54,170,245,0.5)]"
               >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.54 6.347a1.125 1.125 0 0 1 0 1.972l-11.54 6.347a1.125 1.125 0 0 1-1.667-.986V5.653Z"
-                />
-              </svg>
-              See It Live
-            </a>
+                Verify a snapshot yourself
+                <ArrowIcon />
+              </Link>
+              <Link
+                href="/docs"
+                data-testid="landing-verify-how"
+                aria-label="See how it works"
+                className="font-body text-brand-400 hover:text-brand-300 inline-flex items-center gap-2 text-sm transition-colors"
+              >
+                See how it works
+                <ArrowIcon />
+              </Link>
+            </div>
+            <p className="text-surface-500 mt-10 font-mono text-xs">
+              We run our own company on it — 1,000+ Merkle-sealed atoms in production, and growing.
+            </p>
           </div>
         </section>
 
-        {/* ── FINAL CTA — The close ──────────────────────────────────────── */}
+        {/* ── PRICING PREVIEW (P4) ──────────────────────────────────────── */}
+        <section
+          className="border-surface-800/50 bg-surface-900/30 border-t py-24"
+          aria-labelledby="pricing-heading"
+        >
+          <div className="mx-auto max-w-6xl px-6">
+            <div className="mb-14 max-w-xl">
+              <p className="text-brand-400 mb-3 font-mono text-[11px] tracking-widest uppercase">
+                Pricing
+              </p>
+              <h2
+                id="pricing-heading"
+                className="font-display mb-4 text-3xl font-bold text-white lg:text-4xl"
+                style={{ letterSpacing: "-0.025em" }}
+              >
+                An isolated substrate from $5.
+              </h2>
+              <p className="font-body text-surface-400 text-base leading-relaxed">
+                Every plan is an isolated substrate with its own Merkle tree and API key —
+                Professional and Team run on dedicated infrastructure. Pick by how much your AI
+                needs to remember.
+              </p>
+            </div>
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4">
+              {pricingPreview.map((tier) => (
+                <Link
+                  key={tier.slug}
+                  href="/pricing"
+                  data-testid={`landing-pricing-${tier.slug}`}
+                  aria-label={`View ${tier.name} plan — ${tier.price} per month`}
+                  className={`group relative flex flex-col rounded-2xl border p-6 transition-colors ${
+                    tier.popular
+                      ? "border-brand-500/50 bg-surface-900/80"
+                      : "border-surface-800 bg-surface-900/50 hover:border-brand-500/30"
+                  }`}
+                >
+                  {tier.popular && (
+                    <span className="bg-brand-500 absolute -top-3 left-6 rounded-full px-3 py-1 font-mono text-[11px] font-semibold tracking-widest text-white uppercase">
+                      Most popular
+                    </span>
+                  )}
+                  <p className="text-surface-400 font-mono text-[11px] tracking-widest uppercase">
+                    {tier.name}
+                  </p>
+                  <p
+                    className="font-display mt-2 text-3xl font-bold text-white"
+                    style={{ letterSpacing: "-0.03em" }}
+                  >
+                    {tier.price}
+                    <span className="text-surface-500 text-base font-normal">/mo</span>
+                  </p>
+                  <p className="text-surface-300 mt-1 text-sm font-medium">{tier.memories}</p>
+                  <ul className="border-surface-800 mt-4 flex flex-col gap-2 border-t pt-4">
+                    {tier.features.map((feat) => (
+                      <li key={feat} className="text-surface-400 text-sm leading-snug">
+                        {feat}
+                      </li>
+                    ))}
+                  </ul>
+                </Link>
+              ))}
+            </div>
+
+            {/* Enterprise collapse (P4) */}
+            <Link
+              href="/contact"
+              data-testid="landing-pricing-enterprise"
+              aria-label="Talk to us about enterprise and self-hosted deployments"
+              className="border-surface-700 hover:border-brand-500/40 group mt-6 flex flex-col items-start justify-between gap-3 rounded-2xl border border-dashed p-6 transition-colors sm:flex-row sm:items-center"
+            >
+              <div>
+                <p className="font-display text-base font-semibold text-white">
+                  Enterprise &amp; self-hosted
+                </p>
+                <p className="text-surface-400 text-sm">
+                  Dedicated clusters, on-prem deployment, custom capacity and SLAs.
+                </p>
+              </div>
+              <span className="text-brand-400 group-hover:text-brand-300 inline-flex items-center gap-2 font-mono text-sm whitespace-nowrap">
+                Talk to us
+                <ArrowIcon />
+              </span>
+            </Link>
+
+            <p className="text-surface-500 mt-6 text-center font-mono text-xs">
+              All prices in USD · 7-day money-back guarantee · cancel anytime
+            </p>
+          </div>
+        </section>
+
+        {/* ── FINAL CTA — the close ─────────────────────────────────────── */}
         <section
           className="border-surface-800/50 border-t py-32"
           aria-labelledby="cta-heading"
@@ -748,46 +725,25 @@ export default async function HomePage() {
                   WebkitTextFillColor: "transparent",
                 }}
               >
-                Your AI will remember everything.
+                Never start from zero again.
               </span>
             </p>
             <p className="font-body text-surface-400 mb-10 text-lg leading-relaxed">
-              Dedicated substrate. Cryptographic proofs. Markov prediction.
-              <br />
-              Your own Merkle tree — not a row in someone else&apos;s database.
+              Your own isolated substrate, cryptographic proofs and predictive recall — your own
+              Merkle tree, not a row in someone else&apos;s database.
             </p>
 
-            {/* Primary CTA — full and prominent */}
             <Link
               href="/pricing"
+              data-testid="landing-final-cta"
+              aria-label="Get your instance — $5 per month"
               className="bg-brand-500 hover:bg-brand-400 mb-4 inline-flex items-center gap-2.5 rounded-xl px-10 py-4 text-base font-semibold text-white shadow-[0_0_40px_rgba(12,142,230,0.4)] transition-all hover:shadow-[0_0_56px_rgba(54,170,245,0.5)]"
             >
-              Get Your Instance
-              <svg
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={2}
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3"
-                />
-              </svg>
+              Get your instance — $5/mo
+              <ArrowIcon className="h-5 w-5" />
             </Link>
 
-            {/* Microcopy — removes friction */}
-            <p className="text-surface-400 text-sm">
-              Starting at $5/month USD · 30-day money-back guarantee · Cancel anytime
-            </p>
-
-            {/* Tier hint */}
-            <p className="text-surface-400 mt-3 font-mono text-xs">
-              Starter $5 · Solo $9 · Professional $29 · Team $79 · Enterprise Cloud $299 ·
-              Self-Hosted $499
-            </p>
+            <p className="text-surface-400 text-sm">7-day money-back guarantee · cancel anytime</p>
           </div>
         </section>
       </main>
@@ -870,9 +826,6 @@ export default async function HomePage() {
                 Copyright
               </Link>
             </nav>
-            {/* The canonical site-wide copyright string is rendered by
-                <SiteFooter /> from src/app/layout.tsx so it appears on
-                every page. Removed from here to avoid duplication. */}
           </div>
         </div>
       </footer>

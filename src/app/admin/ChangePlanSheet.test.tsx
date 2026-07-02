@@ -101,7 +101,7 @@ const TEAM_OPTION: UpgradeOption = {
   hostingModel: "dedicated",
   transitionKind: "shared_to_dedicated",
   estimatedProrationCents: 2366,
-  limits: { maxAtoms: 500_000, maxBootstrapsMonth: -1, maxStorageMb: 10_240 },
+  limits: { maxAtoms: 500_000, maxBootstrapsMonth: 20_000, maxStorageMb: 10_240 },
   warnings: [
     {
       code: "dedicated_migration",
@@ -326,7 +326,7 @@ describe("ChangePlanSheet — populated rows", () => {
     // Indie → Team (500k / unlimited / 10GB = 10240MB).
     const teamDeltas = screen.getByTestId("change-plan-option-team-deltas");
     expect(teamDeltas).toHaveTextContent("+490k atoms");
-    expect(teamDeltas).toHaveTextContent(/unlimited bootstraps\/mo/i);
+    expect(teamDeltas).toHaveTextContent("+19k bootstraps/mo");
     // 10240 - 500 = 9740 MB → 9740/1024 = 9.5117... → "+9.5 GB storage"
     expect(teamDeltas).toHaveTextContent("+9.5 GB storage");
   });

@@ -27,7 +27,7 @@ The diagram below shows every state your account and memory instance can be in, 
 | `active` | Subscription active and paying. Instance is `running`. |
 | `past_due` | Payment failed. Stripe is retrying. Instance stays running during retries. |
 | `suspended` | Payment failed after all retries exhausted. Instance paused. |
-| `cancelled` | Subscription cancelled. Instance enters 30-day grace period (read-only). |
+| `cancelled` | Subscription cancelled. Instance runs to period end, then is deprovisioned and snapshotted. |
 
 ### Instance (substrate) states
 
@@ -35,9 +35,9 @@ The diagram below shows every state your account and memory instance can be in, 
 |---|---|
 | `provisioning` | Being set up. Usually takes under 2 minutes (shared) or 5 minutes (dedicated). |
 | `running` | Fully operational. All read and write operations available. |
-| `read_only` | Cancelled or downgraded during transition. You can read existing atoms and verify proofs. You cannot write new atoms or call bootstraps. |
+| `read_only` | Temporary state during a tier-change migration (e.g. dedicated→shared). You can read existing atoms and verify proofs; you cannot write new atoms or call bootstraps. |
 | `suspended` | Paused due to billing issue. No API access until payment is resolved. |
-| `deprovisioned` | Instance destroyed. Data permanently deleted. Occurs 30 days after cancellation if no resubscription. |
+| `deprovisioned` | Instance destroyed at termination. A snapshot is kept 7 days for paid at-cost recovery, then permanently deleted. |
 
 ## Key transitions explained
 
@@ -47,14 +47,14 @@ You complete the Stripe Checkout. Stripe fires `customer.subscription.created`. 
 ### Upgrade (e.g. Solo → Professional)
 Stripe processes the upgrade immediately with proration. Our webhook handler queues a tier-change job. For shared-to-shared upgrades (Starter↔Solo↔Professional), the container is restarted with higher resource limits — this takes under 30 seconds with no data loss. For a shared-to-dedicated upgrade (any tier → Team), a new dedicated droplet is provisioned while your old container remains in `read_only` — once the new instance is live, it becomes your active endpoint.
 
-### Downgrade (e.g. Team → Professional)
-Stripe schedules the downgrade for the next billing cycle. When the new cycle starts, our webhook handler queues a tier-change job. For dedicated-to-shared (Team → lower), your dedicated server enters read-only mode while a new shared container is provisioned. The dedicated server is kept available for 48 hours after the migration completes to ensure data integrity before being decommissioned. For shared-to-shared, limits are reduced and the container restarted.
+### Downgrade — not supported
+Plans are upgrade-only. Moving to a lower tier returns `downgrade_not_supported`: a larger substrate cannot be fitted onto a smaller one without dropping atoms, and we do not delete your memory. If you need a smaller plan, export your atoms, cancel, and sign up fresh at the lower tier (see [Downgrade Plan](/docs/subscription/downgrade)).
 
-### Cancellation → 30-day grace period
-When you cancel, Stripe fires `customer.subscription.deleted` at the end of your billing period. Your instance immediately moves to `read_only`. You retain read access — you can still retrieve and verify your atoms for 30 days. On day 30, a data purge warning is sent, followed by deprovisioning 24 hours later.
+### Cancellation → deprovision + snapshot
+When you cancel, Stripe fires `customer.subscription.deleted` at the end of your billing period (or immediately if you cancel now). Your instance is deprovisioned and a point-in-time snapshot is taken — there is no read-only grace period. For 7 days after termination the snapshot may be recovered as a paid, at-cost service (quoted first, discretionary); after that it is permanently deleted.
 
-### Resubscription during grace period
-If you resubscribe before the 30-day window closes, your instance is re-provisioned from scratch. Your atoms are not migrated from the read-only instance — you start fresh. If you need to preserve your atoms, export them via the API before the grace period expires (see the Atoms API reference).
+### Resubscription
+Resubscribe at any time — your instance is re-provisioned from scratch and your atoms are not carried over. If you need to preserve your atoms, export them via the API before you cancel (see the Atoms API reference).
 
 ## Provisioning reliability
 
@@ -62,4 +62,4 @@ If provisioning encounters an issue (network timeout, server unavailability), th
 
 ## Billing cycle
 
-Your billing cycle starts on the day you first subscribe. For example, if you subscribe on the 10th of a month, you are billed on the 10th of each subsequent month. Upgrades are prorated immediately. Downgrades take effect at the start of your next billing cycle.
+Your billing cycle starts on the day you first subscribe. For example, if you subscribe on the 10th of a month, you are billed on the 10th of each subsequent month. Upgrades are prorated immediately. Plans are upgrade-only — downgrades are not supported (see [Downgrade Plan](/docs/subscription/downgrade)).

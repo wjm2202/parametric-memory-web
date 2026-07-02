@@ -11,7 +11,7 @@ import { DestroyModal } from "@/app/admin/DestroyModal";
 import { CancelPendingBanner, CancelPendingBadge } from "./CancelPendingBanner";
 
 import { mailto } from "@/config/site";
-import { GRACE_PERIOD_DAYS } from "@/config/lifecycle";
+import { SNAPSHOT_RECOVERY_WINDOW_DAYS } from "@/config/lifecycle";
 // ── Types ────────────────────────────────────────────────────────────────────
 
 interface AccountInfo {
@@ -172,9 +172,9 @@ function StatusBadge({ status }: { status: string }) {
     provisioning: "Your substrate is being created. Usually takes 1–2 minutes.",
     pending_payment: "Payment hasn't completed yet. Finish checkout to activate.",
     read_only: "Writes are paused. Reads still work. Check billing to resume writes.",
-    cancelled: `Subscription cancelled. Memory preserved for ${GRACE_PERIOD_DAYS} days.`,
+    cancelled: `Subscription cancelled. Access runs to period end, then your instance is deprovisioned and snapshotted; paid at-cost recovery is available for ${SNAPSHOT_RECOVERY_WINDOW_DAYS} days after.`,
     suspended: "Account suspended after failed payment attempts.",
-    deprovisioned: "This substrate has been deprovisioned and its data removed.",
+    deprovisioned: `This substrate has been deprovisioned. Its snapshot can be recovered (paid, at-cost) for ${SNAPSHOT_RECOVERY_WINDOW_DAYS} days after termination, then it is permanently deleted.`,
     destroyed: "This substrate has been destroyed.",
     provision_failed:
       "Provisioning didn't complete. No charges were made — contact support to retry.",
@@ -269,7 +269,9 @@ function BillingWidget({
               <span className="text-zinc-600">○</span> No active subscription
             </p>
             <p className="mt-1 text-sm text-white/50">
-              Your plan was cancelled. Memory is preserved for {GRACE_PERIOD_DAYS} days.
+              Your plan was cancelled. Access runs to period end, then your instance is
+              deprovisioned and snapshotted — paid at-cost recovery is available for{" "}
+              {SNAPSHOT_RECOVERY_WINDOW_DAYS} days after.
             </p>
           </div>
           <Link

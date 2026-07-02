@@ -14,6 +14,7 @@ import { test, expect } from "@playwright/test";
 const PUBLIC_PAGES: Array<{ path: string; expect: string }> = [
   { path: "/", expect: "nav-home" },
   { path: "/pricing", expect: "pricing-comparison" },
+  { path: "/enterprise", expect: "nav-link-enterprise" },
   { path: "/about", expect: "nav-link-about" },
   { path: "/faq", expect: "nav-link-faq" },
   { path: "/blog", expect: "nav-link-blog" },

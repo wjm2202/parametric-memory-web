@@ -151,7 +151,7 @@ export function getHomeMetaDescription(): string {
 /** Layout-level fallback description (used when a page doesn't override). */
 export function getLayoutMetaDescription(): string {
   const priceLine = getMarketingPriceLine();
-  return `Persistent, verifiable AI memory with Merkle proofs + Markov prediction. ${priceLine}, MCP-native, 30-day money-back guarantee.`;
+  return `Persistent, verifiable AI memory with Merkle proofs + Markov prediction. ${priceLine}, MCP-native, 7-day money-back guarantee.`;
 }
 
 /** Twitter-card description — same shape as home meta but trimmed. */

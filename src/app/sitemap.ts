@@ -44,10 +44,22 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      url: "https://parametric-memory.dev/enterprise",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: "https://parametric-memory.dev/about",
       lastModified: new Date(),
       changeFrequency: "monthly",
       priority: 0.8,
+    },
+    {
+      url: "https://parametric-memory.dev/contact",
+      lastModified: new Date(),
+      changeFrequency: "monthly",
+      priority: 0.6,
     },
     {
       // Verify page — top-tier for SEO + AEO. Cryptographic-verifier UX is a
@@ -90,18 +102,8 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.6,
     },
-    {
-      url: "https://parametric-memory.dev/signup",
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.7,
-    },
-    {
-      url: "https://parametric-memory.dev/login",
-      lastModified: new Date(),
-      changeFrequency: "monthly",
-      priority: 0.5,
-    },
+    // /signup and /login are intentionally omitted — they are noindex
+    // (low-value auth pages), and noindex URLs should not appear in the sitemap.
     {
       url: "https://parametric-memory.dev/terms",
       lastModified: new Date(),
@@ -116,6 +118,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
     },
     {
       url: "https://parametric-memory.dev/aup",
+      lastModified: new Date(),
+      changeFrequency: "yearly",
+      priority: 0.3,
+    },
+    {
+      url: "https://parametric-memory.dev/copyright",
       lastModified: new Date(),
       changeFrequency: "yearly",
       priority: 0.3,

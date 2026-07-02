@@ -29,10 +29,17 @@ const read = (rel: string) => readFileSync(path.join(repoRoot, rel), "utf8");
 describe("Phase 5: sitemap.ts covers all public pages", () => {
   const src = read("src/app/sitemap.ts");
 
-  it("includes /login with monthly changeFrequency and priority 0.5", () => {
-    expect(src).toMatch(
-      /url:\s*"https:\/\/parametric-memory\.dev\/login"[\s\S]{0,200}changeFrequency:\s*"monthly"[\s\S]{0,100}priority:\s*0\.5/,
-    );
+  it("omits /login and /signup (noindex auth pages must not be in the sitemap)", () => {
+    // 2026-07-01: /login and /signup are robots `noindex` (low-value auth
+    // pages), and noindex URLs must not appear in the sitemap — they were
+    // removed from sitemap.ts.
+    expect(src).not.toContain('parametric-memory.dev/login"');
+    expect(src).not.toContain('parametric-memory.dev/signup"');
+  });
+
+  it("includes /enterprise and /copyright", () => {
+    expect(src).toContain('url: "https://parametric-memory.dev/enterprise"');
+    expect(src).toContain('url: "https://parametric-memory.dev/copyright"');
   });
 
   it("includes /aup with yearly changeFrequency and priority 0.3", () => {

@@ -146,6 +146,7 @@ entry here **first**, before the PR that uses it.
 | testid | Element | aria-label |
 |---|---|---|
 | `nav-home` | Logo link to `/` | "Parametric Memory — home" |
+| `nav-link-enterprise` | `/enterprise` link | (visible text "Enterprise") |
 | `nav-link-docs` | `/docs` link | (visible text "Docs") |
 | `nav-link-about` | `/about` link | (visible text "About") |
 | `nav-link-blog` | `/blog` link (hidden `<md`) | (visible text "Blog") |
@@ -178,12 +179,31 @@ entry here **first**, before the PR that uses it.
 | testid | Element |
 |---|---|
 | `hero-video` | Background video element on the landing-page hero (sprint 2026-W17 — replaced the static MemoryRing). Audio stripped at encode time + `muted` attribute set; decorative (`aria-hidden`); the slogan is in DOM via HeroAnimatedSequence. |
-| `landing-hero-cta-primary` | Primary "Get started" button |
-| `landing-hero-cta-secondary` | Secondary "View pricing" link |
-| `landing-section-features` | Features region |
+| `landing-hero-cta-primary` | Primary hero CTA — "Get your instance — $5/mo" → `/pricing` (holistic review 2026-07-01, was "Get started") |
+| `landing-hero-cta-secondary` | Secondary hero CTA — "Watch it verify itself" → `/verify` (holistic review 2026-07-01, was "View pricing"/`/knowledge`) |
+| `landing-section-features` | Capabilities region ("What your AI gets" — retitled from Features, holistic review 2026-07-01) |
+| `landing-verify-cta` | Primary CTA in the Verify section — "Verify a snapshot yourself" → `/verify` (holistic review P3) |
+| `landing-verify-how` | Secondary link in the Verify section — "See how it works" → `/docs` (holistic review P3) |
+| `landing-pricing-<slug>` | Pricing-preview card link → `/pricing`, one per advertised tier (`starter`, `solo`, `pro`, `team`) (holistic review P4). The $1 Basic tier is intentionally not advertised. |
+| `landing-pricing-enterprise` | Collapsed "Enterprise & self-hosted → Talk to us" row → `/contact` (holistic review P4) |
+| `landing-final-cta` | Final closing CTA — "Get your instance — $5/mo" → `/pricing` (holistic review) |
 | `waitlist-form` | Waitlist form element |
 | `waitlist-email` | Email input |
 | `waitlist-submit` | Submit button |
+
+### Enterprise — `src/app/enterprise/page.tsx`
+
+Operational-memory sales page (added 2026-07-01). Intentful testids for Playwright: hero CTAs, each section, and one per use case (so a test can assert the four offerings render).
+
+| testid | Element | aria-label |
+|---|---|---|
+| `enterprise-hero-cta-primary` | Hero "Talk to us" → `/contact` | "Talk to us about enterprise operational memory" |
+| `enterprise-hero-cta-secondary` | Hero "See how we run on it" → `/verify` | "See how we run our own operations on the substrate" |
+| `enterprise-section-capability` | Capture/Verify/Learn/Ask/Prioritise region | — |
+| `enterprise-section-proof` | "We operate on it" proof region | — |
+| `enterprise-section-usecases` | Use-cases region | — |
+| `enterprise-usecase-<id>` | One card per use case (`agent-fleet`, `oversight`, `adhoc`, `knowledge`) | — |
+| `enterprise-cta-contact` | Final "Talk to us" → `/contact` | "Talk to us about an enterprise deployment" |
 
 ### Pricing — `src/app/pricing/*`
 

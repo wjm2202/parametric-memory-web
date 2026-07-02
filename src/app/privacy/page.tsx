@@ -227,7 +227,10 @@ export default async function PrivacyPage() {
           <ul>
             <li>Email and authentication records deleted immediately</li>
             <li>Memory atoms deleted from your substrate within 24 hours</li>
-            <li>Backups retained for 30 days as a safety measure, then permanently deleted</li>
+            <li>
+              On termination, a point-in-time snapshot is kept for 7 days for paid at-cost recovery,
+              then permanently deleted; we do not keep long-term backups
+            </li>
             <li>Anonymized analytics may be retained indefinitely</li>
             <li>Stripe retains billing records for 7 years for tax compliance</li>
           </ul>

@@ -6,7 +6,7 @@
  * Lighthouse LCP to 14.2s. We rewrote it as a static server component that
  * renders the close-state H1 + CTAs at full opacity from t=0. These tests
  * guard the contract that:
- *   - the H1 ("Your AI's second brain.") is in the DOM on first render
+ *   - the H1 ("Your AI remembers everything now.") is in the DOM on first render
  *   - the two CTAs are present and carry the canonical testids that other
  *     tests + analytics depend on
  *   - the gradient text styling on the second line is preserved
@@ -26,8 +26,8 @@ describe("HeroAnimatedSequence — static hero (LCP-friendly)", () => {
     // The H1 contains both lines; line 1 is the LCP candidate text.
     expect(screen.getByRole("heading", { level: 1 })).toBeTruthy();
     const h1 = screen.getByRole("heading", { level: 1 });
-    expect(h1.textContent).toContain("Your AI's second brain.");
-    expect(h1.textContent).toContain("Ready in minutes.");
+    expect(h1.textContent).toContain("Your AI remembers everything now.");
+    expect(h1.textContent).toContain("And it can prove it.");
   });
 
   it("renders both CTAs with canonical testids", () => {
@@ -36,12 +36,12 @@ describe("HeroAnimatedSequence — static hero (LCP-friendly)", () => {
     expect(screen.getByTestId("landing-hero-cta-secondary")).toBeTruthy();
   });
 
-  it("primary CTA links to /pricing, secondary to /knowledge", () => {
+  it("primary CTA links to /pricing, secondary to /verify", () => {
     render(<HeroAnimatedSequence />);
     const primary = screen.getByTestId("landing-hero-cta-primary") as HTMLAnchorElement;
     const secondary = screen.getByTestId("landing-hero-cta-secondary") as HTMLAnchorElement;
     expect(primary.getAttribute("href")).toBe("/pricing");
-    expect(secondary.getAttribute("href")).toBe("/knowledge");
+    expect(secondary.getAttribute("href")).toBe("/verify");
   });
 
   it("preserves the gradient text style on the second H1 line", () => {
