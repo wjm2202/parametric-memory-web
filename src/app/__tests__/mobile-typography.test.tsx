@@ -34,19 +34,25 @@ describe("M6 — landing page typography contract", () => {
     expect(pageSrc).not.toMatch(/text-\[10px\]/);
   });
 
-  it("has no footer Link with the old low-contrast text-surface-600", () => {
-    // Footer links share an exact className; the M6 bump moved them to
-    // text-surface-400. Any recurrence of the specific footer-link pattern
-    // is a regression.
+  it("footer links use the accessible-contrast class, not the old low-contrast one", () => {
+    // Sprint 2026-07-02: the footer moved out of page.tsx into the global
+    // <SiteFooter /> and its links are now data-driven (mapped over
+    // SITE_FOOTER_COLUMNS), so the className literal appears once in source
+    // rather than once per link. The contrast contract still applies: the
+    // low-contrast class must never come back, and the accessible class must
+    // be the one wired to the mapped links. Per-link count + hrefs are
+    // asserted in src/components/ui/SiteFooter.test.tsx.
+    const footerSrc = readFileSync(resolve(repoRoot, "src/components/ui/SiteFooter.tsx"), "utf8");
+    // Old low-contrast footer-link class must never recur.
+    expect(footerSrc).not.toMatch(/text-surface-600 hover:text-surface-300/);
+    // And page.tsx must not smuggle the old low-contrast class back in either.
     expect(pageSrc).not.toMatch(
-      /font-body text-surface-600 hover:text-surface-300 text-sm transition-colors/,
+      /text-surface-600 hover:text-surface-300 text-sm transition-colors/,
     );
-    // Positive assertion: the new class is present and applied 9 times
-    // (one per footer link — 10 since the Copyright link was added).
-    const matches = pageSrc.match(
-      /font-body text-surface-400 hover:text-surface-200 text-sm transition-colors/g,
+    // Positive: the accessible-contrast class is applied to the sitemap links.
+    expect(footerSrc).toMatch(
+      /font-body text-surface-400 hover:text-surface-200 text-sm transition-colors/,
     );
-    expect(matches?.length).toBe(10); // Copyright link added (Sprint 2026-W18 — closed-source migration)
   });
 
   it("canonical copyright line lives in SiteFooter.tsx (single source of truth)", () => {

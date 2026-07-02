@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { cookies } from "next/headers";
-import Image from "next/image";
 import { HeroSceneWrapper } from "@/components/landing/HeroSceneWrapper";
 import { HeroAnimatedSequence } from "@/components/landing/HeroAnimatedSequence";
 import SiteNavbar from "@/components/ui/SiteNavbar";
@@ -151,19 +150,6 @@ const homeBreadcrumbJsonLd = {
     },
   ],
 };
-
-// ── Logomark (inline, footer only) ────────────────────────────────────────
-function Logomark({ size = 24 }: { size?: number }) {
-  return (
-    <Image
-      src="/brand/favicon-192.png"
-      width={size}
-      height={size}
-      alt="Parametric Memory"
-      style={{ borderRadius: "50%" }}
-    />
-  );
-}
 
 // ── Arrow icon ─────────────────────────────────────────────────────────────
 function ArrowIcon({ className = "h-4 w-4" }: { className?: string }) {
@@ -747,88 +733,6 @@ export default async function HomePage() {
           </div>
         </section>
       </main>
-
-      {/* ── FOOTER ──────────────────────────────────────────────────────── */}
-      <footer className="border-surface-800/50 border-t">
-        <div className="mx-auto max-w-6xl px-6 py-12">
-          <div className="flex flex-col items-center justify-between gap-6 sm:flex-row">
-            <div className="flex items-center gap-2.5">
-              <Logomark size={20} />
-              <span className="font-display text-surface-400 text-sm font-semibold">
-                Parametric Memory
-              </span>
-            </div>
-            <nav
-              className="flex flex-wrap items-center justify-center gap-x-6 gap-y-2"
-              aria-label="Footer navigation"
-            >
-              <Link
-                href="/docs"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                Docs
-              </Link>
-              <Link
-                href="/blog"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                Blog
-              </Link>
-              <a
-                href="/pricing"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                Pricing
-              </a>
-              <a
-                href="/visualise"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                Visualise
-              </a>
-              <a
-                href="/knowledge"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                Knowledge
-              </a>
-              {/* Legal — required for enterprise trust signals and for the
-                  public-legal-pages journey test, which enforces that every
-                  legal page is reachable from the homepage nav/footer. */}
-              <Link
-                href="/privacy"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                Privacy
-              </Link>
-              <Link
-                href="/terms"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                Terms
-              </Link>
-              <Link
-                href="/aup"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                AUP
-              </Link>
-              <Link
-                href="/dpa"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                DPA
-              </Link>
-              <Link
-                href="/copyright"
-                className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-              >
-                Copyright
-              </Link>
-            </nav>
-          </div>
-        </div>
-      </footer>
     </>
   );
 }

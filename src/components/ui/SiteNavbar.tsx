@@ -8,19 +8,36 @@
  *   "immersive" — absolute, transparent. Used on /visualise and /knowledge
  *                 (floats over full-screen canvas).
  *
- * Mobile (< md, item M5 of sprint 2026-W18):
- *   Below the md breakpoint the centre nav links are hidden and replaced
- *   by a hamburger button that opens a right-side drawer containing the
- *   same links + auth action. The drawer:
+ * IA (2026-07-02 declutter — see docs/DUAL-ACCESSIBILITY.md):
+ *   The desktop row grew past its real estate (links overlapped the account
+ *   chip). Fix keeps the top nav LEAN and pushes the long tail into a
+ *   comprehensive footer sitemap (SiteFooter) that is always server-rendered
+ *   — so both humans and crawlers/agents can reach every page from anywhere.
+ *
+ *     • PRIMARY_NAV  — high-intent links, always inline on desktop:
+ *                      Verify, Enterprise, Docs, Pricing.
+ *     • MORE_NAV     — secondary content links behind a "More" disclosure:
+ *                      Blog, FAQ, About. The disclosure PANEL is always in
+ *                      the DOM (toggled with `hidden`, never unmounted) so
+ *                      AI agents and crawlers still see the links; humans get
+ *                      an uncluttered row.
+ *     • Knowledge    — kept as the accent chip (brand showcase).
+ *     • Legal/Privacy — REMOVED from the nav; they now live only in the
+ *                      footer sitemap (standard web IA; frees the row).
+ *
+ *   Signed-in state no longer prints the full email in the bar (it collided
+ *   with the accent chip). Instead an avatar button (`nav-account-trigger`)
+ *   opens an account menu (`nav-account-menu`) holding Dashboard / Billing /
+ *   Security / Sign-out + the email. Same disclosure rules as "More".
+ *
+ * Mobile (< md):
+ *   Below md the centre nav is hidden and replaced by a hamburger that opens
+ *   a right-side drawer containing every nav link (PRIMARY + MORE + Knowledge)
+ *   + an Account section when signed in. The drawer:
  *     - is a role="dialog" aria-modal region,
  *     - closes on ESC, on backdrop click, and on link tap,
  *     - locks body scroll while open,
  *     - returns focus to the hamburger button on close.
- *
- *   When the user is signed in, the drawer also includes an "Account"
- *   section with Billing / Security / Sign-out so logged-in pages
- *   (dashboard, admin, billing/success) get a single consistent menu
- *   instead of bespoke per-page headers. See sprint 2026-W17.
  *
  * testids + aria-labels follow docs/DUAL-ACCESSIBILITY.md (pre-registered).
  *
@@ -92,6 +109,24 @@ function UserIcon() {
   );
 }
 
+function ChevronIcon({ open }: { open: boolean }) {
+  return (
+    <svg
+      className="h-3 w-3 transition-transform duration-150"
+      style={{ transform: open ? "rotate(180deg)" : "none" }}
+      viewBox="0 0 12 12"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="1.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden="true"
+    >
+      <path d="M3 4.5 6 7.5 9 4.5" />
+    </svg>
+  );
+}
+
 function HamburgerIcon({ open }: { open: boolean }) {
   // Three-bar icon; the bars morph to an X when `open` is true.
   // `aria-hidden` because the button itself carries the label.
@@ -142,7 +177,7 @@ function HamburgerIcon({ open }: { open: boolean }) {
   );
 }
 
-/* ─── Types ──────────────────────────────────────────────────────────────── */
+/* ─── Types + nav data ───────────────────────────────────────────────────── */
 
 interface SiteNavbarProps {
   /** Server-determined login state — avoids client flash */
@@ -159,34 +194,34 @@ interface NavItem {
   href: string;
   label: string;
   testid: string;
-  /**
-   * Tailwind responsive class that hides this link below a breakpoint in the
-   * desktop centre nav. The mobile drawer always shows every link.
-   */
-  desktopHiddenBelow?: "md" | "lg";
 }
 
-const NAV_ITEMS: NavItem[] = [
-  // Verify is a customer-facing trust feature, not a content page.
-  // First in the list so it is the most visible link in both desktop nav and
-  // mobile drawer -- discoverability of the cryptographic-verifier UX is a
-  // direct sales lever for regulated-industry buyers (SOC 2 / ISO 27001 /
-  // EU AI Act / FedRAMP audiences pattern-match "signed snapshot verifier"
-  // as the architecture vocabulary they already speak).
+/**
+ * High-intent links — always inline on desktop. Verify leads (cryptographic
+ * verifier is a direct sales lever for regulated-industry buyers); Enterprise,
+ * Docs and Pricing are the core buyer/developer journeys.
+ */
+const PRIMARY_NAV: NavItem[] = [
   { href: "/verify", label: "Verify", testid: "nav-link-verify" },
-  // Enterprise — high-intent sales page (operational memory). Kept in the
-  // primary desktop nav for discoverability; About is demoted below md to keep
-  // the desktop row from overcrowding as the site grows (IA: top nav stays
-  // lean; the full page list lives in the footer).
   { href: "/enterprise", label: "Enterprise", testid: "nav-link-enterprise" },
   { href: "/docs", label: "Docs", testid: "nav-link-docs" },
-  { href: "/about", label: "About", testid: "nav-link-about", desktopHiddenBelow: "md" },
-  { href: "/blog", label: "Blog", testid: "nav-link-blog", desktopHiddenBelow: "md" },
   { href: "/pricing", label: "Pricing", testid: "nav-link-pricing" },
-  { href: "/faq", label: "FAQ", testid: "nav-link-faq", desktopHiddenBelow: "md" },
-  { href: "/terms", label: "Legal", testid: "nav-link-legal", desktopHiddenBelow: "lg" },
-  { href: "/privacy", label: "Privacy", testid: "nav-link-privacy", desktopHiddenBelow: "lg" },
 ];
+
+/**
+ * Secondary content links — behind the desktop "More" disclosure, but always
+ * present in the mobile drawer and the footer sitemap. The disclosure panel is
+ * rendered in the DOM at all times (toggled via `hidden`) so crawlers/agents
+ * still discover these links.
+ */
+const MORE_NAV: NavItem[] = [
+  { href: "/blog", label: "Blog", testid: "nav-link-blog" },
+  { href: "/faq", label: "FAQ", testid: "nav-link-faq" },
+  { href: "/about", label: "About", testid: "nav-link-about" },
+];
+
+/** Every nav link, in drawer order (PRIMARY then MORE). Knowledge is appended separately. */
+const ALL_NAV: NavItem[] = [...PRIMARY_NAV, ...MORE_NAV];
 
 /* ─── Auth state hook ────────────────────────────────────────────────────── */
 
@@ -234,7 +269,67 @@ function useAuthState(isLoggedIn: boolean): { email: string | null; verified: bo
   return { email, verified };
 }
 
-/* ─── Mobile drawer hook ─────────────────────────────────────────────────── */
+/* ─── Menu / drawer state hooks ──────────────────────────────────────────── */
+
+/**
+ * Path-derived open state (RC-14, react-compiler-readiness). Rather than
+ * synchronising "close on navigation" via a setState-in-effect, the open state
+ * stores the pathname at which the menu was opened; `open` is derived as
+ * "sentinel === current pathname". Any navigation changes `pathname` and
+ * invalidates the open state automatically — no effect needed.
+ *
+ * Shared by the mobile drawer, the "More" disclosure, and the account menu.
+ */
+function useMenuAtPath(
+  pathname: string,
+): [boolean, (next: boolean | ((prev: boolean) => boolean)) => void, () => void] {
+  const [openAtPath, setOpenAtPath] = useState<string | null>(null);
+  const open = openAtPath === pathname;
+  const setOpen = useCallback(
+    (next: boolean | ((prev: boolean) => boolean)) => {
+      if (typeof next === "function") {
+        setOpenAtPath((prevPath) => (next(prevPath === pathname) ? pathname : null));
+      } else {
+        setOpenAtPath(next ? pathname : null);
+      }
+    },
+    [pathname],
+  );
+  const close = useCallback(() => setOpenAtPath(null), []);
+  return [open, setOpen, close];
+}
+
+/**
+ * Dismiss a popover on outside pointer-down and on Escape. On Escape, focus is
+ * returned to the trigger for keyboard users.
+ */
+function useDismiss(
+  open: boolean,
+  close: () => void,
+  containerRef: React.RefObject<HTMLElement | null>,
+  triggerRef: React.RefObject<HTMLButtonElement | null>,
+) {
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (e: MouseEvent) => {
+      const t = e.target as Node;
+      if (containerRef.current && containerRef.current.contains(t)) return;
+      close();
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        close();
+        triggerRef.current?.focus();
+      }
+    };
+    document.addEventListener("mousedown", onPointerDown);
+    document.addEventListener("keydown", onKey);
+    return () => {
+      document.removeEventListener("mousedown", onPointerDown);
+      document.removeEventListener("keydown", onKey);
+    };
+  }, [open, close, containerRef, triggerRef]);
+}
 
 /**
  * Runs drawer side-effects: body scroll lock while open, ESC-to-close,
@@ -279,6 +374,159 @@ function useDrawerBehaviour(
   }, [open, triggerRef]);
 }
 
+/* ─── "More" disclosure (desktop) ────────────────────────────────────────── */
+
+function MoreMenu({
+  isActive,
+  pathname,
+}: {
+  isActive: (href: string) => boolean;
+  pathname: string;
+}) {
+  const [open, setOpen, close] = useMenuAtPath(pathname);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  useDismiss(open, close, containerRef, triggerRef);
+
+  const anyActive = MORE_NAV.some((i) => isActive(i.href));
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        ref={triggerRef}
+        type="button"
+        data-testid="nav-more-trigger"
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-controls="nav-more-menu"
+        aria-label="More links"
+        onClick={() => setOpen((v) => !v)}
+        className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm transition-colors ${
+          anyActive || open ? "font-medium text-white" : "text-surface-400 hover:text-white"
+        }`}
+      >
+        More
+        <ChevronIcon open={open} />
+      </button>
+
+      {/* Panel is always in the DOM (toggled via `hidden`) so crawlers/agents
+          discover Blog/FAQ/About even when the disclosure is closed. */}
+      <div
+        id="nav-more-menu"
+        data-testid="nav-more-menu"
+        hidden={!open}
+        className="border-surface-800/70 bg-surface-950/95 absolute top-full right-0 mt-2 flex min-w-[10rem] flex-col gap-0.5 rounded-xl border p-1.5 shadow-2xl backdrop-blur-xl"
+      >
+        {MORE_NAV.map((item) => (
+          <Link
+            key={item.href}
+            href={item.href}
+            data-testid={item.testid}
+            onClick={close}
+            className={`rounded-lg px-3 py-2 text-sm transition-colors ${
+              isActive(item.href)
+                ? "bg-surface-800/60 font-medium text-white"
+                : "text-surface-300 hover:bg-surface-800/40 hover:text-white"
+            }`}
+          >
+            {item.label}
+          </Link>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/* ─── Account menu (desktop, signed in) ──────────────────────────────────── */
+
+function AccountMenu({ email, pathname }: { email: string | null; pathname: string }) {
+  const [open, setOpen, close] = useMenuAtPath(pathname);
+  const containerRef = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  useDismiss(open, close, containerRef, triggerRef);
+
+  const initial = email ? email.trim().charAt(0).toUpperCase() : null;
+  const triggerLabel = email ? `Account menu — signed in as ${email}` : "Account menu";
+
+  return (
+    <div ref={containerRef} className="relative">
+      <button
+        ref={triggerRef}
+        type="button"
+        data-testid="nav-account-trigger"
+        aria-haspopup="true"
+        aria-expanded={open}
+        aria-controls="nav-account-menu"
+        aria-label={triggerLabel}
+        title={email ?? "Account"}
+        onClick={() => setOpen((v) => !v)}
+        className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 focus-visible:ring-brand-500/60 inline-flex h-9 w-9 items-center justify-center rounded-full text-sm font-semibold ring-1 transition-all focus:outline-none focus-visible:ring-2"
+      >
+        {initial ? <span aria-hidden="true">{initial}</span> : <UserIcon />}
+      </button>
+
+      <div
+        id="nav-account-menu"
+        data-testid="nav-account-menu"
+        hidden={!open}
+        className="border-surface-800/70 bg-surface-950/95 absolute top-full right-0 mt-2 flex min-w-[14rem] flex-col gap-0.5 rounded-xl border p-1.5 shadow-2xl backdrop-blur-xl"
+      >
+        {email && (
+          <p
+            data-testid="nav-account-email"
+            className="text-surface-500 truncate px-3 pt-1.5 pb-2 text-xs"
+          >
+            Signed in as <span className="text-surface-300">{email}</span>
+          </p>
+        )}
+        <Link
+          href="/dashboard"
+          data-testid="nav-auth-dashboard"
+          aria-label="Open dashboard"
+          onClick={close}
+          className="text-surface-200 hover:bg-surface-800/50 flex items-center gap-2 rounded-lg px-3 py-2 text-sm transition-colors"
+        >
+          <UserIcon />
+          Dashboard
+        </Link>
+        <button
+          type="button"
+          data-testid="nav-account-billing"
+          onClick={() => {
+            close();
+            void openBillingPortal();
+          }}
+          className="text-surface-200 hover:bg-surface-800/50 flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition-colors"
+        >
+          <span>Billing</span>
+          <span aria-hidden="true" className="text-surface-500 text-xs">
+            ↗
+          </span>
+        </button>
+        <Link
+          href="/admin/security"
+          data-testid="nav-account-security"
+          onClick={close}
+          className="text-surface-200 hover:bg-surface-800/50 rounded-lg px-3 py-2 text-sm transition-colors"
+        >
+          Security
+        </Link>
+        <button
+          type="button"
+          data-testid="nav-account-signout"
+          onClick={() => {
+            close();
+            void signOut();
+          }}
+          className="mt-0.5 flex w-full items-center rounded-lg px-3 py-2 text-left text-sm text-rose-300/80 transition-colors hover:bg-rose-500/10 hover:text-rose-200"
+        >
+          Sign out
+        </button>
+      </div>
+    </div>
+  );
+}
+
 /* ─── Component ──────────────────────────────────────────────────────────── */
 
 export default function SiteNavbar({
@@ -290,59 +538,18 @@ export default function SiteNavbar({
   const pathname = usePathname();
   const { email, verified } = useAuthState(isLoggedIn);
 
-  // RC-14 (react-compiler-readiness, 2026-05-27): derive `drawerOpen` from
-  // a "openAtPath" sentinel rather than synchronise via an effect on
-  // pathname. Previously the shape was useState(false) + useEffect that
-  // setDrawerOpen(false) on pathname change. That was a navigation-event
-  // safety net (drawer Links already close on click — see linkClose) but
-  // tripped the setState-in-effect rule.
-  //
-  // New shape: `openAtPath` stores the pathname at which the drawer was
-  // opened. `drawerOpen` is derived: true iff that sentinel matches the
-  // CURRENT pathname. Any navigation (Link click, router.push, popstate)
-  // changes `pathname` and automatically invalidates the open state — no
-  // effect needed. The public setDrawerOpen API is preserved so callers
-  // (the hamburger button, useDrawerBehaviour, etc.) don't see any change.
-  const [openAtPath, setOpenAtPath] = useState<string | null>(null);
-  const drawerOpen = openAtPath === pathname;
-  const setDrawerOpen = useCallback(
-    (next: boolean | ((prev: boolean) => boolean)) => {
-      if (typeof next === "function") {
-        setOpenAtPath((prevPath) => (next(prevPath === pathname) ? pathname : null));
-      } else {
-        setOpenAtPath(next ? pathname : null);
-      }
-    },
-    [pathname],
-  );
+  const [drawerOpen, setDrawerOpen, closeDrawer] = useMenuAtPath(pathname);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
-  const closeDrawer = useCallback(() => setOpenAtPath(null), []);
   useDrawerBehaviour(drawerOpen, closeDrawer, hamburgerRef);
 
   /* ── Shared link helpers ─────────────────────────────────────────────── */
 
   const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
-  /* ── Desktop auth button (pinned top-right, standard variant) ────────── */
+  /* ── Desktop auth control (pinned top-right, standard variant) ────────── */
 
-  const authLabel = email ? (email.length > 22 ? email.slice(0, 20) + "…" : email) : "My Substrate";
-  const authLabelShort = email ? email.split("@")[0] : "My Substrate";
-
-  const authButton = verified ? (
-    <Link
-      href="/dashboard"
-      data-testid="nav-auth-dashboard"
-      aria-label="Open dashboard"
-      className="bg-brand-500/15 text-brand-300 ring-brand-500/30 hover:bg-brand-500/25 hover:ring-brand-500/50 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-all"
-    >
-      <UserIcon />
-      <span className="hidden truncate sm:inline" style={{ maxWidth: "160px" }}>
-        {email ? <span title={email}>{authLabel}</span> : "My Substrate"}
-      </span>
-      <span className="truncate sm:hidden" style={{ maxWidth: "80px" }}>
-        {authLabelShort}
-      </span>
-    </Link>
+  const authControl = verified ? (
+    <AccountMenu email={email} pathname={pathname} />
   ) : (
     <Link
       href="/login"
@@ -366,16 +573,6 @@ export default function SiteNavbar({
           // means updating the variable, not editing this className.
           className="border-surface-800/60 bg-surface-950/70 fixed top-0 right-0 left-0 z-50 h-[var(--site-nav-h)] border-b backdrop-blur-xl"
         >
-          {/*
-           * Three-column layout: logo | nav links | auth button + hamburger
-           * Desktop (≥ md): centre nav links absolutely centred; auth on right.
-           * Mobile  (< md): centre nav hidden; hamburger replaces it visually;
-           *                 auth remains on the right for one-tap sign-in.
-           *
-           * Row uses h-full so it fills the nav's locked outer height
-           * without re-stating it; padding is x-only because vertical
-           * sizing is now the variable's job.
-           */}
           <div className="relative mx-auto flex h-full max-w-6xl items-center px-4 sm:px-6">
             {/* ── Left: Logo (static anchor) ─────────────────────────────── */}
             <Link
@@ -390,22 +587,15 @@ export default function SiteNavbar({
             </Link>
 
             {/* ── Centre: Nav links (desktop only — hidden below md) ─────── */}
-            <div className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex md:gap-2">
-              {NAV_ITEMS.map((item) => {
-                const hideClass =
-                  item.desktopHiddenBelow === "lg"
-                    ? "hidden lg:block"
-                    : item.desktopHiddenBelow === "md"
-                      ? "hidden md:block"
-                      : "";
-                const active =
-                  isActive(item.href) || (item.href === "/terms" && isActive("/privacy"));
+            <div className="absolute top-1/2 left-1/2 hidden -translate-x-1/2 -translate-y-1/2 items-center gap-1 md:flex md:gap-1.5">
+              {PRIMARY_NAV.map((item) => {
+                const active = isActive(item.href);
                 return (
                   <Link
                     key={item.href}
                     href={item.href}
                     data-testid={item.testid}
-                    className={`rounded-md px-3 py-1.5 text-sm transition-colors ${hideClass} ${
+                    className={`rounded-md px-3 py-1.5 text-sm transition-colors ${
                       active ? "font-medium text-white" : "text-surface-400 hover:text-white"
                     }`}
                   >
@@ -414,11 +604,14 @@ export default function SiteNavbar({
                 );
               })}
 
+              {/* More disclosure (Blog / FAQ / About) */}
+              <MoreMenu isActive={isActive} pathname={pathname} />
+
               {/* Knowledge Graph (accent — always visible on desktop nav) */}
               <Link
                 href="/knowledge"
                 data-testid="nav-link-knowledge"
-                className={`inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-all ${
+                className={`ml-0.5 inline-flex items-center gap-1.5 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 transition-all ${
                   isActive("/knowledge")
                     ? "bg-violet-500/20 text-violet-300 ring-violet-500/50"
                     : "bg-violet-500/10 text-violet-400 ring-violet-500/25 hover:bg-violet-500/20 hover:ring-violet-500/45"
@@ -431,7 +624,7 @@ export default function SiteNavbar({
 
             {/* ── Right: Auth + hamburger ─────────────────────────────────── */}
             <div className="ml-auto flex shrink-0 items-center gap-1.5 sm:gap-2">
-              {authButton}
+              {authControl}
 
               {/* Hamburger — mobile only (< md) */}
               <button
@@ -519,7 +712,7 @@ export default function SiteNavbar({
               {pageLabel}
             </span>
             <span
-              className={`ml-1 rounded-full px-2 py-0.5 font-mono text-[10px] ring-1 sm:ml-2 ${badgeClasses}`}
+              className={`ml-1 rounded-full px-2 py-0.5 font-mono text-[11px] ring-1 sm:ml-2 ${badgeClasses}`}
             >
               LIVE
             </span>
@@ -607,9 +800,10 @@ function MobileDrawer({ open, onClose, isActive, verified, email }: MobileDrawer
             even when the link list is long, while still scrolling cleanly on
             short viewports. */}
         <div className="flex flex-1 flex-col overflow-y-auto">
-          {/* Nav list */}
+          {/* Nav list — every primary + secondary link (Legal/Privacy live in
+              the footer sitemap, reachable by scrolling any page). */}
           <nav aria-label="Mobile primary" className="flex flex-col gap-1 px-3 py-4">
-            {NAV_ITEMS.map((item) => (
+            {ALL_NAV.map((item) => (
               <Link
                 key={item.href}
                 href={item.href}

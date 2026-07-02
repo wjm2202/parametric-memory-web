@@ -84,14 +84,17 @@ describe("SiteNavbar standard variant — testid coverage", () => {
     render(<SiteNavbar isLoggedIn={false} />);
     // Scope to the <nav aria-label="Primary">
     const primary = screen.getByRole("navigation", { name: "Primary" });
+    // 2026-07-02 declutter: primary links are inline; Blog/FAQ/About moved
+    // into the "More" disclosure (still inside <nav Primary>, so present in the
+    // DOM); Legal/Privacy moved out of the nav entirely (now footer sitemap).
     const expected = [
+      ["nav-link-verify", "/verify"],
+      ["nav-link-enterprise", "/enterprise"],
       ["nav-link-docs", "/docs"],
-      ["nav-link-about", "/about"],
-      ["nav-link-blog", "/blog"],
       ["nav-link-pricing", "/pricing"],
+      ["nav-link-blog", "/blog"],
       ["nav-link-faq", "/faq"],
-      ["nav-link-legal", "/terms"],
-      ["nav-link-privacy", "/privacy"],
+      ["nav-link-about", "/about"],
       ["nav-link-knowledge", "/knowledge"],
     ] as const;
     for (const [testid, href] of expected) {
@@ -173,14 +176,16 @@ describe("SiteNavbar mobile drawer (M5)", () => {
     render(<SiteNavbar isLoggedIn={false} />);
     fireEvent.click(screen.getByTestId("nav-hamburger"));
     const drawer = screen.getByTestId("nav-drawer");
+    // The drawer flattens PRIMARY + MORE (no disclosure on mobile) + Knowledge.
+    // Legal/Privacy are not in the drawer — they live in the footer sitemap.
     for (const testid of [
+      "nav-link-verify",
+      "nav-link-enterprise",
       "nav-link-docs",
-      "nav-link-about",
-      "nav-link-blog",
       "nav-link-pricing",
+      "nav-link-blog",
       "nav-link-faq",
-      "nav-link-legal",
-      "nav-link-privacy",
+      "nav-link-about",
       "nav-link-knowledge",
     ]) {
       expect(within(drawer).getByTestId(testid)).toBeInTheDocument();
@@ -251,6 +256,75 @@ describe("SiteNavbar mobile drawer (M5)", () => {
     });
     rerender(<SiteNavbar isLoggedIn={false} />);
     expect(screen.getByTestId("nav-hamburger")).toHaveAttribute("aria-expanded", "false");
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Desktop "More" disclosure (2026-07-02 declutter)
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("SiteNavbar desktop 'More' disclosure", () => {
+  it("nav-more-trigger toggles the panel via aria-expanded + hidden", () => {
+    render(<SiteNavbar isLoggedIn={false} />);
+    const trigger = screen.getByTestId("nav-more-trigger");
+    const menu = screen.getByTestId("nav-more-menu");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveAttribute("aria-controls", "nav-more-menu");
+    expect(menu).toHaveAttribute("hidden");
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(menu).not.toHaveAttribute("hidden");
+  });
+
+  it("keeps Blog/FAQ/About in the DOM even when the panel is closed (crawler-visible)", () => {
+    render(<SiteNavbar isLoggedIn={false} />);
+    const menu = screen.getByTestId("nav-more-menu");
+    // Closed by default, yet the links are server-rendered inside the panel.
+    expect(menu).toHaveAttribute("hidden");
+    for (const [tid, href] of [
+      ["nav-link-blog", "/blog"],
+      ["nav-link-faq", "/faq"],
+      ["nav-link-about", "/about"],
+    ] as const) {
+      expect(within(menu).getByTestId(tid)).toHaveAttribute("href", href);
+    }
+  });
+});
+
+// ═══════════════════════════════════════════════════════════════════════════
+// Desktop account menu (signed in) — replaced the inline email chip
+// ═══════════════════════════════════════════════════════════════════════════
+
+describe("SiteNavbar desktop account menu", () => {
+  it("does not render the account trigger when signed out", () => {
+    render(<SiteNavbar isLoggedIn={false} />);
+    expect(screen.queryByTestId("nav-account-trigger")).toBeNull();
+    // Signed-out shows the Sign In link instead.
+    const primary = screen.getByRole("navigation", { name: "Primary" });
+    expect(within(primary).getByTestId("nav-auth-signin")).toHaveAttribute("href", "/login");
+  });
+
+  it("nav-account-trigger opens the menu and exposes the account actions", () => {
+    render(<SiteNavbar isLoggedIn={true} />);
+    const trigger = screen.getByTestId("nav-account-trigger");
+    expect(trigger).toHaveAttribute("aria-expanded", "false");
+    expect(trigger).toHaveAttribute("aria-controls", "nav-account-menu");
+
+    const menu = screen.getByTestId("nav-account-menu");
+    expect(menu).toHaveAttribute("hidden");
+
+    fireEvent.click(trigger);
+    expect(trigger).toHaveAttribute("aria-expanded", "true");
+    expect(menu).not.toHaveAttribute("hidden");
+
+    expect(within(menu).getByTestId("nav-auth-dashboard")).toHaveAttribute("href", "/dashboard");
+    expect(within(menu).getByTestId("nav-account-billing")).toBeInTheDocument();
+    expect(within(menu).getByTestId("nav-account-security")).toHaveAttribute(
+      "href",
+      "/admin/security",
+    );
+    expect(within(menu).getByTestId("nav-account-signout")).toBeInTheDocument();
   });
 });
 

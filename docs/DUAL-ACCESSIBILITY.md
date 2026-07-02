@@ -146,17 +146,31 @@ entry here **first**, before the PR that uses it.
 | testid | Element | aria-label |
 |---|---|---|
 | `nav-home` | Logo link to `/` | "Parametric Memory — home" |
-| `nav-link-enterprise` | `/enterprise` link | (visible text "Enterprise") |
-| `nav-link-docs` | `/docs` link | (visible text "Docs") |
-| `nav-link-about` | `/about` link | (visible text "About") |
-| `nav-link-blog` | `/blog` link (hidden `<md`) | (visible text "Blog") |
-| `nav-link-pricing` | `/pricing` link | (visible text "Pricing") |
-| `nav-link-faq` | `/faq` link (hidden `<md`) | (visible text "FAQ") |
-| `nav-link-legal` | `/terms` link (hidden `<lg`) | (visible text "Legal") |
-| `nav-link-privacy` | `/privacy` link (hidden `<lg`) | (visible text "Privacy") |
-| `nav-link-knowledge` | `/knowledge` link | (visible text "Knowledge") |
-| `nav-auth-dashboard` | Dashboard link (when signed in) | "Open dashboard" |
+| `nav-link-verify` | `/verify` link (primary nav) | (visible text "Verify") |
+| `nav-link-enterprise` | `/enterprise` link (primary nav) | (visible text "Enterprise") |
+| `nav-link-docs` | `/docs` link (primary nav) | (visible text "Docs") |
+| `nav-link-pricing` | `/pricing` link (primary nav) | (visible text "Pricing") |
+| `nav-more-trigger` | "More" disclosure button — opens the secondary-links panel on desktop (2026-07-02 declutter) | "More links" |
+| `nav-more-menu` | "More" disclosure panel — always in the DOM (toggled via `hidden`, never unmounted) so crawlers/agents still see Blog/FAQ/About | (n/a — labelled by `nav-more-trigger`) |
+| `nav-link-blog` | `/blog` link (inside the More panel on desktop; top-level in the mobile drawer) | (visible text "Blog") |
+| `nav-link-faq` | `/faq` link (inside the More panel on desktop; top-level in the mobile drawer) | (visible text "FAQ") |
+| `nav-link-about` | `/about` link (inside the More panel on desktop; top-level in the mobile drawer) | (visible text "About") |
+| `nav-link-knowledge` | `/knowledge` accent link | (visible text "Knowledge") |
+| `nav-account-trigger` | Account avatar button (signed in) — opens the account menu (2026-07-02; replaced the inline email chip which overlapped the accent link) | "Account menu — signed in as {email}" |
+| `nav-account-menu` | Account menu panel — always in the DOM (toggled via `hidden`) | (n/a — labelled by `nav-account-trigger`) |
+| `nav-account-email` | Signed-in email display inside the account menu | (n/a — text) |
+| `nav-auth-dashboard` | Dashboard link inside the account menu (signed in) | "Open dashboard" |
+| `nav-account-billing` | Billing-portal trigger inside the account menu — opens Stripe portal in the same tab | (visible text "Billing") |
+| `nav-account-security` | Security link to `/admin/security` inside the account menu | (visible text "Security") |
+| `nav-account-signout` | Sign-out button inside the account menu — POSTs to `/api/auth/logout` then redirects to `/login` | (visible text "Sign out") |
 | `nav-auth-signin` | Sign-in link (when signed out) | (visible text "Sign In") |
+
+> **2026-07-02 nav declutter:** `nav-link-legal` (→ `/terms`) and `nav-link-privacy`
+> (→ `/privacy`) were **removed from the top nav** (it had overcrowded and links
+> overlapped the account chip). Terms + Privacy now live in the footer sitemap
+> as `footer-link-terms` / `footer-link-privacy` (registered under SiteFooter
+> below), and every page carries that footer — so both humans and agents can
+> still reach the legal pages from anywhere.
 | `nav-hamburger` | Hamburger button (M5, visible `<md`) | "Open navigation menu" |
 | `nav-drawer` | Drawer container (M5) | (n/a — region with `role="dialog"`) |
 | `nav-drawer-close` | Drawer close button (M5) | "Close navigation menu" |
@@ -705,15 +719,20 @@ load-bearing legal sentences fails CI before deploy.
 
 ### SiteFooter — `src/components/ui/SiteFooter.tsx`
 
-Site-wide canonical copyright trailer rendered globally from
-`src/app/layout.tsx` so every page (including ones without their own
-bespoke footer) carries the canonical copyright + jurisdiction line.
-Asserted by `src/components/ui/SiteFooter.test.tsx` and by
-`src/app/__tests__/mobile-typography.test.tsx`.
+Site-wide footer rendered globally from `src/app/layout.tsx` so every page
+(including ones without their own hero footer) carries BOTH a full sitemap and
+the canonical copyright + jurisdiction line. The sitemap links are always
+server-rendered (no JS disclosure) so humans, crawlers, answer engines, and
+Playwright can reach every page — including the legal pages — without
+interaction. This is where `nav-link-legal`/`nav-link-privacy` went after the
+2026-07-02 nav declutter. Asserted by `src/components/ui/SiteFooter.test.tsx`
+and by `src/app/__tests__/mobile-typography.test.tsx`.
 
 | testid | Element | Accessible name |
 |---|---|---|
-| `site-footer` | `<footer role="contentinfo">` site-wide trailer | "Site copyright" (`aria-label`) |
+| `site-footer` | `<footer role="contentinfo">` site-wide footer | "Site footer" (`aria-label`) |
+| `footer-sitemap` | `<nav>` sitemap region grouping the Product/Company/Legal columns | "Footer" (`aria-label`) |
+| `footer-link-<slug>` | One `<Link>` per sitemap entry. Slugs: `pricing`, `enterprise`, `verify`, `docs`, `knowledge`, `visualise` (Product); `about`, `blog`, `faq` (Company); `terms`, `privacy`, `aup`, `dpa`, `copyright` (Legal) | (visible text) |
 | `site-footer-copyright` | `<p>` containing the canonical "© 2025–2026 G. Osborne …" string + link | (visible text) |
 | `site-footer-copyright-link` | `<Link href="/copyright">` to the public copyright page | "Copyright & licensing" (visible text) |
 

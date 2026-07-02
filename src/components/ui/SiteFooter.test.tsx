@@ -9,7 +9,12 @@
 import { render, screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 
-import SiteFooter, { COPYRIGHT_HOLDER, COPYRIGHT_LINE, COPYRIGHT_YEAR_RANGE } from "./SiteFooter";
+import SiteFooter, {
+  COPYRIGHT_HOLDER,
+  COPYRIGHT_LINE,
+  COPYRIGHT_YEAR_RANGE,
+  SITE_FOOTER_COLUMNS,
+} from "./SiteFooter";
 
 describe("SiteFooter — canonical copyright line", () => {
   it("exposes a stable canonical copyright string", () => {
@@ -42,5 +47,34 @@ describe("SiteFooter — canonical copyright line", () => {
     const el = screen.getByTestId("site-footer");
     expect(el.tagName.toLowerCase()).toBe("footer");
     expect(el.getAttribute("role")).toBe("contentinfo");
+  });
+});
+
+describe("SiteFooter — sitemap (dual-accessibility declutter, 2026-07-02)", () => {
+  it("renders a <nav> sitemap landmark", () => {
+    render(<SiteFooter />);
+    const sitemap = screen.getByTestId("footer-sitemap");
+    expect(sitemap.tagName.toLowerCase()).toBe("nav");
+    expect(sitemap.getAttribute("aria-label")).toBe("Footer");
+  });
+
+  it("renders every registered footer link with the correct href", () => {
+    render(<SiteFooter />);
+    for (const col of SITE_FOOTER_COLUMNS) {
+      for (const link of col.links) {
+        const el = screen.getByTestId(link.testid);
+        expect(el.getAttribute("href"), `${link.testid} → ${link.href}`).toBe(link.href);
+      }
+    }
+  });
+
+  it("keeps the legal pages reachable from the footer (Terms/Privacy/AUP/DPA)", () => {
+    // These moved out of the top nav on 2026-07-02; the footer is now the
+    // guaranteed reachability path from every page.
+    render(<SiteFooter />);
+    expect(screen.getByTestId("footer-link-terms").getAttribute("href")).toBe("/terms");
+    expect(screen.getByTestId("footer-link-privacy").getAttribute("href")).toBe("/privacy");
+    expect(screen.getByTestId("footer-link-aup").getAttribute("href")).toBe("/aup");
+    expect(screen.getByTestId("footer-link-dpa").getAttribute("href")).toBe("/dpa");
   });
 });
