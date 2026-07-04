@@ -303,7 +303,7 @@ const softwareApplicationJsonLd = {
     "Cryptographic Merkle proofs (RFC 6962 SHA-256)",
     "Markov-chain predictive recall (64% hit rate)",
     "Sub-millisecond access latency (0.045ms p50, 1.2ms p99)",
-    "6,423 ops/sec throughput",
+    "~2,900 ops/sec sustained throughput",
     "MCP-native integration (11 tools, Streamable HTTP)",
     "Compact proofs (37% token savings — 4,102 → 2,580 tokens)",
     "LevelDB with JumpHash sharding (4 independent Merkle shards)",

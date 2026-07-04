@@ -57,7 +57,7 @@ Also described as: an AI digital brain, an AI memory substrate, persistent digit
 ## Key Specifications
 
 - Access latency: 0.045ms p50, 0.074ms p95, 1.2ms p99
-- Throughput: 6,423 ops/sec
+- Throughput: ~2,900 ops/sec (sustained, benchmark harness)
 - Proof verification: 0.032ms p95
 - Markov prediction hit rate: 64%
 - Compact proofs: 37% token savings (4,102 → 2,580 tokens)
