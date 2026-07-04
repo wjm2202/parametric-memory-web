@@ -94,13 +94,13 @@ const ALL_FAQS: FAQItem[] = [
     category: "what",
     question: "What is session bootstrapping?",
     answer:
-      "Session bootstrap is a single MCP tool call — memory_session_bootstrap — that loads relevant atoms, active procedures, Markov predictions, and conflicting facts at the start of every session. You pass your objective and it returns a pre-ranked, token-budgeted context block. Bootstrap uses both Markov arcs and knowledge graph edges for scoring. On a Pro plan, you can run up to 333 bootstraps per day.",
+      "Session bootstrap is a single MCP tool call — memory_session_bootstrap — that loads relevant atoms, active procedures, Markov predictions, and conflicting facts at the start of every session. You pass your objective and it returns a pre-ranked, token-budgeted context block. Bootstrap ranks atoms by relevance to your objective, refined by knowledge-graph signals — a boost for the domain you declare and demotion of superseded atoms. On a Pro plan, you can run up to 333 bootstraps per day.",
   },
   {
     category: "what",
     question: "What is the knowledge graph edge system?",
     answer:
-      "Parametric Memory stores not just atoms but the relationships between them. Edges have typed semantics: member_of (atom belongs to a cluster), supersedes (new atom replaces old), depends_on (A requires B to be true), constrains (A limits B's options), references (A uses B), derived_from (finding came from investigating B), and produced_by (atom was created during a task). Unlike Markov arcs which decay, edges are permanent. They boost bootstrap scoring and enable neighbourhood retrieval — fetch an atom and get its connected context in the same call.",
+      "Parametric Memory stores not just atoms but the relationships between them. Edges have typed semantics: member_of (atom belongs to a cluster), supersedes (new atom replaces old), depends_on (A requires B to be true), constrains (A limits B's options), references (A uses B), derived_from (finding came from investigating B), and produced_by (atom was created during a task). Unlike Markov arcs which decay, edges are permanent. They enable neighbourhood retrieval — fetch an atom and get its connected context in the same call — and shape ranking in targeted ways: atoms in the domain you declare are boosted, and superseded atoms are demoted. An atom is never promoted just for being highly connected, so the most relevant memory is never displaced by the most popular one.",
   },
   {
     category: "what",
@@ -112,13 +112,13 @@ const ALL_FAQS: FAQItem[] = [
     category: "what",
     question: "How is Parametric Memory different from file-based AI memory?",
     answer:
-      "File-based memory — scattered Markdown notes, CLAUDE.md files, or local logs — has no ranking, no verification, and no recall model: the agent has to read whole files and hope the right context is inside them. Parametric Memory is not file-based. Every memory is an addressable, typed atom in a SHA-256 Merkle tree, recalled in sub-millisecond time (0.045ms p50), ranked by a Markov prediction layer, and connected by a knowledge-graph edge system. You get verifiable, queryable, self-ranking memory instead of flat files that grow stale and unsearchable.",
+      "File-based memory — scattered Markdown notes, CLAUDE.md files, or local logs — has no ranking, no verification, and no recall model: the agent has to read whole files and hope the right context is inside them. Parametric Memory is not file-based. Every memory is an addressable, typed atom in a SHA-256 Merkle tree, recalled in sub-millisecond time (0.045ms p50), ranked by relevance with a Markov prediction layer pre-fetching what comes next, and connected by a knowledge-graph edge system. You get verifiable, queryable, self-ranking memory instead of flat files that grow stale and unsearchable.",
   },
   {
     category: "what",
     question: "Is Parametric Memory the fastest memory for AI agents?",
     answer:
-      "Parametric Memory is built for speed: atom access is 0.045ms p50 / 0.074ms p95 (1.2ms p99), Merkle proof verification is 0.032ms p95, and the substrate sustains 6,423 ops/sec. A Markov prediction layer pre-fetches the next atoms with a 64% hit rate, so the memory your AI needs next is usually already warm when it asks — sub-millisecond recall with no per-query cost.",
+      "Parametric Memory is built for speed: atom access is 0.045ms p50 / 0.074ms p95 (1.2ms p99), Merkle proof verification is 0.032ms p95, and the substrate sustains ~2,900 ops/sec. A Markov prediction layer pre-fetches the next atoms with a 64% hit rate, so the memory your AI needs next is usually already warm when it asks — sub-millisecond recall with no per-query cost.",
   },
 
   // ── WHY BETTER ────────────────────────────────────────────────────────────
@@ -188,7 +188,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "ai",
     question: "What is the access latency and throughput of the memory system?",
     answer:
-      "Measured in production: 0.045ms p50 access latency, 0.074ms p95, 1.2ms p99. Throughput: 6,423 ops/sec. Proof verification: 0.032ms p95. Compact proof serialisation saves 37% token overhead. The substrate uses LevelDB with JumpHash sharding across 4 independent Merkle shards. At these latencies, an AI agent can recall memories in the same round-trip as a tool call — no perceptible delay to the user.",
+      "Measured in production: 0.045ms p50 access latency, 0.074ms p95, 1.2ms p99. Proof verification: 0.032ms p95. Sustained throughput on our benchmark harness: ~2,900 ops/sec. Compact proof serialisation saves 37% token overhead. The substrate uses LevelDB with JumpHash sharding across 4 independent Merkle shards. At these latencies, an AI agent can recall memories in the same round-trip as a tool call — no perceptible delay to the user.",
   },
 
   // ── HOW WE USE IT ─────────────────────────────────────────────────────────
