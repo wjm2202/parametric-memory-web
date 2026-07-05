@@ -30,7 +30,7 @@ Your API key is generated at provision time and stored securely. To retrieve it:
 
 1. Go to **Dashboard → Settings → API Key**
 2. Click **Claim Key**
-3. Copy the key shown — it begins with `mmk_`
+3. Copy the key shown — it begins with `mmpm_live_`
 
 > **Important:** The key is shown once in full at claim time. After you close the dialog, only the first 8 characters (the prefix) are displayed. If you lose your key, you must rotate it — see below.
 
@@ -45,9 +45,9 @@ After claiming your key, the Dashboard shows a ready-to-paste config block for y
   "mcpServers": {
     "parametric-memory": {
       "type": "streamable-http",
-      "url": "https://abc123.parametric-memory.dev/mcp",
+      "url": "https://abc123.droplet-mcp.nz/mcp",
       "headers": {
-        "Authorization": "Bearer mmk_your_key_here"
+        "Authorization": "Bearer mmpm_live_your_key_here"
       }
     }
   }

@@ -1,0 +1,81 @@
+---
+title: "Best AI Agent Memory in 2026: Mem0 vs. Zep vs. Letta vs. Parametric Memory"
+date: "2026-07-05"
+excerpt: "An honest comparison of the leading AI agent memory systems — Mem0, Zep, Letta, and Parametric Memory — across architecture, verifiability, integration, and price. Including where each one wins."
+author: "Glen Osborne"
+tags: ["comparison", "mem0", "zep", "memory", "mcp"]
+---
+
+If you're building an AI agent that has to remember things across sessions, you'll quickly land on
+the same shortlist: **Mem0, Zep, Letta**, and — if verifiability matters — **Parametric Memory**.
+They solve the same problem in genuinely different ways. Here's an honest comparison, including
+where each one wins, so you can pick the right tool rather than the loudest one.
+
+## The one-line version
+
+- **Mem0** — a vector-first memory *layer* you bolt onto any agent. Fastest path to cross-session
+  personalization; the largest ecosystem.
+- **Zep** — a *temporal knowledge graph* (Graphiti). Best when facts change over time and you need
+  to know *when* something was true.
+- **Letta** (formerly MemGPT) — a full agent *runtime* where the model pages its own memory like an
+  operating system. Best for long-running autonomous agents that self-edit context.
+- **Parametric Memory** — a *verifiable* memory substrate. The only one where every recalled fact
+  carries a cryptographic proof, delivered MCP-native from $5/mo.
+
+## At a glance
+
+| | Mem0 | Zep | Letta | Parametric Memory |
+|---|---|---|---|---|
+| Architecture | Vector memory layer | Temporal knowledge graph | Agent runtime (self-paging) | Verifiable substrate (Merkle + Markov + graph) |
+| Cryptographic proof of memory | No | No | No | **Yes — RFC 6962 Merkle** |
+| Integration | SDK / API | SDK / API | Runtime | **MCP-native (one config block)** |
+| Hosting | OSS core + cloud | Graphiti OSS + cloud | Fully open-source | Managed; dedicated tier from $29 |
+| Paid pricing | Pro (graph) ~$249/mo | Flex ~$125/mo | Free / self-host | $5–$79/mo |
+| Standard benchmark | LongMemEval 94.4% (self-report) | LongMemEval 63.8% (GPT-4o) | — | Own retrieval + answer benchmark ([/benchmark](/benchmark)); LongMemEval planned |
+| Best for | Personalization, big ecosystem | Time-changing facts | Autonomous self-editing agents | Verifiable cross-session memory over MCP |
+
+*Prices and benchmark figures as reported by each vendor / the LongMemEval literature, July 2026.*
+
+## Where each one wins (honestly)
+
+**Choose Mem0** if you want the shortest path to "my chatbot remembers the user," a large
+integration ecosystem, and you're comfortable that recall is probabilistic. Its self-reported
+LongMemEval scores lead the pack.
+
+**Choose Zep** if your domain has facts that change over time — account states, prices, statuses —
+and your agent needs to reason about *when* something was true. Its Graphiti temporal graph is
+purpose-built for that and is open-source.
+
+**Choose Letta** if you're building a long-running autonomous agent that should manage its own
+memory — deciding what stays in context and what gets paged out — and you want a fully open-source
+runtime to self-host.
+
+**Choose Parametric Memory** if you need memory you can *trust and prove*, with the least
+integration work:
+
+- **Verifiability no one else offers.** Every fact is sealed in an RFC 6962 Merkle tree, so your
+  agent can [prove its memory wasn't altered](/verify) — a hard requirement for regulated,
+  audited, or high-stakes workflows.
+- **MCP-native, one config block.** No SDK, no service to run. It drops into Claude Code, Cursor,
+  Claude Desktop, or any MCP client.
+- **Graph + prediction included at every price.** Knowledge-graph edges and a Markov prediction
+  layer ship on every tier from $5/mo — where comparable graph features sit on $125–$249/mo plans
+  elsewhere.
+
+## A note on benchmarks
+
+The category is measured on **LongMemEval** (Mem0 self-reports 94.4%; Zep 63.8% on GPT-4o). We
+haven't published a LongMemEval number yet — and we'd rather say so than quote a bespoke figure
+that isn't comparable. What we *have* published is an honest, reproducible [retrieval and
+answer-accuracy benchmark](/benchmark) on our own production data, including where a well-crafted
+prompt and keyword RAG tie us. A LongMemEval result is on the roadmap; we'll publish it the same
+way — with the caveats visible.
+
+## Bottom line
+
+There's no single winner — there's a right tool for your constraint. If you want ecosystem, pick
+Mem0. If you want temporal facts, pick Zep. If you want an autonomous self-hosted runtime, pick
+Letta. **If you want memory you can prove, delivered over MCP without running any infrastructure,
+that's us — from $5/mo.**
+
+[See the benchmark →](/benchmark) · [Get started — $5/mo →](/pricing)

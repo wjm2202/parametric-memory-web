@@ -35,7 +35,7 @@ export function HeroAnimatedSequence() {
     <div className="relative z-10 mx-auto flex max-w-5xl flex-col items-center px-6 text-center">
       {/* Eyebrow */}
       <p className="text-brand-400 mb-5 font-mono text-[11px] tracking-[0.28em] uppercase">
-        Persistent memory for AI agents
+        The L2 cache for AI agents
       </p>
 
       {/* Main heading — LCP candidate. Rendered fully on the server at full
@@ -58,9 +58,10 @@ export function HeroAnimatedSequence() {
         className="font-body text-surface-300 mb-9 max-w-2xl leading-relaxed"
         style={{ fontSize: "clamp(15px, 1.7vw, 18px)" }}
       >
-        A permanent, private memory for any AI agent — one that survives every session, tool and
-        restart. Every recall comes with a cryptographic proof that nothing was altered behind your
-        back. Add one config block; your AI never starts from zero again.
+        The fast, predictive memory tier between your model and cold storage — it keeps the right
+        context warm before your agent asks, survives every session, tool and restart, and proves
+        nothing was altered behind your back. One config block; your AI never starts from zero
+        again.
       </p>
 
       {/* CTAs — hover styles via Tailwind arbitrary values (no JS handlers). */}

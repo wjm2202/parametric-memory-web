@@ -10,7 +10,7 @@ import CompetitorComparison from "./CompetitorComparison";
 export const metadata: Metadata = {
   title: "Pricing — Plans from $5/mo USD",
   description:
-    "Persistent AI memory for developers — flat monthly subscription, no per-query costs. Plans from $5/mo Starter to $79/mo Team. All prices in US dollars (USD).",
+    "The L2 cache for AI agents — predictive, verifiable memory. Flat monthly subscription, no per-query costs. Plans from $5/mo Starter to $79/mo Team. Prices in USD.",
   alternates: {
     canonical: "https://parametric-memory.dev/pricing",
   },

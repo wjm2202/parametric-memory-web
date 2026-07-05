@@ -15,10 +15,10 @@ All API requests must include a valid API key in the `Authorization` header.
 Authorization: Bearer YOUR_API_KEY
 ```
 
-API keys have the prefix `mmk_` followed by a hex string:
+API keys have the prefix `mmpm_live_` followed by a hex string:
 
 ```
-mmk_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
+mmpm_live_a1b2c3d4e5f6a1b2c3d4e5f6a1b2c3d4
 ```
 
 ## Scopes
@@ -47,7 +47,7 @@ After claiming the new key from the dashboard:
 2. Restart Claude Desktop. Your substrate will reconnect automatically.
 
 > **Never commit API keys to version control.** Use environment variables:
-> `MMPM_API_KEY=mmk_...` in `.env.local`.
+> `MMPM_API_KEY=mmpm_live_...` in `.env.local`.
 
 ## MCP OAuth2
 

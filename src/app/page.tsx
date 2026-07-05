@@ -38,7 +38,7 @@ const landingJsonLd = {
   name: "Parametric Memory — Home",
   url: "https://parametric-memory.dev",
   description:
-    "Persistent, verifiable memory for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Isolated substrates from $5/mo USD; dedicated on Professional and Team.",
+    "The L2 cache for AI agents — a fast, predictive, verifiable memory tier between your model and cold storage. Markov prediction keeps context warm before you ask (64% hit rate), Merkle proofs (RFC 6962) make every recall verifiable, sub-millisecond access (0.045ms p50). From $5/mo USD.",
   datePublished: "2025-01-01",
   dateModified: new Date().toISOString().split("T")[0],
   inLanguage: "en-US",
@@ -191,7 +191,7 @@ const setupConfig = `{
       "type": "streamable-http",
       "url": "https://silver-flat-6czf.droplet-mcp.nz/mcp",
       "headers": {
-        "Authorization": "Bearer mmk_••••••"
+        "Authorization": "Bearer mmpm_live_••••••"
       }
     }
   }
@@ -387,6 +387,63 @@ export default async function HomePage() {
           </div>
         </section>
 
+        {/* ── MEMORY HIERARCHY (L2-cache positioning visual) ────────────── */}
+        <section className="mx-auto max-w-4xl px-6 py-20" aria-labelledby="hierarchy-heading">
+          <p className="text-brand-400 mb-3 font-mono text-[11px] tracking-widest uppercase">
+            The memory hierarchy
+          </p>
+          <h2
+            id="hierarchy-heading"
+            className="font-display mb-8 text-3xl font-extrabold text-white lg:text-4xl"
+            style={{ letterSpacing: "-0.03em" }}
+          >
+            Where we sit: the L2 cache for AI.
+          </h2>
+          <div className="space-y-2">
+            <div className="border-surface-800 bg-surface-900/50 flex items-center gap-4 rounded-xl border px-5 py-4">
+              <div className="text-surface-500 w-14 shrink-0 font-mono text-xs">L1</div>
+              <div className="flex-1">
+                <div className="font-body text-sm font-medium text-white">Context window</div>
+                <div className="text-surface-500 text-xs">
+                  Tiny · fastest · volatile — cleared every session
+                </div>
+              </div>
+            </div>
+            <div className="border-brand-500 bg-brand-500/10 flex items-center gap-4 rounded-xl border-2 px-5 py-5">
+              <div className="text-brand-400 w-14 shrink-0 font-mono text-xs font-bold">L2</div>
+              <div className="flex-1">
+                <div className="font-display text-brand-400 text-base font-bold">
+                  Parametric Memory — the L2 cache
+                </div>
+                <div className="text-surface-300 mt-1 text-sm">
+                  Predictive prefetch (64% hit) · Merkle-verified · sub-ms recall · your hot working
+                  set
+                </div>
+              </div>
+              <div className="text-brand-400 hidden text-xs font-medium sm:block">
+                warm before you ask
+              </div>
+            </div>
+            <div className="border-surface-800 bg-surface-900/50 flex items-center gap-4 rounded-xl border px-5 py-4">
+              <div className="text-surface-500 w-14 shrink-0 font-mono text-xs">Main</div>
+              <div className="flex-1">
+                <div className="font-body text-sm font-medium text-white">
+                  Vector DB · knowledge base · files
+                </div>
+                <div className="text-surface-500 text-xs">Large · slow · cold storage</div>
+              </div>
+            </div>
+          </div>
+          <p className="text-surface-500 mt-6 max-w-2xl text-sm leading-relaxed">
+            Your vector database is main memory. Parametric Memory is the L2 cache in front of it —
+            the fast, predictive, verifiable tier that keeps the right context warm before your
+            agent asks.{" "}
+            <Link href="/verify" className="text-brand-400 hover:underline">
+              Verify a memory yourself →
+            </Link>
+          </p>
+        </section>
+
         {/* ── SETUP ─────────────────────────────────────────────────────── */}
         <section className="mx-auto max-w-6xl px-6 py-24" aria-labelledby="setup-heading">
           <div className="mb-14 max-w-xl">
@@ -568,7 +625,7 @@ export default async function HomePage() {
               Drop a signed memory snapshot into your browser and verify it yourself — no API key,
               no account, not one line of our code in the loop. If a single atom was altered, the
               check fails in front of you. That&apos;s the whole point: you shouldn&apos;t have to
-              trust us.
+              trust us — and no other AI memory can prove itself this way.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link

@@ -1,0 +1,63 @@
+---
+title: "What Is the L2 Cache for AI? The Memory Hierarchy for Agents, Explained"
+date: "2026-07-05"
+excerpt: "The L2 cache for AI is the fast, predictive memory tier between a model's context window and cold storage — it keeps the right context warm before an agent asks. Here's the full memory hierarchy for AI agents and where each tool fits."
+author: "Glen Osborne"
+tags: ["explainer", "memory", "l2-cache", "agents"]
+---
+
+**TL;DR:** The "L2 cache for AI" is the fast, predictive memory tier that sits between an AI agent's
+context window (its L1) and cold storage like a vector database (its main memory). Like a CPU's L2
+cache, it holds the hot working set, predicts what will be needed next, and serves it in
+sub-milliseconds. Parametric Memory is built as exactly this tier.
+
+## What is the L2 cache for AI?
+
+The L2 cache for AI is a memory layer that sits between the model and its long-term store, keeping
+the context an agent is about to need already warm. It borrows the idea from CPU design: a small,
+fast cache between the processor and slow main memory that predicts and pre-fetches data so the
+processor rarely waits. For an AI agent, the "processor" is the model, the "main memory" is your
+vector DB or knowledge base, and the L2 cache is the tier that makes recall fast and predictive.
+
+## The memory hierarchy for AI agents
+
+Every performance-critical system has a memory hierarchy, and AI agents are no different:
+
+| Tier | For an AI agent | Characteristics |
+|---|---|---|
+| **L1 / registers** | The context window | Tiny, fastest, volatile — cleared every session |
+| **L2 cache** | A predictive memory substrate | Fast, hot working set, pre-fetches what's needed next |
+| **Main memory / disk** | Vector databases, knowledge bases, files | Large, slower, cold storage |
+
+Most "AI memory" tools are main memory — a place to *store and search* facts. The L2 cache is
+different: its job is to have the right context **warm before the query lands**, so the agent
+doesn't pay a retrieval round-trip on every step.
+
+## Why does an AI agent need an L2 cache, not just storage?
+
+Because retrieval-on-demand is slow and reactive, while a cache is fast and predictive. Storing
+everything in a vector DB solves persistence but not latency or relevance timing — the agent still
+has to stop and fetch. A cache tier learns the access pattern and pre-loads the likely-next context,
+turning "fetch when asked" into "already there." That's the difference between an agent that pauses
+to look things up and one that simply knows.
+
+## How does a predictive memory cache actually work?
+
+Three mechanisms, all borrowed from real cache design:
+
+- **Prefetch by prediction.** A Markov model learns which memories tend to follow which and
+  pre-loads the next context before the query arrives — the memory equivalent of CPU branch
+  prediction. Parametric Memory reports a 64% predictive hit rate on its production substrate.
+- **Hot working set.** An Adaptive Replacement Cache (the same T1/T2/B1/B2 algorithm used in storage
+  systems) keeps frequently and recently used memories hot and lets cold ones age out.
+- **Verifiable coherency.** Every cached fact is sealed in a Merkle tree, so the cache can prove it
+  isn't stale or tampered — cache coherency you can cryptographically check.
+
+## Where does Parametric Memory fit?
+
+Parametric Memory *is* the L2 cache for AI agents: sub-millisecond recall, Markov prefetch, an
+adaptive-replacement hot tier, and Merkle-verifiable coherency — delivered over MCP so it drops into
+Claude, Cursor, or any agent with one config block. Your vector DB stays as main memory; Parametric
+Memory becomes the fast, predictive, provable tier in front of it.
+
+[See it in action →](/benchmark) · [Give your agent an L2 cache — $5/mo →](/pricing)

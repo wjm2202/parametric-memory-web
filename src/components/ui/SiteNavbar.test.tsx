@@ -92,6 +92,7 @@ describe("SiteNavbar standard variant — testid coverage", () => {
       ["nav-link-enterprise", "/enterprise"],
       ["nav-link-docs", "/docs"],
       ["nav-link-pricing", "/pricing"],
+      ["nav-link-benchmark", "/benchmark"],
       ["nav-link-blog", "/blog"],
       ["nav-link-faq", "/faq"],
       ["nav-link-about", "/about"],
@@ -183,6 +184,7 @@ describe("SiteNavbar mobile drawer (M5)", () => {
       "nav-link-enterprise",
       "nav-link-docs",
       "nav-link-pricing",
+      "nav-link-benchmark",
       "nav-link-blog",
       "nav-link-faq",
       "nav-link-about",
@@ -277,12 +279,13 @@ describe("SiteNavbar desktop 'More' disclosure", () => {
     expect(menu).not.toHaveAttribute("hidden");
   });
 
-  it("keeps Blog/FAQ/About in the DOM even when the panel is closed (crawler-visible)", () => {
+  it("keeps Benchmark/Blog/FAQ/About in the DOM even when the panel is closed (crawler-visible)", () => {
     render(<SiteNavbar isLoggedIn={false} />);
     const menu = screen.getByTestId("nav-more-menu");
     // Closed by default, yet the links are server-rendered inside the panel.
     expect(menu).toHaveAttribute("hidden");
     for (const [tid, href] of [
+      ["nav-link-benchmark", "/benchmark"],
       ["nav-link-blog", "/blog"],
       ["nav-link-faq", "/faq"],
       ["nav-link-about", "/about"],

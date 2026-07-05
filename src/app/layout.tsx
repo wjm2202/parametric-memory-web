@@ -54,7 +54,7 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   title: {
-    default: "Parametric Memory — Persistent, Verifiable Memory for AI",
+    default: "Parametric Memory — The L2 Cache for AI: Verifiable, Predictive Agent Memory",
     template: "%s | Parametric Memory",
   },
   icons: {
@@ -79,7 +79,7 @@ export const metadata: Metadata = {
   applicationName: "Parametric Memory",
   category: "AI Memory Infrastructure",
   openGraph: {
-    title: "Parametric Memory — Persistent, Verifiable Memory for AI",
+    title: "Parametric Memory — The L2 Cache for AI: Verifiable, Predictive Agent Memory",
     description: getLayoutMetaDescription(),
     url: "https://parametric-memory.dev",
     siteName: "Parametric Memory",
@@ -98,7 +98,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     site: "@parametricmem",
     creator: "@parametricmem",
-    title: "Parametric Memory — Persistent, Verifiable Memory for AI",
+    title: "Parametric Memory — The L2 Cache for AI: Verifiable, Predictive Agent Memory",
     description: getTwitterDescription(),
     images: ["https://parametric-memory.dev/brand/og.png"],
   },
@@ -127,7 +127,12 @@ const organizationJsonLd = {
   "@type": "Organization",
   "@id": "https://parametric-memory.dev/#organization",
   name: "Parametric Memory",
+  // Disambiguation signal: "parametric memory" is also a generic ML term
+  // (knowledge in model weights). alternateName + sameAs tell Google/AI answer
+  // engines to model this as a distinct brand entity, separate from the concept.
+  alternateName: "MMPM",
   url: "https://parametric-memory.dev",
+  sameAs: ["https://x.com/parametricmem"],
   description:
     "Enterprise-grade persistent memory for AI with cryptographic Merkle proofs, Markov prediction, and MCP-native integration.",
   foundingDate: "2025",

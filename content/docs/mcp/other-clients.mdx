@@ -15,8 +15,8 @@ Regardless of client, you need two things from your [Dashboard](/docs/your-insta
 
 | Field | Where to find it |
 |---|---|
-| **MCP URL** | `https://abc123.parametric-memory.dev/mcp` |
-| **API Key** | Dashboard → Settings → API Key (starts with `mmk_`) |
+| **MCP URL** | `https://abc123.droplet-mcp.nz/mcp` |
+| **API Key** | Dashboard → Settings → API Key (starts with `mmpm_live_`) |
 
 ---
 
@@ -28,9 +28,9 @@ In Cursor, go to **Settings → MCP → Add Server** and enter:
 {
   "name": "Parametric Memory",
   "type": "streamable-http",
-  "url": "https://abc123.parametric-memory.dev/mcp",
+  "url": "https://abc123.droplet-mcp.nz/mcp",
   "headers": {
-    "Authorization": "Bearer mmk_your_key_here"
+    "Authorization": "Bearer mmpm_live_your_key_here"
   }
 }
 ```
@@ -47,9 +47,9 @@ In the Cline extension settings, find **MCP Servers** and add:
 {
   "parametric-memory": {
     "type": "streamable-http",
-    "url": "https://abc123.parametric-memory.dev/mcp",
+    "url": "https://abc123.droplet-mcp.nz/mcp",
     "headers": {
-      "Authorization": "Bearer mmk_your_key_here"
+      "Authorization": "Bearer mmpm_live_your_key_here"
     }
   }
 }
@@ -74,10 +74,10 @@ In your `.continue/config.json`, add under `mcpServers`:
       "name": "parametric-memory",
       "transport": {
         "type": "streamable-http",
-        "url": "https://abc123.parametric-memory.dev/mcp",
+        "url": "https://abc123.droplet-mcp.nz/mcp",
         "requestOptions": {
           "headers": {
-            "Authorization": "Bearer mmk_your_key_here"
+            "Authorization": "Bearer mmpm_live_your_key_here"
           }
         }
       }
@@ -94,8 +94,8 @@ If you are building your own MCP host or agent framework, connect using the stan
 
 ```
 Transport:  Streamable HTTP (MCP 2025-03-26)
-URL:        https://abc123.parametric-memory.dev/mcp
-Auth:       Authorization: Bearer mmk_your_key_here
+URL:        https://abc123.droplet-mcp.nz/mcp
+Auth:       Authorization: Bearer mmpm_live_your_key_here
 ```
 
 ### OAuth2 (optional)
@@ -104,7 +104,7 @@ Parametric Memory also supports OAuth2 for environments that prefer token exchan
 
 ```
 POST https://abc123.parametric-memory.dev/oauth/authorize
-Body: { "apiKey": "mmk_your_key_here" }
+Body: { "apiKey": "mmpm_live_your_key_here" }
 Response: { "access_token": "...", "expires_in": 3600 }
 ```
 

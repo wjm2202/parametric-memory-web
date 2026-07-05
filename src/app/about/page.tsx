@@ -6,7 +6,7 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 export const metadata: Metadata = {
   title: "About",
   description:
-    "Parametric Memory is a persistent, cryptographically verifiable memory substrate for AI agents. One founder, built with Claude, run the way we sell it.",
+    "Parametric Memory is the L2 cache for AI agents — predictive, verifiable memory. One founder, built with Claude, run the way we sell it.",
   alternates: { canonical: "https://parametric-memory.dev/about" },
   keywords: [
     "Parametric Memory team",
@@ -18,7 +18,7 @@ export const metadata: Metadata = {
   openGraph: {
     title: "About | Parametric Memory",
     description:
-      "Built by one human and a fleet of AI agents. Parametric Memory gives every AI a second brain — with Merkle proofs, Markov prediction, and full data isolation.",
+      "Built by one human and a fleet of AI agents. Parametric Memory is the L2 cache for AI — predictive, verifiable, Merkle-proofed memory.",
     url: "https://parametric-memory.dev/about",
     images: [
       {
@@ -517,13 +517,13 @@ export default async function AboutPage() {
               And we operate the same way we sell.
             </p>
             <blockquote className="border-l-2 border-[#7c5cfc] pl-5 text-[#8888aa] italic">
-              &ldquo;We don&apos;t just sell you a second brain — we trust it with ours.&rdquo;
+              &ldquo;We don&apos;t just sell you AI memory — we trust it with ours.&rdquo;
             </blockquote>
             <p>
               Our internal operations — every health check, every billing event, every customer
               signup — is a Merkle-sealed atom in our own MMPM substrate. The morning briefing agent
               reads last night&apos;s ops atoms and surfaces anything that needs attention. The
-              security review agent runs weekly. We built a second brain for our AI, then built a
+              security review agent runs weekly. We built an L2 cache for our AI, then built a
               company on top of it.
             </p>
           </div>

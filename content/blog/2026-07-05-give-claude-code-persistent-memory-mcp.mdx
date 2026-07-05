@@ -1,0 +1,106 @@
+---
+title: "How to Give Claude Code (and Cursor) Persistent Memory in One Config Block"
+date: "2026-07-05"
+excerpt: "Claude Code, Cursor and Claude Desktop forget everything when a session ends. Here's how to give any MCP client durable, verifiable long-term memory in about a minute — no database, no SDK, one config block."
+author: "Glen Osborne"
+tags: ["mcp", "claude-code", "cursor", "tutorial", "memory"]
+---
+
+Every new Claude Code session starts from zero. You re-explain the architecture, the naming
+conventions, the decision you made last week, the bug you already fixed. The model is brilliant
+and amnesiac — and the amnesia is the expensive part.
+
+This guide shows how to give **Claude Code, Cursor, Claude Desktop, or any MCP-compatible
+client** a persistent, cross-session memory in about a minute, using one config block and no
+infrastructure of your own.
+
+## Why not just use a bigger context window or a vector database?
+
+Two common answers, two problems:
+
+- **A bigger context window** doesn't persist. When the session ends, the context is gone, and
+  pasting your whole history back in every time is slow and expensive.
+- **A vector database** you host yourself means you're now running, tuning, and paying for an
+  embeddings pipeline, a chunking strategy, and a retrieval service — before you've stored a
+  single useful fact.
+
+What you actually want is a **memory service your agent talks to over a standard protocol**, that
+survives every session and restart, and that you don't have to operate. That's what the Model
+Context Protocol (MCP) is for.
+
+## What is an MCP memory server?
+
+[MCP](/docs) is the open standard that Claude, Claude Code, Cursor, and Cline already speak. An
+**MCP memory server** exposes a set of tools — store a fact, recall relevant context, bootstrap a
+session — that the model can call on its own. You add one server to your client config, and the
+model gains a long-term memory it manages itself.
+
+Parametric Memory is MCP-native: **11 tools over streamable HTTP**, OAuth2 + Bearer auth, and it
+works with any MCP client. No SDK to learn, no service to run.
+
+## Setup: from zero to remembering, in one config block
+
+**1. Get an instance and an API key.** [Sign up](/signup) and pick a plan — your own isolated
+memory substrate provisions automatically. Then **claim your API key** from the dashboard; your
+personal MCP endpoint and key are shown there.
+
+**2. Add one MCP server to your client config.** Paste this block, swapping in your endpoint and
+key from the dashboard:
+
+```json
+{
+  "mcpServers": {
+    "parametric-memory": {
+      "type": "streamable-http",
+      "url": "https://<your-instance>.droplet-mcp.nz/mcp",
+      "headers": {
+        "Authorization": "Bearer <YOUR_API_KEY>"
+      }
+    }
+  }
+}
+```
+
+Where the config lives depends on your client:
+
+- **Claude Desktop / Cowork** — `claude_desktop_config.json` ([full steps](/docs/mcp/claude))
+- **Claude Code** — add it as an MCP server in your project or user config
+- **Cursor, Cline, and other MCP clients** — [same block, per-client location](/docs/mcp/other-clients)
+
+**3. Restart the client.** Your agent now has memory. Ask it to remember something; start a new
+session tomorrow and ask it to recall — it's there.
+
+## What should your agent actually remember?
+
+The highest-value things to store are the ones you keep re-explaining:
+
+- **Decisions and their rationale** — "we chose Postgres over Dynamo because…"
+- **Conventions and rules** — naming, formatting, "never touch the migrations directory"
+- **Corrections** — when you fix the model's behaviour, store it so it stops recurring
+- **Project state** — what shipped, what's in flight, what's blocked
+
+Parametric Memory ranks and surfaces the relevant slice when a new session starts, so the model
+gets exactly what it needs without you pasting it back in.
+
+## The part vector memory can't do: proof
+
+Most memory systems are probabilistic — you trust that what came back is what went in. Parametric
+Memory writes every fact into an [RFC 6962 Merkle tree](/verify). If a single stored fact were
+altered, the root hash would change, so your agent (or you) can **verify its own memory** without
+trusting the server. You can [check a signed snapshot yourself](/verify) — no account, no API key,
+none of our code in the loop.
+
+## Cost
+
+An isolated substrate starts at **$5/mo** (Starter) and **$9/mo** (Solo) on shared infrastructure,
+with **$29/mo** (Professional) and **$79/mo** (Team) on dedicated infrastructure. Every tier
+includes Merkle proofs, Markov prediction, knowledge-graph edges, and MCP-native access. See
+[pricing](/pricing).
+
+## Give it a try
+
+If you use Claude Code, Cursor, or Claude Desktop every day, the amnesia is a tax you're paying on
+every session. One config block removes it — and unlike a memory you build yourself, this one is
+verifiable, predictive, and not your problem to run.
+
+[Get your instance — $5/mo →](/pricing)
