@@ -150,7 +150,10 @@ export default async function BenchmarkPage() {
 
       <main className="pt-[var(--site-nav-h)]">
         {/* ── HERO ──────────────────────────────────────────────────────── */}
-        <section className="mx-auto max-w-4xl px-6 pt-20 pb-10" aria-labelledby="bench-hero-heading">
+        <section
+          className="mx-auto max-w-4xl px-6 pt-20 pb-10"
+          aria-labelledby="bench-hero-heading"
+        >
           <p className="text-brand-400 mb-4 font-mono text-[11px] tracking-[0.22em] uppercase">
             Benchmark · Tier 1 · retrieval
           </p>
@@ -172,11 +175,11 @@ export default async function BenchmarkPage() {
             </span>
           </h1>
           <p className="font-body text-surface-400 mt-6 max-w-2xl text-lg leading-relaxed">
-            We ran a controlled retrieval benchmark on our real 3,716-fact memory. A recency-maintained
-            prompt found the needed fact <span className="text-red-400 font-medium">0 of 48 times</span>{" "}
-            even at a 32,000-token budget. MMPM found all{" "}
-            <span className="text-emerald-400 font-medium">48 of 48</span> using about 500 tokens. Here is
-            the honest picture — including where a prompt ties.
+            We ran a controlled retrieval benchmark on our real 3,716-fact memory. A
+            recency-maintained prompt found the needed fact{" "}
+            <span className="font-medium text-red-400">0 of 48 times</span> even at a 32,000-token
+            budget. MMPM found all <span className="font-medium text-emerald-400">48 of 48</span>{" "}
+            using about 500 tokens. Here is the honest picture — including where a prompt ties.
           </p>
         </section>
 
@@ -219,7 +222,9 @@ export default async function BenchmarkPage() {
                             {cell.t}
                           </div>
                           {cell.s && (
-                            <div className={`text-xs ${cellText[cell.tone]} opacity-80`}>{cell.s}</div>
+                            <div className={`text-xs ${cellText[cell.tone]} opacity-80`}>
+                              {cell.s}
+                            </div>
                           )}
                         </div>
                       </td>
@@ -230,10 +235,10 @@ export default async function BenchmarkPage() {
             </table>
           </div>
           <p className="text-surface-600 mt-4 text-sm leading-relaxed">
-            Honest read: on plain keyword lookups, keyword RAG ties MMPM — both hit 100%. MMPM&apos;s
-            separation shows on multi-hop recall and on not needing a retriever to maintain. Token counts
-            are a disclosed ~4-chars/token estimate applied identically to every method, so the ratios are
-            estimator-invariant.
+            Honest read: on plain keyword lookups, keyword RAG ties MMPM — both hit 100%.
+            MMPM&apos;s separation shows on multi-hop recall and on not needing a retriever to
+            maintain. Token counts are a disclosed ~4-chars/token estimate applied identically to
+            every method, so the ratios are estimator-invariant.
           </p>
         </section>
 
@@ -260,9 +265,12 @@ export default async function BenchmarkPage() {
                 body: "On queries whose answer shares no words with the question, vs 33% keyword / 0% recency. Directional (n=18).",
               },
             ].map((c) => (
-              <div key={c.head} className="border-surface-800 rounded-2xl border bg-surface-900 p-6">
+              <div
+                key={c.head}
+                className="border-surface-800 bg-surface-900 rounded-2xl border p-6"
+              >
                 <div className="font-display text-brand-400 text-3xl font-extrabold">{c.stat}</div>
-                <div className="mt-1 font-body text-sm font-medium text-white">{c.head}</div>
+                <div className="font-body mt-1 text-sm font-medium text-white">{c.head}</div>
                 <p className="text-surface-400 mt-3 text-sm leading-relaxed">{c.body}</p>
               </div>
             ))}
@@ -282,11 +290,13 @@ export default async function BenchmarkPage() {
             {faqs.map((f) => (
               <details
                 key={f.q}
-                className="border-surface-800 group rounded-xl border bg-surface-900 px-5 py-4"
+                className="border-surface-800 group bg-surface-900 rounded-xl border px-5 py-4"
               >
                 <summary className="font-body flex cursor-pointer list-none items-center justify-between text-base font-medium text-white">
                   {f.q}
-                  <span className="text-brand-400 ml-4 transition-transform group-open:rotate-45">+</span>
+                  <span className="text-brand-400 ml-4 transition-transform group-open:rotate-45">
+                    +
+                  </span>
                 </summary>
                 <p className="text-surface-400 mt-3 text-sm leading-relaxed">{f.a}</p>
               </details>
@@ -295,7 +305,10 @@ export default async function BenchmarkPage() {
         </section>
 
         {/* ── CTA ───────────────────────────────────────────────────────── */}
-        <section className="mx-auto max-w-4xl px-6 pt-6 pb-24 text-center" aria-labelledby="bench-cta-heading">
+        <section
+          className="mx-auto max-w-4xl px-6 pt-6 pb-24 text-center"
+          aria-labelledby="bench-cta-heading"
+        >
           <h2
             id="bench-cta-heading"
             className="font-display text-3xl font-extrabold text-white lg:text-4xl"
@@ -304,8 +317,8 @@ export default async function BenchmarkPage() {
             Give your agent a memory that ranks.
           </h2>
           <p className="font-body text-surface-400 mx-auto mt-4 max-w-lg text-base leading-relaxed">
-            The same substrate we benchmarked here — verifiable, connected, and predictive — behind one
-            MCP endpoint.
+            The same substrate we benchmarked here — verifiable, connected, and predictive — behind
+            one MCP endpoint.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
             <Link
