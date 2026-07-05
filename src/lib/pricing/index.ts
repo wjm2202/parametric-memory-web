@@ -145,19 +145,19 @@ export function getMetaPriceHook(): string {
  */
 export function getHomeMetaDescription(): string {
   const priceLine = getMarketingPriceLine();
-  return `Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. ${priceLine}.`;
+  return `The L2 cache for AI agents: predictive, verifiable memory — Merkle proofs, Markov prefetch, sub-ms recall. ${priceLine}.`;
 }
 
 /** Layout-level fallback description (used when a page doesn't override). */
 export function getLayoutMetaDescription(): string {
   const priceLine = getMarketingPriceLine();
-  return `Persistent, verifiable AI memory with Merkle proofs + Markov prediction. ${priceLine}, MCP-native, 7-day money-back guarantee.`;
+  return `The L2 cache for AI agents — predictive, verifiable memory. Merkle proofs, Markov prefetch, MCP-native. ${priceLine}.`;
 }
 
 /** Twitter-card description — same shape as home meta but trimmed. */
 export function getTwitterDescription(): string {
   const priceLine = getMarketingPriceLine();
-  return `Stop re-explaining. Give your AI a second brain — Merkle proofs, Markov prediction, sub-ms recall. ${priceLine}.`;
+  return `The L2 cache for AI agents — predictive, verifiable memory that keeps context warm before your agent asks. ${priceLine}.`;
 }
 
 // ── JSON-LD offers (used by layout.tsx softwareApplicationJsonLd) ──────────

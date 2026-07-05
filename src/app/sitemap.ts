@@ -50,6 +50,16 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.9,
     },
     {
+      // Benchmark / "build vs buy" page — high AEO value. FAQPage JSON-LD +
+      // reproducible numbers make it citable by AI answer engines for queries
+      // like "MMPM vs RAG", "does agent memory beat a prompt", "build your own
+      // vector memory". Internally linked from nav + footer; supports pricing.
+      url: "https://parametric-memory.dev/benchmark",
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: "https://parametric-memory.dev/about",
       lastModified: new Date(),
       changeFrequency: "monthly",

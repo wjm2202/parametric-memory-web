@@ -12,8 +12,8 @@ Parametric Memory connects to Claude via the Model Context Protocol (MCP). Once 
 ## Prerequisites
 
 - A running Parametric Memory instance (see [Your Instance & API Key](/docs/your-instance))
-- Your MCP endpoint URL (e.g. `https://abc123.parametric-memory.dev/mcp`)
-- Your API key (starts with `mmk_`)
+- Your MCP endpoint URL (e.g. `https://abc123.droplet-mcp.nz/mcp`)
+- Your API key (starts with `mmpm_live_`)
 
 ## Claude Desktop
 
@@ -29,9 +29,9 @@ Add the `parametric-memory` server to your `mcpServers` block:
   "mcpServers": {
     "parametric-memory": {
       "type": "streamable-http",
-      "url": "https://abc123.parametric-memory.dev/mcp",
+      "url": "https://abc123.droplet-mcp.nz/mcp",
       "headers": {
-        "Authorization": "Bearer mmk_your_key_here"
+        "Authorization": "Bearer mmpm_live_your_key_here"
       }
     }
   }

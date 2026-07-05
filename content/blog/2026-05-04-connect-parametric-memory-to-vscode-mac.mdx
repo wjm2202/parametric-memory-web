@@ -21,7 +21,7 @@ Before you start, have these two values from your [Dashboard](/docs/your-instanc
 your clipboard or somewhere you can paste from:
 
 - **Your MCP endpoint URL** — looks like `https://your-instance.droplet-mcp.nz/mcp`
-- **Your API key** — starts with `mmk_`
+- **Your API key** — starts with `mmpm_live_`
 
 You'll also need [Node.js](https://nodejs.org) installed, because the `mcp-remote`
 shim we use runs through `npx`. If `which node` returns a path, you're set.
@@ -53,7 +53,7 @@ with your own values:
         "mcp-remote",
         "https://your-instance.droplet-mcp.nz/mcp",
         "--header",
-        "Authorization: Bearer mmk_your_key_here"
+        "Authorization: Bearer mmpm_live_your_key_here"
       ]
     }
   }
@@ -73,7 +73,7 @@ A couple of notes on what's happening here:
   is a tiny shim that translates between them. It's installed on demand by `npx -y` so
   there's nothing for you to set up globally.
 - **Why a Bearer token in the args?** This is how `mcp-remote` forwards auth to your
-  substrate. It's the same `mmk_` key you'd use against the REST API.
+  substrate. It's the same `mmpm_live_` key you'd use against the REST API.
 - **Don't commit this file to git.** Your token authenticates every call to your
   substrate. Treat it like an SSH key. If you ever need to rotate it, the
   [your-instance docs](/docs/your-instance) walk through the safe rotation flow.
@@ -173,7 +173,7 @@ install, you may be behind a corporate proxy — set `HTTPS_PROXY` and try again
 
 **401 Unauthorized.** Your bearer token is wrong, expired, or has a stray space in
 the JSON. Double-check the value against your dashboard. The header line must read
-exactly `Authorization: Bearer mmk_...` — case-sensitive, single space after `Bearer`.
+exactly `Authorization: Bearer mmpm_live_...` — case-sensitive, single space after `Bearer`.
 
 **The Start lens didn't flip to Running.** Click `More...` next to the Start lens to
 see the server's stderr. The two most common causes are a malformed JSON header

@@ -69,7 +69,7 @@ const VALID_SIGNUP_RESULT = {
   slug: "swift-meadow",
   tier: "starter",
   mcpEndpoint: "https://swift-meadow.mmpm.co.nz/mcp",
-  apiKey: "mmk_test_abc123",
+  apiKey: "mmpm_test_abc123",
   checkoutUrl: "https://checkout.stripe.com/pay/cs_test_abc123",
   limits: {
     maxAtoms: 10000,

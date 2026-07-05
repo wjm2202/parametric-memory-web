@@ -55,6 +55,7 @@ export const SITE_FOOTER_COLUMNS: FooterColumn[] = [
       { href: "/pricing", label: "Pricing", testid: "footer-link-pricing" },
       { href: "/enterprise", label: "Enterprise", testid: "footer-link-enterprise" },
       { href: "/verify", label: "Verify", testid: "footer-link-verify" },
+      { href: "/benchmark", label: "Benchmark", testid: "footer-link-benchmark" },
       { href: "/docs", label: "Docs", testid: "footer-link-docs" },
       { href: "/knowledge", label: "Knowledge graph", testid: "footer-link-knowledge" },
       { href: "/visualise", label: "Visualise", testid: "footer-link-visualise" },

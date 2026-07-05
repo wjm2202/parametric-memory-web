@@ -1,0 +1,72 @@
+---
+title: "Parametric vs. Non-Parametric Memory in LLMs — What's the Difference?"
+date: "2026-07-05"
+excerpt: "Parametric memory is knowledge baked into a model's weights; non-parametric memory is external and retrievable. Here's what each means, when to use which, and why verifiable non-parametric memory is what most AI agents actually need."
+author: "Glen Osborne"
+tags: ["explainer", "memory", "llm", "rag"]
+---
+
+If you've searched "parametric memory," you've probably hit two different things: a machine-learning
+*concept*, and a *product* (ours). This page is about the concept — what parametric and
+non-parametric memory actually mean for large language models — and, at the end, where our product
+fits.
+
+## Parametric memory: knowledge in the weights
+
+**Parametric memory** is everything a model learned during training, stored implicitly in its
+*parameters* — the billions of weights that make up the network. When GPT-class models answer a
+question from "what they know," they're drawing on parametric memory.
+
+Its strengths and limits both come from the same fact — it's baked in:
+
+- **Fast** — no lookup; the knowledge is already in the network.
+- **Fixed** — updating it means retraining or fine-tuning.
+- **Unverifiable** — you can't point to *where* a fact is stored or *prove* it's unchanged.
+- **Opaque and forgetful of specifics** — it blends everything into weights, so it hallucinates
+  details and can't reliably recall a specific fact you told it last week.
+
+## Non-parametric memory: knowledge you can retrieve
+
+**Non-parametric memory** is knowledge kept *outside* the model — in a database, a vector store, a
+knowledge graph, a document index — and pulled in at query time. Retrieval-augmented generation
+(RAG) is the best-known pattern: fetch relevant text, put it in the context window, let the model
+reason over it.
+
+Its properties are the mirror image of parametric memory:
+
+- **Updatable** — add or change a fact instantly; no retraining.
+- **Inspectable** — you can see exactly what was retrieved.
+- **Attributable** — answers can cite their source.
+- **Persistent** — it survives across sessions, unlike the context window.
+
+This is why almost every serious AI agent uses non-parametric memory for anything specific,
+current, or private: your codebase conventions, a customer's history, last week's decision.
+
+## So which do you need?
+
+For an **agent that has to remember specific facts across sessions** — a coding assistant, a
+support agent, an ops copilot — you need **non-parametric memory**. Parametric memory can't be
+updated per-user or per-project, and it can't prove what it knows. The open questions are then:
+*how* do you store it, *how* do you retrieve the right slice, and *can you trust what comes back?*
+
+## Where Parametric Memory (the product) fits
+
+Yes, our product is named "Parametric Memory," and yes — technically it's a **non-parametric**
+system. We keep the name for the brand; here's the honest technical description:
+
+Parametric Memory is a **verifiable non-parametric memory substrate** for AI agents. Your knowledge
+lives outside the model and is retrieved on demand, which fixes the *updatable / inspectable /
+persistent* problems above. On top of that it adds the two things ordinary non-parametric memory
+lacks:
+
+- **Proof.** Every fact is sealed in an RFC 6962 Merkle tree, so your agent can [verify its own
+  memory wasn't altered](/verify) — something a plain vector store can't do.
+- **Prediction.** A Markov layer pre-loads the context an agent is about to need, giving external
+  memory some of the *always-there* feel of parametric memory, without the fixed, unverifiable
+  downsides.
+
+In other words: the recall persistence and inspectability of non-parametric memory, plus the
+"it's just there" feel of parametric memory — and a cryptographic guarantee neither side normally
+offers.
+
+[See how verifiable memory works →](/verify) · [Give your agent memory from $5/mo →](/pricing)

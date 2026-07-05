@@ -61,7 +61,7 @@ describe("Homepage redesign — findings closed", () => {
   it("setup card uses the real per-instance droplet-mcp.nz URL + streamable-http", () => {
     expect(src).toContain("droplet-mcp.nz/mcp");
     expect(src).toContain("streamable-http");
-    expect(src).toContain("Bearer mmk_");
+    expect(src).toContain("Bearer mmpm_live_");
     // No placeholder domain from the mock.
     expect(src).not.toContain("mmpm.dev/you/mcp");
   });

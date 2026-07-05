@@ -39,7 +39,7 @@ export const metadata: Metadata = {
     "cryptographic AI memory",
     "parametric memory",
     "MMPM",
-    "digital brain for AI",
+    "L2 cache for AI",
     "Claude digital memory",
     "AI harness memory",
     "non-file-based AI memory",
@@ -70,7 +70,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "what",
     question: "What is Parametric Memory?",
     answer:
-      "Parametric Memory (MMPM — Markov-Merkle Predictive Memory) is a persistent, cryptographically verifiable memory substrate for AI agents. It stores knowledge as typed atoms in a SHA-256 Merkle tree with RFC 6962 consistency proofs, and uses a variable-order Markov chain to predict and pre-fetch what the AI will need next. Every customer gets an isolated substrate with its own Merkle tree; Professional and Team run on dedicated infrastructure.",
+      "Parametric Memory (MMPM — Markov-Merkle Predictive Memory) is the L2 cache for AI agents: a fast, predictive, verifiable memory tier between a model's context window and cold storage (vector databases, files). It stores knowledge as typed atoms in a SHA-256 Merkle tree with RFC 6962 consistency proofs, and a variable-order Markov chain predicts and pre-fetches what the AI will need next — keeping the right context warm before the query lands. Every customer gets an isolated substrate with its own Merkle tree; Professional and Team run on dedicated infrastructure.",
   },
   {
     category: "what",
@@ -104,9 +104,9 @@ const ALL_FAQS: FAQItem[] = [
   },
   {
     category: "what",
-    question: "Is Parametric Memory a digital brain for AI agents and harnesses?",
+    question: "Is Parametric Memory the L2 cache for AI agents?",
     answer:
-      "Yes. Parametric Memory acts as a digital brain for AI agents, coding harnesses, and autonomous workflows: it lets your AI compound every session of learning into one durable, queryable memory and surfaces the right learnings exactly when they are needed. It works with Claude, Claude Code, Cowork, and any MCP-compatible client or agent harness over Streamable HTTP — so the same persistent brain follows your AI across tools and sessions instead of resetting every time.",
+      "Yes. Parametric Memory is the L2 cache for AI agents — the fast, predictive, verifiable tier between the model and cold storage. It keeps the right context warm before your agent asks and lets your AI compound every session of learning into one durable, verifiable memory. It works with Claude, Claude Code, Cowork, and any MCP-compatible client or agent harness over Streamable HTTP — so the same cache follows your AI across tools and sessions instead of resetting every time.",
   },
   {
     category: "what",
@@ -261,6 +261,60 @@ const ALL_FAQS: FAQItem[] = [
     question: "Can I verify that my AI's memories have not been tampered with?",
     answer:
       "Yes. Every atom read returns a Merkle proof — a SHA-256 hash chain from the atom's leaf node to the Merkle tree root. Call memory_verify with the atom key and proof to confirm it is valid. The verification is local — it does not require trusting the server. You can also query memory as it existed at a specific point in time using asOfMs or asOfVersion parameters, providing full temporal auditability. Proof failures have been zero in production.",
+  },
+  {
+    category: "why",
+    question: "How is Parametric Memory different from Mem0 or Zep?",
+    answer:
+      "Mem0 is a vector-first memory layer and Zep builds a temporal knowledge graph — both are strong at recall, but neither lets you prove what was stored. Parametric Memory is MCP-native and adds cryptographic verifiability: every fact is sealed in an RFC 6962 Merkle tree, so your agent can prove its memory wasn't altered. It also includes knowledge-graph edges and Merkle proofs on every tier from $5/mo, where comparable graph features sit on higher-priced plans elsewhere (Mem0's are on its $249/mo Pro tier; Zep's paid tier starts around $125/mo).",
+  },
+  {
+    category: "why",
+    question: "What is a cheaper alternative to Mem0 or Zep for AI agent memory?",
+    answer:
+      "Parametric Memory starts at $5/mo (Starter) and $9/mo (Solo) for an isolated substrate, with dedicated infrastructure from $29/mo (Professional). Every tier includes Merkle proofs, Markov prediction, knowledge-graph edges, and MCP-native access — features that sit behind higher-priced plans elsewhere.",
+  },
+  {
+    category: "setup",
+    question: "How do I give Claude Code or Cursor persistent memory?",
+    answer:
+      "Add an MCP memory server to your client config. Sign up for a Parametric Memory instance, claim your API key from the dashboard, and paste one config block — your endpoint plus a Bearer token — into Claude Code, Cursor, Claude Desktop, or any MCP client. Restart the client and your agent has durable, cross-session memory, with no database or SDK to run.",
+  },
+  {
+    category: "setup",
+    question: "How do I make my AI agent remember across sessions?",
+    answer:
+      "Give it an external memory it manages itself over MCP. With Parametric Memory, the agent stores decisions, conventions, and corrections as it works, and on the next session it bootstraps the relevant context automatically — so it never starts from zero. Setup is one config block in your MCP client.",
+  },
+  {
+    category: "ai",
+    question: "What is the difference between short-term and long-term memory for AI agents?",
+    answer:
+      "Short-term memory is the context window — it holds the current conversation and disappears when the session ends. Long-term memory persists across sessions, tools, and restarts, and has to be ranked and retrieved on demand because it quickly outgrows any context window. Parametric Memory is long-term memory: it stores facts durably and surfaces the relevant slice when a new session starts.",
+  },
+  {
+    category: "ai",
+    question: "Do I need a vector database or a knowledge graph for AI agent memory?",
+    answer:
+      "Vector search is good at fuzzy recall; a knowledge graph is good at relationships and facts that change over time. Parametric Memory combines ranked retrieval with knowledge-graph edges and Markov prediction behind one MCP endpoint, so you do not have to build, tune, or host either one yourself.",
+  },
+  {
+    category: "what",
+    question: "What is parametric vs non-parametric memory in LLMs?",
+    answer:
+      "Parametric memory is knowledge baked into a model's weights during training — fast, but fixed and unverifiable. Non-parametric memory is external and retrievable, so it can be updated, inspected, and proven. Parametric Memory (the product) is a verifiable non-parametric memory: your knowledge lives outside the model, is retrieved on demand, and every fact carries a cryptographic proof.",
+  },
+  {
+    category: "what",
+    question: "Is “Parametric Memory” actually parametric or non-parametric memory?",
+    answer:
+      "The product is a non-parametric, external memory substrate — your facts live outside the model and are retrieved on demand, not stored in the model's weights. We use the name for the brand; technically it is verifiable non-parametric memory with a predictive (Markov) retrieval layer that gives it some of the always-there feel of parametric memory.",
+  },
+  {
+    category: "security",
+    question: "Can I trust what my AI agent remembers?",
+    answer:
+      "Yes. Every memory is written into an RFC 6962 Merkle tree, so altering a single stored fact changes the root hash. You can verify a signed memory snapshot yourself — no account, no API key, and none of our code in the loop — which is something vector or graph memory systems cannot offer.",
   },
 ];
 
