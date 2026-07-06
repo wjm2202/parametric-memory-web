@@ -104,18 +104,20 @@ Types: `fact` (stable truths), `state` (mutable context), `event` (dated milesto
 ## Session end
 
 Always call `session_checkpoint` at the end of the session with updated state atoms.
-Then call `memory_train` 2–3 times on the most important arcs (reinforcement).
+To reinforce the most important arcs, pass a `train` array (2–3 passes) in a
+follow-up `session_checkpoint` — there is no separate `memory_train` tool, and
+training skips atoms that aren't persisted yet.
 
 ## Example checkpoint call
 
 \`\`\`
 session_checkpoint({
   atoms: [
-    "v1.fact.database_url = postgres://prod.example.com:5432/myapp",
-    "v1.state.current_task = Implementing payment webhook handler"
+    { atom: "v1.fact.database_host", payload: "prod.example.com:5432 (db: myapp)" },
+    { atom: "v1.state.current_task", payload: "Implementing payment webhook handler" }
   ],
   edges: [
-    { source: "v1.state.current_task", target: "v1.fact.database_url", type: "depends_on" }
+    { source: "v1.state.current_task", target: "v1.fact.database_host", type: "depends_on" }
   ]
 })
 \`\`\`
@@ -130,12 +132,12 @@ With the above CLAUDE.md in place, here is what happens at the start of a new se
 **Claude:** *(calls `memory_session_bootstrap` with objective: "continue payment webhook work")*
 
 Bootstrap returns atoms like:
-- `v1.state.current_task = Implementing payment webhook handler`
-- `v1.fact.stripe_webhook_secret = whsec_... (claimed from env)`
-- `v1.procedure.always_verify_stripe_sig = Verify Stripe-Signature header before processing any event`
-- `v1.event.webhook_deployed_2024_03_15 = Deployed webhook to production, all events firing correctly`
+- `v1.state.current_task` — Implementing payment webhook handler
+- `v1.fact.stripe_webhook_secret_location` — In env as `STRIPE_WEBHOOK_SECRET` (the secret itself is never stored in memory — credential-like values are rejected on write)
+- `v1.procedure.always_verify_stripe_sig` — Verify the `Stripe-Signature` header before processing any event
+- `v1.event.webhook_deployed_2026_03_15` — Deployed webhook to production; all events firing correctly
 
-**Claude:** "Welcome back. I can see we were working on the payment webhook. Last session we deployed it successfully. The Stripe signature is configured and I have the webhook secret stored. Where would you like to pick up?"
+**Claude:** "Welcome back. I can see we were working on the payment webhook. Last session we deployed it successfully, and the signature-verification procedure is stored. The webhook secret itself stays in your env — memory never keeps credentials. Where would you like to pick up?"
 
 No copy-pasting context. No re-explaining the project. The AI knows what it knew last time.
 

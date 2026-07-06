@@ -87,11 +87,11 @@ renders a small lens above the `Memory-mcp` block that reads **`▷ Start | N to
 More...`**. The server is configured but not running.
 
 Click **Start**. Within a second or two the lens flips to **`✓ Running | Stop |
-Restart | 10 tools | More...`** — that "10 tools" is your confirmation that
+Restart | 11 tools | More...`** — that "11 tools" is your confirmation that
 Parametric Memory is live and exposing the full toolset to your AI.
 
 > _Image placeholder: The same `mcp.json` block, now showing the green
-> `✓ Running | 10 tools` lens._
+> `✓ Running | 11 tools` lens._
 
 If the lens stays on `Start` after you click it, jump to the troubleshooting section
 below.
@@ -112,9 +112,9 @@ will be present. That's your green light.
 From this point on, every conversation in VS Code has access to:
 
 - `memory_session_bootstrap` — load relevant context at the start of each task
-- `session_checkpoint` — store atoms, edges, and Markov training in one call
+- `session_checkpoint` — store atoms, edges, and Markov training (its `train` array) in one call
 - `memory_search` — semantic search across your stored knowledge
-- `memory_train` — reinforce the arcs that matter
+- `memory_access` — recall a specific atom by its exact key
 
 See the [MCP Tool Reference](/docs/mcp/tools) for the full list.
 
@@ -144,10 +144,11 @@ for collaborative workflows.
   relevant facts or states.
 - **memory_access** — Retrieves a specific atom by its exact key. Use for direct
   lookups.
-- **memory_train** — Reinforces memory arcs (Markov transitions) for better recall.
-  Use after corrections or successful workflows.
-- **memory_context** — Gets all relationships (edges) for one or more atoms. Use to
-  understand dependencies and structure.
+- **session_checkpoint `train`** — Reinforce Markov arcs by passing a `train` array
+  in session_checkpoint (there is no standalone memory_train tool). Use after
+  corrections or successful workflows.
+- **memory_context** — Returns a pre-formatted [MEMORY] context block for direct
+  injection into the model's context window.
 - **memory_associate** — Finds cross-domain connections between recently stored
   atoms. Use for discovering unexpected relationships.
 - **memory_list_atoms** — Lists all atoms stored, with optional filtering. Use to

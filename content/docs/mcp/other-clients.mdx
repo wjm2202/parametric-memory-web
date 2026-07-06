@@ -119,9 +119,9 @@ All clients get the same set of tools once connected. See the [MCP Tool Referenc
 The core tools your AI will use most often are:
 
 - `memory_session_bootstrap` — load relevant context at session start
-- `session_checkpoint` — save atoms and relationships during a session
+- `session_checkpoint` — save atoms and relationships during a session (reinforcement is its `train` array — there is no separate `memory_train` tool)
 - `memory_search` — semantic search across stored atoms
-- `memory_train` — reinforce important memory arcs
+- `memory_access` — recall a specific atom by key
 
 ---
 
