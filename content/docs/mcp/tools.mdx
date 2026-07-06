@@ -7,189 +7,242 @@ order: 3
 
 # MCP Tool Reference
 
-These are the tools your AI has access to once connected via MCP. Each tool maps directly to an API operation on your instance.
+Parametric Memory exposes **11 MCP tools** over Streamable HTTP, usable by Claude, Claude Code, Cowork, and any MCP-compliant client. Each tool maps to an operation on your instance. Every tool declares whether it is read-only or a write, so hosts can surface the distinction.
+
+The two you will use constantly are `memory_session_bootstrap` (read prior context at the start of a task) and `session_checkpoint` (save what you learn). The rest are for search, inspection, and maintenance.
 
 ## Core tools
 
-### `memory_session_bootstrap`
+### `memory_session_bootstrap`  *(read-only)*
 
-Load relevant context at the start of a session. This is the first call your AI should make in any new conversation that needs prior context.
+Recall relevant prior context at the start of a task — load what was learned, decided, or corrected in previous sessions. This is the first call your AI should make in any conversation that needs prior context.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |---|---|---|
-| `objective` | string | Short description of this session's goal. Used to surface relevant atoms. |
-| `maxTokens` | number | Maximum tokens to include in the response. Default: 1200. |
-| `highImpact` | boolean | If true, raises the evidence threshold — more conservative but higher quality. Use for deploy/architecture decisions. |
-| `domain` | string | Atom key of the current domain (e.g. `v1.domain.myproject`). Boosts atoms linked to this domain. |
+| `objective` | string | Short description of this session's goal. Atoms are ranked by relevance to it. |
+| `maxTokens` | number | Bounds atom selection and the context block. |
+| `limit` | number | Bounds `topMemories`, `conflictingFacts`, and per-atom proofs. |
+| `highImpact` | boolean | Raises the bar for high-stakes work (deploys, architecture). |
+| `evidenceThreshold` | number | Minimum evidence score (e.g. `0.75` for high-stakes). |
+| `mode` | string | Response shape: `orient` (default), `detailed`, or `audit`. |
+| `domain` | string | Domain atom key (e.g. `v1.domain.myproject`) — 1.15× relevance boost on tagged atoms. |
+| `markovScale` | number | Markov spreading-activation multiplier. Default `0` (inert); try `0.25`–`1.0` when density is high. |
+| `asOfMs` / `asOfVersion` | number | Time-travel: bootstrap the substrate as of a past moment or tree version. |
+| `namespace` | object | `{ user?, project?, task? }` scoping. |
 
-**Returns:** A structured payload with:
-- `atoms` — array of relevant stored atoms with their values and metadata
-- `conflictingFacts` — pairs of atoms that contradict each other (need resolution)
-- `goals`, `constraints`, `preferences` — any atoms tagged as such
+**Returns:** `atoms` (ranked, with payloads + proofs), `conflictingFacts` (competing claims to resolve), and `treeVersion` (an offline-verifiable proof of the read moment). `mode: detailed`/`audit` add a decision-evidence block and a pre-formatted context string.
 
-**When to call:** Once per conversation, on the first user message. Do not call on every prompt — it is expensive.
+**When to call:** once per conversation, on the first user message. Do not call on every prompt — it is expensive.
 
 ---
 
-### `session_checkpoint`
+### `session_checkpoint`  *(write)*
 
-Persist atoms (facts, states, procedures, tasks) and the relationships between them. Call this as knowledge forms — do not wait until the end of the session.
+Save durable knowledge so it survives across sessions — facts, decisions, corrections, and state. Call it as knowledge forms, not at the end of the session. It adds atoms, wires edges, reinforces Markov arcs, and tombstones superseded atoms — all in one atomic commit.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |---|---|---|
-| `atoms` | string[] | Array of atoms in `"key = value"` format, e.g. `"v1.fact.db_url = postgres://..."` |
-| `edges` | object[] | Relationships between atoms: `{ source, target, type, confidence? }` |
-| `tombstone` | string[] | Keys of atoms to mark as superseded/deleted |
-| `taskContext` | string | Atom key of the current task. Auto-attaches `produced_by` edges. |
+| `atoms` | array | New atoms to store (see **atom format** below). |
+| `edges` | object[] | Relationships between atoms: `{ source, target, type, confidence?, createdBy? }`. |
+| `train` | array | Markov sequences to reinforce: `{ sequence: string[], passes: number }` (or a flat string array for a single pass). |
+| `tombstone` | string[] | Atom keys to logically delete (recoverable — see guarantees below). |
+| `removeEdges` | object[] | Edges to remove: `{ source, target, type }`. Runs after tombstones, before edge additions. |
+| `taskContext` | string | Active task atom key. Auto-creates `produced_by` edges from each new atom. |
+
+**Atom format (important):** an atom is **either**
+
+1. an **identifier-only string** — `"v1.<type>.<snake_case_id>"` (grammar `[a-z][a-z0-9_]{0,63}`; no hyphens, uppercase, spaces, or `=`), **or**
+2. a **structured object** — `{ "atom": "v1.<type>.<id>", "payload": "…" }`, where `payload` is single-line UTF-8, ≤ 4096 chars, no line breaks. Optional `trainPasses` (0–5) and, for facts, `meta: { subject?, claim?, source?, confidence? }`.
+
+> **Legacy `"key = value"` (fat-form) strings are rejected.** Put the value in the structured object's `payload` field instead. Valid types: `fact`, `event`, `state`, `relation`, `procedure`, `other`, `domain`, `task`.
 
 **Edge types:**
 
 | Type | When to use |
 |---|---|
 | `supersedes` | New atom replaces an older one |
-| `member_of` | Atom belongs to a hub cluster |
+| `member_of` | Atom belongs to a hub/domain cluster |
 | `depends_on` | Atom requires another to be true first |
 | `constrains` | Atom limits what another can do |
 | `references` | Atom mentions or uses another |
 | `derived_from` | Finding came from investigating another atom |
-| `produced_by` | Atom was created during a task (use `taskContext` instead) |
+| `produced_by` | Atom was created during a task (prefer `taskContext`) |
 
 **Example:**
 
 ```json
 {
   "atoms": [
-    "v1.fact.payment_provider = Stripe",
-    "v1.state.current_sprint = Sprint 12 — subscription billing"
+    "v1.fact.payment_provider_stripe",
+    { "atom": "v1.state.current_sprint", "payload": "Sprint 12 — subscription billing" }
   ],
   "edges": [
     {
       "source": "v1.state.current_sprint",
-      "target": "v1.fact.payment_provider",
+      "target": "v1.fact.payment_provider_stripe",
       "type": "depends_on"
     }
-  ]
+  ],
+  "taskContext": "v1.task.subscription_billing"
 }
 ```
 
+**Write behavior & guarantees:**
+
+- **Append-only and non-mutating by default.** Existing atoms are never overwritten or hard-deleted — the substrate is an append-only Merkle log. A checkpoint removes something only if you explicitly pass `tombstone` (or a `supersedes` edge), and even then it is a *recoverable logical marker*: the atom stays in verifiable history, so nothing is ever silently lost.
+- **Conflict-tolerant.** Conflicting beliefs are never rejected or auto-tombstoned. If a new atom contradicts a stored one, **both are kept** and the contradiction is surfaced back to you at retrieval (the `conflictingFacts` block on `memory_session_bootstrap`) so you decide how to resolve it. Same key *and* same claim is treated as a duplicate, not a conflict.
+- **Secret-safe.** A write that looks like a credential is rejected with HTTP `422` and never stored. See [Atom Safety & Blocking](/docs/api/atom-safety).
+
+> **Reinforcement lives here, not in a separate tool.** Use the `train` array (and per-atom `trainPasses`) to strengthen Markov arcs. `references`/`depends_on`/`derived_from`/`produced_by` edges auto-train. Training skips atoms that don't exist yet, so reinforce in a follow-up call after the atoms are persisted.
+
 ---
 
-### `memory_search`
+### `memory_search`  *(read-only)*
 
-Search for atoms by keyword or semantic query. Use when you need to find atoms whose keys you don't know exactly.
+Search everything the agent has ever remembered, by meaning — use when you need atoms whose keys you don't know exactly.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |---|---|---|
-| `query` | string | Search query — keyword or phrase |
-| `limit` | number | Max results to return (default: 10) |
-| `domain` | string | Restrict search to atoms linked to this domain |
+| `query` | string | **Required.** Semantic query — keyword or phrase. |
+| `limit` | number | Max results (default 10). |
+| `threshold` | number | Minimum score (default 0). |
+| `asOfMs` / `asOfVersion` | number | Temporal query — search the substrate as of a past moment/version. |
+| `namespace` | object | `{ user?, project?, task? }` scoping. |
+| `compactProofs` | boolean | Default `true` (compact proof summary). Set `false` for the full auditPath. |
 
-**Returns:** Array of matching atoms ordered by relevance score.
+**Returns:** ranked results, each with a separate `atom` (identifier) and `payload`, a Merkle proof summary, and a `contradiction` field.
 
 ---
 
-### `memory_access`
+### `memory_access`  *(read-only)*
 
-Retrieve a specific atom by its exact key.
+Recall a specific remembered fact when you already know its key.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |---|---|---|
-| `key` | string | Exact atom key, e.g. `v1.fact.database_url` |
-| `includeProof` | boolean | If true, includes a Merkle proof for verification |
+| `atom` | string | Single recall by exact key, e.g. `v1.fact.database_host`. |
+| `atoms` | string[] | Batch recall (routes to the batch endpoint). |
+| `depth` | number | Edge traversal: `0` (none), `1` (direct neighbours), `2` (two-hop). Capped at 50 results. |
+| `compactProofs` | boolean | Default `true`. Set `false` for the full forensic proof (`auditPath`, `shardRootProof`, `predictedProof`). |
+| `warmRead` | boolean | Warm-read flag. |
 
-**Returns:** The atom value, metadata, and optionally a Merkle proof.
+Pass either `atom` or `atoms`. **Returns:** `{ currentData, proof, treeVersion, predictedNext, contradiction }` (plus `edges` when `depth > 0`).
 
 ---
 
-### `memory_train`
+### `memory_context`  *(read-only)*
 
-Reinforce memory arcs — increases the weight of transitions between atoms so the Markov model pre-fetches them more reliably in future sessions.
+Get a pre-formatted context block — returns `[MEMORY] …` lines suitable for direct injection into an agent's context window. Use this when you just want ready-to-paste context; use `memory_session_bootstrap` when you want structured atoms + `conflictingFacts` + proofs.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |---|---|---|
-| `atoms` | string[] | Keys of atoms to reinforce |
-| `passes` | number | Number of training passes (1–3 recommended) |
-
-**When to use:**
-- After user corrections: 3 passes
-- After proven successful workflows: 2 passes
-- General reinforcement: 1 pass
-
-> **Important:** Always call `session_checkpoint` before `memory_train`. Training skips atoms that haven't been persisted yet.
+| `maxTokens` | number | Bounds the output size. |
+| `asOfMs` / `asOfVersion` | number | Temporal scope. |
+| `namespace` | object | `{ user?, project?, task? }` scoping. |
+| `includeGlobal` | boolean | Include global-namespace atoms. |
 
 ---
 
-### `memory_context`
+### `memory_list_atoms`  *(read-only)*
 
-Get all relationships (edges) for one or more atoms — see what connects to what.
+List atoms in your substrate, optionally filtered — for inventory, orphan detection, and inspection. Lightweight (no Merkle proof overhead).
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |---|---|---|
-| `keys` | string[] | Atom keys to look up |
-| `depth` | number | How many hops to follow (default: 1, max: 3) |
+| `type` | string | Filter by atom type (`fact`, `event`, `state`, …). |
+| `prefix` | string | Filter by key prefix, e.g. `v1.fact.`. |
+| `status` | string | `active` (default), `tombstoned`, or `all`. |
 
----
+**Returns:** atom key, status, and type.
 
-### `memory_associate`
+## Advanced tools
 
-Find cross-domain connections between recently stored atoms. Used internally by the live association agent — you can also call it directly to discover unexpected relationships.
+### `memory_associate`  *(read-only)*
 
-**Parameters:**
-
-| Parameter | Type | Description |
-|---|---|---|
-| `atoms` | string[] | Recently stored atom keys to find associations for |
-| `domain` | string | Current domain atom key |
-| `allDomains` | string[] | All known domain keys (for cross-domain detection) |
-
----
-
-### `memory_list_atoms`
-
-List all atoms stored in your substrate, optionally filtered.
+Find cross-domain connections between recently stored atoms. Used internally by the live association agent; you can also call it directly to surface unexpected relationships.
 
 **Parameters:**
 
 | Parameter | Type | Description |
 |---|---|---|
-| `prefix` | string | Filter to atoms whose keys start with this string |
-| `limit` | number | Max results (default: 100) |
-| `offset` | number | Pagination offset |
+| `atoms` | string[] | **Required.** Recently checkpointed atom keys. |
+| `domain` | string | **Required.** Current domain atom key. |
+| `allDomains` | string[] | All known domain keys (enables domain-switch detection). |
+
+**Returns:** suggested `references` edges (confidence 0.4).
 
 ---
+
+### `memory_markov_density_report`  *(read-only)*
+
+Precondition diagnostic for `memory_session_bootstrap`'s `markovScale`. If density is below ~10%, passing `markovScale > 0` is silently useless — the Markov wire has too little to spread from.
+
+**Parameters:** none. **Returns:** `dominantNextDensity`, average/max fan-out, and master `treeVersion`.
+
+---
+
+### `memory_recluster`  *(write, non-destructive)*
+
+Run TF-IDF cluster-label generation across all domains — groups atoms by domain and proposes descriptive cluster labels. Typically run by the nightly consolidation agent after orphan wiring.
+
+**Parameters:**
+
+| Parameter | Type | Description |
+|---|---|---|
+| `persist` | boolean | If `true`, create cluster atoms + `member_of` edges. Default `false` (dry run). |
+
+**Returns:** proposed clusters with labels and member counts.
+
+## Evaluation tools
+
+### `memory_weekly_eval_status`  *(read-only)*
+
+Report whether the weekly scientific evaluation is due, based on persisted run state. **Parameters:** none.
+
+### `memory_weekly_eval_run`  *(write)*
+
+Run the local weekly evaluation script on the MCP host (dev/self-hosted only). **Parameters:** `force` (boolean) — bypass the 7-day due-check.
 
 ## Usage patterns
 
 ### Minimal session pattern
 
 ```
-Session start   → memory_session_bootstrap(objective, maxTokens: 1200)
-During session  → session_checkpoint(new atoms and edges as they form)
-Session end     → session_checkpoint(updated state atoms, tombstone stale ones)
-                → memory_train(key arcs, passes: 2)
+Session start   → memory_session_bootstrap({ objective, maxTokens: 1200 })
+During session  → session_checkpoint({ atoms, edges })         // as knowledge forms
+Session end     → session_checkpoint({ atoms: [updated state], tombstone: [stale keys] })
+                → session_checkpoint({ train: [{ sequence: [...], passes: 2 }] })
 ```
 
 ### Correction pattern
 
-When a user corrects Claude's behaviour, this is the highest-priority memory event:
+When a user corrects Claude's behaviour — the highest-priority memory event:
 
 ```
-1. session_checkpoint({ atoms: ["v1.procedure.always_X = ..."], edges: [constrains, member_of hub_corrections] })
-2. memory_train({ atoms: ["v1.procedure.always_X"], passes: 3 })
-3. Apply the correction for the rest of this session and all future sessions
+1. session_checkpoint({
+     atoms: ["v1.procedure.migrations_are_run_via_npm"],
+     edges: [
+       { source: "v1.procedure.migrations_are_run_via_npm", target: "<corrected behaviour>", type: "constrains" },
+       { source: "v1.procedure.migrations_are_run_via_npm", target: "v1.other.hub_corrections", type: "member_of" }
+     ]
+   })
+2. session_checkpoint({ train: [{ sequence: ["<related atom>", "v1.procedure.migrations_are_run_via_npm"], passes: 3 }] })
+3. Apply the correction for the rest of this session and all future sessions.
 ```
+
+Two calls, because `train` skips atoms that aren't persisted yet.
 
 ### High-stakes session pattern
 
@@ -199,4 +252,4 @@ For deployments, architecture decisions, or production changes:
 memory_session_bootstrap({ objective, highImpact: true, evidenceThreshold: 0.75 })
 ```
 
-This is more conservative — it only returns atoms with strong evidence, avoiding speculative or low-confidence context.
+More conservative — it returns only atoms with strong evidence, avoiding speculative or low-confidence context.

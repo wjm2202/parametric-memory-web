@@ -21,18 +21,21 @@ Compounding is different. It means the marginal cost of capturing a signal is on
 
 Every fact your agent stores is an **atom** in a SHA-256 Merkle tree. The compounding comes from what sits *between* atoms.
 
-Every time the agent moves from one atom to the next, the substrate records that transition and strengthens the arc. We model this as a variable-order Markov chain: each `memory_train` pass adds weight to the arcs that actually fire, and unused arcs decay on a half-life — Half-Life Regression, with a default 7-day half-life. So the paths you travel get heavier, and the paths you don't fade out.
+Every time the agent moves from one atom to the next, the substrate records that transition and strengthens the arc. We model this as a variable-order Markov chain: each training pass adds weight to the arcs that actually fire, and unused arcs decay on a half-life — Half-Life Regression, with a default 7-day half-life. So the paths you travel get heavier, and the paths you don't fade out.
 
 ```ts
 // Reinforce the route you actually took this session.
-// Used arcs get heavier; everything you didn't touch decays.
-await memory_train({
-  sequence: [
-    "v1.procedure.deploy_checklist",
-    "v1.fact.migration_runner_is_npm",
-    "v1.procedure.rollback_steps",
-  ],
-  passes: 2,
+// Reinforcement is the `train` array inside session_checkpoint —
+// used arcs get heavier; everything you didn't touch decays.
+await session_checkpoint({
+  train: [{
+    sequence: [
+      "v1.procedure.deploy_checklist",
+      "v1.fact.migration_runner_is_npm",
+      "v1.procedure.rollback_steps",
+    ],
+    passes: 2,
+  }],
 });
 ```
 
