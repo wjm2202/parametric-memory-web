@@ -16,20 +16,40 @@ Sitemap: https://parametric-memory.dev/sitemap.xml
 #   Optimised for citation by AI answer engines (Google AI Mode, Perplexity,
 #   ChatGPT). Full sitemap: https://parametric-memory.dev/sitemap.xml
 
-# ── AI answer engines — full access ───────────────────────────────────────
-# These crawlers power AI search/answer products and cite sources.
-# Your users are AI users — being indexed here is marketing.
+# ══════════════════════════════════════════════════════════════════════════
+# AI bots — 2026 taxonomy (updated per AI-FIRST-DISTRIBUTION-PLAYBOOK.md)
+# Each engine now runs SEPARATE bots for (1) search/citation, (2) live user
+# fetch, and (3) model training. Being CITED requires allowing the search +
+# user-fetch bots. Allowing/blocking the TRAINING bots does NOT affect
+# citations — that is purely an IP/content-licensing choice.
+# ══════════════════════════════════════════════════════════════════════════
 
-User-agent: anthropic-ai
-Allow: /
+# ── 1. Search / citation crawlers — ALLOW (these are what get you cited) ───
+# These index your pages so the AI answer surfaces can quote and link them.
+# Your users are AI users, so being indexed here is pure marketing.
 
-User-agent: ClaudeBot
+User-agent: Googlebot
 Allow: /
+# ↑ Also powers Google AI Overviews & AI Mode — you cannot be in Google AI
+#   answers without allowing Googlebot. Mandatory.
+
+User-agent: Bingbot
+Allow: /
+# ↑ ChatGPT Search sources ~87% of its citations from the Bing index — this
+#   is the de-facto path to being cited in ChatGPT.
+
+User-agent: OAI-SearchBot
+Allow: /
+# ↑ OpenAI's SEARCH/citation crawler for ChatGPT Search (distinct from the
+#   GPTBot training crawler below). Previously MISSING — this is the ChatGPT
+#   citation path and the single most important addition here.
+
+User-agent: Claude-SearchBot
+Allow: /
+# ↑ Anthropic's search/citation crawler that powers Claude's web citations
+#   (distinct from ClaudeBot training + Claude-User live fetch).
 
 User-agent: PerplexityBot
-Allow: /
-
-User-agent: ChatGPT-User
 Allow: /
 
 User-agent: cohere-ai
@@ -38,48 +58,54 @@ Allow: /
 User-agent: YouBot
 Allow: /
 
-# ── New AI answer engines (Sprint 2026-W18 SEO audit) ──────────────────────
-# Apple Intelligence — powers Siri, Spotlight, Apple News answer surfaces.
-User-agent: Applebot-Extended
-Allow: /
-
-# Mistral / Le Chat — growing answer engine, EU citation traffic.
-User-agent: MistralAI-User
-Allow: /
-
-# Meta AI — answers in WhatsApp, Instagram, Messenger.
-User-agent: Meta-ExternalAgent
-Allow: /
-
-# DuckDuckGo AI Chat (Duck.ai).
 User-agent: DuckAssistBot
 Allow: /
+# ↑ DuckDuckGo AI Chat (Duck.ai).
 
-# ── OpenAI / Google AI — product pages yes, content no ────────────────────
-# Allow discovery of product and marketing pages.
-# Protect blog and docs from bulk training data use.
+# ── 2. Live user-fetch agents — ALLOW (fetch a page when a user asks) ──────
+# Triggered by a user action; high-intent, always worth allowing.
+
+User-agent: ChatGPT-User
+Allow: /
+
+User-agent: Claude-User
+Allow: /
+
+User-agent: Perplexity-User
+Allow: /
+
+User-agent: MistralAI-User
+Allow: /
+# ↑ Mistral / Le Chat — growing EU citation surface.
+
+User-agent: Meta-ExternalAgent
+Allow: /
+# ↑ Meta AI — answers in WhatsApp, Instagram, Messenger.
+
+# ── 3. Model-training crawlers — ALLOW by default (IP CHOICE, not citation) ─
+# NOTE: blocking any bot in THIS section costs you ZERO citations — the
+# search/user bots above are what get you quoted. Left as Allow because the
+# AI-first strategy favours maximum presence (incl. in model weights). To
+# protect blog/docs from training, change these to `Disallow: /` (or scope to
+# `Disallow: /blog`) with no loss of AI-search visibility.
 
 User-agent: GPTBot
+Allow: /
+
+User-agent: ClaudeBot
+Allow: /
+
+User-agent: anthropic-ai
 Allow: /
 
 User-agent: Google-Extended
 Allow: /
 
-# ── General search engine crawlers — explicit allow ───────────────────────
-# Explicit blocks for the two dominant search crawlers so llms.txt's
-# three-agent stance (Browsing agents / Retrieval crawlers / Answer engines)
-# is mirrored here. Both already follow the wildcard Allow above, but being
-# explicit removes any ambiguity when robots.txt parsers apply longest-match
-# user-agent resolution.
-
-User-agent: Googlebot
+User-agent: Applebot-Extended
 Allow: /
+# ↑ Apple Intelligence training signal.
 
-User-agent: Bingbot
-Allow: /
-
-# ── Bulk training crawlers — block ────────────────────────────────────────
-# No referral value; scrape for training datasets only.
+# ── 4. Bulk dataset scrapers — BLOCK (no referral value) ───────────────────
 
 User-agent: CCBot
 Disallow: /

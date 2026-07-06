@@ -122,17 +122,64 @@ export const metadata: Metadata = {
  * Organization + WebApplication schema for AI discovery (Google AI Mode,
  * AI Overviews, ChatGPT, Perplexity). Safe on every page including /visualise.
  */
-const organizationJsonLd = {
+/* ── Brand identity graph (sameAs) ─────────────────────────────────────────
+ * Every URL here MUST be a LIVE, public profile we control. A dead/404 URL
+ * WEAKENS entity disambiguation — only add a profile once it resolves.
+ * Live today: X (below) + the canonical site (that's the @id, not repeated).
+ * PENDING — uncomment each the moment it goes live (see
+ * marketing/ENTITY-AUTHORITY-KIT.md for the exact profiles + copy to use):
+ */
+const SAME_AS: string[] = [
+  // Live handle TODAY. The rename to @parametricmem is pending X's account review
+  // (scheduled task retry-x-handle-rename). X 301-redirects an old handle to the
+  // new one, so this URL stays live through the rename — no dead link either way.
+  // Flip to "https://x.com/parametricmem" once the rename lands.
+  "https://x.com/_EntityOne",
+  "https://doi.org/10.5281/zenodo.21213464", // whitepaper — Zenodo concept DOI (all versions), live 2026-07-06
+  // "https://www.linkedin.com/company/parametric-memory",
+  // "https://www.crunchbase.com/organization/parametric-memory",
+  "https://www.wikidata.org/wiki/Q140446437", // Wikidata entity (created 2026-07-06)
+  // "https://github.com/<public-org-or-repo>",
+];
+
+/* Topics the brand entity is authoritative about. schema.org/knowsAbout binds
+ * "Parametric Memory (the company)" to its subject matter — another signal that
+ * helps the Knowledge Graph model it as a distinct entity rather than folding
+ * it into the generic ML term "parametric memory". */
+const KNOWS_ABOUT: string[] = [
+  "Verifiable AI memory",
+  "AI agent memory",
+  "Model Context Protocol (MCP)",
+  "Merkle proofs (RFC 6962)",
+  "Markov prediction",
+  "Persistent memory for LLM agents",
+  "Non-parametric memory",
+  "Knowledge graphs",
+];
+
+// Exported so entity-disambiguation.test.ts can lock these signals against
+// silent regression (see src/app/__tests__/entity-disambiguation.test.ts).
+export const organizationJsonLd = {
   "@context": "https://schema.org",
   "@type": "Organization",
   "@id": "https://parametric-memory.dev/#organization",
   name: "Parametric Memory",
-  // Disambiguation signal: "parametric memory" is also a generic ML term
-  // (knowledge in model weights). alternateName + sameAs tell Google/AI answer
-  // engines to model this as a distinct brand entity, separate from the concept.
-  alternateName: "MMPM",
+  // Disambiguation: "parametric memory" is also a generic ML term (knowledge in
+  // model weights). alternateName (incl. the collision-free token MMPM) +
+  // sameAs + disambiguatingDescription tell Google/AI answer engines to model
+  // this as a distinct brand entity, separate from the concept.
+  alternateName: ["MMPM", "Markov-Merkle Predictive Memory"],
+  disambiguatingDescription:
+    "Parametric Memory (MMPM) is a commercial software product and company providing a persistent, cryptographically verifiable memory substrate for AI agents. It is distinct from the machine-learning concept 'parametric memory' (knowledge stored implicitly in a model's weights); MMPM is an external, retrievable, Merkle-verifiable memory system — i.e. non-parametric.",
   url: "https://parametric-memory.dev",
-  sameAs: ["https://x.com/parametricmem"],
+  sameAs: SAME_AS,
+  knowsAbout: KNOWS_ABOUT,
+  logo: {
+    "@type": "ImageObject",
+    url: "https://parametric-memory.dev/brand/favicon-512.png",
+    width: "512",
+    height: "512",
+  },
   description:
     "Enterprise-grade persistent memory for AI with cryptographic Merkle proofs, Markov prediction, and MCP-native integration.",
   foundingDate: "2025",
