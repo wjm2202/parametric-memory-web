@@ -38,7 +38,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Check data-testid coverage against docs/DUAL-ACCESSIBILITY.md
         run: node scripts/check-testids.mjs
@@ -51,7 +51,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
 
       - name: Check public/.well-known/actions.json structural invariants
         run: node scripts/check-actions-manifest.mjs
@@ -73,7 +73,7 @@ jobs:
 
       - uses: actions/setup-node@v4
         with:
-          node-version: 22
+          node-version: 24
           cache: npm
 
       - run: npm ci
