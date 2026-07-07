@@ -11,20 +11,20 @@
 #   - Build flags --sbom=true --provenance=mode=max set in CI (see docs)
 #
 # TODO: pin base image to digest. Get the current digest with:
-#   docker buildx imagetools inspect node:22-alpine --format '{{.Manifest.Digest}}'
-# then replace `node:22-alpine` below with `node:22-alpine@sha256:<digest>`
+#   docker buildx imagetools inspect node:24.18-alpine --format '{{.Manifest.Digest}}'
+# then replace `node:24.18-alpine` below with `node:24.18-alpine@sha256:<digest>`
 # on ALL THREE FROM lines. Renovate/dependabot can keep it current.
 # =============================================================================
 
 # --- Stage 1: Dependencies ---
-FROM node:22-alpine AS deps
+FROM node:24.18-alpine AS deps
 WORKDIR /app
 
 COPY package.json package-lock.json* ./
 RUN npm ci --ignore-scripts
 
 # --- Stage 2: Build ---
-FROM node:22-alpine AS builder
+FROM node:24.18-alpine AS builder
 WORKDIR /app
 
 COPY --from=deps /app/node_modules ./node_modules
@@ -49,7 +49,7 @@ RUN mkdir -p public
 RUN npm run build
 
 # --- Stage 3: Production ---
-FROM node:22-alpine AS runner
+FROM node:24.18-alpine AS runner
 WORKDIR /app
 
 # OCI image labels — show up in Docker Hub, Scout, and `docker inspect`.
