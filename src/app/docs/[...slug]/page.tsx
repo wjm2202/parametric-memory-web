@@ -1,9 +1,11 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getAllDocSlugs, getDocBySlug } from "@/lib/docs";
+import { getDocSectionTitle } from "@/config/docs-nav";
 import { compileMdx, extractHeadings } from "@/lib/mdx";
 import { mdxComponents } from "@/components/docs/MdxComponents";
 import { TableOfContents } from "@/components/docs/TableOfContents";
+import { buildDocsTechArticle, buildDocsBreadcrumb } from "@/lib/structured-data";
 
 // ── Catch-all so /docs/api/atoms resolves to slug = ["api","atoms"] ──────────
 
@@ -60,10 +62,14 @@ export default async function DocPage({ params }: PageProps) {
   const slugStr = slug.join("/");
 
   let rawContent: string;
+  let title: string;
+  let description: string;
 
   try {
     const doc = getDocBySlug(slugStr);
     rawContent = doc.content;
+    title = doc.frontmatter.title;
+    description = doc.frontmatter.description;
   } catch {
     notFound();
   }
@@ -71,8 +77,30 @@ export default async function DocPage({ params }: PageProps) {
   const headings = extractHeadings(rawContent!);
   const { content } = await compileMdx(rawContent!, mdxComponents);
 
+  // ── JSON-LD (2026-07-08 SEO fix) — docs previously shipped none. ──────────
+  // TechArticle + BreadcrumbList strengthen AEO citations (Google AI Mode,
+  // Perplexity, ChatGPT Search) and breadcrumb rich results. Builders are
+  // pure functions locked by src/lib/structured-data.test.ts.
+  const jsonLdInput = {
+    slug: slugStr,
+    title: title!,
+    description: description!,
+    section: getDocSectionTitle(slugStr),
+  };
+  const techArticleJsonLd = buildDocsTechArticle(jsonLdInput);
+  const breadcrumbJsonLd = buildDocsBreadcrumb(jsonLdInput);
+
   return (
     <div className="flex gap-8">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(techArticleJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
+      />
+
       {/* MDX content */}
       <article className="max-w-2xl min-w-0 flex-1">{content}</article>
 

@@ -25,15 +25,13 @@ const DOCS_ROOT = path.resolve(__dirname, "../../content/docs");
  * Keep this list empty unless there is a concrete reason (e.g. unpublished
  * draft, redirect stub). Every entry here is a latent TODO.
  *
- * Pre-existing orphans as of 2026-04-19 (sprint 2026-W17 discovery) — these
- * MDX files are on disk but were never wired into docs-nav.ts. They pre-date
- * this sprint; the fix is out of scope here. Follow-up: decide per file
- * whether to publish (add to nav) or delete. Do not grow this list.
+ * 2026-07-08 (SEO indexing fix): the three concepts/* orphans were published
+ * into a new "Concepts" nav section. The two remaining entries are legacy
+ * "moved" stubs that now 301 via next.config.ts redirects (quick-start →
+ * your-instance, mcp-integration → mcp/claude); the MDX files stay on disk
+ * only as documentation of the old URLs. Do not grow this list.
  */
 const INTENTIONAL_UNLISTED_SLUGS: readonly string[] = [
-  "concepts/markov-prediction",
-  "concepts/memory-atoms",
-  "concepts/merkle-proofs",
   "mcp-integration",
   "quick-start",
 ];
@@ -106,6 +104,43 @@ describe("docs-nav.ts — sidebar ↔ disk invariants", () => {
       expect(slug, `slug "${slug}" must not start with a slash`).not.toMatch(/^\//);
       expect(slug, `slug "${slug}" must not end with .mdx`).not.toMatch(/\.mdx$/);
     }
+  });
+});
+
+describe("docs-nav.ts — unlisted stubs must 301 (2026-07-08 SEO fix)", () => {
+  it("every intentionally-unlisted slug has a permanent redirect in next.config.ts", async () => {
+    const nextConfig = (await import("../../next.config")).default;
+    const redirects = await (
+      nextConfig.redirects as () => Promise<
+        Array<{ source: string; destination: string; permanent: boolean }>
+      >
+    )();
+    for (const slug of INTENTIONAL_UNLISTED_SLUGS) {
+      const redirect = redirects.find((r) => r.source === `/docs/${slug}`);
+      expect(
+        redirect,
+        `/docs/${slug} is unlisted but has no next.config redirect — it would render as a thin "page has moved" stub that Google crawls but won't index`,
+      ).toBeDefined();
+      expect(redirect!.permanent, `/docs/${slug} redirect must be permanent (301)`).toBe(
+        true,
+      );
+    }
+  });
+
+  it("every intentionally-unlisted stub documents its target via `redirect:` frontmatter", () => {
+    for (const slug of INTENTIONAL_UNLISTED_SLUGS) {
+      const body = fs.readFileSync(path.join(DOCS_ROOT, `${slug}.mdx`), "utf8");
+      expect(body, `${slug}.mdx should carry redirect: frontmatter`).toMatch(
+        /^redirect:\s*\/docs\//m,
+      );
+    }
+  });
+
+  it("concepts pages are published in the nav (regression guard for the 2026-04-19 orphans)", () => {
+    const navSlugs = getAllDocSlugsFromNav();
+    expect(navSlugs).toContain("concepts/memory-atoms");
+    expect(navSlugs).toContain("concepts/merkle-proofs");
+    expect(navSlugs).toContain("concepts/markov-prediction");
   });
 });
 

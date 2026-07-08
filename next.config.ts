@@ -99,6 +99,22 @@ const nextConfig: NextConfig = {
       destination: "/docs/plans",
       permanent: false,
     },
+    // ── Legacy "this page has moved" stubs (2026-07-08 SEO indexing fix) ──
+    // Until now these rendered as thin 200 pages that Google kept crawling
+    // (GSC: "Crawled — currently not indexed"). Real 301s consolidate the
+    // signals onto the live pages. The MDX files stay on disk (their
+    // frontmatter `redirect:` documents intent); these config redirects
+    // intercept the route before the page ever renders.
+    {
+      source: "/docs/quick-start",
+      destination: "/docs/your-instance",
+      permanent: true,
+    },
+    {
+      source: "/docs/mcp-integration",
+      destination: "/docs/mcp/claude",
+      permanent: true,
+    },
   ],
   // Three.js / R3F needs transpilation for ESM compat
   transpilePackages: ["three"],
