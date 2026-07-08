@@ -86,3 +86,21 @@ describe("RootLayout metadata (regression from M1)", () => {
     expect(metadata.manifest).toBe("/site.webmanifest");
   });
 });
+
+/**
+ * 2026-07-08 — Bing Webmaster Tools site verification.
+ *
+ * Bing had ZERO pages of this site indexed; ChatGPT Search, Copilot, and
+ * DuckDuckGo all ride the Bing index. The msvalidate.01 meta tag proves site
+ * ownership to Bing. It must stay in the head FOREVER — Bing periodically
+ * re-checks and un-verifies the site if the tag disappears, which silently
+ * kills the Webmaster Tools property (and with it, sitemap submission).
+ */
+describe("RootLayout metadata — Bing site verification", () => {
+  it("declares the msvalidate.01 verification token", () => {
+    const verification = metadata.verification as {
+      other?: Record<string, string | number | (string | number)[]>;
+    };
+    expect(verification?.other?.["msvalidate.01"]).toBe("DB5282BEA4BFD32D9831FA7B542DF247");
+  });
+});
