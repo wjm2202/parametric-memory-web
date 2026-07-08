@@ -2,6 +2,8 @@ import { readFileSync } from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
+import sitemap from "../sitemap";
+
 /**
  * Phase 5 — ASO (Agent-Schema Optimisation) polish.
  *
@@ -27,39 +29,49 @@ const repoRoot = path.resolve(__dirname, "..", "..", "..");
 const read = (rel: string) => readFileSync(path.join(repoRoot, rel), "utf8");
 
 describe("Phase 5: sitemap.ts covers all public pages", () => {
-  const src = read("src/app/sitemap.ts");
+  // 2026-07-08: converted from source-text grepping to BEHAVIOURAL assertions
+  // against sitemap()'s actual output. The source-contract pattern broke when
+  // static routes moved into the STATIC_ROUTES array (SEO indexing fix) even
+  // though the emitted sitemap was unchanged. Output is what Google sees.
+  const entries = sitemap();
+  const urls = entries.map((e) => e.url);
+  const entry = (url: string) => entries.find((e) => e.url === url);
 
   it("omits /login and /signup (noindex auth pages must not be in the sitemap)", () => {
     // 2026-07-01: /login and /signup are robots `noindex` (low-value auth
-    // pages), and noindex URLs must not appear in the sitemap — they were
-    // removed from sitemap.ts.
-    expect(src).not.toContain('parametric-memory.dev/login"');
-    expect(src).not.toContain('parametric-memory.dev/signup"');
+    // pages), and noindex URLs must not appear in the sitemap.
+    expect(urls).not.toContain("https://parametric-memory.dev/login");
+    expect(urls).not.toContain("https://parametric-memory.dev/signup");
   });
 
   it("includes /enterprise and /copyright", () => {
-    expect(src).toContain('url: "https://parametric-memory.dev/enterprise"');
-    expect(src).toContain('url: "https://parametric-memory.dev/copyright"');
+    expect(urls).toContain("https://parametric-memory.dev/enterprise");
+    expect(urls).toContain("https://parametric-memory.dev/copyright");
   });
 
   it("includes /aup with yearly changeFrequency and priority 0.3", () => {
-    expect(src).toMatch(
-      /url:\s*"https:\/\/parametric-memory\.dev\/aup"[\s\S]{0,200}changeFrequency:\s*"yearly"[\s\S]{0,100}priority:\s*0\.3/,
-    );
+    const aup = entry("https://parametric-memory.dev/aup");
+    expect(aup).toBeDefined();
+    expect(aup!.changeFrequency).toBe("yearly");
+    expect(aup!.priority).toBe(0.3);
   });
 
   it("includes /dpa with yearly changeFrequency and priority 0.3", () => {
-    expect(src).toMatch(
-      /url:\s*"https:\/\/parametric-memory\.dev\/dpa"[\s\S]{0,200}changeFrequency:\s*"yearly"[\s\S]{0,100}priority:\s*0\.3/,
-    );
+    const dpa = entry("https://parametric-memory.dev/dpa");
+    expect(dpa).toBeDefined();
+    expect(dpa!.changeFrequency).toBe("yearly");
+    expect(dpa!.priority).toBe(0.3);
   });
 
-  it("retains the existing canonical surfaces (/, /pricing, /faq, /docs)", () => {
+  it("retains the existing canonical surfaces (/, /pricing, /faq, docs index)", () => {
     // Paranoia guard — a future refactor must not drop these.
-    expect(src).toContain('url: "https://parametric-memory.dev"');
-    expect(src).toContain('url: "https://parametric-memory.dev/pricing"');
-    expect(src).toContain('url: "https://parametric-memory.dev/faq"');
-    expect(src).toContain('url: "https://parametric-memory.dev/docs"');
+    expect(urls).toContain("https://parametric-memory.dev");
+    expect(urls).toContain("https://parametric-memory.dev/pricing");
+    expect(urls).toContain("https://parametric-memory.dev/faq");
+    // 2026-07-08: /docs 301s to /docs/introduction, so the sitemap lists the
+    // destination, never the redirecting URL (GSC "Page with redirect" fix).
+    expect(urls).toContain("https://parametric-memory.dev/docs/introduction");
+    expect(urls).not.toContain("https://parametric-memory.dev/docs");
   });
 });
 

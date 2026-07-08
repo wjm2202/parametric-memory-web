@@ -127,7 +127,7 @@ export const metadata: Metadata = {
  * WEAKENS entity disambiguation — only add a profile once it resolves.
  * Live today: X (below) + the canonical site (that's the @id, not repeated).
  * PENDING — uncomment each the moment it goes live (see
- * marketing/ENTITY-AUTHORITY-KIT.md for the exact profiles + copy to use):
+ * docs/marketing/strategy/ENTITY-AUTHORITY-KIT.md for the exact profiles + copy to use):
  */
 const SAME_AS: string[] = [
   // Live handle TODAY. The rename to @parametricmem is pending X's account review

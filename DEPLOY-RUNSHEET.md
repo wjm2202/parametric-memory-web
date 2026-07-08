@@ -1,8 +1,8 @@
 # Deploy Run Sheet — MMPM (all projects + images)
 
-*Sequenced, safety-gated rollout of everything accumulated over recent sessions,
+_Sequenced, safety-gated rollout of everything accumulated over recent sessions,
 ending with a Google re-crawl request. Goal: ship it all with **zero dead URLs**
-and **no over-claiming**, so the Google entity re-review is clean.*
+and **no over-claiming**, so the Google entity re-review is clean._
 
 Date prepared: 2026-07-06 · Prepared for: Entity One
 
@@ -43,7 +43,8 @@ Date prepared: 2026-07-06 · Prepared for: Entity One
 
 Source: `markov-merkle-memory` (`Dockerfile`), branch `sprint/semantics-phase2`.
 Ships (committed, undeployed): SecretAtomGuard `a1c1394`; ranker reinforce-on-access
-+ spread-default-on `ae6f508`; S2/S6/S1′ metadata `991d602`/`f51dbe3`/`2361b36`.
+
+- spread-default-on `ae6f508`; S2/S6/S1′ metadata `991d602`/`f51dbe3`/`2361b36`.
 
 1. `git status` — confirm no stray uncommitted runtime `src/` (only the MCP file +
    test + `tools/harness/associative/*` scratch are uncommitted; gitignore the scratch).
@@ -97,7 +98,7 @@ Source: `mmpm-website`. Ships: `layout.tsx` (entity JSON-LD: `disambiguatingDesc
 
 1. **Tests:** `npx vitest run src/app/__tests__/entity-disambiguation.test.ts src/app/__tests__/seo-metadata.test.ts src/app/layout.test.ts`.
 2. **Commit + deploy** via the site pipeline (cicd-web-deploy):
-   `git add src/app/layout.tsx src/app/__tests__/ public/robots.txt marketing/ DEPLOY-RUNSHEET.md whitepaper/`
+   `git add src/app/layout.tsx src/app/__tests__/ public/robots.txt docs/marketing/ DEPLOY-RUNSHEET.md whitepaper/`
 3. **Verify (view-source of the live homepage):** Organization JSON-LD contains
    `disambiguatingDescription`, `knowsAbout`, `logo`, and `sameAs`
    `[x.com/_EntityOne, doi.org/10.5281/zenodo.21213464, wikidata.org/wiki/Q140446437]`;
@@ -111,7 +112,7 @@ no rollback needed there.
 
 ---
 
-## D. Google re-crawl / entity re-review  *(after C is live)*
+## D. Google re-crawl / entity re-review _(after C is live)_
 
 1. **Validate structured data:** run the **Rich Results Test** on `/` and `/about`
    → confirm the Organization entity parses and `sameAs` is picked up.
@@ -119,7 +120,7 @@ no rollback needed there.
    `/`, `/about`, and the whitepaper page, so Google re-reads the new JSON-LD +
    entity graph promptly.
 3. **Confirm the graph resolves end-to-end:** X (redirect), DOI, Wikidata all 200.
-   *Note:* the Zenodo record page is `noindex` (Zenodo default) — expected; the DOI
+   _Note:_ the Zenodo record page is `noindex` (Zenodo default) — expected; the DOI
    is still a valid citable/`sameAs` node and is indexed via DataCite/OpenAIRE, it
    just won't appear as its own Google result.
 4. **Expectations:** a distinct entity / Knowledge Panel forms over **weeks**, not
@@ -127,7 +128,7 @@ no rollback needed there.
 
 ---
 
-## E. Connectors Directory  *(separate track — not Google)*
+## E. Connectors Directory _(separate track — not Google)_
 
 1. Verify `/.well-known/oauth-protected-resource` is served from the MCP origin.
 2. Verify `/privacy` is public and substantive (missing = instant rejection).

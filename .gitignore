@@ -39,18 +39,8 @@ Thumbs.db
 
 # IDE
 .idea/
-# Docs workspace.
-# docs/ holds COMMITTED text docs (guides, ADRs, runbooks, and
-# DUAL-ACCESSIBILITY.md — which the CI check-testids guard depends on).
-# Tracked .md/.mdx/.html stay in git. The following are kept on disk but NOT
-# tracked: the archive folder, binary .docx planning docs, and the local-only
-# droplet setup guide. (Previously a blanket `/docs/` ignore here was
-# contradicted by 63 already-tracked files; replaced with targeted rules.)
-docs/archive/
-docs/linkedin/
-docs/*.docx
-docs/parametric-memory-whitepaper.pdf
-docs/WEB-DROPLET-SETUP-GUIDE.md
+# Docs workspace
+docs/
 
 # Docker
 docker-compose.override.yml

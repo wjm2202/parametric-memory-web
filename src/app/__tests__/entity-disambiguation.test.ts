@@ -7,7 +7,7 @@
  * entity, separate from the concept. If any regress, the collision defence
  * weakens silently — hence a test, not just a comment.
  *
- * Companion strategy: marketing/PAGERANK-DIFFERENTIATION-STRATEGY.md
+ * Companion strategy: docs/marketing/strategy/PAGERANK-DIFFERENTIATION-STRATEGY.md
  * Sister SEO tests: src/app/__tests__/seo-metadata.test.ts, src/app/layout.test.ts
  */
 import { describe, it, expect, vi } from "vitest";

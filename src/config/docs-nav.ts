@@ -36,6 +36,20 @@ export const docsNav: DocNavSection[] = [
     ],
   },
   {
+    // Core concept explainers — high AEO value (Merkle proofs, Markov
+    // prediction, atoms). These were orphaned on disk from 2026-04-19 to
+    // 2026-07-08: live at their URLs but absent from the sidebar AND the
+    // sitemap, with ~zero internal links — a direct cause of Google's
+    // "Crawled — currently not indexed" exclusions. Listing them here wires
+    // them into both (docs-nav feeds sitemap.ts via getAllDocSlugsFromNav).
+    title: "Concepts",
+    items: [
+      { title: "Memory Atoms", slug: "concepts/memory-atoms" },
+      { title: "Merkle Proofs", slug: "concepts/merkle-proofs" },
+      { title: "Markov Prediction", slug: "concepts/markov-prediction" },
+    ],
+  },
+  {
     title: "MCP Integration",
     items: [
       { title: "Claude Desktop & Cowork", slug: "mcp/claude" },
@@ -77,3 +91,8 @@ export function getAllDocSlugsFromNav(): string[] {
 
 /** The first doc slug in the nav — used by the /docs index redirect */
 export const firstDocSlug = docsNav[0].items[0].slug;
+
+/** Sidebar section title for a slug, or undefined if the slug is unlisted. */
+export function getDocSectionTitle(slug: string): string | undefined {
+  return docsNav.find((section) => section.items.some((item) => item.slug === slug))?.title;
+}

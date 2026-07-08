@@ -5,6 +5,7 @@ import Image from "next/image";
 import { getAllPostSlugs, getPostBySlug } from "@/lib/blog";
 import { compileMdx } from "@/lib/mdx";
 import { mdxComponents } from "@/components/docs/MdxComponents";
+import { buildBlogBreadcrumb } from "@/lib/structured-data";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -127,11 +128,19 @@ export default async function BlogPostPage({ params }: PageProps) {
     ...(frontmatter!.tags?.length ? { keywords: frontmatter!.tags.join(", ") } : {}),
   };
 
+  // ── BreadcrumbList (2026-07-08 SEO fix) — site-hierarchy signal + breadcrumb
+  // rich results. Builder is pure, locked by src/lib/structured-data.test.ts.
+  const breadcrumbJsonLd = buildBlogBreadcrumb(frontmatter!.title);
+
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(articleJsonLd) }}
+      />
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
       <main className="mx-auto max-w-2xl px-4 py-16 sm:px-6">
         {/* Back link */}

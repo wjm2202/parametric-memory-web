@@ -21,11 +21,11 @@ import { describe, expect, it } from "vitest";
 
 import { SUPPORT_EMAIL } from "@/config/site";
 
+import sitemap from "@/app/sitemap";
+
 const PAGE_PATH = path.join(process.cwd(), "src", "app", "contact", "page.tsx");
-const SITEMAP_PATH = path.join(process.cwd(), "src", "app", "sitemap.ts");
 
 const pageSrc = fs.readFileSync(PAGE_PATH, "utf-8");
-const sitemapSrc = fs.readFileSync(SITEMAP_PATH, "utf-8");
 
 const CANONICAL = "https://parametric-memory.dev/contact";
 
@@ -70,6 +70,10 @@ describe("/contact page — contact details come from the single source of truth
 
 describe("/contact page — discoverability", () => {
   it("is listed in the sitemap", () => {
-    expect(sitemapSrc).toContain(CANONICAL);
+    // 2026-07-08: asserts against sitemap() OUTPUT, not source text — routes
+    // now live in a STATIC_ROUTES array, so the URL literal no longer appears
+    // verbatim in the source. Output is what Google sees.
+    const urls = sitemap().map((e) => e.url);
+    expect(urls).toContain(CANONICAL);
   });
 });
