@@ -69,6 +69,15 @@ export const metadata: Metadata = {
   manifest: "/site.webmanifest",
   description: getLayoutMetaDescription(),
   metadataBase: new URL("https://parametric-memory.dev"),
+  // ── Bing Webmaster Tools site verification (2026-07-08) ────────────────
+  // Renders <meta name="msvalidate.01" ...> on every page. Bing had ZERO
+  // pages of this site indexed (ChatGPT/Copilot/DDG ride the Bing index);
+  // this token verifies ownership so the sitemap can be submitted. The token
+  // is public by design — do NOT remove it after verification succeeds, or
+  // Bing eventually re-checks and un-verifies the site.
+  verification: {
+    other: { "msvalidate.01": "DB5282BEA4BFD32D9831FA7B542DF247" },
+  },
   // ── E-E-A-T + SEO-extension surface (Sprint 2026-W18 SEO audit) ────────
   // Next.js renders these as <meta name="publisher">, <meta name="author">,
   // <meta name="creator">, <meta name="application-name"> — picked up by
