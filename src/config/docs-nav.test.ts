@@ -31,10 +31,7 @@ const DOCS_ROOT = path.resolve(__dirname, "../../content/docs");
  * your-instance, mcp-integration → mcp/claude); the MDX files stay on disk
  * only as documentation of the old URLs. Do not grow this list.
  */
-const INTENTIONAL_UNLISTED_SLUGS: readonly string[] = [
-  "mcp-integration",
-  "quick-start",
-];
+const INTENTIONAL_UNLISTED_SLUGS: readonly string[] = ["mcp-integration", "quick-start"];
 
 /**
  * Walk content/docs/ and return every slug (file path minus the .mdx extension,
@@ -121,9 +118,7 @@ describe("docs-nav.ts — unlisted stubs must 301 (2026-07-08 SEO fix)", () => {
         redirect,
         `/docs/${slug} is unlisted but has no next.config redirect — it would render as a thin "page has moved" stub that Google crawls but won't index`,
       ).toBeDefined();
-      expect(redirect!.permanent, `/docs/${slug} redirect must be permanent (301)`).toBe(
-        true,
-      );
+      expect(redirect!.permanent, `/docs/${slug} redirect must be permanent (301)`).toBe(true);
     }
   });
 

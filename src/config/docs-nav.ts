@@ -94,6 +94,5 @@ export const firstDocSlug = docsNav[0].items[0].slug;
 
 /** Sidebar section title for a slug, or undefined if the slug is unlisted. */
 export function getDocSectionTitle(slug: string): string | undefined {
-  return docsNav.find((section) => section.items.some((item) => item.slug === slug))
-    ?.title;
+  return docsNav.find((section) => section.items.some((item) => item.slug === slug))?.title;
 }

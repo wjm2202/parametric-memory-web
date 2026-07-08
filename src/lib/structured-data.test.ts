@@ -7,11 +7,7 @@
  */
 
 import { describe, it, expect } from "vitest";
-import {
-  buildDocsTechArticle,
-  buildDocsBreadcrumb,
-  buildBlogBreadcrumb,
-} from "./structured-data";
+import { buildDocsTechArticle, buildDocsBreadcrumb, buildBlogBreadcrumb } from "./structured-data";
 
 const input = {
   slug: "concepts/merkle-proofs",
@@ -64,16 +60,18 @@ describe("buildDocsBreadcrumb", () => {
 
   it("omits the section crumb when the slug is unlisted", () => {
     const schema = buildDocsBreadcrumb({ ...input, section: undefined });
-    expect(
-      schema.itemListElement.map((i: { name: string }) => i.name),
-    ).toEqual(["Home", "Docs", "Merkle Proofs"]);
+    expect(schema.itemListElement.map((i: { name: string }) => i.name)).toEqual([
+      "Home",
+      "Docs",
+      "Merkle Proofs",
+    ]);
   });
 
   it("points the Docs crumb at /docs/introduction (never the redirecting /docs)", () => {
     const schema = buildDocsBreadcrumb(input);
-    const docsCrumb = schema.itemListElement.find(
-      (i: { name: string }) => i.name === "Docs",
-    ) as { item?: string };
+    const docsCrumb = schema.itemListElement.find((i: { name: string }) => i.name === "Docs") as {
+      item?: string;
+    };
     expect(docsCrumb.item).toBe("https://parametric-memory.dev/docs/introduction");
   });
 

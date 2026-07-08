@@ -41,9 +41,7 @@ describe("sitemap.ts — determinism (lastmod must not be call-time)", () => {
     const cutoff = Date.now() + 24 * 60 * 60 * 1000;
     for (const entry of sitemap()) {
       const t = new Date(entry.lastModified as Date | string).getTime();
-      expect(t, `${entry.url} lastModified is in the future`).toBeLessThanOrEqual(
-        cutoff,
-      );
+      expect(t, `${entry.url} lastModified is in the future`).toBeLessThanOrEqual(cutoff);
     }
   });
 
