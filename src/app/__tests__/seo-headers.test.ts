@@ -123,4 +123,29 @@ describe("public/robots.txt — AI answer engine allow-list", () => {
   it("references the sitemap", () => {
     expect(robots).toMatch(/Sitemap:\s*https:\/\/parametric-memory\.dev\/sitemap\.xml/);
   });
+
+  // ── Crawl-budget hygiene (2026-07-12) ───────────────────────────────────
+  // Search Console showed Googlebot queueing a font binary
+  // (/_next/static/media/…woff2) for indexing alongside real pages, on a site
+  // with only 12 indexed URLs. Fonts are now disallowed.
+  it("disallows font binaries so crawl budget goes to pages", () => {
+    expect(robots).toMatch(/Disallow:\s*\/\*\.woff2\$/);
+    expect(robots).toMatch(/Disallow:\s*\/\*\.woff\$/);
+  });
+
+  // THE LOAD-BEARING ONE. Blocking /_next/static/ wholesale would deny
+  // Googlebot the JS and CSS chunks it needs to RENDER the page — every URL
+  // would look like an empty shell and indexing would collapse. Disallow fonts
+  // by extension, never the directory.
+  it("NEVER disallows /_next/static wholesale (Googlebot needs JS+CSS to render)", () => {
+    expect(robots).not.toMatch(/Disallow:\s*\/_next\/?\s*$/m);
+    expect(robots).not.toMatch(/Disallow:\s*\/_next\/static\/?\s*$/m);
+  });
+
+  // A noindex page must stay CRAWLABLE or Google can never read the noindex,
+  // and the URL can persist in the index as a bare link.
+  it("does NOT disallow /login or /signup (they carry noindex meta tags)", () => {
+    expect(robots).not.toMatch(/Disallow:\s*\/login/);
+    expect(robots).not.toMatch(/Disallow:\s*\/signup/);
+  });
 });

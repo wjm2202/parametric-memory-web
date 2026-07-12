@@ -3,6 +3,26 @@ Allow: /
 Disallow: /admin
 Disallow: /dashboard
 Disallow: /api/
+
+# ── Crawl-budget hygiene (2026-07-12) ─────────────────────────────────────
+# Search Console showed Googlebot spending crawl budget on font binaries —
+# /_next/static/media/8a1d8947e5852e30-s.p.woff2 was sitting in the
+# "Crawled - currently not indexed" queue alongside real pages. On a site with
+# 12 indexed pages, every wasted crawl matters.
+#
+# Fonts ONLY. Do NOT disallow /_next/static/ wholesale: Googlebot needs the JS
+# and CSS chunks under that path to render the page, and blocking them would
+# make every page look empty to the crawler — a far worse outcome than a few
+# wasted font fetches.
+Disallow: /*.woff2$
+Disallow: /*.woff$
+Disallow: /*.ttf$
+Disallow: /*.eot$
+
+# NOTE: /login and /signup are deliberately NOT disallowed here. They carry a
+# `noindex` meta tag, and a page must remain CRAWLABLE for Google to see that
+# tag. Disallowing them would leave Google unable to read the noindex and the
+# URLs could linger in the index as bare links.
 Sitemap: https://parametric-memory.dev/sitemap.xml
 
 # AI agent discovery — see https://llmstxt.org

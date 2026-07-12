@@ -26,17 +26,24 @@ const SITE = "https://parametric-memory.dev";
 
 /** Last meaningful content change per static route. Bump when you edit the page. */
 export const ROUTE_LASTMOD: Record<string, string> = {
-  "": "2026-07-08",
-  "/pricing": "2026-07-08",
+  // 2026-07-12: claims realignment. Home, /benchmark and /faq gained the
+  // verified LongMemEval results (76.6% zero-setup / 83.0% typed, official
+  // judge, sealed bundles) and every advertised latency figure was corrected
+  // to the re-measured values. /pricing and /about had absolute competitor
+  // claims replaced with dated, attributed ones. These are meaningful content
+  // changes, so the dates move — that is the whole point of the pinned-lastmod
+  // scheme.
+  "": "2026-07-12",
+  "/pricing": "2026-07-12",
   "/enterprise": "2026-07-08",
-  "/benchmark": "2026-07-08",
-  "/about": "2026-07-08",
+  "/benchmark": "2026-07-12",
+  "/about": "2026-07-12",
   "/contact": "2026-06-20",
   "/verify": "2026-07-08",
-  "/faq": "2026-07-08",
+  "/faq": "2026-07-12",
   "/visualise": "2026-05-20",
   "/knowledge": "2026-05-20",
-  "/blog": "2026-07-08",
+  "/blog": "2026-07-12",
   "/terms": "2026-04-05",
   "/privacy": "2026-04-05",
   "/aup": "2026-04-05",
