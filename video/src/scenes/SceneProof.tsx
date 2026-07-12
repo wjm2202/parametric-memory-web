@@ -71,7 +71,7 @@ export const SceneProof: React.FC = () => {
             marginBottom: 36,
           }}
         >
-          Every competitor asks you to trust their infrastructure.
+          Most memory products ask you to trust their infrastructure.
           We give you a Merkle proof — mathematical evidence your
           memories are intact, untampered, and yours alone.
         </p>

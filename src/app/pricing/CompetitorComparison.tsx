@@ -41,8 +41,8 @@ export const competitors: readonly Row[] = [
   {
     feature: "Dedicated instance",
     parametric: "Yes (hosted, managed)",
-    mem0: "No (shared)",
-    zep: "No (shared)",
+    mem0: "Shared (per docs)",
+    zep: "Shared (per docs)",
   },
   {
     feature: "SSL/TLS certificate",
@@ -50,15 +50,25 @@ export const competitors: readonly Row[] = [
     mem0: "Shared / CDN",
     zep: "Shared / CDN",
   },
-  { feature: "Cryptographic proofs", parametric: "Yes (RFC 6962)", mem0: "No", zep: "No" },
-  { feature: "Markov prediction", parametric: "Yes (64% hit rate)", mem0: "No", zep: "No" },
+  {
+    feature: "Cryptographic proofs",
+    parametric: "Yes (RFC 6962)",
+    mem0: "Not documented",
+    zep: "Not documented",
+  },
+  {
+    feature: "Markov prediction",
+    parametric: "Yes (64% hit rate)",
+    mem0: "Not documented",
+    zep: "Not documented",
+  },
   {
     feature: "Graph/relational memory",
     parametric: "Yes (included)",
-    mem0: "No ($249 Pro only)",
+    mem0: "$249 Pro tier only",
     zep: "Yes",
   },
-  { feature: "MCP native", parametric: "Yes", mem0: "No", zep: "No" },
+  { feature: "MCP native", parametric: "Yes", mem0: "Not documented", zep: "Not documented" },
   {
     feature: "Per-query costs",
     parametric: "None (flat rate)",
@@ -68,8 +78,8 @@ export const competitors: readonly Row[] = [
   {
     feature: "Your data isolated",
     parametric: "Yes (dedicated DB)",
-    mem0: "No (shared DB)",
-    zep: "No (shared DB)",
+    mem0: "Shared DB (per docs)",
+    zep: "Shared DB (per docs)",
   },
 ] as const;
 
@@ -92,9 +102,15 @@ export default function CompetitorComparison() {
       aria-label="Comparison with competitors"
     >
       <h2 className="mb-3 text-2xl font-bold text-white sm:text-3xl">vs. Competitors</h2>
-      <p className="text-surface-200 mb-8 text-sm sm:text-base">
+      <p className="text-surface-200 mb-2 text-sm sm:text-base">
         Parametric Memory Professional ($29/mo) vs. Mem0 Starter ($19/mo) vs. Zep Flex ($25/mo) ·
         all prices in US dollars (USD)
+      </p>
+      <p className="text-surface-200/60 mb-8 text-xs sm:text-sm">
+        Competitor entries reflect each vendor&apos;s published documentation and pricing pages as
+        of July 2026. &ldquo;Not documented&rdquo; means we could not find the capability in their
+        public docs — not that it cannot exist. Check for yourself; if we have it wrong, tell us and
+        we will correct it.
       </p>
 
       {/* ── Desktop / tablet (≥ md): original table ──────────────────── */}

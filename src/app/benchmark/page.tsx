@@ -4,14 +4,14 @@ import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 
 export const metadata: Metadata = {
-  title: "Build your own RAG, or don't — MMPM vs. keyword retrieval",
+  title: "LongMemEval-S 83.0% — a benchmark result you can verify | Parametric Memory",
   description:
-    "You could build keyword RAG and match MMPM on simple lookups. But you'd build, tune, host, and maintain it — and still lack multi-hop recall, Merkle-verifiable provenance, a knowledge graph, and conflict detection. MMPM is all of that, managed, from $5/mo. Backed by a benchmark on our real production substrate.",
+    "83.0% on LongMemEval-S under the benchmark's own official GPT-4o judge — and 76.6% out of the box with zero LLM calls at ingest. Every run ships as a sealed, Merkle-rooted bundle you can re-verify yourself. Plus the controlled test showing why your agent needs memory at all.",
   alternates: { canonical: "https://parametric-memory.dev/benchmark" },
   openGraph: {
-    title: "Build your own RAG, or don't — MMPM vs. keyword retrieval",
+    title: "LongMemEval-S 83.0% — verified, not self-reported",
     description:
-      "Match us on simple lookups by building RAG. Everything else — multi-hop, Merkle proofs, knowledge graph, no ops — is why teams buy MMPM. From $5/mo.",
+      "83.0% typed, 76.6% out of the box with no LLM at ingest. Official GPT-4o judge, sealed Merkle-rooted bundle. Check it yourself.",
     url: "https://parametric-memory.dev/benchmark",
     siteName: "Parametric Memory",
     images: [
@@ -145,6 +145,22 @@ const tiers = [
 
 const faqs = [
   {
+    q: "How does Parametric Memory score on LongMemEval?",
+    a: "83.0% on LongMemEval-S with typed ingest, and 76.6% out of the box with zero LLM calls at ingest — both graded by the benchmark's own official GPT-4o judge, not by us. Retrieval is 94.0% hit@10 on a static, CPU-only embedder. Every run ships as a sealed bundle containing the run, the hypotheses, the official judge's transcript and the code, under one Merkle root hash, so the result can be independently re-verified.",
+  },
+  {
+    q: "Why is your number lower than some vendors claim?",
+    a: "Because ours is checkable. Most figures in this category are self-reported, on different readers, on different releases of the dataset, with no artifacts attached — Mem0's own write-up on memory benchmarks concedes that cross-vendor comparison is 'nearly impossible'. 83.0% is not the highest number you will see quoted; as far as we know, it is the one you can verify. Ask any vendor for the same sealed bundle.",
+  },
+  {
+    q: "What do I get without configuring anything?",
+    a: "76.6% on LongMemEval-S, with no extraction pipeline, no model API key and no prompts to tune. Ingest performs zero LLM calls, so it is deterministic and replayable, and your conversations never leave your infrastructure to be processed by a third-party model. Typed ingest — one extraction pass, about a tenth of a cent per session — raises that to 83.0%.",
+  },
+  {
+    q: "What is Parametric Memory bad at?",
+    a: "Preference-style recall — inferring unstated user taste from chit-chat — is our weakest axis at 30%; the evidence shares neither keywords nor surface semantics with the question. We have no image support. And we are not an environment or UI indexer: we piloted a web-agent trajectory benchmark, measured that our substrate stores claims rather than inventories of screen contents, and published the negative result rather than chase the number.",
+  },
+  {
     q: "Can't I just build this with a vector database?",
     a: "For simple keyword lookups, yes — in our benchmark, keyword retrieval tied MMPM at 100%. But that's a retriever you build, tune, host, and keep alive, and it still can't do multi-hop recall, give you Merkle-verifiable provenance, a knowledge graph, or conflict detection. MMPM is all of that, managed, from $5/mo.",
   },
@@ -233,13 +249,76 @@ export default async function BenchmarkPage() {
             </span>
           </h1>
           <p className="font-body text-surface-400 mt-6 max-w-2xl text-lg leading-relaxed">
-            Our benchmark settled one thing: your agent needs memory — answer accuracy went from{" "}
-            <span className="font-medium text-red-400">0%</span> without it to{" "}
-            <span className="font-medium text-emerald-400">~75%</span> with it. You could match us
-            on simple lookups by building keyword RAG yourself. The question is whether you want to
-            build, tune, host, and maintain that — or drop in a managed memory layer that also does
-            what RAG can&apos;t.
+            On the standard benchmark for agent memory, we score{" "}
+            <span className="font-medium text-emerald-400">83.0%</span> — graded by the
+            benchmark&apos;s own official judge, in a sealed bundle you can re-verify yourself. And{" "}
+            <span className="font-medium text-emerald-400">76.6%</span> out of the box, with no LLM
+            calls at ingest at all. Below: that result, then the controlled test that shows why your
+            agent needs memory in the first place.
           </p>
+        </section>
+
+        {/* ── LONGMEMEVAL-S: the standard benchmark ─────────────────────── */}
+        <section className="mx-auto max-w-4xl px-6 pt-4 pb-10" aria-labelledby="bench-lme-heading">
+          <h2
+            id="bench-lme-heading"
+            className="font-display mb-2 text-2xl font-bold text-white lg:text-3xl"
+            style={{ letterSpacing: "-0.02em" }}
+          >
+            LongMemEval-S — the number you can check
+          </h2>
+          <p className="text-surface-400 mb-6 text-sm leading-relaxed">
+            500 questions over long multi-session conversations. Graded by the benchmark&apos;s own
+            official GPT-4o judge — not by us.
+          </p>
+
+          <div className="grid gap-4 sm:grid-cols-2">
+            <div className="border-surface-800 bg-surface-900 rounded-2xl border p-6">
+              <div className="font-display text-brand-400 text-3xl font-extrabold">76.6%</div>
+              <div className="font-body mt-1 text-sm font-medium text-white">
+                Out of the box · zero LLM calls at ingest
+              </div>
+              <p className="text-surface-400 mt-3 text-sm leading-relaxed">
+                No extraction pipeline. No model API key. No prompts to tune. You point agents at it
+                and it remembers — deterministically, and without your conversations ever leaving
+                your infrastructure to be &ldquo;understood&rdquo; by a third-party model. This is
+                the default, not a trial tier.
+              </p>
+            </div>
+            <div className="border-surface-800 bg-surface-900 rounded-2xl border p-6">
+              <div className="font-display text-3xl font-extrabold text-emerald-400">83.0%</div>
+              <div className="font-body mt-1 text-sm font-medium text-white">
+                Typed ingest · one extraction pass
+              </div>
+              <p className="text-surface-400 mt-3 text-sm leading-relaxed">
+                Switch it on and the same system gains <strong>+6.4 points</strong>, for roughly a
+                tenth of a cent per conversation session, once, at ingest. An explicit trade you
+                make per workspace — not a hidden dependency you discover in a security review.
+              </p>
+            </div>
+          </div>
+
+          <div className="border-surface-800 bg-surface-950 mt-4 rounded-2xl border p-6">
+            <div className="font-body text-sm font-medium text-white">
+              Every run ships as a sealed bundle — verify it yourself
+            </div>
+            <p className="text-surface-400 mt-3 text-sm leading-relaxed">
+              The run, the hypotheses, the official judge&apos;s transcript, and the code that
+              produced them, under a single Merkle root hash. Most numbers in this category cannot
+              be checked: vendors self-report, on different readers, on different releases of the
+              dataset, with no artifacts attached. Ours is not the highest figure you will see
+              quoted. It is the one you can verify.{" "}
+              <a href="/verify" className="text-brand-400 underline underline-offset-4">
+                Check the bundle
+              </a>
+              .
+            </p>
+            <p className="text-surface-600 mt-3 text-sm leading-relaxed">
+              Retrieval: 94.0% hit@10 on a static, CPU-only embedder — no model call per query.
+              Weakest axis, stated plainly: preference-style recall (inferring unstated taste from
+              chit-chat) at 30%. Dataset: LongMemEval-S, 500 questions, 2025/09 cleaned release.
+            </p>
+          </div>
         </section>
 
         {/* ── MEMORY HIERARCHY (positioning visual, leads with strengths) ── */}
@@ -432,11 +511,12 @@ export default async function BenchmarkPage() {
             className="font-display mb-2 text-2xl font-bold text-white lg:text-3xl"
             style={{ letterSpacing: "-0.02em" }}
           >
-            The evidence behind the claims
+            And separately: why your agent needs memory at all
           </h2>
           <p className="text-surface-400 mb-6 text-sm leading-relaxed">
-            A controlled retrieval + answer benchmark (Opus 4.8) on our real 3,716-fact production
-            substrate. Deterministic and reproducible.
+            LongMemEval measures us against the field. This measures whether a memory layer is
+            needed in the first place — a controlled retrieval + answer test (Opus 4.8) on our real
+            3,716-fact production substrate. Deterministic and reproducible.
           </p>
           <div className="grid gap-4 sm:grid-cols-3">
             {[
