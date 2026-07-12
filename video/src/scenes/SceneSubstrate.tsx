@@ -5,7 +5,7 @@ import { C } from "../MMPMVideo";
 
 const STATS = [
   { value: "821+", label: "atoms sealed", color: C.brand },
-  { value: "0.045ms", label: "recall latency", color: C.cyan },
+  { value: "0.022ms", label: "recall latency", color: C.cyan },
   { value: "64%", label: "Markov hit rate", color: C.amber },
   { value: "<60s", label: "instance setup", color: C.green },
 ];
@@ -101,7 +101,7 @@ export const SceneSubstrate: React.FC = () => {
       >
         Every thought your AI has — stored, hashed, and cryptographically sealed.
         <br />
-        Recalled in 0.045ms. Predicted before you ask.
+        Recalled in 0.022ms. Predicted before you ask.
       </p>
 
       {/* Stats */}

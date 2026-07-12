@@ -149,7 +149,7 @@ export async function POST(req: NextRequest) {
         </tr>
         <tr>
           <td style="font-family:monospace;font-size:12px;color:#475569;line-height:1.8;">
-            0.045ms p50 recall &nbsp;·&nbsp; RFC 6962 Merkle proofs &nbsp;·&nbsp; 64% Markov hit rate<br>
+            0.022ms p50 recall &nbsp;·&nbsp; RFC 6962 Merkle proofs &nbsp;·&nbsp; 64% Markov hit rate<br>
             11 MCP tools &nbsp;·&nbsp; Isolated substrate &nbsp;·&nbsp; Docker + nginx + Let&rsquo;s Encrypt
           </td>
         </tr>

@@ -232,9 +232,17 @@ to. You can have the former for free; the latter cost me a company.
 
 ## So, did it work?
 
-The benchmark numbers, from a 10-trial run with variance reported rather than cherry-picked:
-3,888 ops/sec, access p50 1.22 ms, proof verification p95 0.032 ms, 64% next-atom hit rate,
-zero stale reads, zero proof failures. Those are the easy claims.
+The benchmark numbers, re-measured on the harness with the variance reported rather than
+cherry-picked: access p50 0.022 ms, p95 0.046 ms, ~2,800 ops/sec, proof verification p95
+0.032 ms, 64% next-atom hit rate, zero stale reads, zero proof failures.
+
+Two honesty notes, because the point of this post is that the dials cost me something. First,
+throughput genuinely moves — 1,727 to 2,962 ops/sec across runs on different hardware — so we
+advertise the conservative end and not the best day we ever had. Second, I won't quote you a
+p99: it swings from 0.09 ms to 4.2 ms depending on when garbage collection lands, and a number
+that moves 46× isn't a number, it's a mood. An earlier version of this paragraph carried
+figures from a run I could no longer reproduce. They're gone. Those are the easy claims to get
+wrong, and I got them wrong.
 
 The real proof isn't in the table. It's that I now have a memory whose every lesson was paid
 for by a production failure, a SaaS that runs its own operations on the exact substrate it

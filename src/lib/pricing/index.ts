@@ -320,5 +320,5 @@ export function getAggregateOfferData(): AggregateOfferData {
  * Used by layout.tsx openGraph.images[].alt.
  */
 export function getOgImageAltText(): string {
-  return `Parametric Memory — Persistent, verifiable AI memory. 0.045ms recall · 64% Markov hit rate · From $${getCheapestPublicPrice()}/mo ${PRICE_CURRENCY}.`;
+  return `Parametric Memory — Persistent, verifiable AI memory. 0.022ms recall · 64% Markov hit rate · From $${getCheapestPublicPrice()}/mo ${PRICE_CURRENCY}.`;
 }

@@ -65,7 +65,7 @@ describe("Phase 1 — pricing consistency (no more $9/mo contradictions)", () =>
   it("proof band does not surface a non-cheapest tier as the starting price", () => {
     // 2026-07-01 redesign: the old `stats` array is now `proofBand` and no
     // longer surfaces a tier PRICE at all — it shows performance metrics
-    // ("0.045ms", "64%", …) and "Your own / isolated substrate". The starting
+    // ("0.022ms", "64%", …) and "Your own / isolated substrate". The starting
     // price now lives in the hero CTA and the pricing preview. The guard's
     // intent survives: the proof band must not advertise a NON-cheapest tier
     // price as the "starting" number. Anchor on the array literal directly.

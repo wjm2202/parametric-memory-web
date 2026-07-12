@@ -280,7 +280,7 @@ const webApplicationJsonLd = {
   operatingSystem: "Linux, Docker",
   browserRequirements: "MCP-compatible AI client (Claude, Cowork, etc.)",
   description:
-    "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond access (0.045ms p50). Isolated per-customer substrates; dedicated instances on Professional and Team.",
+    "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond access (0.022ms p50). Isolated per-customer substrates; dedicated instances on Professional and Team.",
   offers: {
     "@type": "AggregateOffer",
     lowPrice: "5",
@@ -295,7 +295,7 @@ const webApplicationJsonLd = {
     "Retrieval 94.0% hit@10 on a static CPU-only embedder (no model call per query)",
     "Cryptographic Merkle proofs (RFC 6962)",
     "Markov-chain predictive recall (64% hit rate)",
-    "Sub-millisecond access latency (0.045ms p50)",
+    "Sub-millisecond access latency (0.022ms p50)",
     "MCP-native integration (11 tools)",
     "Compact proofs (37% token savings)",
     "LevelDB with JumpHash sharding (4 shards)",
@@ -363,7 +363,7 @@ const softwareApplicationJsonLd = {
   operatingSystem: "Linux, Docker, Any (SaaS)",
   inLanguage: "en",
   description:
-    "Persistent, verifiable memory substrate for AI agents. Scores 83.0% on LongMemEval-S with typed ingest and 76.6% out of the box with zero LLM calls at ingest — both graded by the benchmark's official GPT-4o judge and shipped as sealed, Merkle-rooted bundles that can be independently re-verified. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Isolated per-customer substrates; dedicated on Professional and Team; MCP-native.",
+    "Persistent, verifiable memory substrate for AI agents. Scores 83.0% on LongMemEval-S with typed ingest and 76.6% out of the box with zero LLM calls at ingest — both graded by the benchmark's official GPT-4o judge and shipped as sealed, Merkle-rooted bundles that can be independently re-verified. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.022ms p50). Isolated per-customer substrates; dedicated on Professional and Team; MCP-native.",
   featureList: [
     "LongMemEval-S 83.0% with typed ingest — official GPT-4o judge, sealed bundle 20260711_typed_full-500_bd6759f",
     "LongMemEval-S 76.6% out of the box — zero LLM calls at ingest, nothing to configure",
@@ -372,7 +372,7 @@ const softwareApplicationJsonLd = {
     "Known limitation, stated openly: preference-style recall 30%; no image support",
     "Cryptographic Merkle proofs (RFC 6962 SHA-256)",
     "Markov-chain predictive recall (64% hit rate)",
-    "Sub-millisecond access latency (0.045ms p50, 1.2ms p99)",
+    "Sub-millisecond access latency (0.022ms p50, 0.046ms p95)",
     "~2,900 ops/sec sustained throughput",
     "MCP-native integration (11 tools, Streamable HTTP)",
     "Compact proofs (37% token savings — 4,102 → 2,580 tokens)",

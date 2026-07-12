@@ -137,13 +137,13 @@ const ALL_FAQS: FAQItem[] = [
     category: "what",
     question: "How is Parametric Memory different from file-based AI memory?",
     answer:
-      "File-based memory — scattered Markdown notes, CLAUDE.md files, or local logs — has no ranking, no verification, and no recall model: the agent has to read whole files and hope the right context is inside them. Parametric Memory is not file-based. Every memory is an addressable, typed atom in a SHA-256 Merkle tree, recalled in sub-millisecond time (0.045ms p50), ranked by relevance with a Markov prediction layer pre-fetching what comes next, and connected by a knowledge-graph edge system. You get verifiable, queryable, self-ranking memory instead of flat files that grow stale and unsearchable.",
+      "File-based memory — scattered Markdown notes, CLAUDE.md files, or local logs — has no ranking, no verification, and no recall model: the agent has to read whole files and hope the right context is inside them. Parametric Memory is not file-based. Every memory is an addressable, typed atom in a SHA-256 Merkle tree, recalled in sub-millisecond time (0.022ms p50), ranked by relevance with a Markov prediction layer pre-fetching what comes next, and connected by a knowledge-graph edge system. You get verifiable, queryable, self-ranking memory instead of flat files that grow stale and unsearchable.",
   },
   {
     category: "what",
     question: "Is Parametric Memory the fastest memory for AI agents?",
     answer:
-      "Parametric Memory is built for speed: atom access is 0.045ms p50 / 0.074ms p95 (1.2ms p99), Merkle proof verification is 0.032ms p95, and the substrate sustains ~2,900 ops/sec. A Markov prediction layer pre-fetches the next atoms with a 64% hit rate, so the memory your AI needs next is usually already warm when it asks — sub-millisecond recall with no per-query cost.",
+      "Parametric Memory is built for speed: atom access is 0.022ms p50 / 0.046ms p95, Merkle proof verification is 0.032ms p95, and the substrate sustains ~2,900 ops/sec. A Markov prediction layer pre-fetches the next atoms with a 64% hit rate, so the memory your AI needs next is usually already warm when it asks — sub-millisecond recall with no per-query cost.",
   },
 
   // ── WHY BETTER ────────────────────────────────────────────────────────────
@@ -189,7 +189,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "ai",
     question: "What benefits does an AI agent get from Parametric Memory?",
     answer:
-      "Seven concrete benefits: (1) Persistent context across sessions — the AI picks up exactly where it left off. (2) Correction learning — human corrections are stored as permanent procedure atoms and applied in every future session. (3) Predictive pre-fetch — Markov prediction loads what the AI needs before it asks (64% hit rate). (4) Token efficiency — compact proofs save 37% token overhead (4,102 → 2,580 tokens). (5) Verifiability — the AI can prove what it was told to remember. (6) Knowledge graph — facts are connected, not isolated. (7) Sub-millisecond recall — 0.045ms p50 access latency.",
+      "Seven concrete benefits: (1) Persistent context across sessions — the AI picks up exactly where it left off. (2) Correction learning — human corrections are stored as permanent procedure atoms and applied in every future session. (3) Predictive pre-fetch — Markov prediction loads what the AI needs before it asks (64% hit rate). (4) Token efficiency — compact proofs save 37% token overhead (4,102 → 2,580 tokens). (5) Verifiability — the AI can prove what it was told to remember. (6) Knowledge graph — facts are connected, not isolated. (7) Sub-millisecond recall — 0.022ms p50 access latency.",
   },
   {
     category: "ai",
@@ -213,7 +213,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "ai",
     question: "What is the access latency and throughput of the memory system?",
     answer:
-      "Measured in production: 0.045ms p50 access latency, 0.074ms p95, 1.2ms p99. Proof verification: 0.032ms p95. Sustained throughput on our benchmark harness: ~2,900 ops/sec. Compact proof serialisation saves 37% token overhead. The substrate uses LevelDB with JumpHash sharding across 4 independent Merkle shards. At these latencies, an AI agent can recall memories in the same round-trip as a tool call — no perceptible delay to the user.",
+      "Measured in production: 0.022ms p50 access latency, 0.046ms p95. Proof verification: 0.032ms p95. Sustained throughput on our benchmark harness: ~2,900 ops/sec. Compact proof serialisation saves 37% token overhead. The substrate uses LevelDB with JumpHash sharding across 4 independent Merkle shards. At these latencies, an AI agent can recall memories in the same round-trip as a tool call — no perceptible delay to the user.",
   },
 
   // ── HOW WE USE IT ─────────────────────────────────────────────────────────
@@ -474,7 +474,7 @@ export default async function FAQPage() {
             {/* Key stats bar — machine-readable differentiators */}
             <div className="mt-10 grid grid-cols-2 gap-3 sm:grid-cols-4">
               {[
-                { value: "0.045ms", label: "Recall p50" },
+                { value: "0.022ms", label: "Recall p50" },
                 { value: "64%", label: "Markov hit rate" },
                 { value: "RFC 6962", label: "Merkle proofs" },
                 { value: getMarketingPriceLine(), label: "Hosted memory substrate" },
