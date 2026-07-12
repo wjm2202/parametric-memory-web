@@ -196,7 +196,7 @@ export const SceneProof: React.FC = () => {
             ✓ Proof verified
           </div>
           <div style={{ fontFamily: "monospace", fontSize: 12, color: "rgba(100,116,139,0.7)" }}>
-            All atoms intact · Root hash matches · 0.045ms
+            All atoms intact · Root hash matches · 0.032ms
           </div>
         </div>
       </div>

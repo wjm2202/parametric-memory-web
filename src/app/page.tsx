@@ -61,7 +61,7 @@ const landingJsonLd = {
     featureList: [
       "Cryptographic Merkle proofs (RFC 6962)",
       "Markov-chain predictive recall (64% hit rate)",
-      "Sub-millisecond access latency (0.045ms p50)",
+      "Sub-millisecond access latency (0.022ms p50)",
       "MCP-native integration (11 tools)",
       "Compact proofs (37% token savings)",
       "Dedicated instances on Professional and Team; isolated substrate on every tier",
@@ -244,7 +244,7 @@ const capabilities = [
     headline: "It answers instantly",
     sub: "Recall in a fraction of a millisecond.",
     body: "LevelDB sharded across four independent Merkle trees keeps recall sub-millisecond. Professional and Team run on a dedicated droplet — zero contention, no noisy neighbours; every tier stays an isolated substrate.",
-    stat: "0.045ms p50 · 1.2ms p99, measured in production",
+    stat: "0.022ms p50 · 0.046ms p95, measured in production",
   },
   {
     accent: "text-brand-400",

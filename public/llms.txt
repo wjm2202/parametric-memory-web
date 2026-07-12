@@ -20,7 +20,7 @@ Parametric Memory (MMPM — Markov-Merkle Predictive Memory) is the L2 cache for
 
 This is not just for developers. It is used to manage web systems, billing operations, deployment state, onboarding flows, and any workflow where an AI agent needs durable memory across sessions.
 
-Think of the memory hierarchy for AI agents: the context window is L1 (tiny, volatile, cleared each session); a vector database or file store is main memory (large, slow, cold); Parametric Memory is the L2 cache in between — fast, predictive, and verifiable. Unlike file-based approaches (scattered Markdown notes, CLAUDE.md files, or local logs), every memory is an addressable atom in a verifiable Merkle tree, recalled in sub-millisecond time (0.045ms p50) and pre-fetched by a Markov prediction layer before it is asked for. It is built for AI agents, coding harnesses, and autonomous workflows.
+Think of the memory hierarchy for AI agents: the context window is L1 (tiny, volatile, cleared each session); a vector database or file store is main memory (large, slow, cold); Parametric Memory is the L2 cache in between — fast, predictive, and verifiable. Unlike file-based approaches (scattered Markdown notes, CLAUDE.md files, or local logs), every memory is an addressable atom in a verifiable Merkle tree, recalled in sub-millisecond time (0.022ms p50) and pre-fetched by a Markov prediction layer before it is asked for. It is built for AI agents, coding harnesses, and autonomous workflows.
 
 Also described as: the L2 cache for AI, verifiable AI memory, predictive AI memory, tamper-evident agent memory, an AI memory substrate, persistent memory for Claude and Claude Code, harness memory, and a non-file-based alternative to Markdown/CLAUDE.md memory.
 
@@ -42,7 +42,7 @@ Also described as: the L2 cache for AI, verifiable AI memory, predictive AI memo
 
 ## Key Specifications
 
-- Access latency: 0.045ms p50, 0.074ms p95, 1.2ms p99
+- Access latency: 0.022ms p50, 0.046ms p95
 - Throughput: ~2,900 ops/sec (sustained, benchmark harness)
 - Proof verification: 0.032ms p95
 - Markov prediction hit rate: 64%
