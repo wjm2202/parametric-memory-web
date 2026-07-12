@@ -48,9 +48,9 @@ Everyone else in the agent-memory space builds *storage* — a place to put thin
 
 ## 3. Four properties, at once, behind one interface
 
-Parametric Memory's name encodes its two load-bearing ideas — it is **Markov** (predictive) and **Merkle** (verifiable) — and the substrate composes four properties that no single existing tool delivers together.
+Parametric Memory's name encodes its two load-bearing ideas — it is **Markov** (predictive) and **Merkle** (verifiable) — and the substrate composes four properties that we have not seen delivered together in a single existing tool.
 
-**Verifiable.** Every committed state of memory is an immutable, cryptographically signed snapshot. When an agent recalls a fact, the response can carry a proof binding that fact to a specific, signed version of memory — verifiable by an independent party, offline, without trusting our servers. The substrate also supports *consistency proofs* in the style of Certificate Transparency (RFC 6962): given two versions of memory, it can prove the later one is an append-only extension of the earlier — that history was *added to, not rewritten*. The payoff is a property no vector store has: **every recalled fact comes with a proof of what was known, and when.**
+**Verifiable.** Every committed state of memory is an immutable, cryptographically signed snapshot. When an agent recalls a fact, the response can carry a proof binding that fact to a specific, signed version of memory — verifiable by an independent party, offline, without trusting our servers. The substrate also supports *consistency proofs* in the style of Certificate Transparency (RFC 6962): given two versions of memory, it can prove the later one is an append-only extension of the earlier — that history was *added to, not rewritten*. The payoff: **every recalled fact comes with a proof of what was known, and when.** We publish sealed benchmark bundles you can re-verify yourself — ask any vendor for the same artifact.
 
 **Predictive.** A passive index answers "what is similar to my query?" Parametric Memory also answers "given what I just recalled, what tends to come next?" It maintains a learned model of the sequences an agent actually follows, so that reinforcing a successful workflow leaves a durable trace the memory can later replay as a prediction. This is what lets memory surface the *"you'll probably need this next"* item that pure similarity would miss.
 
@@ -98,7 +98,7 @@ Each property exists in isolation elsewhere. Merkle trees underpin certificate t
 - Prediction makes the graph **dynamic** — it becomes a learned heatmap of how knowledge is *actually used*, not just how it was declared.
 - Adaptive decay makes the whole store **self-curating** — it keeps the load-bearing and sheds the ephemeral on its own.
 
-A memory with only similarity search has recall. A memory with all four has *judgement*: it knows what is relevant, what is trustworthy, what is contested, what is connected, and what tends to come next. That is the moat, and it is the reason a competitor cannot reach it by adding one feature.
+A memory with only similarity search has recall. A memory with all four has *judgement*: it knows what is relevant, what is trustworthy, what is contested, what is connected, and what tends to come next. That is the moat: the four properties reinforce each other, so it is a composition to match, not a single feature to bolt on.
 
 ---
 
@@ -132,7 +132,7 @@ Curiosity is the right response to a claim like "provable memory," and we have b
 2. **Run your own benchmark.** We will help you stand up a substrate against a workload that looks like yours.
 3. **See behind the curtain, under NDA.** The mechanisms this brief withholds — the decay model, the ranking, the codec, the proof construction — are exactly what we walk qualified teams through in a technical deep-dive.
 
-The bottleneck for AI agents is shifting from reasoning to remembering. An agent that cannot retain, trust, and query what it learns is condemned to re-derive its world every session. Parametric Memory is the tier that fixes that — fast enough to feel instant, predictive enough to stay a step ahead, and the only one that can prove what it knew.
+The bottleneck for AI agents is shifting from reasoning to remembering. An agent that cannot retain, trust, and query what it learns is condemned to re-derive its world every session. Parametric Memory is the tier that fixes that — fast enough to feel instant, predictive enough to stay a step ahead, and able to prove what it knew.
 
 ---
 

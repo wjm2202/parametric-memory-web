@@ -140,7 +140,7 @@ const faqSchema = {
       name: "What makes Parametric Memory different from Mem0 or Zep?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Parametric Memory provides cryptographic Merkle proofs (RFC 6962) for every memory operation — no other AI memory system offers verifiable proof of what was stored and when. It also includes Markov-chain prediction (64% hit rate) and runs on dedicated instances, not shared infrastructure.",
+        text: "Parametric Memory provides cryptographic Merkle proofs (RFC 6962) for every memory operation, so you get verifiable proof of what was stored and when — and we publish sealed benchmark bundles you can re-verify yourself. We are not aware of another commercial AI memory system that ships verifiable proofs. It also includes Markov-chain prediction (64% hit rate) and runs on dedicated instances, not shared infrastructure.",
       },
     },
     {

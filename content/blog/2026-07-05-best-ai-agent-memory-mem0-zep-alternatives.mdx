@@ -19,22 +19,23 @@ where each one wins, so you can pick the right tool rather than the loudest one.
   to know *when* something was true.
 - **Letta** (formerly MemGPT) — a full agent *runtime* where the model pages its own memory like an
   operating system. Best for long-running autonomous agents that self-edit context.
-- **Parametric Memory** — a *verifiable* memory substrate. The only one where every recalled fact
-  carries a cryptographic proof, delivered MCP-native from $5/mo.
+- **Parametric Memory** — a *verifiable* memory substrate. Every recalled fact carries a
+  cryptographic proof, and the benchmark result ships as a sealed bundle you can check yourself.
+  MCP-native, from $5/mo.
 
 ## At a glance
 
 | | Mem0 | Zep | Letta | Parametric Memory |
 |---|---|---|---|---|
 | Architecture | Vector memory layer | Temporal knowledge graph | Agent runtime (self-paging) | Verifiable substrate (Merkle + Markov + graph) |
-| Cryptographic proof of memory | No | No | No | **Yes — RFC 6962 Merkle** |
+| Cryptographic proof of memory | Not documented | Not documented | Not documented | **Yes — RFC 6962 Merkle** |
 | Integration | SDK / API | SDK / API | Runtime | **MCP-native (one config block)** |
 | Hosting | OSS core + cloud | Graphiti OSS + cloud | Fully open-source | Managed; dedicated tier from $29 |
 | Paid pricing | Pro (graph) ~$249/mo | Flex ~$125/mo | Free / self-host | $5–$79/mo |
-| Standard benchmark | LongMemEval 94.4% (self-report) | LongMemEval 63.8% (GPT-4o) | — | Own retrieval + answer benchmark ([/benchmark](/benchmark)); LongMemEval planned |
+| Standard benchmark | LongMemEval 94.4% (self-report) | LongMemEval 63.8% (GPT-4o) | — | **LongMemEval-S 83.0%** — official GPT-4o judge, [sealed bundle you can verify](/benchmark) |
 | Best for | Personalization, big ecosystem | Time-changing facts | Autonomous self-editing agents | Verifiable cross-session memory over MCP |
 
-*Prices and benchmark figures as reported by each vendor / the LongMemEval literature, July 2026.*
+*Prices, feature rows, and benchmark figures as reported in each vendor's published documentation / the LongMemEval literature, July 2026. "Not documented" means we could not find the capability in their public docs — check for yourself, and tell us if we have it wrong.*
 
 ## Where each one wins (honestly)
 
@@ -53,9 +54,10 @@ runtime to self-host.
 **Choose Parametric Memory** if you need memory you can *trust and prove*, with the least
 integration work:
 
-- **Verifiability no one else offers.** Every fact is sealed in an RFC 6962 Merkle tree, so your
+- **Verifiability you can check.** Every fact is sealed in an RFC 6962 Merkle tree, so your
   agent can [prove its memory wasn't altered](/verify) — a hard requirement for regulated,
-  audited, or high-stakes workflows.
+  audited, or high-stakes workflows. We are not aware of another commercial memory product that
+  ships verifiable proofs; if you find one, we would like to see it.
 - **MCP-native, one config block.** No SDK, no service to run. It drops into Claude Code, Cursor,
   Claude Desktop, or any MCP client.
 - **Graph + prediction included at every price.** Knowledge-graph edges and a Markov prediction
@@ -64,12 +66,30 @@ integration work:
 
 ## A note on benchmarks
 
-The category is measured on **LongMemEval** (Mem0 self-reports 94.4%; Zep 63.8% on GPT-4o). We
-haven't published a LongMemEval number yet — and we'd rather say so than quote a bespoke figure
-that isn't comparable. What we *have* published is an honest, reproducible [retrieval and
-answer-accuracy benchmark](/benchmark) on our own production data, including where a well-crafted
-prompt and keyword RAG tie us. A LongMemEval result is on the roadmap; we'll publish it the same
-way — with the caveats visible.
+The category is measured on **LongMemEval**. We've now published ours — and how we published it
+matters more than the number.
+
+**83.0%** on LongMemEval-S, graded by the benchmark's own **official GPT-4o judge**. And
+**76.6% out of the box**, with **zero LLM calls at ingest** — no extraction pipeline, no API key,
+nothing to configure. Turning on typed ingest is what buys the extra 6.4 points, and it costs
+about a tenth of a cent per conversation session.
+
+Here's the part we care about. Every one of those runs ships as a **sealed bundle** — the run,
+the hypotheses, the official judge's transcript, and the code that produced them, under a single
+Merkle root hash. You can [re-verify our numbers yourself](/benchmark) rather than take our word
+for them.
+
+That matters because most numbers in this category can't be checked. Vendors self-report, on
+different readers, on different releases of the dataset, with no artifacts attached — Mem0's own
+write-up on the state of memory benchmarks concedes that cross-vendor comparison is "nearly
+impossible." Our 83.0% is not the highest figure you'll see quoted. It is, as far as we know, the
+one you can check. Ask any vendor for the same artifact.
+
+We're also publishing where we *don't* do well: preference-style recall — inferring unstated taste
+from chit-chat — is our weakest axis at 30%. And we ran a pilot on a web-agent trajectory
+benchmark, measured that our substrate is the wrong tool for indexing screen contents, and
+[published the negative result](/blog) rather than chase the number. A benchmark table with no
+losses in it isn't a benchmark table; it's an advertisement.
 
 ## Bottom line
 

@@ -38,7 +38,7 @@ const landingJsonLd = {
   name: "Parametric Memory — Home",
   url: "https://parametric-memory.dev",
   description:
-    "The L2 cache for AI agents — a fast, predictive, verifiable memory tier between your model and cold storage. Markov prediction keeps context warm before you ask (64% hit rate), Merkle proofs (RFC 6962) make every recall verifiable, sub-millisecond access (0.045ms p50). From $5/mo USD.",
+    "Verifiable memory for AI agents. Scores 76.6% on LongMemEval-S out of the box with zero LLM calls at ingest — nothing to configure — and 83.0% with typed ingest, both graded by the benchmark's own official GPT-4o judge and shipped in a sealed, Merkle-rooted bundle you can re-verify. Markov prediction keeps context warm before you ask (64% hit rate); Merkle proofs (RFC 6962) make every recall verifiable. From $5/mo USD.",
   datePublished: "2025-01-01",
   dateModified: new Date().toISOString().split("T")[0],
   inLanguage: "en-US",
@@ -87,6 +87,22 @@ const homeFaqJsonLd = {
   mainEntity: [
     {
       "@type": "Question",
+      name: "How does Parametric Memory score on LongMemEval?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "83.0% on LongMemEval-S with typed ingest, and 76.6% out of the box with zero LLM calls at ingest — both graded by the benchmark's own official GPT-4o judge, not an in-house one. Retrieval is 94.0% hit@10. Every run ships as a sealed bundle containing the run, the hypotheses, the official judge's transcript and the code, under a single Merkle root hash, so the number can be independently re-verified rather than taken on trust. Weakest axis, stated openly: preference-style recall at 30%.",
+      },
+    },
+    {
+      "@type": "Question",
+      name: "What does Parametric Memory do with no configuration?",
+      acceptedAnswer: {
+        "@type": "Answer",
+        text: "It scores 76.6% on LongMemEval-S out of the box — no extraction pipeline, no model API key, no prompts to tune. Ingest performs zero LLM calls, so writes are instant and deterministic and your conversations never leave your infrastructure to be processed by a third-party model. Typed ingest, one extraction pass at roughly a tenth of a cent per session, raises that to 83.0%.",
+      },
+    },
+    {
+      "@type": "Question",
       name: "What is Parametric Memory?",
       acceptedAnswer: {
         "@type": "Answer",
@@ -98,7 +114,7 @@ const homeFaqJsonLd = {
       name: "How is Parametric Memory different from Mem0 or Zep?",
       acceptedAnswer: {
         "@type": "Answer",
-        text: "Parametric Memory provides cryptographic Merkle proofs on every memory read — Mem0 and Zep do not. Every customer gets an isolated substrate with their own Merkle tree and API key, and Professional and Team run on fully dedicated infrastructure. Markov-chain prediction pre-fetches context with a 64% hit rate. Knowledge graph edges are included at every tier, not paywalled.",
+        text: "Parametric Memory provides cryptographic Merkle proofs on every memory read — as of their published documentation (July 2026), neither Mem0 nor Zep documents a cryptographic proof layer. Every customer gets an isolated substrate with their own Merkle tree and API key, and Professional and Team run on fully dedicated infrastructure. Markov-chain prediction pre-fetches context with a 64% hit rate. Knowledge graph edges are included at every tier, not paywalled.",
       },
     },
     {
@@ -168,11 +184,13 @@ function ArrowIcon({ className = "h-4 w-4" }: { className?: string }) {
 }
 
 // ── Hero honest proof band (P2 — every metric qualified) ────────────────────
+// LongMemEval-S figures are graded by the benchmark's OWN official GPT-4o judge
+// and ship in a sealed, Merkle-rooted bundle (see /benchmark, /verify).
 const proofBand = [
-  { value: "0.045ms", label: "recall, p50" },
+  { value: "76.6%", label: "LongMemEval-S, zero setup" },
+  { value: "83.0%", label: "with typed ingest" },
   { value: "64%", label: "recalled before you ask" },
   { value: "Every read", label: "carries a proof" },
-  { value: "Your own", label: "isolated substrate" },
 ];
 
 // ── Setup steps ─────────────────────────────────────────────────────────────
@@ -625,7 +643,7 @@ export default async function HomePage() {
               Drop a signed memory snapshot into your browser and verify it yourself — no API key,
               no account, not one line of our code in the loop. If a single atom was altered, the
               check fails in front of you. That&apos;s the whole point: you shouldn&apos;t have to
-              trust us — and no other AI memory can prove itself this way.
+              trust us. Ask any memory vendor for the same artifact.
             </p>
             <div className="flex flex-col items-center justify-center gap-4 sm:flex-row">
               <Link

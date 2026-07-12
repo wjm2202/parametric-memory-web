@@ -289,6 +289,10 @@ const webApplicationJsonLd = {
     offerCount: "6",
   },
   featureList: [
+    "LongMemEval-S 83.0% with typed ingest — graded by the benchmark's official GPT-4o judge",
+    "LongMemEval-S 76.6% out of the box — zero LLM calls at ingest, nothing to configure",
+    "Sealed, Merkle-rooted benchmark bundles — results are independently re-verifiable, not self-reported",
+    "Retrieval 94.0% hit@10 on a static CPU-only embedder (no model call per query)",
     "Cryptographic Merkle proofs (RFC 6962)",
     "Markov-chain predictive recall (64% hit rate)",
     "Sub-millisecond access latency (0.045ms p50)",
@@ -359,8 +363,13 @@ const softwareApplicationJsonLd = {
   operatingSystem: "Linux, Docker, Any (SaaS)",
   inLanguage: "en",
   description:
-    "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Isolated per-customer substrates; dedicated on Professional and Team; MCP-native.",
+    "Persistent, verifiable memory substrate for AI agents. Scores 83.0% on LongMemEval-S with typed ingest and 76.6% out of the box with zero LLM calls at ingest — both graded by the benchmark's official GPT-4o judge and shipped as sealed, Merkle-rooted bundles that can be independently re-verified. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond recall (0.045ms p50). Isolated per-customer substrates; dedicated on Professional and Team; MCP-native.",
   featureList: [
+    "LongMemEval-S 83.0% with typed ingest — official GPT-4o judge, sealed bundle 20260711_typed_full-500_bd6759f",
+    "LongMemEval-S 76.6% out of the box — zero LLM calls at ingest, nothing to configure",
+    "Sealed, Merkle-rooted benchmark bundles — independently re-verifiable, not self-reported",
+    "Retrieval 94.0% hit@10, 89.5% recall@10, MRR 0.826",
+    "Known limitation, stated openly: preference-style recall 30%; no image support",
     "Cryptographic Merkle proofs (RFC 6962 SHA-256)",
     "Markov-chain predictive recall (64% hit rate)",
     "Sub-millisecond access latency (0.045ms p50, 1.2ms p99)",

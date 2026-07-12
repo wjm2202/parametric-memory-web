@@ -492,8 +492,8 @@ export default async function AboutPage() {
                 <p className="mt-2 text-sm text-[#8888aa]">
                   Their own PostgreSQL instance. Their own Merkle tree with its own root hash. Their
                   own container pair with its own API key. Isolation by architecture, not by policy.
-                  It costs more to operate. We think it&apos;s the only defensible choice for a
-                  product selling <em>memory</em>.
+                  It costs more to operate. For a product selling <em>memory</em>, we think
+                  that&apos;s the right trade.
                 </p>
               </div>
             </div>

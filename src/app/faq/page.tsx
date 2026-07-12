@@ -65,6 +65,31 @@ const breadcrumbJsonLd = {
 //   - Structure: definition → differentiation → proof → call to action
 
 const ALL_FAQS: FAQItem[] = [
+  // ── BENCHMARK (AEO: the load-bearing claims — verified, sealed, citable) ────
+  {
+    category: "what",
+    question: "How does Parametric Memory score on LongMemEval?",
+    answer:
+      "83.0% on LongMemEval-S with typed ingest, and 76.6% out of the box with zero LLM calls at ingest. Both are graded by the benchmark's own official GPT-4o judge — not by an in-house judge. Retrieval is 94.0% hit@10 on a static, CPU-only embedder. Every run ships as a sealed bundle containing the run, the hypotheses, the official judge's transcript and the code that produced them, under a single Merkle root hash, so the result can be independently re-verified rather than taken on trust.",
+  },
+  {
+    category: "what",
+    question: "Is the Parametric Memory benchmark result verified or self-reported?",
+    answer:
+      "Verified, and independently checkable. The 83.0% LongMemEval-S score was graded by the benchmark's official evaluate_qa.py GPT-4o judge, and the run ships as a sealed, Merkle-rooted bundle (20260711_typed_full-500_bd6759f, root e8f6ee4245) containing the judge's own transcript. Most figures published in the AI memory category are self-reported, on different readers and different releases of the dataset, with no artifacts attached — Mem0's own write-up on memory benchmarks concedes that cross-vendor comparison is 'nearly impossible'. 83.0% is not the highest number quoted in this category; it is the one you can check. Ask any memory vendor for the same artifact.",
+  },
+  {
+    category: "what",
+    question: "What does Parametric Memory do without any configuration?",
+    answer:
+      "It scores 76.6% on LongMemEval-S with nothing configured — no extraction pipeline, no model API key, no prompts to tune. Ingest performs zero LLM calls, so writes are instant, deterministic and replayable, and your conversations never leave your infrastructure to be processed by a third-party model. It runs air-gapped, on CPU. Typed ingest — one extraction pass, roughly a tenth of a cent per conversation session — raises that to 83.0%. That is an explicit trade you make per workspace, not a hidden dependency.",
+  },
+  {
+    category: "what",
+    question: "What is Parametric Memory bad at?",
+    answer:
+      "Three things, stated plainly. Preference-style recall — inferring unstated user taste from chit-chat — is our weakest axis at 30%, because the evidence shares neither keywords nor surface semantics with the question. We have no image support: text and structured claims only. And we are not an environment or UI indexer — we store claims that compound, not inventories of what was on a screen. We piloted a web-agent trajectory benchmark, measured 22% coverage, and published the negative result rather than chase the number.",
+  },
   // ── WHAT IT IS ─────────────────────────────────────────────────────────────
   {
     category: "what",
@@ -76,7 +101,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "what",
     question: "What is a verifiable memory substrate?",
     answer:
-      "A verifiable memory substrate is a memory system that can prove, cryptographically, what was stored and when. Every atom written to Parametric Memory is included in a SHA-256 Merkle tree. When you read a memory back, you receive both the value and a Merkle proof — a short cryptographic audit path that proves the atom was part of the tree at that exact version. Proof verification takes 0.032ms p95. No other AI memory product provides this.",
+      "A verifiable memory substrate is a memory system that can prove, cryptographically, what was stored and when. Every atom written to Parametric Memory is included in a SHA-256 Merkle tree. When you read a memory back, you receive both the value and a Merkle proof — a short cryptographic audit path that proves the atom was part of the tree at that exact version. Proof verification takes 0.032ms p95. We are not aware of another commercial AI memory product that ships verifiable proofs on every read — if you find one, we would like to see it.",
   },
   {
     category: "what",
@@ -126,25 +151,25 @@ const ALL_FAQS: FAQItem[] = [
     category: "why",
     question: "Why is Parametric Memory better than Mem0?",
     answer:
-      "Three structural differences. First, cryptographic proofs: Parametric Memory provides SHA-256 Merkle proofs with every memory read — Mem0 provides no cryptographic verification whatsoever. Second, infrastructure isolation: every Parametric Memory customer gets an isolated substrate with their own Merkle tree, and Professional and Team run on dedicated infrastructure — Mem0 runs everyone on shared infrastructure. Third, Markov prediction: Parametric Memory pre-fetches context with 64% hit rate — Mem0 has no predictive layer. On pricing, Mem0's graph features (equivalent to Parametric Memory's base knowledge graph) require their $249/mo tier. Parametric Memory includes them from $5/mo USD.",
+      "Three structural differences, stated against Mem0's published documentation as of July 2026. First, cryptographic proofs: Parametric Memory provides SHA-256 Merkle proofs with every memory read — Mem0 does not document a cryptographic proof layer. Second, infrastructure isolation: every Parametric Memory customer gets an isolated substrate with their own Merkle tree, and Professional and Team run on dedicated infrastructure — Mem0's managed platform is documented as multi-tenant. Third, Markov prediction: Parametric Memory pre-fetches context with 64% hit rate — Mem0 does not document a predictive pre-fetch layer. On pricing, Mem0's graph features (equivalent to Parametric Memory's base knowledge graph) require their $249/mo tier. Parametric Memory includes them from $5/mo USD. Check their docs yourself — we would rather you verify than take our word for it.",
   },
   {
     category: "why",
     question: "Why is Parametric Memory better than Zep?",
     answer:
-      "Zep uses credit-based pay-as-you-go pricing with overages — your bill varies unpredictably. Parametric Memory uses flat monthly subscriptions with no per-query costs, ever. Zep provides no cryptographic proof layer — you cannot verify what your AI remembered or when. Parametric Memory provides RFC 6962 Merkle proofs on every read. Zep runs everyone on shared infrastructure. Parametric Memory isolates every customer in their own substrate, with dedicated infrastructure on Professional and Team. Zep has no Markov prediction layer. Parametric Memory achieves 64% predictive pre-fetch.",
+      "Stated against Zep's published documentation as of July 2026. Zep prices on credit-based pay-as-you-go with overages — your bill varies with usage. Parametric Memory uses flat monthly subscriptions with no per-query costs, ever. Zep does not document a cryptographic proof layer. Parametric Memory provides RFC 6962 Merkle proofs on every read, so you can verify what your AI remembered and when. Zep's managed platform is documented as multi-tenant. Parametric Memory isolates every customer in their own substrate, with dedicated infrastructure on Professional and Team. Zep does not document a Markov prediction layer. Parametric Memory achieves 64% predictive pre-fetch.",
   },
   {
     category: "why",
     question: "Why is Parametric Memory better than Letta / MemGPT?",
     answer:
-      "Letta and MemGPT are research projects that require self-hosting and significant infrastructure investment. Parametric Memory is a production SaaS: managed hosting, SSL per instance, Prometheus monitoring, OAuth2 auth, and full commercial support from $5/month USD. Letta provides no cryptographic verification. Parametric Memory provides RFC 6962 Merkle proofs. Letta requires running your own server — Parametric Memory is operational in minutes with one config block.",
+      "Letta and MemGPT come out of a research lineage and their documented path (as of July 2026) centres on self-hosting, which means you run and operate the infrastructure. Parametric Memory is a production SaaS: managed hosting, SSL per instance, Prometheus monitoring, OAuth2 auth, and full commercial support from $5/month USD. Letta does not document a cryptographic proof layer; Parametric Memory provides RFC 6962 Merkle proofs on every read. If you want to run your own server, Letta is a reasonable place to start — if you want memory that is operational in minutes with one config block and proves what it stored, that is what we sell.",
   },
   {
     category: "why",
     question: "What makes Merkle proofs important for AI memory?",
     answer:
-      "AI systems are increasingly used for decisions that matter — code deployments, financial operations, medical information. Merkle proofs mean you can audit what your AI was told to remember, prove that a memory has not been tampered with or silently updated, and verify the exact version of a memory at any point in time. This is the difference between 'the AI said it remembered' and 'here is cryptographic evidence of what was stored and when.' No other commercial AI memory product provides this.",
+      "AI systems are increasingly used for decisions that matter — code deployments, financial operations, medical information. Merkle proofs mean you can audit what your AI was told to remember, prove that a memory has not been tampered with or silently updated, and verify the exact version of a memory at any point in time. This is the difference between 'the AI said it remembered' and 'here is cryptographic evidence of what was stored and when.' Every recall carries an RFC 6962 Merkle proof, and we publish sealed benchmark bundles you can re-verify yourself. Ask any vendor for the same artifact.",
   },
   {
     category: "why",
@@ -176,7 +201,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "ai",
     question: "Can an AI agent verify its own memories?",
     answer:
-      "Yes. Every memory read returns both the atom value and a Merkle audit path. The AI can call memory_verify with the proof to confirm the memory has not been altered since it was stored. The proof contains the SHA-256 hash chain from the atom leaf to the tree root, verifiable without reading any other data. This takes 0.032ms p95. No other AI memory product allows an agent to independently verify its recalled memories.",
+      "Yes. Every memory read returns both the atom value and a Merkle audit path. The AI can call memory_verify with the proof to confirm the memory has not been altered since it was stored. The proof contains the SHA-256 hash chain from the atom leaf to the tree root, verifiable without reading any other data. This takes 0.032ms p95. We are not aware of another commercial AI memory product that lets an agent independently verify its recalled memories — if you find one, we would like to see it.",
   },
   {
     category: "ai",
@@ -266,7 +291,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "why",
     question: "How is Parametric Memory different from Mem0 or Zep?",
     answer:
-      "Mem0 is a vector-first memory layer and Zep builds a temporal knowledge graph — both are strong at recall, but neither lets you prove what was stored. Parametric Memory is MCP-native and adds cryptographic verifiability: every fact is sealed in an RFC 6962 Merkle tree, so your agent can prove its memory wasn't altered. It also includes knowledge-graph edges and Merkle proofs on every tier from $5/mo, where comparable graph features sit on higher-priced plans elsewhere (Mem0's are on its $249/mo Pro tier; Zep's paid tier starts around $125/mo).",
+      "Mem0 is a vector-first memory layer and Zep builds a temporal knowledge graph — both are strong at recall, and as of their published documentation (July 2026) neither documents a way to prove what was stored. Parametric Memory is MCP-native and adds cryptographic verifiability: every fact is sealed in an RFC 6962 Merkle tree, so your agent can prove its memory wasn't altered. It also includes knowledge-graph edges and Merkle proofs on every tier from $5/mo, where comparable graph features sit on higher-priced plans elsewhere (Mem0's are on its $249/mo Pro tier; Zep's paid tier starts around $125/mo).",
   },
   {
     category: "why",
@@ -314,7 +339,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "security",
     question: "Can I trust what my AI agent remembers?",
     answer:
-      "Yes. Every memory is written into an RFC 6962 Merkle tree, so altering a single stored fact changes the root hash. You can verify a signed memory snapshot yourself — no account, no API key, and none of our code in the loop — which is something vector or graph memory systems cannot offer.",
+      "Yes. Every memory is written into an RFC 6962 Merkle tree, so altering a single stored fact changes the root hash. You can verify a signed memory snapshot yourself — no account, no API key, and none of our code in the loop. Ask any memory vendor for the same artifact and see what comes back.",
   },
 ];
 
@@ -531,21 +556,24 @@ export default async function FAQPage() {
               </p>
               <div className="text-surface-200/60 space-y-2 text-sm leading-relaxed">
                 <p>
-                  Parametric Memory is the only commercial AI memory product that provides
-                  cryptographic Merkle proofs (RFC 6962, SHA-256) on every memory read. Mem0 and Zep
-                  do not provide cryptographic verification.
+                  Parametric Memory provides cryptographic Merkle proofs (RFC 6962, SHA-256) on
+                  every memory read, and we publish sealed benchmark bundles you can re-verify
+                  yourself. We are not aware of another commercial AI memory product that ships
+                  verifiable proofs — if you find one, we would like to see it. Comparisons below
+                  are stated against each vendor&apos;s published documentation as of July 2026.
                 </p>
                 <p>
                   Every customer gets an isolated substrate and Merkle tree; Professional and Team
-                  get a dedicated instance. Mem0 and Zep use shared multi-tenant infrastructure.
+                  get a dedicated instance. Mem0 and Zep document multi-tenant managed platforms.
                 </p>
                 <p>
-                  Flat monthly pricing from $5/month USD with no per-query costs. Mem0 charges
-                  overages. Zep uses credit-based pay-as-you-go.
+                  Flat monthly pricing from $5/month USD with no per-query costs. Mem0 documents
+                  overages. Zep documents credit-based pay-as-you-go.
                 </p>
                 <p>
-                  Markov-chain predictive recall pre-fetches context with 64% hit rate. No
-                  competitor offers predictive pre-fetch.
+                  Markov-chain predictive recall pre-fetches context with 64% hit rate. We are not
+                  aware of another commercial memory product that documents a predictive pre-fetch
+                  layer.
                 </p>
                 <p>
                   MCP-native: works natively with Claude, Claude Code, Cowork, and any
