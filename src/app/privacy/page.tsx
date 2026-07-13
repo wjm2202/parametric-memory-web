@@ -42,7 +42,7 @@ export default async function PrivacyPage() {
             Privacy Policy
           </h1>
           <p className="mt-3 text-sm text-white/50">
-            Effective Date: 5 April 2026 &nbsp;·&nbsp; Last Updated: 5 April 2026
+            Effective Date: 5 April 2026 &nbsp;·&nbsp; Last Updated: 13 July 2026
           </p>
         </div>
 
@@ -109,6 +109,25 @@ export default async function PrivacyPage() {
             account type (free or paid subscription), and authentication tokens and session
             identifiers.
           </p>
+          <p>
+            <strong>Sign-in with Google or GitHub (OAuth):</strong> if you choose to sign in with
+            Google or GitHub instead of a magic link, we receive from the provider your email
+            address, display name, and the provider&apos;s unique account identifier for you. We
+            never receive or store your Google or GitHub password. Your use of those sign-in
+            services is also governed by the{" "}
+            <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">
+              Google Privacy Policy
+            </a>{" "}
+            and the{" "}
+            <a
+              href="https://docs.github.com/en/site-policy/privacy-policies/github-privacy-statement"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              GitHub Privacy Statement
+            </a>
+            .
+          </p>
 
           <h3>2.2 Memory Atoms &amp; Conversation History</h3>
           <p>
@@ -144,6 +163,26 @@ export default async function PrivacyPage() {
             To operate your substrate and monitor Service health: droplet ID, IP address, resource
             usage, container logs, API key (stored as SHA-256 hash in our database — the raw key is
             shown once at creation only), and health check responses.
+          </p>
+
+          <h3>2.6 Two-Factor Authentication Data</h3>
+          <p>
+            If you enable two-factor authentication (TOTP), we store the shared secret required to
+            verify your authenticator codes, your 2FA enrolment status, and verification events. The
+            secret is stored server-side, is displayed only once at setup, and is deleted when you
+            disable 2FA or delete your account. During a 2FA challenge a short-lived pending sign-in
+            token is held in an essential cookie (see Section 8).
+          </p>
+
+          <h3>2.7 Waitlist &amp; Pre-Account Contact</h3>
+          <p>
+            If you join our waitlist before creating an account, we collect the email address you
+            submit. It is delivered via our email provider (Resend, see Section 5.3) to our support
+            mailbox and used solely to contact you about Service availability — never for other
+            marketing without your consent. Your IP address is used transiently for rate-limiting
+            the signup form and is not retained beyond our standard 14-day server logs. To have your
+            waitlist email removed, contact{" "}
+            <a href="mailto:privacy@parametric-memory.dev">privacy@parametric-memory.dev</a>.
           </p>
 
           <h2>3. How We Use Your Data</h2>
@@ -259,8 +298,8 @@ export default async function PrivacyPage() {
 
           <h3>5.3 Resend, Inc. — Email Delivery</h3>
           <p>
-            Sends transactional emails (account confirmations, billing receipts). Data: email
-            address and email content. Location: United States.{" "}
+            Sends transactional emails (account confirmations, billing receipts) and waitlist
+            notifications. Data: email address and email content. Location: United States.{" "}
             <a href="https://resend.com/legal/privacy">Resend Privacy Policy</a>
           </p>
 
@@ -369,12 +408,34 @@ export default async function PrivacyPage() {
                   <td>Essential</td>
                   <td>15 minutes</td>
                 </tr>
+                <tr>
+                  <td>
+                    <code>mmpm_oauth_state</code>
+                  </td>
+                  <td>
+                    Protects Google/GitHub sign-in against cross-site request forgery and replay
+                    (OAuth state/PKCE flow reference). httpOnly, secure, sameSite=lax.
+                  </td>
+                  <td>Essential</td>
+                  <td>5 minutes</td>
+                </tr>
+                <tr>
+                  <td>
+                    <code>mmpm_pending_token</code>
+                  </td>
+                  <td>
+                    Holds your pending sign-in during a two-factor authentication challenge; cleared
+                    as soon as the challenge completes. httpOnly, secure, sameSite=lax.
+                  </td>
+                  <td>Essential</td>
+                  <td>10 minutes</td>
+                </tr>
               </tbody>
             </table>
           </div>
           <p>
-            Both cookies are essential for the Service to function and cannot be disabled. Because
-            we set no analytics or tracking cookies, no cookie consent banner is required.
+            All four cookies are essential for the Service to function and cannot be disabled.
+            Because we set no analytics or tracking cookies, no cookie consent banner is required.
           </p>
 
           <h2>9. Data Security</h2>

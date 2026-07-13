@@ -82,6 +82,33 @@ describe("advertised throughput — no stale/unsupported figure", () => {
   });
 });
 
+// ── The 37% claim (added 2026-07-13) ────────────────────────────────────────
+//
+// What 37% actually is: COMPACT PROOF SERIALISATION saves 37% of the tokens the
+// verbose encoding would cost — 4,102 -> 2,580. It is a claim about the proof
+// ENCODING, and nothing else.
+//
+// The homepage used to render it as "RFC 6962 Merkle proofs · 37% smaller than
+// raw", which reads as a claim that the SUBSTRATE stores 37% less data than raw
+// text. It doesn't say that, we've never measured that, and the true cost of
+// carrying Merkle proofs is a number we do not publish at all. Someone repeating
+// the homepage line back to us in a technical forum is the failure mode; the
+// phrasing must stay pinned to what was measured.
+const AMBIGUOUS_37 = /37%\s*smaller than raw/i;
+
+describe("the 37% claim is about proof ENCODING, not stored size", () => {
+  it.each(CLAIM_SURFACES)("%s does not say '37% smaller than raw'", (rel) => {
+    expect(read(rel)).not.toMatch(AMBIGUOUS_37);
+  });
+
+  it("the homepage states the token figures that back the 37%", () => {
+    const src = read("src/app/page.tsx");
+    expect(src).toContain("37% fewer tokens");
+    expect(src).toContain("4,102");
+    expect(src).toContain("2,580");
+  });
+});
+
 describe("advertised latency — measured, not mislabelled", () => {
   it.each(LATENCY_SURFACES)("%s does not advertise a retired/mislabelled figure", (rel) => {
     expect(read(rel)).not.toMatch(RETIRED_LATENCY);

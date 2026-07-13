@@ -327,13 +327,13 @@ const ALL_FAQS: FAQItem[] = [
     category: "what",
     question: "What is parametric vs non-parametric memory in LLMs?",
     answer:
-      "Parametric memory is knowledge baked into a model's weights during training — fast, but fixed and unverifiable. Non-parametric memory is external and retrievable, so it can be updated, inspected, and proven. Parametric Memory (the product) is a verifiable non-parametric memory: your knowledge lives outside the model, is retrieved on demand, and every fact carries a cryptographic proof.",
+      "In the RAG literature, parametric memory is knowledge baked into a model's weights during training — fast, but fixed and unverifiable — while non-parametric memory is external and retrievable, so it can be updated, inspected, and proven. By that definition your knowledge with us is non-parametric: it lives outside the model, is retrieved on demand, and every fact carries a cryptographic proof. But there are two different questions hiding here, and the literature only argues about one of them. See the next answer.",
   },
   {
     category: "what",
     question: "Is “Parametric Memory” actually parametric or non-parametric memory?",
     answer:
-      "The product is a non-parametric, external memory substrate — your facts live outside the model and are retrieved on demand, not stored in the model's weights. We use the name for the brand; technically it is verifiable non-parametric memory with a predictive (Markov) retrieval layer that gives it some of the always-there feel of parametric memory.",
+      "Both, on different axes — and the name refers to the one nobody else can claim. Your KNOWLEDGE is non-parametric: it lives outside the model, inspectable and provable, not baked into weights. Our RETRIEVAL MODEL is parametric, in the older statistical sense. A vector database is a k-nearest-neighbour index: it is non-parametric in the textbook way, because it keeps every instance and answers by scanning them — add the millionth row and the retrieval function is unchanged in form. Our substrate carries actual parameters, fit to how your memory is used: a variable-order Markov model over access order, reinforced on use and decayed on disuse. Retrieval changes because the model changed, not because the index grew. That is what makes it parametric, and it is also what lets it forget: forgetting is a parameter decaying, whereas deletion is an administrative act. A store with no parameters has nothing to decay — it can only drop the row or keep it. A vector database can delete; only a parametric memory can forget.",
   },
   {
     category: "security",

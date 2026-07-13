@@ -45,6 +45,9 @@ docs/
 # Docker
 docker-compose.override.yml
 
+# IndexNow — droplet-local delta state (runtime, not source)
+.indexnow-state.json
+
 # Stripe CLI
 .stripe/
 .gitnexus
