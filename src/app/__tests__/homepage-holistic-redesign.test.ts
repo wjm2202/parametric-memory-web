@@ -19,10 +19,22 @@ const src = readFileSync(join(process.cwd(), "src/app/page.tsx"), "utf8");
 describe("Homepage redesign — findings closed", () => {
   it("P1: hero/capabilities lead with the outcome, not the mechanism", () => {
     // Benefit-first capability headings replace the crypto-first ones.
-    expect(src).toContain("It never forgets");
+    expect(src).toContain("It can prove itself");
     expect(src).toContain("It's warm before you ask");
     expect(src).toContain("It answers instantly");
     expect(src).toContain("You plug in, you don't integrate");
+  });
+
+  it("P1b: the Merkle card's headline is about PROOF, not forgetting", () => {
+    // "It never forgets" was retired 2026-07-13. Two reasons, both fatal:
+    //   1. It headlined the MERKLE card, whose body is entirely about tamper-
+    //      detection. The headline described a different capability than its body.
+    //   2. It contradicted the very next card, which says "old paths decay" —
+    //      a hostile reader could falsify the claim by reading one paragraph on.
+    // Decay is the FEATURE ("a vector database can delete; only a parametric
+    // memory can forget"), so the site must never claim it never forgets.
+    expect(src).not.toContain("It never forgets");
+    expect(src).toContain("only a parametric memory can forget");
   });
 
   it("P2: every headline metric carries the honest 'our own substrate' qualifier", () => {

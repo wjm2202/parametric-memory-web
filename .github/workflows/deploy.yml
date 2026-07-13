@@ -108,6 +108,20 @@ jobs:
               exit 1
             fi
 
+            # ── IndexNow delta ping (Bing/Yandex/etc.) ──────────────────────
+            # Diffs sitemap lastmods against droplet-local .indexnow-state.json
+            # and submits ONLY changed URLs — makes NO request when nothing
+            # changed (state persists in the repo dir; it's gitignored and
+            # survives git reset --hard). Runs node from the already-pulled
+            # deploy image so the droplet host needs no Node install. The key
+            # is public by design (served at /<key>.txt) — not a secret.
+            # Never fails the deploy.
+            docker run --rm --entrypoint node --user 0 \
+              -v /home/deploy/parametric-memory-web:/repo -w /repo \
+              -e INDEXNOW_KEY=b01407c61b90e651db43414300b3bac3 \
+              "$IMAGE_TAG" scripts/indexnow-ping.mjs --state /repo/.indexnow-state.json \
+              || echo "WARN: IndexNow ping failed (deploy unaffected)"
+
             docker image prune -f
             echo "Deploy complete: $IMAGE_TAG"
 

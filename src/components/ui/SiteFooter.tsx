@@ -42,6 +42,13 @@ export interface FooterLink {
   href: string;
   label: string;
   testid: string;
+  /**
+   * External profile link (rendered as <a target="_blank" rel="me noopener">
+   * instead of next/link). rel="me" marks the destination as another profile
+   * of this site's entity — an identity signal for crawlers/answer engines
+   * that complements the Organization sameAs array in layout.tsx.
+   */
+  external?: boolean;
 }
 export interface FooterColumn {
   heading: string;
@@ -67,6 +74,12 @@ export const SITE_FOOTER_COLUMNS: FooterColumn[] = [
       { href: "/about", label: "About", testid: "footer-link-about" },
       { href: "/blog", label: "Blog", testid: "footer-link-blog" },
       { href: "/faq", label: "FAQ", testid: "footer-link-faq" },
+      {
+        href: "https://www.youtube.com/@parametricmemory",
+        label: "YouTube",
+        testid: "footer-link-youtube",
+        external: true,
+      },
     ],
   },
   {
@@ -114,13 +127,25 @@ export default function SiteFooter() {
               <ul className="mt-3 flex flex-col gap-2">
                 {col.links.map((link) => (
                   <li key={link.href}>
-                    <Link
-                      href={link.href}
-                      data-testid={link.testid}
-                      className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
-                    >
-                      {link.label}
-                    </Link>
+                    {link.external ? (
+                      <a
+                        href={link.href}
+                        target="_blank"
+                        rel="me noopener"
+                        data-testid={link.testid}
+                        className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
+                      >
+                        {link.label}
+                      </a>
+                    ) : (
+                      <Link
+                        href={link.href}
+                        data-testid={link.testid}
+                        className="font-body text-surface-400 hover:text-surface-200 text-sm transition-colors"
+                      >
+                        {link.label}
+                      </Link>
+                    )}
                   </li>
                 ))}
               </ul>

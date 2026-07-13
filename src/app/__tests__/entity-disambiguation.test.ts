@@ -72,6 +72,8 @@ describe("Organization entity — name-collision disambiguation", () => {
     // the live X handle today (rename to @parametricmem pending X's review;
     // swap this assertion when layout.tsx flips to the new handle)
     expect(sameAs).toContain("https://x.com/_EntityOne");
+    // YouTube channel, verified live 2026-07-13 (also in the site footer as rel="me")
+    expect(sameAs).toContain("https://www.youtube.com/@parametricmemory");
   });
 
   it("sameAs has no placeholder or commented URLs leaking into the live array", () => {

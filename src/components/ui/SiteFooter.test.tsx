@@ -68,6 +68,32 @@ describe("SiteFooter — sitemap (dual-accessibility declutter, 2026-07-02)", ()
     }
   });
 
+  it("renders the YouTube channel as an external rel='me' link (2026-07-13)", () => {
+    // Identity signal: footer link + Organization sameAs (layout.tsx) must
+    // point at the same live channel. Update both together or not at all.
+    render(<SiteFooter />);
+    const el = screen.getByTestId("footer-link-youtube");
+    expect(el.tagName.toLowerCase()).toBe("a");
+    expect(el.getAttribute("href")).toBe("https://www.youtube.com/@parametricmemory");
+    expect(el.getAttribute("target")).toBe("_blank");
+    const rel = el.getAttribute("rel") ?? "";
+    expect(rel).toContain("me");
+    expect(rel).toContain("noopener");
+  });
+
+  it("renders internal links via next/link without target=_blank", () => {
+    render(<SiteFooter />);
+    for (const col of SITE_FOOTER_COLUMNS) {
+      for (const link of col.links) {
+        if (link.external) continue;
+        expect(
+          screen.getByTestId(link.testid).getAttribute("target"),
+          `${link.testid} must not open a new tab`,
+        ).toBeNull();
+      }
+    }
+  });
+
   it("keeps the legal pages reachable from the footer (Terms/Privacy/AUP/DPA)", () => {
     // These moved out of the top nav on 2026-07-02; the footer is now the
     // guaranteed reachability path from every page.

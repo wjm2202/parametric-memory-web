@@ -222,10 +222,10 @@ const capabilities = [
     iconStroke: "#36aaf5",
     iconPath:
       "M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z",
-    headline: "It never forgets",
-    sub: "Every fact, kept and committed.",
+    headline: "It can prove itself",
+    sub: "Every fact, committed and verifiable.",
     body: "Each memory is written to a SHA-256 Merkle tree the moment it arrives. Tamper with one atom and the root hash changes — so your AI can verify its own memory without trusting the server.",
-    stat: "RFC 6962 Merkle proofs · 37% smaller than raw",
+    stat: "RFC 6962 compact proofs · 37% fewer tokens (4,102 → 2,580)",
   },
   {
     accent: "text-amber-400",
@@ -234,7 +234,7 @@ const capabilities = [
       "M3.75 3v11.25A2.25 2.25 0 0 0 6 16.5h2.25M3.75 3h-1.5m1.5 0h16.5m0 0h1.5m-1.5 0v11.25A2.25 2.25 0 0 1 18 16.5h-2.25m-7.5 0h7.5m-7.5 0-1 3m8.5-3 1 3m0 0 .5 1.5m-.5-1.5h-9.5m0 0-.5 1.5",
     headline: "It's warm before you ask",
     sub: "The next memory is already loaded.",
-    body: "A Markov chain learns which memories tend to follow which, and pre-fetches the context before the query lands. Recent memories weigh more; old paths decay.",
+    body: "A Markov chain learns which memories tend to follow which, and pre-fetches the context before the query lands. Recent memories weigh more; old paths decay. A vector database can delete — only a parametric memory can forget, which is why relevance doesn't rot as the store grows.",
     stat: "64% predictive hit rate on our substrate",
   },
   {
