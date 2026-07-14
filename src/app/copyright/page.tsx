@@ -21,15 +21,17 @@ import SiteNavbar from "@/components/ui/SiteNavbar";
 
 import { SUPPORT_EMAIL } from "@/config/site";
 export const metadata: Metadata = {
-  title: "Copyright & Licensing — Parametric Memory",
+  title: "Copyright & Licensing",
   description:
-    "Copyright statement and licensing terms for Parametric Memory software. Authored in New Zealand by G. Osborne. Licensed to Parametric Memory Limited under New Zealand law.",
+    "Copyright statement and licensing terms for Parametric Memory software — authored in New Zealand by G. Osborne, licensed to Parametric Memory Limited.",
   alternates: { canonical: "https://parametric-memory.dev/copyright" },
   openGraph: {
     title: "Copyright & Licensing | Parametric Memory",
     description:
       "Copyright and licensing for Parametric Memory software — authored in New Zealand, licensed to Parametric Memory Limited.",
     url: "https://parametric-memory.dev/copyright",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",

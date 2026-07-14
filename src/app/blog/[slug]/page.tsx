@@ -22,7 +22,9 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     const { frontmatter } = getPostBySlug(slug);
     const keywords = frontmatter.tags ?? ["AI memory", "parametric memory", "MMPM"];
     return {
-      title: frontmatter.title,
+      // Short SEO title (layout template appends " | Parametric Memory");
+      // the H1 below still renders the full headline.
+      title: frontmatter.seoTitle ?? frontmatter.title,
       description: frontmatter.excerpt,
       alternates: {
         canonical: `https://parametric-memory.dev/blog/${slug}`,

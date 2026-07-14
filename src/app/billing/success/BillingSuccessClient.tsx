@@ -229,7 +229,7 @@ export default function BillingSuccessClient() {
               Go to dashboard
             </Link>
             <Link
-              href="/docs"
+              href="/docs/introduction"
               className="bg-surface-800 hover:bg-surface-700 ring-surface-700 text-surface-200 inline-flex flex-1 items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold ring-1 transition-colors"
             >
               Quickstart guide

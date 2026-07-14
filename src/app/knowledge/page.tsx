@@ -21,6 +21,8 @@ export const metadata: Metadata = {
     description:
       "3D interactive knowledge graph — explore the semantic connections inside your MMPM memory substrate.",
     url: "https://parametric-memory.dev/knowledge",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",
@@ -90,7 +92,10 @@ export default async function KnowledgePage() {
             edges capture relationships (supersedes, depends-on, derived-from, member-of) while
             Markov arcs capture usage patterns learned over time. The explorer runs in your browser
             with WebGL. To learn how atoms, edges, and arcs fit together, see the{" "}
-            <Link href="/docs" className="text-violet-400 underline-offset-4 hover:underline">
+            <Link
+              href="/docs/introduction"
+              className="text-violet-400 underline-offset-4 hover:underline"
+            >
               documentation
             </Link>
             .

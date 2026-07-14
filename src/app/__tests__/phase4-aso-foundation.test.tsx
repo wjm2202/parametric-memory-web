@@ -132,7 +132,7 @@ describe("Phase 4: stable @id IRIs on JSON-LD entities", () => {
 describe("Phase 4: potentialAction on Organization", () => {
   const layoutSrc = read("src/app/layout.tsx");
 
-  it("Organization declares LoginAction, RegisterAction, SubscribeAction, SearchAction", () => {
+  it("Organization declares sign-in Action, RegisterAction, SubscribeAction, SearchAction", () => {
     const orgIdx = layoutSrc.indexOf('"@id": "https://parametric-memory.dev/#organization"');
     expect(orgIdx).toBeGreaterThan(-1);
     // Organization block runs ~3kb — find the next closing `};` at the top level.
@@ -140,15 +140,21 @@ describe("Phase 4: potentialAction on Organization", () => {
     expect(end).toBeGreaterThan(orgIdx);
     const orgBlock = layoutSrc.slice(orgIdx, end);
     expect(orgBlock).toContain("potentialAction");
-    expect(orgBlock).toContain('"@type": "LoginAction"');
+    // Generic "Action" for sign-in: schema.org has NO LoginAction type.
+    // The invented type put a validation error on all 56 pages (2026-07-13).
+    expect(orgBlock).toContain('"@type": "Action"');
     expect(orgBlock).toContain('"@type": "RegisterAction"');
     expect(orgBlock).toContain('"@type": "SubscribeAction"');
     expect(orgBlock).toContain('"@type": "SearchAction"');
   });
 
-  it("LoginAction points at /api/auth/request-link", () => {
+  it("never regresses to the invented LoginAction type (not in schema.org)", () => {
+    expect(layoutSrc).not.toContain("LoginAction");
+  });
+
+  it("sign-in action points at /api/auth/request-link", () => {
     expect(layoutSrc).toMatch(
-      /LoginAction[\s\S]{0,400}urlTemplate:\s*"https:\/\/parametric-memory\.dev\/api\/auth\/request-link"/,
+      /#action-signin[\s\S]{0,400}urlTemplate:\s*"https:\/\/parametric-memory\.dev\/api\/auth\/request-link"/,
     );
   });
 

@@ -21,6 +21,8 @@ export const metadata: Metadata = {
     description:
       "Reach the Parametric Memory team for sales, enterprise, and technical support enquiries. Built and operated from New Zealand.",
     url: `${SITE_ORIGIN}/contact`,
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: `${SITE_ORIGIN}/brand/og.png`,
@@ -173,7 +175,7 @@ export default async function ContactPage() {
                 {
                   title: "Documentation",
                   body: "Connect your agent over MCP, manage your substrate, rotate keys, and integrate billing.",
-                  href: "/docs",
+                  href: "/docs/introduction",
                 },
                 {
                   title: "Pricing",

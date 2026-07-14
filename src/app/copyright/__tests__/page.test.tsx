@@ -108,7 +108,7 @@ describe("/copyright page — load-bearing legal text", () => {
   });
 
   it("exports a Metadata title that includes the page name", () => {
-    expect(pageSrc).toContain('"Copyright & Licensing — Parametric Memory"');
+    expect(pageSrc).toContain('"Copyright & Licensing"');
   });
 
   it("is reachable at /copyright canonical URL", () => {

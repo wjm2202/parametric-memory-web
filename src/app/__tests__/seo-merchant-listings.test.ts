@@ -1,9 +1,17 @@
 /**
  * Sprint 2026-W18 — Google Search Console merchant-listings invariants
+ * (revised 2026-07-13 after the Ahrefs schema.org validation audit)
  *
- * Pins the fixes for the 5 invalid items GSC flagged on /pricing on Mar 23, 2026:
- *   - 1 critical per offer:  Missing field "image"
- *   - 2 warnings per offer:  Missing "shippingDetails", "hasMerchantReturnPolicy"
+ * Pins the fixes for the invalid items GSC flagged on /pricing on Mar 23, 2026:
+ *   - 1 critical per offer:  Missing field "image"          → fixed (image)
+ *   - warning per offer:     Missing "hasMerchantReturnPolicy" → fixed (real
+ *     7-day money-back policy)
+ *   - warning per offer:     Missing "shippingDetails"      → INTENTIONALLY
+ *     NOT fixed. The W18 attempt invented a zero-cost "Worldwide" shipping
+ *     block using geoMidpoint on DefinedRegion — an invalid property that
+ *     put a schema.org validation error on every page (6 per page, Ahrefs
+ *     2026-07-13). Shipping vocabulary is for physical goods; a SaaS has
+ *     nothing to ship. The GSC warning is the correct steady state.
  *
  * The schema source moved during the modular pricing refactor (2026-05-01):
  *   - Old: hardcoded `softwareApplicationJsonLd.offers` array in src/app/layout.tsx
@@ -19,17 +27,18 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { getOffersJsonLd, defaultPriceValidUntil, getAllPublicTiers } from "@/lib/pricing";
+import {
+  getOffersJsonLd,
+  getAggregateOfferData,
+  defaultPriceValidUntil,
+  getAllPublicTiers,
+} from "@/lib/pricing";
 
 // Synthetic constants — match the shape of layout.tsx's actual values
 // without coupling the test to the layout module's internal exports.
 const TEST_INPUTS = {
   baseUrl: "https://parametric-memory.dev",
   imageUrl: "https://parametric-memory.dev/brand/og.png",
-  shippingDetails: {
-    "@type": "OfferShippingDetails",
-    shippingRate: { "@type": "MonetaryAmount", value: "0", currency: "USD" },
-  },
   returnPolicy: {
     "@type": "MerchantReturnPolicy",
     merchantReturnDays: 7,
@@ -55,11 +64,14 @@ describe("merchant-listings JSON-LD — getOffersJsonLd() output shape", () => {
     }
   });
 
-  it("every Offer has shippingDetails referencing the same digital-shipping object", () => {
+  it("no Offer carries shippingDetails (digital SaaS — see header comment)", () => {
     const offers = getOffersJsonLd(TEST_INPUTS);
     for (const o of offers) {
-      expect(o.shippingDetails).toBe(TEST_INPUTS.shippingDetails);
+      expect(o).not.toHaveProperty("shippingDetails");
     }
+    // Belt and braces: the invalid geoMidpoint-on-DefinedRegion hack must
+    // never come back anywhere in the offers output.
+    expect(JSON.stringify(offers)).not.toContain("geoMidpoint");
   });
 
   it("every Offer has hasMerchantReturnPolicy referencing the same return-policy object", () => {
@@ -106,6 +118,18 @@ describe("merchant-listings JSON-LD — getOffersJsonLd() output shape", () => {
       const drift = Math.abs(t.getTime() - e.getTime()) / 86_400_000;
       expect(drift).toBeLessThanOrEqual(1);
     }
+  });
+});
+
+describe("AggregateOffer — Google Software App rich result contract", () => {
+  it("includes price (= lowPrice): required by Google even on AggregateOffer", () => {
+    // Google's SoftwareApplication feature fails with "Missing required
+    // price property" when an AggregateOffer has only lowPrice/highPrice
+    // (Ahrefs rich-results error on the homepage, 2026-07-13).
+    const agg = getAggregateOfferData();
+    expect(agg.price).toBe(agg.lowPrice);
+    expect(agg.price).toMatch(/^\d+$/);
+    expect(agg.priceCurrency).toBe("USD");
   });
 });
 

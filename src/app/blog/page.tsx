@@ -6,7 +6,7 @@ import type { PostMeta } from "@/lib/blog";
 export const metadata: Metadata = {
   title: "Blog",
   description:
-    "Engineering insights, product updates, and deep dives from the Parametric Memory team.",
+    "Engineering insights, product updates, and deep dives on verifiable AI memory, Merkle proofs, and agent workflows from the Parametric Memory team.",
   alternates: { canonical: "https://parametric-memory.dev/blog" },
   keywords: [
     "AI memory blog",

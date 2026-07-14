@@ -20,6 +20,8 @@ export const metadata: Metadata = {
     description:
       "Built by one human and a fleet of AI agents. Parametric Memory is the L2 cache for AI — predictive, verifiable, Merkle-proofed memory.",
     url: "https://parametric-memory.dev/about",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",

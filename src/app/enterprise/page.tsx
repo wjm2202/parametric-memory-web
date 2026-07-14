@@ -4,9 +4,9 @@ import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 
 export const metadata: Metadata = {
-  title: "Operational Memory for Enterprise — Parametric Memory",
+  title: "Operational Memory for Enterprise",
   description:
-    "A verifiable operational memory: capture every operational signal as a Merkle-sealed, connected atom, then ask what needs a human. Agent-fleet observability, drift detection, noise-free oversight, and a knowledge store humans and agents share. We run our own SaaS on it.",
+    "A verifiable operational memory for enterprise: every signal becomes a Merkle-sealed atom you can query, audit, and hand to agents. We run our SaaS on it.",
   alternates: { canonical: "https://parametric-memory.dev/enterprise" },
   openGraph: {
     title: "Operational Memory for Enterprise — Parametric Memory",

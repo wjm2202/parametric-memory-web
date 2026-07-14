@@ -220,7 +220,13 @@ export const organizationJsonLd = {
   // full request/response schemas live at /.well-known/actions.json.
   potentialAction: [
     {
-      "@type": "LoginAction",
+      // Generic "Action" — schema.org has no sign-in/login action type (the
+      // one we used before sounded plausible but was never in the vocabulary).
+      // Validators reject unknown types under potentialAction; that single
+      // node put a schema.org error on all 56 pages (Ahrefs audit 2026-07-13).
+      // Guarded by phase4-aso-foundation.test.tsx, which greps the source for
+      // the invented type name — so don't write it here either.
+      "@type": "Action",
       "@id": "https://parametric-memory.dev/#action-signin",
       name: "Sign in",
       target: {
@@ -312,31 +318,20 @@ const webApplicationJsonLd = {
  * Google Search Console flagged 5 invalid merchant listings on /pricing:
  *   - 1 critical: Missing field "image"  (per Offer)
  *   - 2 warnings: Missing "shippingDetails" + "hasMerchantReturnPolicy"
- * For digital SaaS the canonical pattern is zero-cost instant delivery and
- * a finite return window matching the 7-day money-back guarantee. Hoisted as
- * constants so every Offer references the same policy — single source of
- * truth, single line to update if the return window changes.
+ * image + return policy are fixed below (the 7-day money-back guarantee is a
+ * real, valid MerchantReturnPolicy).
+ *
+ * shippingDetails is intentionally ABSENT (removed 2026-07-13, Ahrefs audit).
+ * The W18 fix silenced the shippingDetails *warning* by inventing a
+ * zero-cost "Worldwide" shipping block, expressing worldwide-ness via
+ * `geoMidpoint` on DefinedRegion — a property that type doesn't accept.
+ * That traded 2 harmless warnings for 6 hard validation errors on every
+ * page of the site. Shipping vocabulary is for physical goods; a SaaS
+ * subscription has nothing to ship, and the GSC warning (not error) is the
+ * correct steady state. Do NOT re-add shippingDetails to silence it —
+ * guarded by seo-merchant-listings.test.ts.
  */
 const PRODUCT_IMAGE_URL = "https://parametric-memory.dev/brand/og.png";
-
-const DIGITAL_SHIPPING_DETAILS = {
-  "@type": "OfferShippingDetails",
-  shippingRate: {
-    "@type": "MonetaryAmount",
-    value: "0",
-    currency: "USD",
-  },
-  shippingDestination: {
-    "@type": "DefinedRegion",
-    geoMidpoint: { "@type": "GeoCoordinates", latitude: 0, longitude: 0 },
-    name: "Worldwide",
-  },
-  deliveryTime: {
-    "@type": "ShippingDeliveryTime",
-    handlingTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
-    transitTime: { "@type": "QuantitativeValue", minValue: 0, maxValue: 0, unitCode: "DAY" },
-  },
-};
 
 const FREE_TRIAL_RETURN_POLICY = {
   "@type": "MerchantReturnPolicy",
@@ -394,7 +389,6 @@ const softwareApplicationJsonLd = {
   offers: getOffersJsonLd({
     baseUrl: "https://parametric-memory.dev",
     imageUrl: PRODUCT_IMAGE_URL,
-    shippingDetails: DIGITAL_SHIPPING_DETAILS,
     returnPolicy: FREE_TRIAL_RETURN_POLICY,
     priceValidUntil: defaultPriceValidUntil(),
   }),

@@ -36,7 +36,7 @@ export default function NotFound() {
             Home
           </Link>
           <Link
-            href="/docs"
+            href="/docs/introduction"
             className="bg-surface-800 text-surface-200 hover:bg-surface-700 ring-surface-200/10 inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold ring-1 transition-colors"
           >
             Docs

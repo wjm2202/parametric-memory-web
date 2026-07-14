@@ -13,6 +13,8 @@ export const metadata: Metadata = {
     description:
       "How Parametric Memory collects, uses, and protects your personal data. GDPR, CCPA, and NZ Privacy Act 2020 compliant.",
     url: "https://parametric-memory.dev/privacy",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",
@@ -300,7 +302,7 @@ export default async function PrivacyPage() {
           <p>
             Sends transactional emails (account confirmations, billing receipts) and waitlist
             notifications. Data: email address and email content. Location: United States.{" "}
-            <a href="https://resend.com/legal/privacy">Resend Privacy Policy</a>
+            <a href="https://resend.com/legal/privacy-policy">Resend Privacy Policy</a>
           </p>
 
           <p>

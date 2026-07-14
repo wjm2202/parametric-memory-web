@@ -6,6 +6,13 @@ const BLOG_DIR = join(process.cwd(), "content", "blog");
 
 export interface PostFrontmatter {
   title: string;
+  /**
+   * Short SEO title for the <title> tag (≤40 chars — the layout template
+   * appends " | Parametric Memory", 20 chars, and Google truncates ~60).
+   * The H1 keeps the full `title` headline. Added 2026-07-13 (Ahrefs:
+   * 19 pages with title too long). Guarded by seo-metadata-limits.test.ts.
+   */
+  seoTitle?: string;
   date: string; // ISO 8601
   excerpt: string;
   author?: string;

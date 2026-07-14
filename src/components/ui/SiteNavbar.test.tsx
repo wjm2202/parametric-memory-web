@@ -90,7 +90,7 @@ describe("SiteNavbar standard variant — testid coverage", () => {
     const expected = [
       ["nav-link-verify", "/verify"],
       ["nav-link-enterprise", "/enterprise"],
-      ["nav-link-docs", "/docs"],
+      ["nav-link-docs", "/docs/introduction"],
       ["nav-link-pricing", "/pricing"],
       ["nav-link-benchmark", "/benchmark"],
       ["nav-link-blog", "/blog"],

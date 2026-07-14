@@ -179,14 +179,16 @@ export interface OfferJsonLd {
   url: string;
   priceValidUntil: string;
   image: string;
-  shippingDetails: unknown; // structurally typed at the consumer
+  // NOTE: no shippingDetails — shipping vocabulary is for physical goods.
+  // The 2026-W18 "digital shipping" block used geoMidpoint on DefinedRegion
+  // (invalid property) and put a schema.org error on every page. Removed
+  // 2026-07-13; guarded by seo-merchant-listings.test.ts.
   hasMerchantReturnPolicy: unknown;
 }
 
 export interface OfferJsonLdInputs {
   baseUrl: string;
   imageUrl: string;
-  shippingDetails: unknown;
   returnPolicy: unknown;
   /** ISO date — Google rejects past dates. Default: today + 365 days. */
   priceValidUntil?: string;
@@ -225,7 +227,6 @@ export function getOffersJsonLd(inputs: OfferJsonLdInputs): OfferJsonLd[] {
       url,
       priceValidUntil: validUntil,
       image: inputs.imageUrl,
-      shippingDetails: inputs.shippingDetails,
       hasMerchantReturnPolicy: inputs.returnPolicy,
     };
   });
@@ -291,6 +292,12 @@ function slugForUrl(id: string): string {
 // ── AggregateOffer + OG alt text helpers ───────────────────────────────────
 
 export interface AggregateOfferData {
+  /**
+   * Entry price (= lowPrice). Google's SoftwareApplication rich result
+   * requires offers.price even on an AggregateOffer — lowPrice alone fails
+   * with "Missing required price property" (Ahrefs/GSC, 2026-07-13).
+   */
+  price: string;
   /** Cheapest publicly-sold tier, as a string (Schema.org expects strings). */
   lowPrice: string;
   /** Highest publicly-sold tier (excludes self-hosted self-pay edge cases). */
@@ -307,8 +314,10 @@ export interface AggregateOfferData {
 export function getAggregateOfferData(): AggregateOfferData {
   const all = getAllPublicTiers();
   const prices = all.map((t) => t.price);
+  const low = String(Math.min(...prices));
   return {
-    lowPrice: String(Math.min(...prices)),
+    price: low, // required by Google's Software App feature (see interface note)
+    lowPrice: low,
     highPrice: String(Math.max(...prices)),
     offerCount: String(all.length),
     priceCurrency: "USD",

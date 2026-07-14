@@ -27,7 +27,7 @@ export default function DocsNotFound() {
         aria-label="404 recovery links"
       >
         <Link
-          href="/docs"
+          href="/docs/introduction"
           className="bg-brand-500 hover:bg-brand-400 ring-brand-400/30 inline-flex items-center justify-center rounded-lg px-5 py-2.5 text-sm font-semibold text-white ring-1 transition-colors"
         >
           Docs index
