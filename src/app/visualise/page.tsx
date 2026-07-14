@@ -20,6 +20,8 @@ export const metadata: Metadata = {
     description:
       "Live 3D visualization of the MMPM Merkle tree — watch memory atoms, proof paths, and Markov transitions in real time.",
     url: "https://parametric-memory.dev/visualise",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",
@@ -85,7 +87,10 @@ export default async function VisualisePage() {
             needed to verify a single atom, and Markov arcs show which memories tend to be recalled
             together. The viewer runs entirely in your browser with WebGL. For the underlying
             architecture see the{" "}
-            <Link href="/docs" className="text-cyan-400 underline-offset-4 hover:underline">
+            <Link
+              href="/docs/introduction"
+              className="text-cyan-400 underline-offset-4 hover:underline"
+            >
               documentation
             </Link>
             , and to independently verify a signed snapshot use the{" "}

@@ -4,9 +4,9 @@ import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 
 export const metadata: Metadata = {
-  title: "LongMemEval-S 83.0% — a benchmark result you can verify | Parametric Memory",
+  title: "LongMemEval-S Benchmark: 83.0%",
   description:
-    "83.0% on LongMemEval-S under the benchmark's own official GPT-4o judge — and 76.6% out of the box with zero LLM calls at ingest. Every run ships as a sealed, Merkle-rooted bundle you can re-verify yourself. Plus the controlled test showing why your agent needs memory at all.",
+    "83.0% on LongMemEval-S under the official GPT-4o judge — 76.6% out of the box. Every run ships as a sealed, Merkle-rooted bundle you can re-verify yourself.",
   alternates: { canonical: "https://parametric-memory.dev/benchmark" },
   openGraph: {
     title: "LongMemEval-S 83.0% — verified, not self-reported",

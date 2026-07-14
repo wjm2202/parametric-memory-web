@@ -656,7 +656,7 @@ export default async function HomePage() {
                 <ArrowIcon />
               </Link>
               <Link
-                href="/docs"
+                href="/docs/introduction"
                 data-testid="landing-verify-how"
                 aria-label="See how it works"
                 className="font-body text-brand-400 hover:text-brand-300 inline-flex items-center gap-2 text-sm transition-colors"

@@ -1,7 +1,8 @@
 ---
 title: "How to Give Claude Code (and Cursor) Persistent Memory in One Config Block"
+seoTitle: "Persistent Memory for Claude Code"
 date: "2026-07-05"
-excerpt: "Claude Code, Cursor and Claude Desktop forget everything when a session ends. Here's how to give any MCP client durable, verifiable long-term memory in about a minute — no database, no SDK, one config block."
+excerpt: "Claude Code, Cursor and Claude Desktop forget everything between sessions. Give any MCP client durable, verifiable memory in about a minute."
 author: "Glen Osborne"
 tags: ["mcp", "claude-code", "cursor", "tutorial", "memory"]
 ---
@@ -30,7 +31,7 @@ Context Protocol (MCP) is for.
 
 ## What is an MCP memory server?
 
-[MCP](/docs) is the open standard that Claude, Claude Code, Cursor, and Cline already speak. An
+[MCP](/docs/introduction) is the open standard that Claude, Claude Code, Cursor, and Cline already speak. An
 **MCP memory server** exposes a set of tools — store a fact, recall relevant context, bootstrap a
 session — that the model can call on its own. You add one server to your client config, and the
 model gains a long-term memory it manages itself.

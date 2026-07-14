@@ -34,21 +34,23 @@ export const ROUTE_LASTMOD: Record<string, string> = {
   // changes, so the dates move — that is the whole point of the pinned-lastmod
   // scheme.
   "": "2026-07-12",
-  "/pricing": "2026-07-12",
-  "/enterprise": "2026-07-08",
-  "/benchmark": "2026-07-12",
-  "/about": "2026-07-12",
-  "/contact": "2026-06-20",
+  "/pricing": "2026-07-13",
+  "/enterprise": "2026-07-13",
+  "/benchmark": "2026-07-13",
+  "/about": "2026-07-13",
+  "/contact": "2026-07-13",
   "/verify": "2026-07-08",
-  "/faq": "2026-07-12",
-  "/visualise": "2026-05-20",
-  "/knowledge": "2026-05-20",
-  "/blog": "2026-07-12",
-  "/terms": "2026-04-05",
-  "/privacy": "2026-04-05",
-  "/aup": "2026-04-05",
-  "/copyright": "2026-04-05",
-  "/dpa": "2026-04-05",
+  "/faq": "2026-07-13",
+  "/visualise": "2026-07-13",
+  "/knowledge": "2026-07-13",
+  "/blog": "2026-07-13",
+  "/terms": "2026-07-13",
+  // 2026-07-13: privacy policy revision — OAuth SSO disclosure, full cookie
+  // table (mmpm_oauth_state, mmpm_pending_token), 2FA + waitlist sections.
+  "/privacy": "2026-07-13",
+  "/aup": "2026-07-13",
+  "/copyright": "2026-07-13",
+  "/dpa": "2026-07-13",
 };
 
 /**
@@ -57,10 +59,24 @@ export const ROUTE_LASTMOD: Record<string, string> = {
  */
 export const DOCS_DEFAULT_LASTMOD = "2026-07-06";
 export const DOCS_LASTMOD_OVERRIDES: Record<string, string> = {
-  // Concepts pages published into nav + sitemap on 2026-07-08.
-  "concepts/memory-atoms": "2026-07-08",
-  "concepts/merkle-proofs": "2026-07-08",
-  "concepts/markov-prediction": "2026-07-08",
+  // 2026-07-13: fixed the {#custom-id} MDX crash (page was returning 500) —
+  // bump so crawlers + the IndexNow delta ping pick the recovered page up.
+  "subscription/cancel": "2026-07-13",
+  // 2026-07-13: SEO metadata pass (Ahrefs audit) — descriptions brought into
+  // the 110–160 range; api/authentication also had its stub link fixed.
+  "api/authentication": "2026-07-13",
+  "customer-lifecycle": "2026-07-13",
+  "your-instance": "2026-07-13",
+  plans: "2026-07-13",
+  "api/recall": "2026-07-13",
+  "api/atoms": "2026-07-13",
+  "subscription/upgrade": "2026-07-13",
+  "subscription/downgrade": "2026-07-13",
+  limits: "2026-07-13",
+  "mcp/other-clients": "2026-07-13",
+  "concepts/memory-atoms": "2026-07-13",
+  "concepts/merkle-proofs": "2026-07-13",
+  "concepts/markov-prediction": "2026-07-13",
 };
 
 /** Fallback for a blog post with unparseable frontmatter — pinned, not now(). */

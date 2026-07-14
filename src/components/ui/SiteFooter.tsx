@@ -23,6 +23,8 @@
  */
 import Link from "next/link";
 
+import { firstDocSlug } from "@/config/docs-nav";
+
 export const COPYRIGHT_YEAR_RANGE = "2025–2026";
 export const COPYRIGHT_HOLDER = "G. Osborne";
 
@@ -63,7 +65,9 @@ export const SITE_FOOTER_COLUMNS: FooterColumn[] = [
       { href: "/enterprise", label: "Enterprise", testid: "footer-link-enterprise" },
       { href: "/verify", label: "Verify", testid: "footer-link-verify" },
       { href: "/benchmark", label: "Benchmark", testid: "footer-link-benchmark" },
-      { href: "/docs", label: "Docs", testid: "footer-link-docs" },
+      // First doc linked directly (not /docs, which server-redirects there):
+      // internal links to redirects waste crawl signal (Ahrefs audit 2026-07-13).
+      { href: `/docs/${firstDocSlug}`, label: "Docs", testid: "footer-link-docs" },
       { href: "/knowledge", label: "Knowledge graph", testid: "footer-link-knowledge" },
       { href: "/visualise", label: "Visualise", testid: "footer-link-visualise" },
     ],

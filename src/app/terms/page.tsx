@@ -14,6 +14,8 @@ export const metadata: Metadata = {
     description:
       "Terms of Service for Parametric Memory — subscription terms, AI disclaimers, liability limits.",
     url: "https://parametric-memory.dev/terms",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",

@@ -13,6 +13,8 @@ export const metadata: Metadata = {
     description:
       "What you may and may not do with Parametric Memory — permitted uses, prohibited conduct, enforcement.",
     url: "https://parametric-memory.dev/aup",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",

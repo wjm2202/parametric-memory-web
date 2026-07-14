@@ -53,6 +53,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { openBillingPortal, signOut } from "@/lib/account-actions";
+import { firstDocSlug } from "@/config/docs-nav";
 
 /* ─── Logomark ───────────────────────────────────────────────────────────── */
 
@@ -204,7 +205,9 @@ interface NavItem {
 const PRIMARY_NAV: NavItem[] = [
   { href: "/verify", label: "Verify", testid: "nav-link-verify" },
   { href: "/enterprise", label: "Enterprise", testid: "nav-link-enterprise" },
-  { href: "/docs", label: "Docs", testid: "nav-link-docs" },
+  // Link the first doc directly (not /docs, which server-redirects there):
+  // internal links to redirects waste crawl signal (Ahrefs audit 2026-07-13).
+  { href: `/docs/${firstDocSlug}`, label: "Docs", testid: "nav-link-docs" },
   { href: "/pricing", label: "Pricing", testid: "nav-link-pricing" },
 ];
 

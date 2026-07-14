@@ -438,12 +438,12 @@ describe("DashboardClient — read_only state (F-BILLING-2)", () => {
 describe("DashboardClient — top-nav Docs link (regression guard)", () => {
   stubFetch();
 
-  it("Docs link points to the internal /docs route, not an external domain", () => {
+  it("Docs link points to the internal first-doc route, not an external domain", () => {
     render(<DashboardClient account={baseAccount} substrates={[runningSubstrate]} />);
     const docsLinks = screen.getAllByTestId("nav-link-docs");
     expect(docsLinks.length).toBeGreaterThan(0);
     for (const link of docsLinks) {
-      expect(link).toHaveAttribute("href", "/docs");
+      expect(link).toHaveAttribute("href", "/docs/introduction");
     }
   });
 

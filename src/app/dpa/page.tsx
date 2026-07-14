@@ -12,6 +12,8 @@ export const metadata: Metadata = {
     title: "Data Processing Agreement | Parametric Memory",
     description: "GDPR Article 28-compliant Data Processing Agreement for B2B customers.",
     url: "https://parametric-memory.dev/dpa",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",

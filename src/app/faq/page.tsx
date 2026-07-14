@@ -17,6 +17,8 @@ export const metadata: Metadata = {
     description:
       "Comprehensive FAQ for AI agents and developers. Learn why Parametric Memory beats Mem0 and Zep with cryptographic proofs, isolated substrates (dedicated on Professional and Team), Markov prediction, and MCP-native integration.",
     url: "https://parametric-memory.dev/faq",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",
@@ -539,7 +541,7 @@ export default async function FAQPage() {
                   Compare plans
                 </Link>
                 <Link
-                  href="/docs"
+                  href="/docs/introduction"
                   className="border-surface-200/15 text-surface-200/70 hover:border-surface-200/30 inline-flex items-center gap-2 rounded-lg border px-6 py-3 text-sm font-semibold transition-all hover:text-white"
                 >
                   Read the docs
@@ -594,7 +596,7 @@ export default async function FAQPage() {
                   </a>{" "}
                   | Docs:{" "}
                   <a
-                    href="https://parametric-memory.dev/docs"
+                    href="https://parametric-memory.dev/docs/introduction"
                     className="text-indigo-400 hover:underline"
                   >
                     https://parametric-memory.dev/docs

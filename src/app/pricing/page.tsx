@@ -10,7 +10,7 @@ import CompetitorComparison from "./CompetitorComparison";
 export const metadata: Metadata = {
   title: "Pricing — Plans from $5/mo USD",
   description:
-    "The L2 cache for AI agents — predictive, verifiable memory. Flat monthly subscription, no per-query costs. Plans from $5/mo Starter to $79/mo Team. Prices in USD.",
+    "The L2 cache for AI agents — predictive, verifiable memory. Flat monthly subscription, no per-query costs. Plans from $5/mo Starter to $79/mo Team, in USD.",
   alternates: {
     canonical: "https://parametric-memory.dev/pricing",
   },
@@ -28,6 +28,8 @@ export const metadata: Metadata = {
     description:
       "Persistent AI memory from $5/month USD. Flat rate subscription — no per-query costs, no credits. Starter, Solo, Professional, and Team plans. Merkle proofs, Markov prediction, MCP native.",
     url: "https://parametric-memory.dev/pricing",
+    siteName: "Parametric Memory",
+    type: "website",
     images: [
       {
         url: "https://parametric-memory.dev/brand/og.png",
