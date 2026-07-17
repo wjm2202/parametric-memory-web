@@ -8,6 +8,7 @@ import {
   getLayoutMetaDescription,
   getTwitterDescription,
   getOffersJsonLd,
+  getAggregateOfferData,
   getOgImageAltText,
   defaultPriceValidUntil,
 } from "@/lib/pricing";
@@ -290,12 +291,13 @@ const webApplicationJsonLd = {
   browserRequirements: "MCP-compatible AI client (Claude, Cowork, etc.)",
   description:
     "Persistent, verifiable memory substrate for AI agents. Cryptographic Merkle proofs (RFC 6962), Markov-chain prediction (64% hit rate), sub-millisecond access (0.022ms p50). Isolated per-customer substrates; dedicated instances on Professional and Team.",
+  // Derived from the canonical tier registry (was hardcoded and drifting) —
+  // and includes `price`, which Google requires even on AggregateOffer
+  // (post-deploy verification 2026-07-13 caught this sibling of the
+  // WebPage.mainEntity fix still missing it).
   offers: {
     "@type": "AggregateOffer",
-    lowPrice: "5",
-    highPrice: "499",
-    priceCurrency: "USD",
-    offerCount: "6",
+    ...getAggregateOfferData(),
   },
   featureList: [
     "LongMemEval-S 83.0% with typed ingest — graded by the benchmark's official GPT-4o judge",

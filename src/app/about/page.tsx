@@ -45,7 +45,10 @@ const aboutJsonLd = {
     name: "Parametric Memory",
     url: "https://parametric-memory.dev",
     foundingDate: "2025",
-    foundingLocation: "New Zealand",
+    // Place object, not a bare string — foundingLocation expects schema.org
+    // Place; the string form was the last remaining schema.org validation
+    // error after the 2026-07-13 cleanup (Ahrefs re-crawl isolated it here).
+    foundingLocation: { "@type": "Place", name: "New Zealand" },
     description:
       "Persistent, verifiable memory substrate for AI agents. Merkle proofs, Markov prediction, knowledge graph, MCP-native.",
   },

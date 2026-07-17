@@ -92,7 +92,20 @@ export function getAllDocSlugsFromNav(): string[] {
 /** The first doc slug in the nav — used by the /docs index redirect */
 export const firstDocSlug = docsNav[0].items[0].slug;
 
-/** Sidebar section title for a slug, or undefined if the slug is unlisted. */
-export function getDocSectionTitle(slug: string): string | undefined {
-  return docsNav.find((section) => section.items.some((item) => item.slug === slug))?.title;
+export interface DocSectionInfo {
+  title: string;
+  /**
+   * Slug of the section's first page — the closest navigable URL for a
+   * section header (sections have no landing pages of their own). Used as
+   * the breadcrumb `item` target: Google requires an item URL on every
+   * BreadcrumbList crumb except the last (GSC "1 invalid item detected",
+   * found 2026-07-17).
+   */
+  firstSlug: string;
+}
+
+/** Sidebar section (title + first-page slug) for a slug, or undefined if unlisted. */
+export function getDocSectionInfo(slug: string): DocSectionInfo | undefined {
+  const section = docsNav.find((s) => s.items.some((item) => item.slug === slug));
+  return section ? { title: section.title, firstSlug: section.items[0].slug } : undefined;
 }

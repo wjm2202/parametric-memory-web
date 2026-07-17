@@ -22,6 +22,13 @@ export interface DocsJsonLdInput {
   description: string;
   /** Sidebar section title, e.g. "Concepts" — optional middle breadcrumb */
   section?: string;
+  /**
+   * Slug of the section's first page — target URL for the section crumb.
+   * Sections have no landing pages, and Google requires `item` on every
+   * BreadcrumbList crumb except the last, so the crumb points at the
+   * section's first doc page (GSC "1 invalid item detected", 2026-07-17).
+   */
+  sectionFirstSlug?: string;
 }
 
 export interface BreadcrumbItem {
@@ -65,13 +72,24 @@ export function buildDocsTechArticle(input: DocsJsonLdInput) {
   };
 }
 
-/** BreadcrumbList for a docs page: Home → Docs → [Section] → Page. */
+/**
+ * BreadcrumbList for a docs page: Home → Docs → [Section] → Page.
+ *
+ * Google requires an `item` URL on every crumb except the last (the current
+ * page). A bare `{ name: section }` middle crumb is therefore invalid — GSC
+ * flagged every sectioned docs page with "Breadcrumbs: 1 invalid item
+ * detected" (2026-07-17). The section crumb now points at the section's
+ * first doc page; when the current page IS that first page the crumb would
+ * self-reference, so it is dropped and the trail is Home → Docs → Page.
+ */
 export function buildDocsBreadcrumb(input: DocsJsonLdInput) {
   const items: BreadcrumbItem[] = [
     { name: "Home", item: SITE },
     { name: "Docs", item: `${SITE}/docs/introduction` },
   ];
-  if (input.section) items.push({ name: input.section });
+  if (input.section && input.sectionFirstSlug && input.sectionFirstSlug !== input.slug) {
+    items.push({ name: input.section, item: `${SITE}/docs/${input.sectionFirstSlug}` });
+  }
   items.push({ name: input.title });
   return breadcrumbList(items);
 }

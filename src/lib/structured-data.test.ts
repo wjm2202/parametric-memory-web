@@ -15,6 +15,7 @@ const input = {
   description:
     "How Parametric Memory uses RFC 6962 Merkle trees to make every recalled atom cryptographically verifiable.",
   section: "Concepts",
+  sectionFirstSlug: "concepts/memory-atoms",
 };
 
 describe("buildDocsTechArticle", () => {
@@ -59,12 +60,56 @@ describe("buildDocsBreadcrumb", () => {
   });
 
   it("omits the section crumb when the slug is unlisted", () => {
-    const schema = buildDocsBreadcrumb({ ...input, section: undefined });
+    const schema = buildDocsBreadcrumb({
+      ...input,
+      section: undefined,
+      sectionFirstSlug: undefined,
+    });
     expect(schema.itemListElement.map((i: { name: string }) => i.name)).toEqual([
       "Home",
       "Docs",
       "Merkle Proofs",
     ]);
+  });
+
+  it("points the section crumb at the section's first page (Google: every non-final crumb needs item)", () => {
+    // GSC 2026-07-17: "Breadcrumbs — 1 invalid item detected" on every
+    // sectioned docs page, because the section crumb shipped without item.
+    const schema = buildDocsBreadcrumb(input);
+    const sectionCrumb = schema.itemListElement.find(
+      (i: { name: string }) => i.name === "Concepts",
+    ) as { item?: string };
+    expect(sectionCrumb.item).toBe("https://parametric-memory.dev/docs/concepts/memory-atoms");
+  });
+
+  it("drops the section crumb when the current page IS the section's first page (no self-reference)", () => {
+    const schema = buildDocsBreadcrumb({
+      ...input,
+      slug: "concepts/memory-atoms",
+      title: "Memory Atoms",
+    });
+    expect(schema.itemListElement.map((i: { name: string }) => i.name)).toEqual([
+      "Home",
+      "Docs",
+      "Memory Atoms",
+    ]);
+  });
+
+  it("every crumb except the last carries an item URL (Google BreadcrumbList requirement)", () => {
+    const cases = [
+      buildDocsBreadcrumb(input),
+      buildDocsBreadcrumb({ ...input, section: undefined, sectionFirstSlug: undefined }),
+      buildDocsBreadcrumb({ ...input, slug: "concepts/memory-atoms", title: "Memory Atoms" }),
+      buildBlogBreadcrumb("Memory That Compounds"),
+    ];
+    for (const schema of cases) {
+      const items = schema.itemListElement as Array<{ name: string; item?: string }>;
+      items.forEach((crumb, i) => {
+        if (i < items.length - 1) {
+          expect(crumb.item, `non-final crumb "${crumb.name}" must have item`).toBeDefined();
+        }
+      });
+    }
   });
 
   it("points the Docs crumb at /docs/introduction (never the redirecting /docs)", () => {

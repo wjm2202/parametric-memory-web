@@ -1,7 +1,7 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { getAllDocSlugs, getDocBySlug } from "@/lib/docs";
-import { getDocSectionTitle } from "@/config/docs-nav";
+import { getDocSectionInfo } from "@/config/docs-nav";
 import { compileMdx, extractHeadings } from "@/lib/mdx";
 import { mdxComponents } from "@/components/docs/MdxComponents";
 import { TableOfContents } from "@/components/docs/TableOfContents";
@@ -81,11 +81,13 @@ export default async function DocPage({ params }: PageProps) {
   // TechArticle + BreadcrumbList strengthen AEO citations (Google AI Mode,
   // Perplexity, ChatGPT Search) and breadcrumb rich results. Builders are
   // pure functions locked by src/lib/structured-data.test.ts.
+  const sectionInfo = getDocSectionInfo(slugStr);
   const jsonLdInput = {
     slug: slugStr,
     title: title!,
     description: description!,
-    section: getDocSectionTitle(slugStr),
+    section: sectionInfo?.title,
+    sectionFirstSlug: sectionInfo?.firstSlug,
   };
   const techArticleJsonLd = buildDocsTechArticle(jsonLdInput);
   const breadcrumbJsonLd = buildDocsBreadcrumb(jsonLdInput);
