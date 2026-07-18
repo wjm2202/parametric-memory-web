@@ -21,7 +21,8 @@ const VERIFY_CLIENT = join(process.cwd(), "src/app/verify/VerifyClient.tsx");
 function demoUrlFromSource(): string {
   const src = readFileSync(VERIFY_CLIENT, "utf8");
   const m = src.match(/const\s+DEMO_URL\s*=\s*["'`]([^"'`]+)["'`]/);
-  if (!m) throw new Error("DEMO_URL not found in VerifyClient.tsx — did the constant move or rename?");
+  if (!m)
+    throw new Error("DEMO_URL not found in VerifyClient.tsx — did the constant move or rename?");
   return m[1];
 }
 
@@ -44,7 +45,11 @@ describe("/verify — demo snapshot asset ships in public/", () => {
   it("the shipped demo is a non-empty, valid v1 snapshot the verifier can parse", () => {
     const raw = readFileSync(abs, "utf8");
     expect(raw.length).toBeGreaterThan(1000);
-    const snap = JSON.parse(raw) as { formatVersion?: string; formatUri?: string; signature?: unknown };
+    const snap = JSON.parse(raw) as {
+      formatVersion?: string;
+      formatUri?: string;
+      signature?: unknown;
+    };
     expect(typeof snap.formatVersion).toBe("string");
     expect(snap.formatUri ?? "").toContain("snapshot/v1");
   });
