@@ -146,6 +146,7 @@ const SAME_AS: string[] = [
   // Flip to "https://x.com/parametricmem" once the rename lands.
   "https://x.com/_EntityOne",
   "https://doi.org/10.5281/zenodo.21213464", // whitepaper — Zenodo concept DOI (all versions), live 2026-07-06
+  "https://doi.org/10.5281/zenodo.21421364", // whitepaper 2 (The Self-Reinforcing Loop) — Zenodo concept DOI, live 2026-07-18
   // YouTube channel (@parametricmemory, channel ID UC3PADnNYeLaD3gLpYoguhOg),
   // verified live 2026-07-13. Also linked from the site footer (rel="me").
   "https://www.youtube.com/@parametricmemory",

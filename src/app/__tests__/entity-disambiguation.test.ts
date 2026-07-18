@@ -74,6 +74,10 @@ describe("Organization entity — name-collision disambiguation", () => {
     expect(sameAs).toContain("https://x.com/_EntityOne");
     // YouTube channel, verified live 2026-07-13 (also in the site footer as rel="me")
     expect(sameAs).toContain("https://www.youtube.com/@parametricmemory");
+    // Whitepaper concept DOIs (all-versions) — citable works that identify
+    // the brand entity. Live: 21213464 (2026-07-06), 21421364 (2026-07-18).
+    expect(sameAs).toContain("https://doi.org/10.5281/zenodo.21213464");
+    expect(sameAs).toContain("https://doi.org/10.5281/zenodo.21421364");
   });
 
   it("sameAs has no placeholder or commented URLs leaking into the live array", () => {
