@@ -373,7 +373,7 @@ export function ConfirmUpgradeDialog({
           <div className="mb-5">
             <h2
               id="confirm-upgrade-title"
-              className="font-[family-name:var(--font-syne)] text-base font-semibold text-white"
+              className="font-[family-name:var(--font-space-grotesk)] text-base font-semibold text-white"
             >
               {DIALOG_TITLE}
             </h2>

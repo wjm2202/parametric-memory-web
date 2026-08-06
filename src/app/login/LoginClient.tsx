@@ -238,7 +238,7 @@ function LoginForm() {
             />
           </svg>
         </div>
-        <h2 className="mb-2 font-[family-name:var(--font-syne)] text-lg font-semibold text-white">
+        <h2 className="mb-2 font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-white">
           Check your email
         </h2>
         <p className="text-sm text-white/50">
@@ -261,7 +261,7 @@ function LoginForm() {
 
   return (
     <>
-      <h1 className="mb-1 font-[family-name:var(--font-syne)] text-xl font-semibold text-white">
+      <h1 className="mb-1 font-[family-name:var(--font-space-grotesk)] text-xl font-semibold text-white">
         Sign in
       </h1>
       <p className="mb-6 text-sm text-white/50">Enter your email to receive a sign-in link.</p>
@@ -362,7 +362,7 @@ export default function LoginClient({ oauthProviders = [] }: LoginClientProps = 
               href="/"
               className="inline-flex items-center gap-2 text-white/70 transition-colors hover:text-white"
             >
-              <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text font-[family-name:var(--font-syne)] text-2xl font-bold text-transparent">
+              <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-transparent">
                 Parametric Memory
               </span>
             </Link>

@@ -39,11 +39,11 @@ export default async function AUPPage() {
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-indigo-500/20 bg-indigo-500/10 px-3 py-1 text-xs font-medium text-indigo-300">
             Legal
           </div>
-          <h1 className="font-[family-name:var(--font-syne)] text-4xl font-bold text-white">
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl font-bold text-white">
             Acceptable Use Policy
           </h1>
           <p className="mt-3 text-sm text-white/50">
-            Effective Date: 26 April 2026 &nbsp;·&nbsp; Incorporated into Terms of Service
+            Effective Date: 6 August 2026 &nbsp;·&nbsp; Incorporated into Terms of Service
           </p>
         </div>
 
@@ -63,7 +63,7 @@ export default async function AUPPage() {
           ))}
         </div>
 
-        <div className="prose prose-invert prose-sm prose-headings:font-[family-name:var(--font-syne)] prose-headings:text-white prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-8 prose-h3:mb-3 prose-p:text-white/70 prose-p:leading-relaxed prose-li:text-white/70 prose-strong:text-white prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline max-w-none">
+        <div className="prose prose-invert prose-sm prose-headings:font-[family-name:var(--font-space-grotesk)] prose-headings:text-white prose-h2:text-2xl prose-h2:font-semibold prose-h2:mt-12 prose-h2:mb-4 prose-h3:text-lg prose-h3:font-semibold prose-h3:mt-8 prose-h3:mb-3 prose-p:text-white/70 prose-p:leading-relaxed prose-li:text-white/70 prose-strong:text-white prose-a:text-indigo-400 prose-a:no-underline hover:prose-a:underline max-w-none">
           <h2>1. Introduction</h2>
           <p>
             This Acceptable Use Policy (&ldquo;AUP&rdquo;) is incorporated by reference into the

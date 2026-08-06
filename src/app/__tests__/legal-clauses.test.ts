@@ -142,6 +142,68 @@ describe("Terms of Service — required protective clauses", () => {
     expect(TERMS_SRC).toMatch(/"Indemnification"/);
     expect(TERMS_SRC).toMatch(/"Force Majeure"/);
   });
+
+  it("includes a data-persistence row in the quick-reference summary", () => {
+    expect(TERMS_SRC).toMatch(/"Data Persistence"/);
+  });
+});
+
+describe("Terms of Service — L2 cache / no data-permanence clause", () => {
+  it("declares MMPM is a transient L2 cache, not a long-term data store (§2)", () => {
+    expect(TERMS_SRC).toContain('data-testid="terms-l2-cache-nature"');
+    expect(TERMS_FLAT).toMatch(/short-lived, best-effort L2 cache/);
+    expect(TERMS_FLAT).toMatch(/not a long-term data store/);
+    expect(TERMS_FLAT).toMatch(/loaded, used, and destroyed/);
+    expect(TERMS_FLAT).toMatch(/transient and duplicative/);
+  });
+
+  it("declares data permanence is not guaranteed and is the data owner's sole responsibility (§2)", () => {
+    expect(TERMS_FLAT).toMatch(
+      /Data permanence is not, and has never been, a guarantee of the Service/,
+    );
+    expect(TERMS_FLAT).toMatch(/no responsibility for data loss, corruption, or unavailability/);
+    expect(TERMS_FLAT).toMatch(
+      /mastering, backing up, and preserving your data outside of MMPM is your sole responsibility/,
+    );
+  });
+
+  it("expands §9.3 into a dedicated 'not a long-term data store' clause", () => {
+    expect(TERMS_SRC).toContain('data-testid="terms-not-a-data-store"');
+    expect(TERMS_SRC).toContain(
+      "9.3 Not a Long-Term Data Store &mdash; L2 Cache Nature of the Service",
+    );
+    expect(TERMS_FLAT).toMatch(/temporary, best-effort L2 cache/);
+    expect(TERMS_FLAT).toMatch(/agents and agent swarms/);
+    expect(TERMS_FLAT).toMatch(
+      /Data permanence is not guaranteed by the Service at any plan or tier, and we accept no responsibility for data loss/,
+    );
+    expect(TERMS_FLAT).toMatch(/all care, no responsibility/);
+    expect(TERMS_FLAT).toMatch(
+      /Responsibility for data permanence, backup, and durability of the source data rests solely and exclusively with you/,
+    );
+    // still preserves the pre-existing deletion mechanics
+    expect(TERMS_FLAT).toMatch(/Deletion removes access to your data within 24 hours/);
+    expect(TERMS_FLAT).toMatch(/MMPM is not a backup system/);
+  });
+
+  it("carries the no-permanence warning into the AS-IS disclaimer box (§7)", () => {
+    expect(TERMS_FLAT).toMatch(
+      /MMPM IS A TRANSIENT L2 CACHE, NOT A LONG-TERM DATA STORE\. WE DO NOT WARRANT DATA PERMANENCE AT ANY TIER OR PLAN\./,
+    );
+  });
+
+  it("no longer advertises fixed month-based retention windows on the pricing table", () => {
+    // The pricing table used to render row.retentionLabel ("12/24/36
+    // months", "Unlimited") per plan — that directly contradicted the
+    // no-permanence clause above. It must now render the uniform
+    // persistenceLabel under a "Data Persistence" column instead. (The
+    // per-plan labels themselves are locked down in
+    // src/lib/pricing/__tests__/pricing-persistence.test.ts.)
+    expect(TERMS_SRC).not.toContain("row.retentionLabel");
+    expect(TERMS_SRC).not.toContain("<th>Retention</th>");
+    expect(TERMS_SRC).toContain("row.persistenceLabel");
+    expect(TERMS_SRC).toContain("<th>Data Persistence</th>");
+  });
 });
 
 describe("Acceptable Use Policy — required enforcement clauses", () => {

@@ -109,7 +109,7 @@ export default function AuditClient({ account }: AuditClientProps) {
     <div className="min-h-screen bg-[#030712] text-white">
       <div className="mx-auto max-w-3xl px-4 py-12 sm:px-6 sm:py-16">
         <div className="mb-6 flex items-center justify-between">
-          <h1 className="font-[family-name:var(--font-syne)] text-2xl font-semibold text-white">
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold text-white">
             Recent activity
           </h1>
           <Link

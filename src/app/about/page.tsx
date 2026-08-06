@@ -76,7 +76,7 @@ export default async function AboutPage() {
             Built by one human. Powered by AI.
           </div>
 
-          <h1 className="font-syne mb-6 text-4xl leading-tight font-bold tracking-tight text-[#e8e8f0] sm:text-5xl">
+          <h1 className="font-display mb-6 text-4xl leading-tight font-bold tracking-tight text-[#e8e8f0] sm:text-5xl">
             We built this{" "}
             <span className="bg-gradient-to-r from-[#7c5cfc] to-[#22d3ee] bg-clip-text text-transparent">
               for ourselves.
@@ -393,7 +393,7 @@ export default async function AboutPage() {
         {/* ── What it is ────────────────────────────────────────────────── */}
         <section className="border-t border-[#1a1a26] bg-[#0d0d14] px-6 py-16">
           <div className="mx-auto max-w-3xl">
-            <h2 className="font-syne mb-8 text-2xl font-bold text-[#e8e8f0]">What it is</h2>
+            <h2 className="font-display mb-8 text-2xl font-bold text-[#e8e8f0]">What it is</h2>
 
             <p className="mb-8 leading-relaxed text-[#b0b0c8]">
               Parametric Memory is a{" "}
@@ -429,7 +429,7 @@ export default async function AboutPage() {
 
         {/* ── How it's different ────────────────────────────────────────── */}
         <section className="mx-auto max-w-3xl px-6 py-16">
-          <h2 className="font-syne mb-4 text-2xl font-bold text-[#e8e8f0]">
+          <h2 className="font-display mb-4 text-2xl font-bold text-[#e8e8f0]">
             How it&apos;s different
           </h2>
 
@@ -474,7 +474,7 @@ export default async function AboutPage() {
         {/* ── Architecture ──────────────────────────────────────────────── */}
         <section className="border-t border-[#1a1a26] bg-[#0d0d14] px-6 py-16">
           <div className="mx-auto max-w-3xl">
-            <h2 className="font-syne mb-4 text-2xl font-bold text-[#e8e8f0]">
+            <h2 className="font-display mb-4 text-2xl font-bold text-[#e8e8f0]">
               The architecture choice we&apos;re proud of
             </h2>
 
@@ -507,7 +507,7 @@ export default async function AboutPage() {
 
         {/* ── How we built it ───────────────────────────────────────────── */}
         <section className="mx-auto max-w-3xl px-6 py-16">
-          <h2 className="font-syne mb-4 text-2xl font-bold text-[#e8e8f0]">How we built it</h2>
+          <h2 className="font-display mb-4 text-2xl font-bold text-[#e8e8f0]">How we built it</h2>
 
           <div className="space-y-5 leading-relaxed text-[#b0b0c8]">
             <p>One founder. A fleet of AI agents. Zero employees. Sixty days.</p>
@@ -540,7 +540,7 @@ export default async function AboutPage() {
             <p className="mb-2 text-xs font-medium tracking-widest text-[#7c5cfc] uppercase">
               How it works for us
             </p>
-            <h2 className="font-syne mb-3 text-2xl font-bold text-[#e8e8f0]">
+            <h2 className="font-display mb-3 text-2xl font-bold text-[#e8e8f0]">
               The platform that runs itself
             </h2>
             <p className="mb-10 leading-relaxed text-[#8888aa]">
@@ -857,7 +857,9 @@ export default async function AboutPage() {
         {/* ── Who it's for ──────────────────────────────────────────────── */}
         <section className="border-t border-[#1a1a26] bg-[#0a0a0f] px-6 py-16">
           <div className="mx-auto max-w-3xl">
-            <h2 className="font-syne mb-8 text-2xl font-bold text-[#e8e8f0]">Who it&apos;s for</h2>
+            <h2 className="font-display mb-8 text-2xl font-bold text-[#e8e8f0]">
+              Who it&apos;s for
+            </h2>
 
             <div className="space-y-4">
               {[
@@ -892,7 +894,7 @@ export default async function AboutPage() {
         {/* ── CTA ───────────────────────────────────────────────────────── */}
         <section className="px-6 py-20">
           <div className="mx-auto max-w-xl text-center">
-            <p className="font-syne mb-3 text-lg font-semibold text-[#e8e8f0]">
+            <p className="font-display mb-3 text-lg font-semibold text-[#e8e8f0]">
               Your AI has been waiting to remember you.
             </p>
             <p className="mb-8 text-sm text-[#8888aa]">7-day money-back guarantee.</p>

@@ -183,7 +183,7 @@ function CheckEmailView({
             />
           </svg>
         </div>
-        <h1 className="font-[family-name:var(--font-syne)] text-xl font-semibold text-white">
+        <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-semibold text-white">
           Check your email
         </h1>
         <p className="mt-2 text-sm text-white/50">
@@ -384,7 +384,7 @@ function SignupForm({
 
   return (
     <>
-      <h1 className="mb-1 font-[family-name:var(--font-syne)] text-xl font-semibold text-white">
+      <h1 className="mb-1 font-[family-name:var(--font-space-grotesk)] text-xl font-semibold text-white">
         Get started
       </h1>
       <p className="mb-6 text-sm text-white/50">
@@ -503,7 +503,7 @@ export default function SignupClient() {
               href="/"
               className="inline-flex items-center gap-2 text-white/70 transition-colors hover:text-white"
             >
-              <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text font-[family-name:var(--font-syne)] text-2xl font-bold text-transparent">
+              <span className="bg-gradient-to-r from-indigo-400 to-violet-400 bg-clip-text font-[family-name:var(--font-space-grotesk)] text-2xl font-bold text-transparent">
                 Parametric Memory
               </span>
             </Link>

@@ -33,7 +33,7 @@
   --color-cyan-400: #22d3ee;
 
   /* === TYPOGRAPHY — applied via CSS variables from next/font === */
-  --font-display: var(--font-syne), sans-serif;
+  --font-display: var(--font-space-grotesk), sans-serif;
   --font-body: var(--font-outfit), sans-serif;
   --font-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
 }

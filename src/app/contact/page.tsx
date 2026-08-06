@@ -108,7 +108,7 @@ export default async function ContactPage() {
             We read every message.
           </div>
 
-          <h1 className="font-syne mb-6 text-4xl leading-tight font-bold tracking-tight text-[#e8e8f0] sm:text-5xl">
+          <h1 className="font-display mb-6 text-4xl leading-tight font-bold tracking-tight text-[#e8e8f0] sm:text-5xl">
             Get in{" "}
             <span className="bg-gradient-to-r from-[#7c5cfc] to-[#22d3ee] bg-clip-text text-transparent">
               touch.
@@ -157,7 +157,7 @@ export default async function ContactPage() {
         {/* ── Faster answers ────────────────────────────────────────────── */}
         <section className="border-t border-[#1a1a26] bg-[#0d0d14] px-6 py-16">
           <div className="mx-auto max-w-3xl">
-            <h2 className="font-syne mb-3 text-2xl font-bold text-[#e8e8f0]">
+            <h2 className="font-display mb-3 text-2xl font-bold text-[#e8e8f0]">
               Looking for a faster answer?
             </h2>
             <p className="mb-8 leading-relaxed text-[#8888aa]">
@@ -206,7 +206,7 @@ export default async function ContactPage() {
         {/* ── CTA ───────────────────────────────────────────────────────── */}
         <section className="px-6 py-20">
           <div className="mx-auto max-w-xl text-center">
-            <p className="font-syne mb-3 text-lg font-semibold text-[#e8e8f0]">
+            <p className="font-display mb-3 text-lg font-semibold text-[#e8e8f0]">
               Ready to give your AI a memory?
             </p>
             <p className="mb-8 text-sm text-[#8888aa]">7-day money-back guarantee.</p>

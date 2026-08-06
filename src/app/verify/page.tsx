@@ -138,7 +138,7 @@ export default async function VerifyPage() {
           <div className="mb-4 inline-flex items-center gap-2 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-medium text-emerald-300">
             Cryptographic verification
           </div>
-          <h1 className="font-[family-name:var(--font-syne)] text-4xl font-bold text-white">
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-4xl font-bold text-white">
             Verify a Parametric Memory snapshot
           </h1>
           <p className="mt-3 max-w-2xl text-sm text-white/60">

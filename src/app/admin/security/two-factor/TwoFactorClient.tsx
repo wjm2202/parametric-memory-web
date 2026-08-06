@@ -176,7 +176,7 @@ export default function TwoFactorClient({ account }: { account: AccountInfo }) {
       </div>
 
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 sm:py-10">
-        <h1 className="mb-6 font-[family-name:var(--font-syne)] text-xl font-semibold text-white sm:mb-8 sm:text-2xl">
+        <h1 className="mb-6 font-[family-name:var(--font-space-grotesk)] text-xl font-semibold text-white sm:mb-8 sm:text-2xl">
           Two-factor authentication
         </h1>
 

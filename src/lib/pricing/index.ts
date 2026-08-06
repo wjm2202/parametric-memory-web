@@ -238,22 +238,18 @@ export interface PricingTableRow {
   name: string;
   priceLabel: string; // "$5/mo USD" or "Custom"
   atomsLabel: string; // "1,000" or "Unlimited"
-  retentionLabel: string; // "12 months", "36 months", "Unlimited"
+  persistenceLabel: string; // no plan implies a retention guarantee — see Terms §2/§9
   deployment: TierDeployment | "self-hosted";
 }
 
 /**
- * Retention is a marketing-tier mapping — the actual data retention is
- * enforced at the substrate level. This is a presentational helper.
+ * MMPM is a transient L2 cache, not a system of record. We do NOT publish
+ * per-plan retention windows (no "12 months" / "36 months" / "Unlimited"
+ * promises) because that would imply a durability guarantee the substrate
+ * does not make — see Terms of Service §2 and §9.3. This label is
+ * deliberately uniform across every plan, including self-hosted.
  */
-const RETENTION_BY_TIER_ID: Record<string, string> = {
-  starter: "12 months",
-  indie: "12 months",
-  pro: "24 months",
-  team: "36 months",
-  "enterprise-cloud": "36 months",
-  "enterprise-self-hosted": "Unlimited",
-};
+const PERSISTENCE_LABEL = "Not a long-term store";
 
 export function getPricingTableRows(): PricingTableRow[] {
   return getAllPublicTiers().map((t) => {
@@ -273,7 +269,7 @@ export function getPricingTableRows(): PricingTableRow[] {
       name: t.name,
       priceLabel: `$${t.price}/mo ${PRICE_CURRENCY}`,
       atomsLabel,
-      retentionLabel: RETENTION_BY_TIER_ID[t.id] ?? "—",
+      persistenceLabel: PERSISTENCE_LABEL,
       deployment,
     };
   });

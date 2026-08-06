@@ -182,7 +182,9 @@ export function PersonaNameEditor({
   if (!editing) {
     return (
       <div className="flex items-center gap-3" data-testid="persona-display">
-        <h1 className="font-[family-name:var(--font-syne)] text-2xl font-bold">{display}</h1>
+        <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-bold">
+          {display}
+        </h1>
         <button
           type="button"
           data-testid="persona-edit-button"
@@ -716,7 +718,9 @@ export default function AdminClient({ account, slug, initialSubstrate }: AdminCl
               onSaved={() => void fetchSubstrate()}
             />
           ) : (
-            <h1 className="mb-1 font-[family-name:var(--font-syne)] text-2xl font-bold">{slug}</h1>
+            <h1 className="mb-1 font-[family-name:var(--font-space-grotesk)] text-2xl font-bold">
+              {slug}
+            </h1>
           )}
           <p className="mt-1 text-sm text-white/40">
             {substrate?.personaName ? `${substrate.slug} · ` : ""}Substrate administration and

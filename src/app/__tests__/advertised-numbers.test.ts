@@ -150,3 +150,30 @@ describe("edge-scoring copy — connectivity boost retired", () => {
     expect(faq).toMatch(/never displaced by the most popular one/i);
   });
 });
+
+describe("markovScale copy — default-on ranking spread (verified prod 2026-07-20)", () => {
+  // markovScale defaults to 0.25 (query-conditioned spread, ON) in bootstrap
+  // ranking since 2026-07-04 (server.ts DEFAULT_MARKOV_SCALE); verified live on
+  // mmpm.co.nz 2026-07-20. Do NOT resurrect "default 0 / inert" copy.
+  const toolsRow = () =>
+    read("content/docs/mcp/tools.mdx")
+      .split("\n")
+      .find((l) => l.includes("`markovScale`") && l.trim().startsWith("|"));
+
+  it("MCP tools doc gives markovScale default 0.25, not 0/inert", () => {
+    const row = toolsRow();
+    expect(row).toBeDefined();
+    expect(row!).toMatch(/0\.25/);
+    expect(row!).not.toMatch(/inert/i);
+  });
+
+  it("bootstrap FAQ credits the default-on Markov spread in ranking", () => {
+    expect(read("src/app/faq/page.tsx")).toMatch(
+      /query-conditioned Markov spread \(on by default\)/,
+    );
+  });
+
+  it("benchmark keeps the (correct) spreading-activation claim", () => {
+    expect(read("src/app/benchmark/page.tsx")).toMatch(/Markov spreading activation/);
+  });
+});

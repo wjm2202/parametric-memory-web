@@ -774,8 +774,8 @@ export default async function HomePage() {
             </p>
             <p
               id="cta-heading"
-              className="font-display mb-5 text-4xl font-extrabold text-white lg:text-5xl"
-              style={{ letterSpacing: "-0.03em", lineHeight: 1.1 }}
+              className="font-display mb-5 text-4xl font-bold text-white lg:text-5xl"
+              style={{ letterSpacing: "-0.015em", lineHeight: 1.1 }}
             >
               Start in minutes.
               <br />

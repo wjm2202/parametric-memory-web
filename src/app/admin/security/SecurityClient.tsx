@@ -35,7 +35,7 @@ export default function SecurityClient({ account }: SecurityClientProps) {
       </div>
 
       <div className="mx-auto max-w-3xl px-4 py-8 sm:px-6 sm:py-10">
-        <h1 className="mb-1 font-[family-name:var(--font-syne)] text-xl font-semibold text-white sm:text-2xl">
+        <h1 className="mb-1 font-[family-name:var(--font-space-grotesk)] text-xl font-semibold text-white sm:text-2xl">
           Security settings
         </h1>
         <p className="mb-6 text-sm break-all text-white/50 sm:mb-8">{account.email}</p>
