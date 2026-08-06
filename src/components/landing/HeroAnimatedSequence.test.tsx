@@ -55,6 +55,29 @@ describe("HeroAnimatedSequence — static hero (LCP-friendly)", () => {
   });
 });
 
+describe("HeroAnimatedSequence — readability fix (2026-08-06 designer feedback)", () => {
+  it("H1 uses font-bold (700), not font-extrabold (800)", () => {
+    const { container } = render(<HeroAnimatedSequence />);
+    const h1 = container.querySelector("h1");
+    expect(h1?.className).toMatch(/\bfont-bold\b/);
+    expect(h1?.className).not.toMatch(/\bfont-extrabold\b/);
+  });
+
+  it("H1 uses relaxed -0.015em tracking, not the crowded -0.04em from the original flagged version", () => {
+    const { container } = render(<HeroAnimatedSequence />);
+    const h1 = container.querySelector("h1") as HTMLElement;
+    const style = h1.getAttribute("style") ?? "";
+    expect(style).toMatch(/letter-spacing:\s*-0\.015em/);
+    expect(style).not.toMatch(/-0\.04em/);
+  });
+
+  it("H1 still uses the site display font utility (now resolves to Space Grotesk)", () => {
+    const { container } = render(<HeroAnimatedSequence />);
+    const h1 = container.querySelector("h1");
+    expect(h1?.className).toMatch(/\bfont-display\b/);
+  });
+});
+
 describe("HeroAnimatedSequence — guard against regression", () => {
   it("source contains no tagline-cycling timers (no setInterval/setTimeout)", () => {
     const src = readFileSync(

@@ -15,12 +15,14 @@
  */
 
 import { describe, it, expect, vi } from "vitest";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
 
 // ──────────────────────────────────────────────────────────────────────────
 // next/font/google is a Next.js-runtime loader that doesn't execute under
 // vitest + jsdom. Stub each font factory with a tiny object matching the
 // shape the layout actually consumes (`.variable`). Without this, importing
-// `./layout` throws `(0, Syne) is not a function`.
+// `./layout` throws `(0, Space_Grotesk) is not a function`.
 // vi.mock is hoisted, so placement before the `./layout` import is not
 // required — but we put it here for readability.
 // ──────────────────────────────────────────────────────────────────────────
@@ -31,7 +33,7 @@ vi.mock("next/font/google", () => {
     style: { fontFamily: name },
   });
   return {
-    Syne: stub("syne"),
+    Space_Grotesk: stub("space-grotesk"),
     Outfit: stub("outfit"),
     JetBrains_Mono: stub("jetbrains-mono"),
   };
@@ -102,5 +104,35 @@ describe("RootLayout metadata — Bing site verification", () => {
       other?: Record<string, string | number | (string | number)[]>;
     };
     expect(verification?.other?.["msvalidate.01"]).toBe("DB5282BEA4BFD32D9831FA7B542DF247");
+  });
+});
+
+/**
+ * 2026-08-06 — designer flagged the hero heading as hard to read. Root
+ * cause was the display font (Syne) at heavy weight + tight tracking, not
+ * the gradient. Fixed by swapping the site's display font to Space
+ * Grotesk. This locks in that the swap actually happened in source (not
+ * just in the component that renders it) — see also
+ * HeroAnimatedSequence.test.tsx for the H1-level weight/tracking checks
+ * and src/app/__tests__/legal-clauses.test.ts style file-source checks for
+ * the pattern this follows.
+ */
+describe("RootLayout — display font is Space Grotesk (readability fix)", () => {
+  it("imports Space_Grotesk from next/font/google, not Syne", () => {
+    const src = readFileSync(join(process.cwd(), "src/app/layout.tsx"), "utf8");
+    expect(src).toMatch(/import\s*{\s*Space_Grotesk,/);
+    expect(src).not.toMatch(/import\s*{\s*Syne,/);
+  });
+
+  it("the font variable is named --font-space-grotesk, not --font-syne", () => {
+    const src = readFileSync(join(process.cwd(), "src/app/layout.tsx"), "utf8");
+    expect(src).toContain('variable: "--font-space-grotesk"');
+    expect(src).not.toContain('variable: "--font-syne"');
+  });
+
+  it("globals.css points --font-display at the Space Grotesk variable", () => {
+    const css = readFileSync(join(process.cwd(), "src/app/globals.css"), "utf8");
+    expect(css).toContain("--font-display: var(--font-space-grotesk), sans-serif;");
+    expect(css).not.toContain("var(--font-syne)");
   });
 });

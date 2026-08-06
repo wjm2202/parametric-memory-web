@@ -213,7 +213,7 @@ export function CheckoutDrawer({ open, onClose, tierId, tierName, priceLabel }: 
           <div>
             <h2
               id="checkout-drawer-title"
-              className="font-[family-name:var(--font-syne)] text-lg font-semibold text-white"
+              className="font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-white"
             >
               {tierName}
             </h2>

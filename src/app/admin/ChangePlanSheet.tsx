@@ -263,7 +263,7 @@ export function ChangePlanSheet({
             <div>
               <h2
                 id="change-plan-sheet-title"
-                className="font-[family-name:var(--font-syne)] text-lg font-semibold text-white"
+                className="font-[family-name:var(--font-space-grotesk)] text-lg font-semibold text-white"
               >
                 {SHEET_TITLE}
               </h2>
@@ -376,7 +376,7 @@ function OptionRow({
       {/* Header row: name + price + hosting badge */}
       <div className="flex items-baseline justify-between gap-4">
         <div>
-          <p className="font-[family-name:var(--font-syne)] text-base font-semibold text-white">
+          <p className="font-[family-name:var(--font-space-grotesk)] text-base font-semibold text-white">
             {option.name}
           </p>
           <p

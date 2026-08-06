@@ -233,7 +233,7 @@ function ProvisioningBody({
 }) {
   return (
     <div data-testid="billing-return-provisioning" className="text-center">
-      <h1 className="font-[family-name:var(--font-syne)] text-2xl font-semibold text-white">
+      <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold text-white">
         Setting up your substrate
       </h1>
       <p className="mt-3 text-sm text-white/70">
@@ -251,7 +251,7 @@ function ProvisioningBody({
 function ReadyBody({ payload }: { payload: SessionPayload }) {
   return (
     <div data-testid="billing-return-ready" className="text-center">
-      <h1 className="font-[family-name:var(--font-syne)] text-2xl font-semibold text-white">
+      <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold text-white">
         Your substrate is ready
       </h1>
       <p className="mt-3 text-sm text-white/70">
@@ -272,7 +272,7 @@ function ReadyBody({ payload }: { payload: SessionPayload }) {
 function TimeoutBody({ payload }: { payload: SessionPayload }) {
   return (
     <div data-testid="billing-return-timeout" className="text-center">
-      <h1 className="font-[family-name:var(--font-syne)] text-2xl font-semibold text-white">
+      <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold text-white">
         Still working&hellip;
       </h1>
       <p className="mt-3 text-sm text-white/70">
@@ -294,7 +294,7 @@ function TimeoutBody({ payload }: { payload: SessionPayload }) {
 function OpenBody({ tier }: { tier: string | null }) {
   return (
     <div data-testid="billing-return-open" className="text-center">
-      <h1 className="font-[family-name:var(--font-syne)] text-2xl font-semibold text-white">
+      <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold text-white">
         Checkout didn&apos;t complete
       </h1>
       <p className="mt-3 text-sm text-white/70">
@@ -316,7 +316,7 @@ function OpenBody({ tier }: { tier: string | null }) {
 function ErrorBody({ message }: { message: string }) {
   return (
     <div data-testid="billing-return-error" className="text-center">
-      <h1 className="font-[family-name:var(--font-syne)] text-2xl font-semibold text-white">
+      <h1 className="font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold text-white">
         Something went wrong
       </h1>
       <p className="mt-3 text-sm text-white/70">{message}</p>

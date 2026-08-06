@@ -820,7 +820,7 @@ export default function DashboardClient({
           (which is hidden on md+ widths). */}
       <header className="relative border-b border-white/5 px-4 pt-20 pb-4 sm:px-6 sm:pt-24">
         <div className="mx-auto flex max-w-6xl flex-col gap-3 md:flex-row md:items-center md:justify-between">
-          <h1 className="font-[family-name:var(--font-syne)] text-xl font-semibold text-white sm:text-2xl">
+          <h1 className="font-[family-name:var(--font-space-grotesk)] text-xl font-semibold text-white sm:text-2xl">
             Memory Substrates
           </h1>
           <div className="hidden items-center gap-6 md:flex">

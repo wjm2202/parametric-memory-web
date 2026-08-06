@@ -18,6 +18,17 @@
  *
  * Hover effects on the CTAs use Tailwind arbitrary-value classes — no JS
  * event handlers, so the file can stay server-side.
+ *
+ * 2026-08-06 (designer feedback — readability): the H1 was flagged as hard
+ * to read. Root cause was the display font (Syne) at font-extrabold (800)
+ * with -0.04em tracking — very tight negative tracking on a stylized
+ * display face crowds letterforms at this size. Fix was two-part: (1) the
+ * site-wide display font moved from Syne to Space Grotesk (more open
+ * counters at bold weights — see src/app/layout.tsx), and (2) this H1
+ * specifically drops to font-bold (700) with -0.015em tracking instead of
+ * font-extrabold (800) / -0.04em. Confirmed against mockups comparing both
+ * gradient treatment and font/weight/tracking in isolation before landing
+ * on this combination.
  */
 
 import Link from "next/link";
@@ -41,10 +52,10 @@ export function HeroAnimatedSequence() {
       {/* Main heading — LCP candidate. Rendered fully on the server at full
           opacity so first paint satisfies LCP. */}
       <h1
-        className="font-display mb-6 font-extrabold tracking-tight text-white"
+        className="font-display mb-6 font-bold tracking-tight text-white"
         style={{
           fontSize: "clamp(32px, 4.5vw, 64px)",
-          letterSpacing: "-0.04em",
+          letterSpacing: "-0.015em",
           lineHeight: 1.05,
         }}
       >

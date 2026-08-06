@@ -294,7 +294,7 @@ function ChallengeShell({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-h-screen bg-[#030712] text-white">
       <div className="mx-auto max-w-md px-4 py-16 sm:px-6 sm:py-20">
-        <h1 className="mb-6 text-center font-[family-name:var(--font-syne)] text-2xl font-semibold text-white">
+        <h1 className="mb-6 text-center font-[family-name:var(--font-space-grotesk)] text-2xl font-semibold text-white">
           Parametric Memory
         </h1>
         {children}

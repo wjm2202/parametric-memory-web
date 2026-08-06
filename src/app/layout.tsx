@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Syne, Outfit, JetBrains_Mono } from "next/font/google";
+import { Space_Grotesk, Outfit, JetBrains_Mono } from "next/font/google";
 import { Toaster } from "sonner";
 import "./globals.css";
 import { BetaBanner } from "@/components/ui/BetaBanner";
@@ -14,10 +14,17 @@ import {
 } from "@/lib/pricing";
 
 import { SUPPORT_EMAIL } from "@/config/site";
-const syne = Syne({
+// 2026-08-06 (designer feedback): swapped the display face from Syne to
+// Space Grotesk. Syne's stylized counters at font-extrabold (800) + the
+// tight -0.04em tracking on the hero H1 were flagged as hard to read; Space
+// Grotesk keeps the geometric/technical feel with more open letterforms.
+// Space Grotesk ships static weights up to 700 only (no 800 file) — any
+// existing `font-extrabold` usage now renders as browser-synthesized bold
+// on top of 700 rather than a true 800 weight, which is expected and fine.
+const spaceGrotesk = Space_Grotesk({
   subsets: ["latin"],
-  variable: "--font-syne",
-  weight: ["400", "500", "600", "700", "800"],
+  variable: "--font-space-grotesk",
+  weight: ["400", "500", "600", "700"],
   display: "swap",
 });
 
@@ -409,7 +416,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       // See globals.css:70 for the `scroll-behavior: smooth` rule, and the
       // M4 row in docs/SPRINT-NEXTJS-16-UPGRADE-2026-05-27.md.
       data-scroll-behavior="smooth"
-      className={`dark ${syne.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
+      className={`dark ${spaceGrotesk.variable} ${outfit.variable} ${jetbrainsMono.variable}`}
     >
       <head>
         {/* AI-first: Organization structured data */}

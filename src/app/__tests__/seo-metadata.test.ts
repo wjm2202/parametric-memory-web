@@ -23,7 +23,7 @@ vi.mock("next/font/google", () => {
     style: { fontFamily: name },
   });
   return {
-    Syne: stub("syne"),
+    Space_Grotesk: stub("space-grotesk"),
     Outfit: stub("outfit"),
     JetBrains_Mono: stub("jetbrains-mono"),
   };
