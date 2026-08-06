@@ -857,7 +857,9 @@ export default async function AboutPage() {
         {/* ── Who it's for ──────────────────────────────────────────────── */}
         <section className="border-t border-[#1a1a26] bg-[#0a0a0f] px-6 py-16">
           <div className="mx-auto max-w-3xl">
-            <h2 className="font-display mb-8 text-2xl font-bold text-[#e8e8f0]">Who it&apos;s for</h2>
+            <h2 className="font-display mb-8 text-2xl font-bold text-[#e8e8f0]">
+              Who it&apos;s for
+            </h2>
 
             <div className="space-y-4">
               {[
