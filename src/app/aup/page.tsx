@@ -43,7 +43,7 @@ export default async function AUPPage() {
             Acceptable Use Policy
           </h1>
           <p className="mt-3 text-sm text-white/50">
-            Effective Date: 26 April 2026 &nbsp;·&nbsp; Incorporated into Terms of Service
+            Effective Date: 6 August 2026 &nbsp;·&nbsp; Incorporated into Terms of Service
           </p>
         </div>
 

@@ -121,7 +121,7 @@ const ALL_FAQS: FAQItem[] = [
     category: "what",
     question: "What is session bootstrapping?",
     answer:
-      "Session bootstrap is a single MCP tool call — memory_session_bootstrap — that loads relevant atoms, active procedures, Markov predictions, and conflicting facts at the start of every session. You pass your objective and it returns a pre-ranked, token-budgeted context block. Bootstrap ranks atoms by relevance to your objective, refined by knowledge-graph signals — a boost for the domain you declare and demotion of superseded atoms. On a Pro plan, you can run up to 333 bootstraps per day.",
+      "Session bootstrap is a single MCP tool call — memory_session_bootstrap — that loads relevant atoms, active procedures, Markov predictions, and conflicting facts at the start of every session. You pass your objective and it returns a pre-ranked, token-budgeted context block. Bootstrap ranks atoms by relevance to your objective, refined by knowledge-graph signals — a boost for the domain you declare, demotion of superseded atoms, and a query-conditioned Markov spread (on by default) that surfaces related atoms your top matches point to. On a Pro plan, you can run up to 333 bootstraps per day.",
   },
   {
     category: "what",

@@ -28,7 +28,7 @@ Recall relevant prior context at the start of a task — load what was learned, 
 | `evidenceThreshold` | number | Minimum evidence score (e.g. `0.75` for high-stakes). |
 | `mode` | string | Response shape: `orient` (default), `detailed`, or `audit`. |
 | `domain` | string | Domain atom key (e.g. `v1.domain.myproject`) — 1.15× relevance boost on tagged atoms. |
-| `markovScale` | number | Markov spreading-activation multiplier. Default `0` (inert); try `0.25`–`1.0` when density is high. |
+| `markovScale` | number | Markov spreading-activation multiplier. Default `0.25` (on by default; set `0` to disable); try `0.25`–`1.0` when density is high. |
 | `asOfMs` / `asOfVersion` | number | Time-travel: bootstrap the substrate as of a past moment or tree version. |
 | `namespace` | object | `{ user?, project?, task? }` scoping. |
 
@@ -187,7 +187,7 @@ Find cross-domain connections between recently stored atoms. Used internally by 
 
 ### `memory_markov_density_report`  *(read-only)*
 
-Precondition diagnostic for `memory_session_bootstrap`'s `markovScale`. If density is below ~10%, passing `markovScale > 0` is silently useless — the Markov wire has too little to spread from.
+Precondition diagnostic for `memory_session_bootstrap`'s `markovScale`. With `markovScale` at its default `0.25`, a density below ~10% leaves the spread little to work from and higher values add little — the Markov wire has too little to spread from.
 
 **Parameters:** none. **Returns:** `dominantNextDensity`, average/max fan-out, and master `treeVersion`.
 

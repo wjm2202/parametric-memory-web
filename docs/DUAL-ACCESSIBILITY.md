@@ -695,6 +695,8 @@ deletion of a clause fails CI.
 | `terms-no-refund-cause` | `<h3>` Section 6.5 (No Refund on Termination for Cause) on `/terms` |
 | `terms-indemnification` | `<h2>` Section 14 (Indemnification) on `/terms` |
 | `terms-force-majeure` | `<h2>` Section 15 (Force Majeure) on `/terms` |
+| `terms-l2-cache-nature` | Callout box under Section 2 (Service Description) on `/terms` — states MMPM is a transient, best-effort L2 cache for agents/agent swarms, not a long-term data store, and that data permanence is the data owner's sole responsibility. Asserted by `legal-clauses.test.ts`. |
+| `terms-not-a-data-store` | `<h3>` Section 9.3 (Not a Long-Term Data Store — L2 Cache Nature of the Service) on `/terms`. Asserted by `legal-clauses.test.ts` — guards the no-data-permanence-guarantee clause. |
 | `aup-section-5` | `<h2>` Section 5 (Enforcement) on `/aup` |
 | `aup-enforcement-actions` | `<h3>` Section 5.1 (Range of Actions) on `/aup` |
 | `aup-no-prior-notice` | `<h3>` Section 5.2 (No Prior Notice for Severe Violations) on `/aup` |

@@ -45,7 +45,7 @@ export default async function TermsPage() {
             Terms of Service
           </h1>
           <p className="mt-3 text-sm text-white/50">
-            Effective Date: 26 April 2026 &nbsp;·&nbsp; Governing Law: New Zealand
+            Effective Date: 6 August 2026 &nbsp;·&nbsp; Governing Law: New Zealand
           </p>
         </div>
 
@@ -91,6 +91,41 @@ export default async function TermsPage() {
             of your plan.
           </p>
 
+          <div
+            data-testid="terms-l2-cache-nature"
+            className="not-prose rounded-xl border border-indigo-500/20 bg-indigo-500/5 p-6"
+          >
+            <p className="mb-4 font-mono text-xs font-semibold tracking-wide text-indigo-300 uppercase">
+              What MMPM Is &mdash; and Is Not
+            </p>
+            <div className="space-y-3 text-sm leading-relaxed text-white/80">
+              <p>
+                MMPM is a <strong>short-lived, best-effort L2 cache</strong> for AI agents and agent
+                swarms &mdash; not a database, not archival storage, and{" "}
+                <strong>not a long-term data store</strong>. Like any L2 cache, it is designed to be
+                loaded, used, and destroyed. Data held in a substrate is by its nature{" "}
+                <strong>transient and duplicative</strong>: it is expected to be a working copy of
+                information whose authoritative, durable copy (the &ldquo;source of truth&rdquo;)
+                lives elsewhere, under your control.
+              </p>
+              <p>
+                <strong>
+                  Data permanence is not, and has never been, a guarantee of the Service.
+                </strong>{" "}
+                We take all reasonable care in operating the substrate, but we take{" "}
+                <strong>no responsibility for data loss, corruption, or unavailability</strong>,
+                however caused. Full detail on what this means for your data, including deletion
+                timelines and the paid recovery window, is at Section&nbsp;9.3.
+              </p>
+              <p>
+                By using the Service you agree that mastering, backing up, and preserving your data
+                outside of MMPM is your sole responsibility as the owner of that data, and that you
+                will not treat MMPM as the only or primary copy of anything you cannot afford to
+                lose.
+              </p>
+            </div>
+          </div>
+
           <h2>3. Eligibility</h2>
           <p>
             You represent and warrant that you are at least 18 years of age, have legal capacity to
@@ -117,7 +152,7 @@ export default async function TermsPage() {
                   <th>Plan</th>
                   <th>Price</th>
                   <th>Memory Atoms</th>
-                  <th>Retention</th>
+                  <th>Data Persistence</th>
                 </tr>
               </thead>
               <tbody>
@@ -126,7 +161,7 @@ export default async function TermsPage() {
                     <td>{row.name}</td>
                     <td>{row.priceLabel}</td>
                     <td>{row.atomsLabel}</td>
-                    <td>{row.retentionLabel}</td>
+                    <td>{row.persistenceLabel}</td>
                   </tr>
                 ))}
               </tbody>
@@ -137,6 +172,11 @@ export default async function TermsPage() {
             All prices are stated and charged in US dollars (USD). Listed prices are exclusive of
             any applicable taxes (including GST, VAT, sales tax, withholding tax, or similar
             levies), which will be added at checkout or on invoice where required by law.
+          </p>
+          <p>
+            <strong>No plan, at any tier, includes a data retention guarantee.</strong> MMPM is a
+            transient cache, not archival storage — see Section&nbsp;2 and Section&nbsp;9.3 before
+            you rely on it for anything you cannot afford to lose.
           </p>
 
           <h3>5.2 Payment &amp; Auto-Renewal</h3>
@@ -412,6 +452,11 @@ export default async function TermsPage() {
                 DELETED DATA CAN BE RECOVERED.
               </p>
               <p>
+                MMPM IS A TRANSIENT L2 CACHE, NOT A LONG-TERM DATA STORE. WE DO NOT WARRANT DATA
+                PERMANENCE AT ANY TIER OR PLAN. YOU, AS THE OWNER OF YOUR DATA, ARE SOLELY
+                RESPONSIBLE FOR MASTERING AND PRESERVING IT ELSEWHERE.
+              </p>
+              <p>
                 MEMORY ATOMS ARE NOT SUITABLE FOR MISSION-CRITICAL APPLICATIONS, MEDICAL, LEGAL, OR
                 FINANCIAL DECISION-MAKING WITHOUT INDEPENDENT VERIFICATION.
               </p>
@@ -476,7 +521,34 @@ export default async function TermsPage() {
             systems.
           </p>
 
-          <h3>9.3 Data Deletion &amp; Forensic Recovery</h3>
+          <h3 data-testid="terms-not-a-data-store">
+            9.3 Not a Long-Term Data Store &mdash; L2 Cache Nature of the Service
+          </h3>
+          <p>
+            The Service is a <strong>temporary, best-effort L2 cache</strong> intended for use by AI
+            agents and agent swarms as a working memory layer &mdash; it is{" "}
+            <strong>not intended, designed, warranted, or sold as a long-term data store</strong>,
+            system of record, archive, or backup. Consistent with the nature of an L2 cache, data
+            held in your substrate may be loaded, used, evicted, and destroyed as part of normal
+            operation, and is <strong>transient and duplicative by design</strong>. Your original,
+            authoritative data must be mastered and preserved elsewhere, under your own control; the
+            copy held by MMPM is a convenience layer, not your system of record.
+          </p>
+          <p>
+            <strong>
+              Data permanence is not guaranteed by the Service at any plan or tier, and we accept no
+              responsibility for data loss.
+            </strong>{" "}
+            We take all reasonable operational care in running the substrate &mdash; but because
+            data permanence was never promised, &ldquo;all care, no responsibility&rdquo; is the
+            standard that applies: care in operation does not become responsibility for loss.
+            Responsibility for data permanence, backup, and durability of the source data rests
+            solely and exclusively with you, as the owner of that data. By using the Service, you
+            acknowledge and agree that: the L2 cache is short-lived and is not, and must not be
+            treated as, a long-term data store; its intended use is a limited-duration memory layer
+            for agents and agent swarms, not durable storage; and you accept these limitations as a
+            condition of use.
+          </p>
           <p>
             Deletion removes access to your data within 24 hours. At termination we take a
             point-in-time snapshot; for 7 days it may be recovered as a paid, at-cost service
@@ -654,6 +726,10 @@ export default async function TermsPage() {
                 <tbody>
                   {[
                     ["Warranty", "AS-IS; no accuracy, uptime, or recovery guarantee"],
+                    [
+                      "Data Persistence",
+                      "MMPM is a transient L2 cache, not a long-term data store — no permanence guarantee at any plan; you own responsibility for mastering data elsewhere",
+                    ],
                     ["Memory Atoms", "Probabilistic — may be inaccurate or inferred"],
                     ["Liability Cap", "12 months of fees paid (or $100 minimum)"],
                     [
