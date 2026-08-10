@@ -17,8 +17,11 @@ import sitemap, {
   DOCS_LASTMOD_OVERRIDES,
   DOCS_DEFAULT_LASTMOD,
   BLOG_FALLBACK_LASTMOD,
+  VIDEO_LASTMOD,
+  VIDEO_DEFAULT_LASTMOD,
 } from "./sitemap";
 import { getAllDocSlugsFromNav } from "@/config/docs-nav";
+import { getAllVideos, youtubeEmbedUrl, youtubeThumbnailUrl } from "@/lib/videos";
 
 const SITE = "https://parametric-memory.dev";
 
@@ -54,6 +57,67 @@ describe("sitemap.ts — determinism (lastmod must not be call-time)", () => {
     }
     expect(Number.isNaN(new Date(DOCS_DEFAULT_LASTMOD).getTime())).toBe(false);
     expect(Number.isNaN(new Date(BLOG_FALLBACK_LASTMOD).getTime())).toBe(false);
+    for (const [slug, date] of Object.entries(VIDEO_LASTMOD)) {
+      expect(Number.isNaN(new Date(date).getTime()), `${slug}: ${date}`).toBe(false);
+    }
+    expect(Number.isNaN(new Date(VIDEO_DEFAULT_LASTMOD).getTime())).toBe(false);
+  });
+});
+
+// ── Video extensions (2026-08-09) ────────────────────────────────────────────
+//
+// GSC's sitemap report read "Discovered videos: 0" because the site published
+// no <video:video> extensions at all. These lock the three fields Google
+// requires per video entry, and the player_loc/embedUrl agreement that lets
+// Google match the sitemap to the markup on the page.
+
+describe("sitemap.ts — video entries", () => {
+  const videoEntries = () => sitemap().filter((e) => e.url.startsWith(`${SITE}/videos/`));
+
+  it("publishes one entry per video in the catalogue", () => {
+    expect(videoEntries()).toHaveLength(getAllVideos().length);
+  });
+
+  it("includes the /videos hub, and the hub itself carries no video extension", () => {
+    const hub = sitemap().find((e) => e.url === `${SITE}/videos`);
+    expect(hub, "/videos hub missing from sitemap").toBeDefined();
+    // The hub is an ItemList index, not a video result.
+    expect(hub).not.toHaveProperty("videos");
+  });
+
+  it("every video entry carries the fields Google requires", () => {
+    for (const entry of videoEntries()) {
+      const videos = (entry as { videos?: Array<Record<string, unknown>> }).videos;
+      expect(videos, `${entry.url} has no video extension`).toBeDefined();
+      expect(videos).toHaveLength(1);
+      const video = videos![0];
+      expect(video.title, `${entry.url}: title`).toBeTruthy();
+      expect(video.thumbnail_loc, `${entry.url}: thumbnail_loc`).toBeTruthy();
+      expect(video.description, `${entry.url}: description`).toBeTruthy();
+    }
+  });
+
+  it("player_loc matches the embed URL the page renders", () => {
+    // A mismatch here means the sitemap advertises a player the page does not
+    // load, and Google declines to associate the two.
+    for (const video of getAllVideos()) {
+      const entry = sitemap().find((e) => e.url === `${SITE}/videos/${video.slug}`);
+      const ext = (entry as { videos?: Array<Record<string, unknown>> }).videos![0];
+      expect(ext.player_loc).toBe(youtubeEmbedUrl(video.youtubeId));
+      expect(ext.thumbnail_loc).toBe(youtubeThumbnailUrl(video.youtubeId));
+      expect(ext.duration).toBe(video.durationSeconds);
+    }
+  });
+
+  it("uses a pinned lastmod, not the video's upload date", () => {
+    // lastmod describes when the PAGE changed. Deriving it from uploadDate
+    // would freeze the page at the video's publication date and suppress
+    // recrawls after a copy edit.
+    for (const video of getAllVideos()) {
+      const entry = sitemap().find((e) => e.url === `${SITE}/videos/${video.slug}`);
+      const expected = new Date(VIDEO_LASTMOD[video.slug] ?? VIDEO_DEFAULT_LASTMOD).getTime();
+      expect(new Date(entry!.lastModified as Date).getTime(), video.slug).toBe(expected);
+    }
   });
 });
 

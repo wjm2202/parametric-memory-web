@@ -1,6 +1,7 @@
 import type { MetadataRoute } from "next";
 import { getAllPostSlugs, getPostBySlug } from "@/lib/blog";
 import { getAllDocSlugsFromNav } from "@/config/docs-nav";
+import { getAllVideos, youtubeEmbedUrl, youtubeThumbnailUrl } from "@/lib/videos";
 
 /**
  * Sitemap — deterministic lastmod dates (2026-07-08 SEO indexing fix).
@@ -44,6 +45,11 @@ export const ROUTE_LASTMOD: Record<string, string> = {
   "/visualise": "2026-07-13",
   "/knowledge": "2026-07-13",
   "/blog": "2026-07-13",
+  // 2026-08-09: /videos section created. GSC reported "Discovered videos: 0"
+  // on the sitemap because the site published no video markup at all, while
+  // three demos sat on YouTube earning Search impressions the site could not
+  // claim. Video results are a far less contested SERP than web results.
+  "/videos": "2026-08-09",
   "/terms": "2026-07-13",
   // 2026-07-13: privacy policy revision — OAuth SSO disclosure, full cookie
   // table (mmpm_oauth_state, mmpm_pending_token), 2FA + waitlist sections.
@@ -68,6 +74,24 @@ export const DOCS_LASTMOD_OVERRIDES: Record<string, string> = {};
 
 /** Fallback for a blog post with unparseable frontmatter — pinned, not now(). */
 export const BLOG_FALLBACK_LASTMOD = "2026-07-08";
+
+/**
+ * Video detail pages. Keyed by slug (see src/lib/videos.ts).
+ *
+ * Deliberately NOT derived from the video's `uploadDate`: lastmod describes
+ * when the PAGE last changed, not when the video was published. A page written
+ * today about a video published in July has a lastmod of today. Bump the entry
+ * when you edit the summary, takeaways or chapters.
+ *
+ * A missing entry falls back to VIDEO_DEFAULT_LASTMOD rather than now() —
+ * same discipline as the rest of this file. Locked by sitemap.test.ts.
+ */
+export const VIDEO_DEFAULT_LASTMOD = "2026-08-09";
+export const VIDEO_LASTMOD: Record<string, string> = {
+  "cve-memory-for-ai-agents": "2026-08-09",
+  "ai-memory-over-mcp": "2026-08-09",
+  "typescript-expert-memory-l2-cache": "2026-08-09",
+};
 
 type ChangeFrequency = MetadataRoute.Sitemap[number]["changeFrequency"];
 
@@ -96,6 +120,9 @@ const STATIC_ROUTES: Array<{
   { path: "/visualise", changeFrequency: "monthly", priority: 0.7 },
   { path: "/knowledge", changeFrequency: "weekly", priority: 0.6 },
   { path: "/blog", changeFrequency: "weekly", priority: 0.6 },
+  // /videos hub — an ItemList index, not itself a video result. Its job is to
+  // hand Google the three detail URLs and give the section internal links.
+  { path: "/videos", changeFrequency: "monthly", priority: 0.7 },
   // /signup and /login are intentionally omitted — they are noindex
   // (low-value auth pages), and noindex URLs should not appear in the sitemap.
   // /docs is intentionally omitted — it 301s to /docs/introduction.
@@ -135,6 +162,29 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: 0.8,
   }));
 
+  // Video detail pages, each carrying a <video:video> extension. This is what
+  // populates the "Discovered videos" column in GSC's sitemap report — it read
+  // 0 before this section existed. thumbnail_loc, title and description are
+  // the three fields Google requires; player_loc must be the same player URL
+  // the page's iframe loads, or the extension and the markup disagree.
+  const videoEntries: MetadataRoute.Sitemap = getAllVideos().map((video) => ({
+    url: `${SITE}/videos/${video.slug}`,
+    lastModified: new Date(VIDEO_LASTMOD[video.slug] ?? VIDEO_DEFAULT_LASTMOD),
+    changeFrequency: "monthly" as const,
+    priority: 0.7,
+    videos: [
+      {
+        title: video.title,
+        thumbnail_loc: youtubeThumbnailUrl(video.youtubeId),
+        description: video.description,
+        player_loc: youtubeEmbedUrl(video.youtubeId),
+        duration: video.durationSeconds,
+        publication_date: video.uploadDate,
+        family_friendly: "yes" as const,
+      },
+    ],
+  }));
+
   const staticEntries: MetadataRoute.Sitemap = STATIC_ROUTES.map((route) => ({
     url: `${SITE}${route.path}`,
     lastModified: new Date(ROUTE_LASTMOD[route.path]),
@@ -142,5 +192,5 @@ export default function sitemap(): MetadataRoute.Sitemap {
     priority: route.priority,
   }));
 
-  return [...staticEntries, ...docEntries, ...blogEntries];
+  return [...staticEntries, ...docEntries, ...blogEntries, ...videoEntries];
 }

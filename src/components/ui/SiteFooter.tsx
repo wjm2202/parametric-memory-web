@@ -77,6 +77,10 @@ export const SITE_FOOTER_COLUMNS: FooterColumn[] = [
     links: [
       { href: "/about", label: "About", testid: "footer-link-about" },
       { href: "/blog", label: "Blog", testid: "footer-link-blog" },
+      // Internal /videos precedes the external YouTube link deliberately —
+      // the on-site section is what we want crawled and ranked; the channel
+      // link is the courtesy outbound.
+      { href: "/videos", label: "Videos", testid: "footer-link-videos" },
       { href: "/faq", label: "FAQ", testid: "footer-link-faq" },
       {
         href: "https://www.youtube.com/@parametricmemory",

@@ -219,6 +219,7 @@ const PRIMARY_NAV: NavItem[] = [
  */
 const MORE_NAV: NavItem[] = [
   { href: "/benchmark", label: "Benchmark", testid: "nav-link-benchmark" },
+  { href: "/videos", label: "Videos", testid: "nav-link-videos" },
   { href: "/blog", label: "Blog", testid: "nav-link-blog" },
   { href: "/faq", label: "FAQ", testid: "nav-link-faq" },
   { href: "/about", label: "About", testid: "nav-link-about" },
