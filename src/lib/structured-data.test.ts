@@ -7,7 +7,14 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { buildDocsTechArticle, buildDocsBreadcrumb, buildBlogBreadcrumb } from "./structured-data";
+import {
+  buildDocsTechArticle,
+  buildDocsBreadcrumb,
+  buildBlogBreadcrumb,
+  buildVideoObject,
+  buildVideoBreadcrumb,
+  buildVideoItemList,
+} from "./structured-data";
 
 const input = {
   slug: "concepts/merkle-proofs",
@@ -138,5 +145,127 @@ describe("buildBlogBreadcrumb", () => {
     ]);
     const blogCrumb = schema.itemListElement[1] as { item?: string };
     expect(blogCrumb.item).toBe("https://parametric-memory.dev/blog");
+  });
+});
+
+// ── Video (2026-08-09) ───────────────────────────────────────────────────────
+//
+// GSC audit found the site publishing no video markup at all while three demos
+// on YouTube earned Search impressions the site could not claim. These lock the
+// four properties Google REQUIRES for a VideoObject rich result — drop any one
+// and the result silently disappears with no build error.
+
+const videoInput = {
+  slug: "ai-memory-over-mcp",
+  title: "I asked Claude for its own project history",
+  description: "Recall performed over MCP alone, with no context and no RAG pipeline.",
+  uploadDate: "2026-07-13",
+  duration: "PT13M10S",
+  durationSeconds: 790,
+  thumbnailUrl: "https://i.ytimg.com/vi/NW-ILHDd9rA/maxresdefault.jpg",
+  embedUrl: "https://www.youtube-nocookie.com/embed/NW-ILHDd9rA",
+  keywords: ["MCP", "AI memory"],
+};
+
+describe("buildVideoObject", () => {
+  const schema = buildVideoObject(videoInput);
+
+  it("is a VideoObject with schema.org context", () => {
+    expect(schema["@context"]).toBe("https://schema.org");
+    expect(schema["@type"]).toBe("VideoObject");
+  });
+
+  it("carries all four properties Google requires", () => {
+    expect(schema.name).toBe(videoInput.title);
+    expect(schema.description).toBe(videoInput.description);
+    expect(schema.thumbnailUrl).toEqual([videoInput.thumbnailUrl]);
+    expect(schema.uploadDate).toBe("2026-07-13");
+  });
+
+  it("uses the canonical on-site URL, not the YouTube watch URL", () => {
+    // The rich result must point at our page — the whole purpose of hosting
+    // the video on-site is to capture the click.
+    const url = "https://parametric-memory.dev/videos/ai-memory-over-mcp";
+    expect(schema.url).toBe(url);
+    expect(schema["@id"]).toBe(`${url}#video`);
+    expect(schema.mainEntityOfPage["@id"]).toBe(url);
+  });
+
+  it("emits an embedUrl that matches the player the page actually loads", () => {
+    // If schema and iframe disagree, Google cannot match the markup to a
+    // playable video and withholds the result.
+    expect(schema.embedUrl).toBe(videoInput.embedUrl);
+  });
+
+  it("attributes the publisher to the site Organization @id (entity graph)", () => {
+    expect(schema.publisher["@id"]).toBe("https://parametric-memory.dev/#organization");
+  });
+
+  it("omits hasPart entirely when the video has no real chapters", () => {
+    // An empty hasPart array is worse than none — it claims key moments exist.
+    expect(schema).not.toHaveProperty("hasPart");
+  });
+
+  it("bounds each Clip by the next chapter, and the last by the video duration", () => {
+    const withChapters = buildVideoObject({
+      ...videoInput,
+      chapters: [
+        { startSeconds: 0, title: "Intro" },
+        { startSeconds: 115, title: "The prompt" },
+        { startSeconds: 235, title: "What it cannot know" },
+      ],
+    });
+    const parts = withChapters.hasPart as Array<{
+      "@type": string;
+      name: string;
+      startOffset: number;
+      endOffset: number;
+      url: string;
+    }>;
+
+    expect(parts).toHaveLength(3);
+    expect(parts.every((p) => p["@type"] === "Clip")).toBe(true);
+    expect(parts.map((p) => p.startOffset)).toEqual([0, 115, 235]);
+    // Each clip ends where the next begins; the final clip ends at the video's end.
+    expect(parts.map((p) => p.endOffset)).toEqual([115, 235, 790]);
+    expect(parts[2].url).toBe("https://parametric-memory.dev/videos/ai-memory-over-mcp?t=235");
+  });
+
+  it("serialises keywords as a comma-separated string, and omits them when absent", () => {
+    expect(schema.keywords).toBe("MCP, AI memory");
+    const bare = buildVideoObject({ ...videoInput, keywords: [] });
+    expect(bare).not.toHaveProperty("keywords");
+  });
+});
+
+describe("buildVideoBreadcrumb", () => {
+  it("builds Home → Videos → Video with the final crumb unlinked", () => {
+    const schema = buildVideoBreadcrumb("AI memory over MCP");
+    expect(schema["@type"]).toBe("BreadcrumbList");
+    expect(schema.itemListElement.map((i: { name: string }) => i.name)).toEqual([
+      "Home",
+      "Videos",
+      "AI memory over MCP",
+    ]);
+    const videosCrumb = schema.itemListElement[1] as { item?: string };
+    expect(videosCrumb.item).toBe("https://parametric-memory.dev/videos");
+    expect((schema.itemListElement.at(-1) as { item?: string }).item).toBeUndefined();
+  });
+});
+
+describe("buildVideoItemList", () => {
+  const schema = buildVideoItemList([
+    { slug: "a", title: "Video A" },
+    { slug: "b", title: "Video B" },
+  ]);
+
+  it("is an ItemList — the hub indexes videos, it is not itself a video", () => {
+    expect(schema["@type"]).toBe("ItemList");
+    expect(schema.numberOfItems).toBe(2);
+  });
+
+  it("lists absolute detail URLs with 1-based positions", () => {
+    expect(schema.itemListElement.map((i: { position: number }) => i.position)).toEqual([1, 2]);
+    expect(schema.itemListElement[0].url).toBe("https://parametric-memory.dev/videos/a");
   });
 });

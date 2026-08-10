@@ -102,3 +102,117 @@ export function buildBlogBreadcrumb(title: string) {
     { name: title },
   ]);
 }
+
+// ── Video ────────────────────────────────────────────────────────────────────
+//
+// Added 2026-08-09 after the GSC audit found the site averaging position 11.6
+// with zero video markup anywhere and "Discovered videos: 0" on the sitemap.
+// Video results are a far less contested SERP than web results, and Google
+// only awards them to pages where the video is the main content — hence one
+// page per video rather than a single gallery.
+//
+// Required by Google for VideoObject rich results: name, description,
+// thumbnailUrl, uploadDate. `duration` and `embedUrl` are strongly recommended
+// and cheap to supply, so they are always emitted.
+
+/** Real chapter marker on the source video. Offsets must match the video. */
+export interface VideoClipInput {
+  startSeconds: number;
+  title: string;
+}
+
+export interface VideoJsonLdInput {
+  /** URL segment under /videos/ */
+  slug: string;
+  title: string;
+  description: string;
+  /** YYYY-MM-DD. Google accepts a date-only ISO 8601 value. */
+  uploadDate: string;
+  /** ISO-8601 duration, e.g. "PT13M10S" — see toIso8601Duration(). */
+  duration: string;
+  thumbnailUrl: string;
+  /** Player URL — must be the same URL the on-page iframe loads. */
+  embedUrl: string;
+  keywords?: string[];
+  /** Omit entirely when the video has no real chapter markers. */
+  chapters?: VideoClipInput[];
+  /** Total runtime in seconds — needed to bound the final Clip. */
+  durationSeconds: number;
+}
+
+/**
+ * VideoObject for a single video page.
+ *
+ * `hasPart` Clip entries are emitted only when real chapters exist. Each clip
+ * is bounded by the next chapter's start (or the video's end), because Google
+ * requires both startOffset and endOffset to render key moments, and a clip
+ * that runs past the end of the video is invalid.
+ */
+export function buildVideoObject(input: VideoJsonLdInput) {
+  const url = `${SITE}/videos/${input.slug}`;
+  const chapters = input.chapters ?? [];
+
+  const hasPart = chapters.map((chapter, i) => {
+    const endOffset = chapters[i + 1]?.startSeconds ?? input.durationSeconds;
+    return {
+      "@type": "Clip",
+      name: chapter.title,
+      startOffset: chapter.startSeconds,
+      endOffset,
+      url: `${url}?t=${chapter.startSeconds}`,
+    };
+  });
+
+  return {
+    "@context": "https://schema.org",
+    "@type": "VideoObject",
+    "@id": `${url}#video`,
+    name: input.title,
+    description: input.description,
+    thumbnailUrl: [input.thumbnailUrl],
+    uploadDate: input.uploadDate,
+    duration: input.duration,
+    embedUrl: input.embedUrl,
+    url,
+    inLanguage: "en",
+    isFamilyFriendly: true,
+    publisher: { "@id": ORG_ID },
+    mainEntityOfPage: { "@type": "WebPage", "@id": url },
+    ...(input.keywords?.length ? { keywords: input.keywords.join(", ") } : {}),
+    ...(hasPart.length ? { hasPart } : {}),
+  };
+}
+
+/** BreadcrumbList for a video page: Home → Videos → Video. */
+export function buildVideoBreadcrumb(title: string) {
+  return breadcrumbList([
+    { name: "Home", item: SITE },
+    { name: "Videos", item: `${SITE}/videos` },
+    { name: title },
+  ]);
+}
+
+/**
+ * ItemList for the /videos hub.
+ *
+ * The hub itself is not eligible for a video rich result — that belongs to the
+ * individual pages. ItemList is the correct schema for a listing: it tells
+ * Google the page is an index and hands it the ordered set of detail URLs to
+ * follow, which is exactly the crawl signal a new section needs.
+ */
+export function buildVideoItemList(videos: Array<{ slug: string; title: string }>) {
+  return {
+    "@context": "https://schema.org",
+    "@type": "ItemList",
+    "@id": `${SITE}/videos#list`,
+    name: "Parametric Memory videos",
+    itemListOrder: "https://schema.org/ItemListOrderDescending",
+    numberOfItems: videos.length,
+    itemListElement: videos.map((video, i) => ({
+      "@type": "ListItem",
+      position: i + 1,
+      name: video.title,
+      url: `${SITE}/videos/${video.slug}`,
+    })),
+  };
+}

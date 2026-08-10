@@ -637,6 +637,19 @@ Cryptographic snapshot verifier. The drop zone is the primary affordance (handle
 | `knowledge-toggle-weight` | Checkbox: hide/show the bottom-left DegreeSizeSlider + ViewToggle cluster |
 | `knowledge-toggle-weight-label` | The `<label>` wrapping the weight checkbox (clickable text) |
 
+### Videos — `src/app/videos/*`
+
+Added 2026-08-09 with the `/videos` section (GSC audit: the site published no
+video markup and the sitemap reported "Discovered videos: 0", while three demos
+sat on YouTube earning Search impressions the site could not claim).
+
+| testid | Element | Accessible name |
+|---|---|---|
+| `videos-card-<slug>` | Video card on the `/videos` hub — one per video, slug-interpolated, links to the detail page | (visible text: the video title) |
+| `videos-youtube-channel` | Outbound link to the YouTube channel, in the hub footer | (visible text "Parametric Memory YouTube channel") |
+| `video-player` | The embedded YouTube `<iframe>` on a `/videos/[slug]` page | `title` attribute = the video title |
+| `video-back-to-videos` | "← All videos" back link on a `/videos/[slug]` page | (visible text "← All videos") |
+
 ### Checkout + billing return
 
 | testid | Element |

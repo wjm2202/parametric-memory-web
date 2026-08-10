@@ -13,6 +13,7 @@
 - [Visualise](https://parametric-memory.dev/visualise): Live 3D Merkle tree visualization of the memory substrate
 - [Knowledge](https://parametric-memory.dev/knowledge): Interactive knowledge graph explorer
 - [Blog](https://parametric-memory.dev/blog): Technical articles on memory architecture, AI memory patterns, and MMPM updates
+- [Videos](https://parametric-memory.dev/videos): Recorded demos and walkthroughs — an agent recalling its own project history from memory alone over MCP (including citing a tombstoned atom to state what it cannot know), six months of CVEs queried without re-reading advisories, and a shared TypeScript expert memory used as an L2 cache across a fleet of coding agents. Each has its own page with summary, chapters and VideoObject structured data.
 
 ## Product
 
