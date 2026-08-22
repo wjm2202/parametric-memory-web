@@ -83,6 +83,37 @@ jobs:
             git fetch origin main
             git reset --hard origin/main
 
+            # ── nginx config sync ───────────────────────────────────────────
+            # nginx runs on the host, outside Docker — docker-compose.yml only
+            # binds the app to 127.0.0.1:3000. The `git reset --hard` above
+            # updates the checked-out copy of nginx.conf, but that alone never
+            # reaches the live config nginx actually reads. Diff, back up,
+            # copy, validate with `nginx -t` BEFORE reloading, and roll back
+            # automatically if the new config fails validation, so a bad
+            # nginx.conf can never take the site down.
+            NGINX_LIVE="/etc/nginx/sites-available/parametric-memory.dev"
+            if ! sudo test -f "$NGINX_LIVE"; then
+              echo "ERROR: $NGINX_LIVE not found — nginx site not set up as expected"
+              exit 1
+            fi
+            if sudo cmp -s nginx.conf "$NGINX_LIVE"; then
+              echo "nginx config unchanged — skipping reload"
+            else
+              BACKUP="$NGINX_LIVE.bak.$(date +%Y%m%d%H%M%S)"
+              echo "nginx config changed — backing up live config to $BACKUP"
+              sudo cp "$NGINX_LIVE" "$BACKUP"
+              sudo cp nginx.conf "$NGINX_LIVE"
+              if sudo nginx -t; then
+                sudo systemctl reload nginx
+                echo "nginx config updated and reloaded"
+              else
+                echo "ERROR: new nginx.conf failed 'nginx -t' — restoring previous config"
+                sudo cp "$BACKUP" "$NGINX_LIVE"
+                sudo nginx -t && sudo systemctl reload nginx
+                exit 1
+              fi
+            fi
+
             IMAGE_TAG="${{ needs.build-and-push.outputs.image_tag }}"
             echo "Pulling image: $IMAGE_TAG"
             docker pull "$IMAGE_TAG"
