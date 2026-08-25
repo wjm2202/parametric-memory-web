@@ -204,6 +204,25 @@ export const organizationJsonLd = {
   description:
     "Enterprise-grade persistent memory for AI with cryptographic Merkle proofs, Markov prediction, and MCP-native integration.",
   foundingDate: "2025",
+  // Published research — ties the Organization entity to its DOI-registered
+  // whitepapers (2026-08-24 SEO final fix; the earlier 2026-07-18 wiring was
+  // implemented but never committed). Full ScholarlyArticle records with
+  // abstracts live on /research; these nodes carry the same @ids (the DOIs)
+  // so the graph links up across pages.
+  subjectOf: [
+    {
+      "@type": "ScholarlyArticle",
+      "@id": "https://doi.org/10.5281/zenodo.21213464",
+      name: "Parametric Memory: A Cryptographically Verifiable, Predictive Memory Substrate for MCP-Capable AI Agents",
+      url: "https://parametric-memory.dev/research#substrate-whitepaper",
+    },
+    {
+      "@type": "ScholarlyArticle",
+      "@id": "https://doi.org/10.5281/zenodo.21421364",
+      name: "The Self-Reinforcing Loop: Verifiable Evidence of Consensus for Distributed Agentic Systems",
+      url: "https://parametric-memory.dev/research#self-reinforcing-loop",
+    },
+  ],
   image: {
     "@type": "ImageObject",
     url: "https://parametric-memory.dev/brand/og.png",

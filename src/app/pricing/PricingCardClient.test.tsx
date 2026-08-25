@@ -24,6 +24,16 @@ vi.mock("@stripe/react-stripe-js", () => ({
   EmbeddedCheckout: () => <div data-testid="mock-embedded-checkout-iframe" />,
 }));
 
+// Static-render fix (2026-08-24): PricingCardClient now reads login state via
+// the shared useSession hook instead of an isLoggedIn prop. Mock it so the
+// component's capacity-fetch assertions below keep exclusive use of the
+// global fetch mock (the real hook would consume the first queued response
+// with a GET /api/auth/me call).
+const mockSession = { loggedIn: false, email: null as string | null, resolved: true };
+vi.mock("@/lib/use-session", () => ({
+  useSession: () => ({ ...mockSession }),
+}));
+
 import { PricingCardClient } from "./PricingCardClient";
 
 // Harmless next/navigation stub so render never needs an app-router context.
@@ -80,6 +90,8 @@ describe("PricingCardClient", () => {
 
   beforeEach(() => {
     globalThis.fetch = vi.fn();
+    mockSession.loggedIn = false;
+    mockSession.email = null;
   });
 
   afterEach(() => {
@@ -95,7 +107,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo">
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -118,7 +130,7 @@ describe("PricingCardClient", () => {
     (globalThis.fetch as ReturnType<typeof vi.fn>).mockReturnValueOnce(new Promise(() => {}));
 
     render(
-      <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
+      <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo">
         <div>$9/month</div>
       </PricingCardClient>,
     );
@@ -140,7 +152,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo">
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -160,7 +172,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo">
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -183,7 +195,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="team" tierName="Team" ctaLabel="Contact us" isLoggedIn={false}>
+        <PricingCardClient tierId="team" tierName="Team" ctaLabel="Contact us">
           <div>$199/month</div>
         </PricingCardClient>,
       );
@@ -200,7 +212,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo">
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -218,7 +230,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={false}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo">
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -231,6 +243,7 @@ describe("PricingCardClient", () => {
   // ── CTA click capacity check ────────────────────────────────────────
 
   it("triggers fresh capacity check on CTA click when logged in", async () => {
+    mockSession.loggedIn = true;
     // Use fake timers so we can advance past the 3 s debounce window
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
@@ -240,7 +253,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={true}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo">
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -280,6 +293,7 @@ describe("PricingCardClient", () => {
   });
 
   it("shows waitlist form when CTA click capacity check returns full", async () => {
+    mockSession.loggedIn = true;
     vi.useFakeTimers({ shouldAdvanceTime: true });
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
 
@@ -288,7 +302,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={true}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo">
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -326,6 +340,7 @@ describe("PricingCardClient", () => {
   });
 
   it("fails open when CTA click capacity check errors — proceeds to checkout", async () => {
+    mockSession.loggedIn = true;
     const fetchMock = globalThis.fetch as ReturnType<typeof vi.fn>;
 
     // Mount fetch — succeeds
@@ -333,7 +348,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo" isLoggedIn={true}>
+        <PricingCardClient tierId="indie" tierName="Solo" ctaLabel="Get Solo">
           <div>$9/month</div>
         </PricingCardClient>,
       );
@@ -365,12 +380,7 @@ describe("PricingCardClient", () => {
 
     await act(async () => {
       render(
-        <PricingCardClient
-          tierId="pro"
-          tierName="Professional"
-          ctaLabel="Get Professional"
-          isLoggedIn={false}
-        >
+        <PricingCardClient tierId="pro" tierName="Professional" ctaLabel="Get Professional">
           <div data-testid="price-block">$29/month</div>
         </PricingCardClient>,
       );

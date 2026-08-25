@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 
 export const metadata: Metadata = {
@@ -54,11 +53,7 @@ const aboutJsonLd = {
   },
 };
 
-export default async function AboutPage() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("mmpm_session");
-  const isLoggedIn = !!sessionCookie?.value;
-
+export default function AboutPage() {
   return (
     <>
       <script
@@ -66,7 +61,7 @@ export default async function AboutPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(aboutJsonLd) }}
       />
 
-      <SiteNavbar variant="standard" isLoggedIn={isLoggedIn} />
+      <SiteNavbar variant="standard" />
 
       <main className="min-h-screen bg-[#0a0a0f] text-[#e8e8f0]">
         {/* ── Hero ──────────────────────────────────────────────────────── */}

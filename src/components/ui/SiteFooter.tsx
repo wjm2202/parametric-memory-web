@@ -77,6 +77,8 @@ export const SITE_FOOTER_COLUMNS: FooterColumn[] = [
     links: [
       { href: "/about", label: "About", testid: "footer-link-about" },
       { href: "/blog", label: "Blog", testid: "footer-link-blog" },
+      // /research — the DOI-registered whitepapers (SEO final fix 2026-08-24).
+      { href: "/research", label: "Research", testid: "footer-link-research" },
       // Internal /videos precedes the external YouTube link deliberately —
       // the on-site section is what we want crawled and ranked; the channel
       // link is the courtesy outbound.

@@ -16,7 +16,6 @@
  */
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 
 import { SUPPORT_EMAIL } from "@/config/site";
@@ -43,13 +42,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function CopyrightPage() {
-  const cookieStore = await cookies();
-  const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
-
+export default function CopyrightPage() {
   return (
     <div className="min-h-screen bg-[#030712] text-white">
-      <SiteNavbar isLoggedIn={isLoggedIn} />
+      <SiteNavbar />
 
       <main className="mx-auto max-w-3xl px-6 py-20" data-testid="copyright-page-main">
         {/* Header */}

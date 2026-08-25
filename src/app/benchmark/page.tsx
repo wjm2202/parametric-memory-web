@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 
 export const metadata: Metadata = {
@@ -206,10 +205,7 @@ const breadcrumbJsonLd = {
   ],
 };
 
-export default async function BenchmarkPage() {
-  const cookieStore = await cookies();
-  const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
-
+export default function BenchmarkPage() {
   return (
     <>
       <script
@@ -220,7 +216,7 @@ export default async function BenchmarkPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
-      <SiteNavbar isLoggedIn={isLoggedIn} variant="standard" />
+      <SiteNavbar variant="standard" />
 
       <main className="pt-[var(--site-nav-h)]">
         {/* ── HERO ──────────────────────────────────────────────────────── */}

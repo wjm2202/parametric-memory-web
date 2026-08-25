@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import KnowledgeClient from "./KnowledgeClient";
 
 export const metadata: Metadata = {
@@ -58,16 +57,14 @@ const knowledgeBreadcrumbJsonLd = {
  * Middleware only protects /admin and /dashboard; /knowledge is open.
  * Verified: src/middleware.ts isProtected check does not include this path.
  */
-export default async function KnowledgePage() {
-  const cookieStore = await cookies();
-  const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
+export default function KnowledgePage() {
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(knowledgeBreadcrumbJsonLd) }}
       />
-      <KnowledgeClient isLoggedIn={isLoggedIn} />
+      <KnowledgeClient />
 
       {/*
         Server-rendered content below the WebGL graph. The explorer is a

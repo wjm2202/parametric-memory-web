@@ -34,8 +34,14 @@ export const ROUTE_LASTMOD: Record<string, string> = {
   // claims replaced with dated, attributed ones. These are meaningful content
   // changes, so the dates move — that is the whole point of the pinned-lastmod
   // scheme.
-  "": "2026-07-12",
+  // 2026-08-24: SEO final fix — homepage gained the "From the docs" internal
+  // link section (crawl-path boost for the discovered-not-indexed docs and
+  // video pages; see marketing/SEO-FINAL-FIX-REVIEW-2026-08-24.md).
+  "": "2026-08-24",
   "/pricing": "2026-07-13",
+  // 2026-08-24: /research created (rebuilt — the 2026-07-18 version was never
+  // committed). Crawlable home for both DOI-registered whitepapers.
+  "/research": "2026-08-24",
   "/enterprise": "2026-07-13",
   "/benchmark": "2026-07-13",
   "/about": "2026-07-13",
@@ -50,7 +56,9 @@ export const ROUTE_LASTMOD: Record<string, string> = {
   // three demos sat on YouTube earning Search impressions the site could not
   // claim. Video results are a far less contested SERP than web results.
   "/videos": "2026-08-09",
-  "/terms": "2026-07-13",
+  // 2026-08-06: terms-of-service revision (commit c74bee8) — the sitemap was
+  // never bumped with it; corrected 2026-08-24 during the SEO final fix.
+  "/terms": "2026-08-06",
   // 2026-07-13: privacy policy revision — OAuth SSO disclosure, full cookie
   // table (mmpm_oauth_state, mmpm_pending_token), 2FA + waitlist sections.
   "/privacy": "2026-07-13",
@@ -109,6 +117,10 @@ const STATIC_ROUTES: Array<{
   // vector memory". Internally linked from nav + footer; supports pricing.
   { path: "/benchmark", changeFrequency: "weekly", priority: 0.9 },
   { path: "/about", changeFrequency: "monthly", priority: 0.8 },
+  // /research — crawlable, citable home for both DOI-registered whitepapers
+  // (ScholarlyArticle JSON-LD). Papers are the site's strongest link-earning
+  // assets; external citations should have an on-site destination.
+  { path: "/research", changeFrequency: "monthly", priority: 0.8 },
   { path: "/contact", changeFrequency: "monthly", priority: 0.6 },
   // Verify page — top-tier for SEO + AEO. Cryptographic-verifier UX is a
   // primary trust differentiator. AI answer engines (ChatGPT, Perplexity,

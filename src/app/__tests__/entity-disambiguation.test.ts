@@ -80,6 +80,26 @@ describe("Organization entity — name-collision disambiguation", () => {
     expect(sameAs).toContain("https://doi.org/10.5281/zenodo.21421364");
   });
 
+  it("subjectOf lists both whitepapers as ScholarlyArticles anchored on /research", () => {
+    // 2026-08-24 SEO final fix: the Organization must reference its published
+    // research (the 2026-07-18 wiring was lost uncommitted). The @ids are the
+    // DOIs, matching the full ScholarlyArticle records on /research so the
+    // knowledge graph links across pages.
+    const subjectOf = organizationJsonLd.subjectOf as Array<{
+      "@type": string;
+      "@id": string;
+      url: string;
+    }>;
+    expect(subjectOf).toHaveLength(2);
+    const ids = subjectOf.map((s) => s["@id"]);
+    expect(ids).toContain("https://doi.org/10.5281/zenodo.21213464");
+    expect(ids).toContain("https://doi.org/10.5281/zenodo.21421364");
+    for (const s of subjectOf) {
+      expect(s["@type"]).toBe("ScholarlyArticle");
+      expect(s.url).toMatch(/^https:\/\/parametric-memory\.dev\/research#/);
+    }
+  });
+
   it("sameAs has no placeholder or commented URLs leaking into the live array", () => {
     const sameAs = organizationJsonLd.sameAs as string[];
     for (const url of sameAs) {

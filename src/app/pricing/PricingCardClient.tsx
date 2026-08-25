@@ -3,6 +3,7 @@
 import { useState, useCallback, useEffect, useRef } from "react";
 import { CapacityBadge } from "./CapacityBadge";
 import { PricingCTA } from "./PricingCTA";
+import { useSession } from "@/lib/use-session";
 
 type CapacityStatus = "open" | "waitlist" | "paused";
 
@@ -23,7 +24,6 @@ interface PricingCardClientProps {
   tierId: string;
   tierName: string;
   ctaLabel: string;
-  isLoggedIn: boolean;
   children: React.ReactNode;
 }
 
@@ -50,9 +50,11 @@ export function PricingCardClient({
   tierId,
   tierName,
   ctaLabel,
-  isLoggedIn,
   children,
 }: PricingCardClientProps) {
+  // Login state comes from the shared client-side session hook (static-render
+  // fix 2026-08-24) — /pricing no longer reads the session cookie server-side.
+  const { loggedIn: isLoggedIn } = useSession();
   const [capacity, setCapacity] = useState<TierCapacity>({
     status: "open",
     slotsRemaining: null,

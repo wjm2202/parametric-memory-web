@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import VisualiseClient from "./VisualiseClient";
 
 export const metadata: Metadata = {
@@ -52,16 +51,14 @@ const visualiseBreadcrumbJsonLd = {
   ],
 };
 
-export default async function VisualisePage() {
-  const cookieStore = await cookies();
-  const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
+export default function VisualisePage() {
   return (
     <>
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(visualiseBreadcrumbJsonLd) }}
       />
-      <VisualiseClient isLoggedIn={isLoggedIn} />
+      <VisualiseClient />
 
       {/*
         Server-rendered content below the WebGL viewer. The viewer itself is a

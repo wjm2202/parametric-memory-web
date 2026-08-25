@@ -14,6 +14,7 @@
 - [Knowledge](https://parametric-memory.dev/knowledge): Interactive knowledge graph explorer
 - [Blog](https://parametric-memory.dev/blog): Technical articles on memory architecture, AI memory patterns, and MMPM updates
 - [Videos](https://parametric-memory.dev/videos): Recorded demos and walkthroughs — an agent recalling its own project history from memory alone over MCP (including citing a tombstoned atom to state what it cannot know), six months of CVEs queried without re-reading advisories, and a shared TypeScript expert memory used as an L2 cache across a fleet of coding agents. Each has its own page with summary, chapters and VideoObject structured data.
+- [Research](https://parametric-memory.dev/research): Both DOI-registered whitepapers with abstracts and ScholarlyArticle structured data — the substrate paper (verifiable, predictive memory for MCP agents; DOI 10.5281/zenodo.21213464) and the Self-Reinforcing Loop paper (verifiable evidence-of-consensus for agent fleets; DOI 10.5281/zenodo.21421364). Cite the DOIs.
 
 ## Product
 
@@ -53,25 +54,22 @@ Also described as: the L2 cache for AI, verifiable AI memory, predictive AI memo
 
 ## MCP Tool Catalogue
 
-Parametric Memory exposes 11 MCP tools via Streamable HTTP transport, compatible with Claude, Claude Code, Cowork, and any MCP-compliant client.
+Parametric Memory exposes 11 MCP tools via Streamable HTTP transport, compatible with Claude, Claude Code, Cowork, and any MCP-compliant client. This list matches the customer tool catalogue at https://parametric-memory.dev/docs/mcp/tools (the count guard: mcp-tool-count-claim.test.ts).
 
 **Memory Operations**
 - `memory_session_bootstrap` — Single-call session bootstrap; returns relevant atoms, procedures, and conflicting facts by objective
-- `session_checkpoint` — Persist new atoms, tombstone stale ones, write knowledge graph edges
+- `session_checkpoint` — Persist new atoms, tombstone stale ones, write knowledge graph edges, and reinforce Markov arcs via its train array (training is part of checkpoint — there is no separate train tool)
 - `memory_search` — Semantic + keyword search across the atom store
 - `memory_access` — Retrieve specific atoms by key
 - `memory_list_atoms` — List atoms by type, domain, or tag
 - `memory_associate` — Find cross-domain associations for a set of atoms
 - `memory_context` — Return full context for a domain or task
-- `memory_train` — Reinforce Markov arc weights for successful workflows
 - `memory_recluster` — Re-cluster knowledge graph nodes after bulk changes
+
+**Diagnostics & Evaluation**
+- `memory_markov_density_report` — Report Markov arc density and prediction readiness
 - `memory_weekly_eval_run` — Trigger weekly evaluation of memory quality
 - `memory_weekly_eval_status` — Check status of the weekly evaluation run
-
-**Session & Provenance**
-- `session_checkpoint` — Checkpoint current session state with atoms, edges, and tombstones
-- `memory_session_bootstrap` — Bootstrap a new session with prior context
-- `session_info` — Read session metadata and current task context
 
 **Knowledge Graph**
 - Knowledge graph edges (member_of, supersedes, depends_on, constrains, references, derived_from, produced_by)
