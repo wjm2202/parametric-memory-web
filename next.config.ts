@@ -44,10 +44,19 @@ const nextConfig: NextConfig = {
         // so SEO scanners (Lighthouse, SEO-Pro) see consistent signals.
         {
           key: "X-Robots-Tag",
-          value:
-            "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1",
+          value: "index, follow, max-snippet:-1, max-image-preview:large, max-video-preview:-1",
         },
       ],
+    },
+    // ── Brand assets (2026-08-24 logo-404 fix) ─────────────────────────────
+    // /brand/* is served by the app from public/ (the nginx `location /brand/`
+    // block that pointed at a nonexistent host path was removed — see
+    // nginx.conf). This restores the 30-day browser cache that block used to
+    // provide. Brand files are content-stable (favicons, og.png, logo);
+    // replacing one should use a new filename if instant propagation matters.
+    {
+      source: "/brand/:path*",
+      headers: [{ key: "Cache-Control", value: "public, max-age=2592000" }],
     },
     // Internal routes — mirror robots.txt Disallow with header-level noindex
     // so any non-HTML responses (JSON errors, redirects) carry the signal too.
