@@ -41,18 +41,22 @@
  *
  * testids + aria-labels follow docs/DUAL-ACCESSIBILITY.md (pre-registered).
  *
- * Auth:
- *   - `isLoggedIn` is determined server-side from the session cookie and passed
- *     as a prop. This avoids a client-side flash on initial render.
- *   - Session is validated client-side via /api/auth/me on mount.
- *     401 → stale cookie, flips to Sign In. 503/network → can't validate,
- *     optimistically keeps the server-determined state.
+ * Auth (2026-08-24 static-render fix — see marketing/SEO-FINAL-FIX-REVIEW-2026-08-24.md):
+ *   - Login state is detected CLIENT-SIDE via the shared `useSession` hook
+ *     (GET /api/auth/me, module-cached). Public pages no longer read the
+ *     session cookie server-side, so they can be statically generated —
+ *     the single biggest crawl-performance fix on the site.
+ *   - The optional `isLoggedIn` prop is only an optimistic initial value for
+ *     the rare caller that still renders dynamically; omit it everywhere else.
+ *     Crawlers and anonymous users see "Sign In" in the static HTML with no
+ *     flash; signed-in users get the account chip once /api/auth/me resolves.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { openBillingPortal, signOut } from "@/lib/account-actions";
+import { useSession } from "@/lib/use-session";
 import { firstDocSlug } from "@/config/docs-nav";
 
 /* ─── Logomark ───────────────────────────────────────────────────────────── */
@@ -181,8 +185,13 @@ function HamburgerIcon({ open }: { open: boolean }) {
 /* ─── Types + nav data ───────────────────────────────────────────────────── */
 
 interface SiteNavbarProps {
-  /** Server-determined login state — avoids client flash */
-  isLoggedIn: boolean;
+  /**
+   * OPTIONAL optimistic initial login state. Only pass this from a page that
+   * is already dynamically rendered for other reasons; passing it from a
+   * public page would force per-request SSR (the exact regression the
+   * 2026-08-24 static-render fix removed). Real state comes from useSession.
+   */
+  isLoggedIn?: boolean;
   /** "standard" = fixed+blurred (homepage/pricing). "immersive" = absolute+transparent (canvas pages). */
   variant?: "standard" | "immersive";
   /** Immersive only: label shown on the right (e.g. "SUBSTRATE VIEWER") */
@@ -221,58 +230,14 @@ const MORE_NAV: NavItem[] = [
   { href: "/benchmark", label: "Benchmark", testid: "nav-link-benchmark" },
   { href: "/videos", label: "Videos", testid: "nav-link-videos" },
   { href: "/blog", label: "Blog", testid: "nav-link-blog" },
+  // /research — DOI-registered whitepapers (rebuilt 2026-08-24, SEO final fix)
+  { href: "/research", label: "Research", testid: "nav-link-research" },
   { href: "/faq", label: "FAQ", testid: "nav-link-faq" },
   { href: "/about", label: "About", testid: "nav-link-about" },
 ];
 
 /** Every nav link, in drawer order (PRIMARY then MORE). Knowledge is appended separately. */
 const ALL_NAV: NavItem[] = [...PRIMARY_NAV, ...MORE_NAV];
-
-/* ─── Auth state hook ────────────────────────────────────────────────────── */
-
-/**
- * Validates the session client-side and returns the user's email.
- *
- * `verified` starts optimistically equal to `isLoggedIn` (trusting the server
- * cookie check). Once /api/auth/me resolves:
- *   - 401 → session is stale/expired → `verified` flips to false (hides Dashboard)
- *   - 503/network error → compute is down → leave `verified` unchanged (can't check)
- *   - 200 → session is valid, email populated
- *
- * This prevents a stale mmpm_session cookie from permanently showing
- * the Dashboard button to a user whose session has actually expired.
- */
-function useAuthState(isLoggedIn: boolean): { email: string | null; verified: boolean } {
-  const [email, setEmail] = useState<string | null>(null);
-  // Optimistic: trust the server's cookie check until the client validates
-  const [verified, setVerified] = useState(isLoggedIn);
-
-  useEffect(() => {
-    if (!isLoggedIn) return;
-
-    fetch("/api/auth/me", { cache: "no-store" })
-      .then((res) => {
-        if (res.status === 401) {
-          // Session expired or revoked — hide Dashboard
-          setVerified(false);
-          return null;
-        }
-        if (!res.ok) {
-          // Compute service down (503 etc.) — can't validate, leave verified as-is
-          return null;
-        }
-        return res.json();
-      })
-      .then((data: { email?: string } | null) => {
-        if (data?.email) setEmail(data.email);
-      })
-      .catch(() => {
-        // Network error — leave verified unchanged (offline / compute unreachable)
-      });
-  }, [isLoggedIn]);
-
-  return { email, verified };
-}
 
 /* ─── Menu / drawer state hooks ──────────────────────────────────────────── */
 
@@ -541,7 +506,12 @@ export default function SiteNavbar({
   accentColor = "cyan",
 }: SiteNavbarProps) {
   const pathname = usePathname();
-  const { email, verified } = useAuthState(isLoggedIn);
+  const session = useSession();
+  // Until /api/auth/me resolves, honour the caller's optimistic value (rare —
+  // only dynamically-rendered pages pass one); afterwards the client-verified
+  // state wins. Static pages render logged-out chrome, matching their HTML.
+  const verified = session.resolved ? session.loggedIn : (isLoggedIn ?? false);
+  const email = session.email;
 
   const [drawerOpen, setDrawerOpen, closeDrawer] = useMenuAtPath(pathname);
   const hamburgerRef = useRef<HTMLButtonElement>(null);

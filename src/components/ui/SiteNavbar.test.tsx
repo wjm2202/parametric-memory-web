@@ -94,6 +94,7 @@ describe("SiteNavbar standard variant — testid coverage", () => {
       ["nav-link-pricing", "/pricing"],
       ["nav-link-benchmark", "/benchmark"],
       ["nav-link-blog", "/blog"],
+      ["nav-link-research", "/research"],
       ["nav-link-faq", "/faq"],
       ["nav-link-about", "/about"],
       ["nav-link-knowledge", "/knowledge"],
@@ -186,6 +187,7 @@ describe("SiteNavbar mobile drawer (M5)", () => {
       "nav-link-pricing",
       "nav-link-benchmark",
       "nav-link-blog",
+      "nav-link-research",
       "nav-link-faq",
       "nav-link-about",
       "nav-link-knowledge",
@@ -287,6 +289,7 @@ describe("SiteNavbar desktop 'More' disclosure", () => {
     for (const [tid, href] of [
       ["nav-link-benchmark", "/benchmark"],
       ["nav-link-blog", "/blog"],
+      ["nav-link-research", "/research"],
       ["nav-link-faq", "/faq"],
       ["nav-link-about", "/about"],
     ] as const) {

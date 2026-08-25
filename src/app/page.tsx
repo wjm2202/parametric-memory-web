@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import { HeroSceneWrapper } from "@/components/landing/HeroSceneWrapper";
 import { HeroAnimatedSequence } from "@/components/landing/HeroAnimatedSequence";
 import SiteNavbar from "@/components/ui/SiteNavbar";
@@ -313,10 +312,7 @@ const pricingPreview = [
 ];
 
 // ── Page ───────────────────────────────────────────────────────────────────
-export default async function HomePage() {
-  const cookieStore = await cookies();
-  const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
-
+export default function HomePage() {
   return (
     <>
       <script
@@ -333,7 +329,7 @@ export default async function HomePage() {
       />
 
       {/* ── NAV ─────────────────────────────────────────────────────────── */}
-      <SiteNavbar isLoggedIn={isLoggedIn} variant="standard" />
+      <SiteNavbar variant="standard" />
 
       <main>
         {/* ── HERO ──────────────────────────────────────────────────────── */}
@@ -668,6 +664,107 @@ export default async function HomePage() {
             <p className="text-surface-500 mt-10 font-mono text-xs">
               We run our own company on it — 1,000+ Merkle-sealed atoms in production, and growing.
             </p>
+          </div>
+        </section>
+
+        {/* ── GO DEEPER — docs / videos / research crawl paths ───────────
+            SEO final fix 2026-08-24: GSC showed the docs and video detail
+            pages stuck in "Discovered - currently not indexed" — present in
+            the sitemap but with no crawl path from the homepage (the highest-
+            authority page on the site). This section gives Googlebot (and
+            humans) direct links from the front door to the deep content.
+            See marketing/SEO-FINAL-FIX-REVIEW-2026-08-24.md §5.1 item 3. */}
+        <section
+          className="border-surface-800/50 border-t py-24"
+          aria-labelledby="go-deeper-heading"
+          data-testid="landing-section-go-deeper"
+        >
+          <div className="mx-auto max-w-6xl px-6">
+            <p className="text-surface-500 font-mono text-xs tracking-widest uppercase">
+              Go deeper
+            </p>
+            <h2
+              id="go-deeper-heading"
+              className="font-display mt-3 text-3xl font-semibold text-white"
+            >
+              The docs, the demos, and the papers.
+            </h2>
+
+            <div className="mt-10 grid gap-10 md:grid-cols-3">
+              <div>
+                <h3 className="text-sm font-semibold text-white">Documentation</h3>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  {[
+                    ["/docs/concepts/memory-atoms", "Memory atoms — the unit of knowledge"],
+                    ["/docs/concepts/merkle-proofs", "Merkle proofs — verify every recall"],
+                    ["/docs/concepts/markov-prediction", "Markov prediction — warm before you ask"],
+                    ["/docs/mcp/tools", "The 11 MCP tools"],
+                    ["/docs/api/authentication", "API authentication"],
+                    ["/docs/your-instance", "Your instance, explained"],
+                  ].map(([href, label]) => (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        className="text-surface-400 transition-colors hover:text-white"
+                      >
+                        {label} →
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-white">Watch it work</h3>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  {[
+                    [
+                      "/videos/ai-memory-over-mcp",
+                      "An agent recalls its project history from memory alone",
+                    ],
+                    [
+                      "/videos/cve-memory-for-ai-agents",
+                      "Six months of CVEs, answered from memory",
+                    ],
+                    [
+                      "/videos/typescript-expert-memory-l2-cache",
+                      "A shared expert memory across a fleet of agents",
+                    ],
+                  ].map(([href, label]) => (
+                    <li key={href}>
+                      <Link
+                        href={href}
+                        className="text-surface-400 transition-colors hover:text-white"
+                      >
+                        {label} →
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div>
+                <h3 className="text-sm font-semibold text-white">Published research</h3>
+                <ul className="mt-4 space-y-2.5 text-sm">
+                  <li>
+                    <Link
+                      href="/research"
+                      className="text-surface-400 transition-colors hover:text-white"
+                    >
+                      Both whitepapers, DOI-registered →
+                    </Link>
+                  </li>
+                  <li>
+                    <Link
+                      href="/benchmark"
+                      className="text-surface-400 transition-colors hover:text-white"
+                    >
+                      LongMemEval results, sealed &amp; re-verifiable →
+                    </Link>
+                  </li>
+                </ul>
+              </div>
+            </div>
           </div>
         </section>
 

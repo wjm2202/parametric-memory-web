@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import SiteNavbar from "@/components/ui/SiteNavbar";
-import { cookies } from "next/headers";
 
 export const metadata: Metadata = {
   title: "Data Processing Agreement",
@@ -25,13 +24,10 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function DPAPage() {
-  const cookieStore = await cookies();
-  const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
-
+export default function DPAPage() {
   return (
     <div className="min-h-screen bg-[#030712] text-white">
-      <SiteNavbar isLoggedIn={isLoggedIn} />
+      <SiteNavbar />
 
       <main className="mx-auto max-w-3xl px-6 py-20">
         <div className="mb-12">

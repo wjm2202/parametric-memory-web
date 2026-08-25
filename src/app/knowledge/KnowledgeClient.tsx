@@ -54,11 +54,7 @@ function LoadingSkeleton() {
   );
 }
 
-interface KnowledgeClientProps {
-  isLoggedIn: boolean;
-}
-
-export default function KnowledgeClient({ isLoggedIn }: KnowledgeClientProps) {
+export default function KnowledgeClient() {
   // Overlay visibility — defaults are "everything visible" so a first-time
   // visitor's experience is unchanged. The toggle is for power users
   // capturing video; we deliberately don't persist this in localStorage
@@ -80,7 +76,7 @@ export default function KnowledgeClient({ isLoggedIn }: KnowledgeClientProps) {
       style={{ height: "100dvh" }}
     >
       {/* Standard navbar — full nav links visible, no Substrate cross-link */}
-      <SiteNavbar isLoggedIn={isLoggedIn} variant="standard" />
+      <SiteNavbar variant="standard" />
 
       {/* Canvas area — fills remaining space below the fixed navbar.
           mt is tuned per breakpoint to *just* clear the fixed navbar:

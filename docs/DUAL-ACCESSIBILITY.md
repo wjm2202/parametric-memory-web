@@ -155,6 +155,12 @@ entry here **first**, before the PR that uses it.
 | `nav-link-blog` | `/blog` link (inside the More panel on desktop; top-level in the mobile drawer) | (visible text "Blog") |
 | `nav-link-faq` | `/faq` link (inside the More panel on desktop; top-level in the mobile drawer) | (visible text "FAQ") |
 | `nav-link-about` | `/about` link (inside the More panel on desktop; top-level in the mobile drawer) | (visible text "About") |
+| `nav-link-research` | `/research` link (inside the More panel on desktop; top-level in the mobile drawer) — DOI-registered whitepapers (2026-08-24 SEO final fix) | (visible text "Research") |
+| `footer-link-research` | `/research` link in the footer Company column (2026-08-24 SEO final fix) | (visible text "Research") |
+| `research-paper-substrate-whitepaper` | /research article card for the substrate whitepaper | (n/a — article landmark) |
+| `research-paper-self-reinforcing-loop` | /research article card for the Self-Reinforcing Loop paper | (n/a — article landmark) |
+| `research-doi-substrate-whitepaper` | DOI outbound link for the substrate whitepaper | (visible text "Read on Zenodo (DOI)") |
+| `research-doi-self-reinforcing-loop` | DOI outbound link for the Self-Reinforcing Loop paper | (visible text "Read on Zenodo (DOI)") |
 | `nav-link-knowledge` | `/knowledge` accent link | (visible text "Knowledge") |
 | `nav-account-trigger` | Account avatar button (signed in) — opens the account menu (2026-07-02; replaced the inline email chip which overlapped the accent link) | "Account menu — signed in as {email}" |
 | `nav-account-menu` | Account menu panel — always in the DOM (toggled via `hidden`) | (n/a — labelled by `nav-account-trigger`) |
@@ -196,6 +202,7 @@ entry here **first**, before the PR that uses it.
 | `landing-hero-cta-primary` | Primary hero CTA — "Get your instance — $5/mo" → `/pricing` (holistic review 2026-07-01, was "Get started") |
 | `landing-hero-cta-secondary` | Secondary hero CTA — "Watch it verify itself" → `/verify` (holistic review 2026-07-01, was "View pricing"/`/knowledge`) |
 | `landing-section-features` | Capabilities region ("What your AI gets" — retitled from Features, holistic review 2026-07-01) |
+| `landing-section-go-deeper` | "Go deeper" internal-link region on the landing page — docs / videos / research crawl paths (2026-08-24 SEO final fix) |
 | `landing-verify-cta` | Primary CTA in the Verify section — "Verify a snapshot yourself" → `/verify` (holistic review P3) |
 | `landing-verify-how` | Secondary link in the Verify section — "See how it works" → `/docs` (holistic review P3) |
 | `landing-pricing-<slug>` | Pricing-preview card link → `/pricing`, one per advertised tier (`starter`, `solo`, `pro`, `team`) (holistic review P4). The $1 Basic tier is intentionally not advertised. |

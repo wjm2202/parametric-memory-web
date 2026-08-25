@@ -42,7 +42,9 @@ describe("/contact page — exists and is indexable", () => {
   });
 
   it("default-exports a page component", () => {
-    expect(pageSrc).toMatch(/export default async function ContactPage/);
+    // Static-render fix 2026-08-24: the page no longer awaits cookies(), so it
+    // is a plain (sync) component — async would imply dynamic work it no longer does.
+    expect(pageSrc).toMatch(/export default function ContactPage/);
   });
 
   it("renders the site navbar (consistent header, internal links for crawlers)", () => {

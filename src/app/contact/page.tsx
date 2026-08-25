@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { SUPPORT_EMAIL, mailto, SITE_ORIGIN } from "@/config/site";
 
@@ -65,11 +64,7 @@ const contactJsonLd = {
   },
 };
 
-export default async function ContactPage() {
-  const cookieStore = await cookies();
-  const sessionCookie = cookieStore.get("mmpm_session");
-  const isLoggedIn = !!sessionCookie?.value;
-
+export default function ContactPage() {
   const channels = [
     {
       label: "Sales & enterprise",
@@ -98,7 +93,7 @@ export default async function ContactPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(contactJsonLd) }}
       />
 
-      <SiteNavbar variant="standard" isLoggedIn={isLoggedIn} />
+      <SiteNavbar variant="standard" />
 
       <main className="min-h-screen bg-[#0a0a0f] text-[#e8e8f0]">
         {/* ── Hero ──────────────────────────────────────────────────────── */}

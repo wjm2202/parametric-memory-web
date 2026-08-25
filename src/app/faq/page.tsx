@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { FAQAccordion, type FAQItem } from "./FAQClient";
 
@@ -401,10 +400,7 @@ const CATEGORIES = [
   },
 ];
 
-export default async function FAQPage() {
-  const cookieStore = await cookies();
-  const isLoggedIn = !!cookieStore.get("mmpm_session")?.value;
-
+export default function FAQPage() {
   return (
     <>
       {/* AEO: FAQPage structured data — primary signal for AI answer engines */}
@@ -418,7 +414,7 @@ export default async function FAQPage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbJsonLd) }}
       />
 
-      <SiteNavbar isLoggedIn={isLoggedIn} />
+      <SiteNavbar />
 
       <main className="min-h-screen pt-16">
         {/* ── Hero ──────────────────────────────────────────────────────────── */}

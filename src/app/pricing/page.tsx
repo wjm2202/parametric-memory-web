@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import { FAQAccordion } from "./PricingClient";
 import { PricingCardClient } from "./PricingCardClient";
 import SiteNavbar from "@/components/ui/SiteNavbar";
@@ -170,11 +169,7 @@ function CheckIcon() {
 }
 
 /* ── Page (Server Component) ─────────────────────────────────────────── */
-export default async function PricingPage() {
-  const cookieStore = await cookies();
-  const sessionToken = cookieStore.get("mmpm_session")?.value;
-  const isLoggedIn = Boolean(sessionToken);
-
+export default function PricingPage() {
   // Capacity is now event-driven: checked on user click, not on page render.
   // See PricingCardClient.tsx for the on-click capacity check flow.
 
@@ -191,7 +186,7 @@ export default async function PricingPage() {
 
       <main className="bg-surface-950 flex min-h-screen flex-col">
         {/* Nav */}
-        <SiteNavbar isLoggedIn={isLoggedIn} variant="standard" />
+        <SiteNavbar variant="standard" />
 
         {/* Hero */}
         <section
@@ -274,7 +269,6 @@ export default async function PricingPage() {
                             ? "Get Solo"
                             : "Get Professional"
                       }
-                      isLoggedIn={isLoggedIn}
                     >
                       {/* Price — rendered as children inside the client wrapper */}
                       <div className="mb-6">

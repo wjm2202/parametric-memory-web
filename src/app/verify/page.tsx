@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import VerifyClient from "./VerifyClient";
 
@@ -119,13 +118,10 @@ const STRUCTURED_DATA = {
   ],
 };
 
-export default async function VerifyPage() {
-  const cookieStore = await cookies();
-  const isLoggedIn = Boolean(cookieStore.get("mmpm_session")?.value);
-
+export default function VerifyPage() {
   return (
     <div className="min-h-screen bg-[#030712] text-white">
-      <SiteNavbar isLoggedIn={isLoggedIn} />
+      <SiteNavbar />
 
       <main className="mx-auto max-w-3xl px-6 py-16">
         {/* JSON-LD structured data for SEO + AEO -- Google rich results,

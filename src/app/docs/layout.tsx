@@ -1,14 +1,11 @@
-import { cookies } from "next/headers";
 import SiteNavbar from "@/components/ui/SiteNavbar";
 import { DocsSidebar } from "@/components/docs/DocsSidebar";
 
-export default async function DocsLayout({ children }: { children: React.ReactNode }) {
-  const cookieStore = await cookies();
-  const isLoggedIn = cookieStore.has("mmpm_session");
+export default function DocsLayout({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="bg-surface-950 min-h-screen">
-      <SiteNavbar isLoggedIn={isLoggedIn} variant="standard" />
+      <SiteNavbar variant="standard" />
 
       {/* Mobile sidebar drawer sits above the page content */}
       <div className="pt-16 lg:hidden">

@@ -33,23 +33,14 @@ function LoadingSkeleton() {
   );
 }
 
-interface VisualiseClientProps {
-  isLoggedIn: boolean;
-}
-
-export default function VisualiseClient({ isLoggedIn }: VisualiseClientProps) {
+export default function VisualiseClient() {
   return (
     // M2: definite height (h-screen) + dvh upgrade via inline style so
     // the immersive Canvas (MerkleScene) below renders full-bleed. With
     // min-height alone the parent collapsed to content height and the
     // canvas shrank to a thin strip.
     <div className="h-screen w-full overflow-hidden bg-[#030712]" style={{ height: "100dvh" }}>
-      <SiteNavbar
-        isLoggedIn={isLoggedIn}
-        variant="immersive"
-        pageLabel="SUBSTRATE VIEWER"
-        accentColor="cyan"
-      />
+      <SiteNavbar variant="immersive" pageLabel="SUBSTRATE VIEWER" accentColor="cyan" />
       <MerkleScene />
     </div>
   );
