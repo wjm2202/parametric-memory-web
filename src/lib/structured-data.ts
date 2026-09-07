@@ -126,7 +126,13 @@ export interface VideoJsonLdInput {
   slug: string;
   title: string;
   description: string;
-  /** YYYY-MM-DD. Google accepts a date-only ISO 8601 value. */
+  /**
+   * YYYY-MM-DD (or a full ISO 8601 datetime). A date-only value is expanded
+   * to a datetime with an explicit timezone before emission — see
+   * toSchemaDateTime(). GSC (2026-09-07) flagged the date-only form on
+   * /videos/cve-memory-for-ai-agents with BOTH "Datetime property uploadDate
+   * is missing a timezone" and "Invalid datetime value for uploadDate".
+   */
   uploadDate: string;
   /** ISO-8601 duration, e.g. "PT13M10S" — see toIso8601Duration(). */
   duration: string;
@@ -148,6 +154,27 @@ export interface VideoJsonLdInput {
  * requires both startOffset and endOffset to render key moments, and a clip
  * that runs past the end of the video is invalid.
  */
+/**
+ * Publisher timezone for schema.org datetimes. Parametric Memory publishes
+ * from New Zealand; a fixed +12:00 (NZST) is deliberately used rather than a
+ * DST-aware offset — Google only requires that SOME timezone be present, and
+ * a value that never changes between builds keeps the emitted JSON-LD stable.
+ */
+export const SCHEMA_TZ_OFFSET = "+12:00";
+
+/**
+ * Normalise a date for schema.org `uploadDate` / `datePublished`.
+ * - "YYYY-MM-DD"            → "YYYY-MM-DDT00:00:00+12:00"
+ * - already a full datetime → returned unchanged
+ * Throws on anything else so a typo is a build/test error, not a silent
+ * rich-result loss.
+ */
+export function toSchemaDateTime(date: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return `${date}T00:00:00${SCHEMA_TZ_OFFSET}`;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(date)) return date;
+  throw new Error(`toSchemaDateTime: unsupported date "${date}"`);
+}
+
 export function buildVideoObject(input: VideoJsonLdInput) {
   const url = `${SITE}/videos/${input.slug}`;
   const chapters = input.chapters ?? [];
@@ -170,7 +197,7 @@ export function buildVideoObject(input: VideoJsonLdInput) {
     name: input.title,
     description: input.description,
     thumbnailUrl: [input.thumbnailUrl],
-    uploadDate: input.uploadDate,
+    uploadDate: toSchemaDateTime(input.uploadDate),
     duration: input.duration,
     embedUrl: input.embedUrl,
     url,

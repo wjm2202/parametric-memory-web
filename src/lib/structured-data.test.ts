@@ -14,6 +14,7 @@ import {
   buildVideoObject,
   buildVideoBreadcrumb,
   buildVideoItemList,
+  toSchemaDateTime,
 } from "./structured-data";
 
 const input = {
@@ -179,7 +180,21 @@ describe("buildVideoObject", () => {
     expect(schema.name).toBe(videoInput.title);
     expect(schema.description).toBe(videoInput.description);
     expect(schema.thumbnailUrl).toEqual([videoInput.thumbnailUrl]);
-    expect(schema.uploadDate).toBe("2026-07-13");
+    // GSC 2026-09-07: date-only "2026-07-13" was flagged "missing a timezone"
+    // + "invalid datetime value". Must be a full ISO 8601 datetime with offset.
+    expect(schema.uploadDate).toBe("2026-07-13T00:00:00+12:00");
+  });
+
+  it("uploadDate always carries an explicit timezone (GSC rich-result warning guard)", () => {
+    expect(schema.uploadDate).toMatch(/T\d{2}:\d{2}:\d{2}(?:Z|[+-]\d{2}:\d{2})$/);
+    expect(Number.isNaN(new Date(schema.uploadDate).getTime())).toBe(false);
+  });
+
+  it("passes a full datetime through unchanged and rejects garbage", () => {
+    expect(toSchemaDateTime("2026-07-13T09:30:00Z")).toBe("2026-07-13T09:30:00Z");
+    expect(toSchemaDateTime("2026-07-13T09:30:00+12:00")).toBe("2026-07-13T09:30:00+12:00");
+    expect(() => toSchemaDateTime("13/07/2026")).toThrow();
+    expect(() => toSchemaDateTime("2026-7-13")).toThrow();
   });
 
   it("uses the canonical on-site URL, not the YouTube watch URL", () => {
