@@ -212,6 +212,22 @@ entry here **first**, before the PR that uses it.
 | `waitlist-email` | Email input |
 | `waitlist-submit` | Submit button |
 
+### Landing hero prototype (L2 cache) — `src/components/landing/*`, staged at `/hero-preview`
+
+Candidate replacement hero (`v1.task.landing_hero_l2_cache__prototype`). Rendered on the
+noindex `/hero-preview` route until it ships in `src/app/page.tsx`; testids are registered now
+so the prototype passes `check-testids` while under review. All are non-interactive landmarks /
+figure parts used by the component tests — none are buttons or links.
+
+| testid | Element |
+|---|---|
+| `hero-l2` | Hero `<section>` root (`aria-label="Hero — Parametric Memory"`) in `HeroL2Cache.tsx` |
+| `hero-l2-legend` | `<dl>` legend under the infographic — three term/definition pairs explaining the L2 cache tiers (`HeroL2Cache.tsx`) |
+| `l2-infographic` | Root `<div>` of the animated L2-cache infographic (`L2CacheInfographic.tsx`) |
+| `l2-ctx` | SVG `<rect>` representing the context-window fill bar; `data-track-width` carries the track length the animation test asserts against |
+| `l2-primed` | SVG `<text>` "PRIMED FROM PROMPT" caption that appears once the pre-fetch animation completes |
+| `l2-root` | SVG `<g>` Merkle-root badge group (root hash + verified tick) at the bottom of the infographic |
+
 ### Enterprise — `src/app/enterprise/page.tsx`
 
 Operational-memory sales page (added 2026-07-01). Intentful testids for Playwright: hero CTAs, each section, and one per use case (so a test can assert the four offerings render).

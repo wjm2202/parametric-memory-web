@@ -1,0 +1,149 @@
+---
+title: "GraphRAG Without the Extraction Bill: A Knowledge Graph Built With Zero LLM Calls at Ingest"
+seoTitle: "GraphRAG Without LLM Extraction"
+date: "2026-09-08"
+excerpt: "GraphRAG pays an LLM to guess entities and edges. We build a typed knowledge graph with zero LLM calls at ingest, flag contradictions, and prove every read."
+author: "Glen Osborne"
+tags: ["graphrag", "knowledge-graph", "memory", "mcp", "verifiable"]
+---
+
+GraphRAG works. Multi-hop questions that defeat a vector index get answered when the retriever can
+walk from one fact to the facts connected to it. The problem is what it costs to *get* the graph.
+In Microsoft's reference pipeline, graph extraction — an LLM reading every chunk and guessing the
+entities, relationships and claims inside it — is roughly three-quarters of total indexing cost.
+Then the graph goes stale the moment the source changes, and nothing in the retrieved subgraph
+tells you whether it was tampered with on the way to the prompt.
+
+We took a different route to the same destination. Parametric Memory is a knowledge graph for AI
+agents where the agent **writes the graph deliberately** instead of an extractor guessing it, the
+substrate **detects contradictions at write time**, and **every read carries a Merkle proof**.
+Ingest performs zero LLM calls, and that configuration scores 76.6% on LongMemEval-S under the
+benchmark's own GPT-4o judge. This post is about how that works and what it does not do.
+
+## The extraction pass is the expensive part — so we removed it
+
+In document GraphRAG the graph is a by-product of text. You feed in chunks; an LLM emits
+`(entity, relation, entity)` triples and community summaries; you hope it was right. Every
+re-index repeats the bill, and every extraction error becomes an edge the retriever will
+confidently follow.
+
+An agent's memory is a different kind of corpus. The agent already knows, at the moment it learns
+something, what the claim is and what it relates to. So we made the claim itself the node, and
+made the relationship a first-class typed edge the agent declares in the same write:
+
+```json
+POST /mcp  →  session_checkpoint
+{
+  "atoms": [
+    { "atom": "v1.fact.checkout__payment_mode__live",
+      "payload": "Stripe live keys active since 2026-09-01; test mode retired." },
+    "v1.procedure.deploy_requires_migration_dry_run_first"
+  ],
+  "edges": [
+    { "type": "supersedes",  "source": "v1.fact.checkout__payment_mode__live",
+                             "target": "v1.fact.checkout__payment_mode__test" },
+    { "type": "constrains",  "source": "v1.procedure.deploy_requires_migration_dry_run_first",
+                             "target": "v1.procedure.deploy_to_production" },
+    { "type": "member_of",   "source": "v1.fact.checkout__payment_mode__live",
+                             "target": "v1.other.hub__billing" }
+  ],
+  "tombstone": ["v1.fact.checkout__payment_mode__test"]
+}
+```
+
+No model read that. The atom name *is* the claim — `v1.fact.checkout__payment_mode__live` is a
+complete proposition — and the edges are one of seven typed relations with fixed semantics:
+`supersedes`, `member_of`, `depends_on`, `constrains`, `references`, `derived_from`,
+`produced_by`. Edges are permanent and do not decay. Ingest is a hash and a tree insert:
+deterministic, replayable, air-gapped, CPU-only. Your conversations never leave your
+infrastructure to be summarised by a third-party model.
+
+Retrieval is a hybrid of BM25 and a static embedder (no LLM there either), plus a bounded
+Markov spreading-activation step that acts as a tie-breaker among near-equal candidates. On
+LongMemEval-S that stack retrieves the right evidence 94.0% of the time at hit@10 and answers
+76.6% of questions correctly with nothing configured. Adding one typed extraction pass at ingest
+— an explicit, per-workspace choice, roughly a tenth of a cent per conversation — lifts it to
+83.0%. Both figures were graded by the benchmark's official `evaluate_qa.py` judge and ship as a
+sealed, Merkle-rooted bundle you can re-verify yourself at `/benchmark`.
+
+## The graph tells you when it's lying to you
+
+The second GraphRAG failure mode is quieter than cost: edges that were true when extracted and are
+now wrong. Nothing in a conventional knowledge graph distinguishes a current fact from a
+superseded one; the retriever returns both and the model picks one.
+
+We put contradiction detection in the naming grammar. A fact is `v1.fact.<subject>__<predicate>__<value>`.
+Two live atoms with the same `(subject, predicate)` and different values are a conflict, and the
+write that creates the second one is told so *in the response*:
+
+```json
+{
+  "atomsAdded": 1,
+  "conflictsCreated": [
+    {
+      "conflictKey": "checkout|payment_mode",
+      "existing": "v1.fact.checkout__payment_mode__test",
+      "incoming": "v1.fact.checkout__payment_mode__live",
+      "suggestedResolution": {
+        "tombstone": ["v1.fact.checkout__payment_mode__test"],
+        "edges": [{ "type": "supersedes",
+                    "source": "v1.fact.checkout__payment_mode__live",
+                    "target": "v1.fact.checkout__payment_mode__test" }]
+      }
+    }
+  ]
+}
+```
+
+Conflicts are never rejected or auto-resolved — both claims are stored, and the agent that has the
+context resolves it now rather than a future reader guessing. At retrieval, a superseded atom is
+demoted in ranking and, when chain context is requested, arrives labelled `superseded_warning`
+alongside the atom that replaced it. A `constrains` edge surfaces the rule you must read before
+acting on a fact — the kind of deliberate link that semantic similarity can't find, because a
+correction rarely shares vocabulary with the behaviour it corrects.
+
+One design decision worth stating: an atom is **never** promoted for being highly connected.
+Edges shape ranking in two targeted ways — atoms in the domain you declare are boosted, superseded
+atoms are demoted — and that is all. PageRank-style popularity is how the most-cited memory
+displaces the most relevant one.
+
+## Every retrieved node carries a proof
+
+GraphRAG papers talk about "traceability" and mean you can see which nodes contributed to an
+answer. That is provenance in the loose sense. It does not tell you the node is the one that was
+written, or that the graph you are reading is the graph you wrote last month.
+
+Every atom in Parametric Memory is a leaf in a SHA-256 Merkle tree. A read returns the payload and
+an audit path to the root; a bootstrap returns compact server-verified proofs by default and full
+paths on request. Consistency proofs follow the RFC 6962 model — the same construction Certificate
+Transparency uses — so you can prove the tree at version 81 is an honest extension of the tree at
+version 80 rather than a rewrite. Proof verification is O(log n) and measures 0.032 ms at p95.
+
+```json
+"proof": { "verified": true, "treeVersion": 81, "shardId": 0 }
+```
+
+That one line is the difference between "the graph says X" and "the graph said X, and here is the
+evidence it hasn't been altered since." For an agent making decisions on remembered facts, and for
+the person auditing those decisions later, the second sentence is the one that matters.
+
+## What this is not
+
+Parametric Memory is not a document-corpus indexer. If you have ten thousand PDFs and need
+community summaries over them, Microsoft GraphRAG or LazyGraphRAG is the right tool and we will
+happily sit behind it as the layer that remembers what your agent concluded. We store claims that
+compound — decisions, corrections, state, root causes — not inventories of what was on a page.
+Our weakest axis is preference-style recall at 30% (inferring unstated taste from chit-chat), we
+have no image support, and we published a 22% result on a web-agent trajectory benchmark rather
+than chase it. The full list is on the FAQ.
+
+## What it means for your architecture
+
+If you are paying an LLM to build a knowledge graph of what your agents already know, you are
+paying it to guess at facts the agent could have written down directly. Move the graph to the
+write side: let the agent declare claims and typed edges as it works, let the substrate flag
+contradictions at commit, and demand a proof on every read. Keep your vector store for fuzzy
+recall over raw text — this is a different layer, and it takes one MCP config block to add.
+
+Start at [/docs/your-instance](/docs/your-instance), or check the sealed benchmark bundle at
+[/benchmark](/benchmark) before you take our word for any of it.
