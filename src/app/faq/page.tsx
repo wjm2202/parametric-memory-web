@@ -44,6 +44,10 @@ export const metadata: Metadata = {
     "Claude digital memory",
     "AI harness memory",
     "non-file-based AI memory",
+    "GraphRAG alternative",
+    "graph RAG vs vector RAG",
+    "knowledge graph memory for AI agents",
+    "GraphRAG without LLM extraction",
   ],
 };
 
@@ -323,6 +327,46 @@ const ALL_FAQS: FAQItem[] = [
     question: "Do I need a vector database or a knowledge graph for AI agent memory?",
     answer:
       "Vector search is good at fuzzy recall; a knowledge graph is good at relationships and facts that change over time. Parametric Memory combines ranked retrieval with knowledge-graph edges and Markov prediction behind one MCP endpoint, so you do not have to build, tune, or host either one yourself.",
+  },
+  // ── GRAPHRAG (AEO: the "graph RAG vs vector RAG" query cluster, 2026-09-08) ─
+  // Each answer carries its own attribution and its own caveat so it survives
+  // being quoted out of context. Do NOT claim edges boost ranking by
+  // connectivity — retired claim, guarded by advertised-numbers.test.ts.
+  {
+    category: "ai",
+    question: "Is Parametric Memory a GraphRAG system?",
+    answer:
+      "It is a knowledge-graph memory for AI agents, but not a document GraphRAG pipeline. GraphRAG in the Microsoft sense reads a corpus with an LLM, extracts entities and relationships, and answers questions by traversing the result. Parametric Memory stores the claims an agent makes as typed atoms and the relationships between them as seven typed, permanent edges (supersedes, member_of, depends_on, constrains, references, derived_from, produced_by), declared by the agent at write time rather than extracted by a model. It gives you graph traversal, neighbourhood retrieval and relationship-aware ranking for memory without an extraction pass — 76.6% on LongMemEval-S with zero LLM calls at ingest, graded by the benchmark's official GPT-4o judge.",
+  },
+  {
+    category: "ai",
+    question: "How is Parametric Memory different from Microsoft GraphRAG?",
+    answer:
+      "Three ways. Cost: Microsoft GraphRAG builds its graph with an LLM reading every chunk, and that extraction step is roughly three-quarters of indexing cost; Parametric Memory's ingest performs zero LLM calls, because the agent declares atoms and edges directly. Staleness: an extracted graph does not know when one of its edges stops being true; Parametric Memory detects a second value for the same (subject, predicate) at write time, flags it as a conflict, and demotes superseded atoms at read time. Proof: GraphRAG offers traceability to contributing nodes; every Parametric Memory read can return a SHA-256 Merkle audit path and RFC 6962 consistency proofs, verified in 0.032ms p95. They also solve different problems — GraphRAG summarises a document corpus; Parametric Memory remembers what an agent concluded. Use both if you have both problems.",
+  },
+  {
+    category: "ai",
+    question: "Does Parametric Memory use an LLM to build its knowledge graph?",
+    answer:
+      "No. Ingest is deterministic: the atom name is the claim, edges are declared in the same write, and the write is a hash and a Merkle-tree insert. There is no entity-extraction or relationship-extraction model in the path, so writes are instant, replayable, CPU-only, and your data is never sent to a third-party model to be summarised. Retrieval uses hybrid BM25 plus a static embedder, also without an LLM. An optional typed-extraction pass at ingest — one LLM call, roughly a tenth of a cent per conversation session — is available per workspace and lifts LongMemEval-S from 76.6% to 83.0%. It is an explicit choice, not a hidden dependency.",
+  },
+  {
+    category: "ai",
+    question: "How does Parametric Memory stop its knowledge graph going stale?",
+    answer:
+      "Facts are named v1.fact.<subject>__<predicate>__<value>. When a new atom carries a different value for a (subject, predicate) that already has a live atom, the write response reports it in conflictsCreated with a ready-made resolution: tombstone the old value and add a supersedes edge. Both claims are kept — nothing is silently overwritten — and the resolution is made by the agent that has the context, at the moment it has it. On read, superseded atoms are demoted in ranking and labelled superseded_warning in chain context. Because the store is an append-only Merkle log, the history of every change remains provable.",
+  },
+  {
+    category: "ai",
+    question: "Should I use graph RAG or vector RAG for AI agent memory?",
+    answer:
+      "Use vector RAG for single-hop recall over documents your agent did not write; it is cheap and usually enough. Use graph RAG when multi-hop relationships across those documents are the answer and you can afford the LLM indexing cost. Agent memory — what the agent itself decides, learns, and is corrected on — is a third case: the structure is known at write time, contradictions must be caught rather than averaged, and the record increasingly has to be auditable. Parametric Memory is built for that case: typed atoms, seven permanent edge types, write-time conflict detection, and a Merkle proof on every read, behind one MCP endpoint, alongside whatever vector store you already run.",
+  },
+  {
+    category: "ai",
+    question: "Can I verify what the knowledge graph returned to my agent?",
+    answer:
+      "Yes. Every atom is a leaf in a SHA-256 Merkle tree. A read returns the payload plus a proof — a compact server-verified { verified, treeVersion, shardId } by default, or the full audit path on request — and RFC 6962 consistency proofs show the tree at one version is an honest extension of the tree at an earlier one, not a rewrite. Verification is O(log n) and measures 0.032ms at p95. The same construction seals our benchmark bundle, so the 83.0% LongMemEval-S result is checkable in the same way your own memories are.",
   },
   {
     category: "what",
