@@ -171,7 +171,8 @@ export const SCHEMA_TZ_OFFSET = "+12:00";
  */
 export function toSchemaDateTime(date: string): string {
   if (/^\d{4}-\d{2}-\d{2}$/.test(date)) return `${date}T00:00:00${SCHEMA_TZ_OFFSET}`;
-  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(date)) return date;
+  if (/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?(?:Z|[+-]\d{2}:\d{2})$/.test(date))
+    return date;
   throw new Error(`toSchemaDateTime: unsupported date "${date}"`);
 }
 

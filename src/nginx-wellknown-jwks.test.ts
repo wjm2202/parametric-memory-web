@@ -82,9 +82,7 @@ describe("nginx.conf — /.well-known/ must not be eaten by the dotfile deny", (
     // The /brand/* lesson (af9a16a): a `root` pointing at a host path that
     // does not exist inside the deploy 404s everything under it. The app
     // serves public/.well-known/ from inside the container.
-    const block = conf.match(
-      /location\s+\^~\s+\/\.well-known\/\s*\{([\s\S]*?)\n\s*\}/,
-    );
+    const block = conf.match(/location\s+\^~\s+\/\.well-known\/\s*\{([\s\S]*?)\n\s*\}/);
     expect(block, "no ^~ /.well-known/ block to inspect").not.toBeNull();
     const body = block![1];
     expect(body).toMatch(/proxy_pass\s+http:\/\/127\.0\.0\.1:3000\s*;/);
@@ -121,9 +119,7 @@ describe("next.config.ts — the headers the cross-origin verifier fetch needs",
     const entry = headers.find((h) => h.source === "/.well-known/jwks.json");
     expect(entry, "no headers() entry for /.well-known/jwks.json").toBeDefined();
 
-    const byKey = Object.fromEntries(
-      entry!.headers.map((h) => [h.key.toLowerCase(), h.value]),
-    );
+    const byKey = Object.fromEntries(entry!.headers.map((h) => [h.key.toLowerCase(), h.value]));
     expect(byKey["access-control-allow-origin"]).toBe("*");
     expect(byKey["content-type"]).toMatch(/application\/json/);
     expect(byKey["cache-control"]).toBeDefined();

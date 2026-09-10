@@ -107,7 +107,9 @@ describe("nginx.conf — no duplicated security headers", () => {
 
 describe("nginx.conf — the headers nginx does own", () => {
   it("sets HSTS and X-XSS-Protection at server level", () => {
-    expect(conf).toMatch(/add_header\s+Strict-Transport-Security\s+"max-age=63072000; includeSubDomains; preload"\s+always;/);
+    expect(conf).toMatch(
+      /add_header\s+Strict-Transport-Security\s+"max-age=63072000; includeSubDomains; preload"\s+always;/,
+    );
     expect(conf).toMatch(/add_header\s+X-XSS-Protection\s+"0"\s+always;/);
   });
 
@@ -128,7 +130,9 @@ describe("nginx.conf — /_next/static/ repeats what it cannot inherit", () => {
   });
 
   it("repeats HSTS, because inheritance does not reach this block", () => {
-    expect(body()).toMatch(/add_header\s+Strict-Transport-Security\s+"max-age=63072000; includeSubDomains; preload"\s+always;/);
+    expect(body()).toMatch(
+      /add_header\s+Strict-Transport-Security\s+"max-age=63072000; includeSubDomains; preload"\s+always;/,
+    );
   });
 
   it("repeats X-XSS-Protection", () => {
@@ -163,7 +167,9 @@ describe("nginx.conf — the www redirect carries HSTS", () => {
     expect(
       wwwBlock![0],
       "www→apex 301 has no HSTS — hstspreload.org requires redirects to carry it",
-    ).toMatch(/add_header\s+Strict-Transport-Security\s+"max-age=63072000; includeSubDomains; preload"\s+always;/);
+    ).toMatch(
+      /add_header\s+Strict-Transport-Security\s+"max-age=63072000; includeSubDomains; preload"\s+always;/,
+    );
   });
 
   it("uses the identical HSTS value as the apex — a weaker one would poison preload", () => {
