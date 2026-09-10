@@ -13,7 +13,7 @@ returns the best matching atom, and includes a Merkle proof for verification.
 ## Recall by query
 
 ```http
-POST /recall
+POST https://abc123.parametric-memory.dev/recall
 Authorization: Bearer YOUR_API_KEY
 Content-Type: application/json
 ```
@@ -53,7 +53,7 @@ expects you to recall next. Pre-fetching them warms your local cache.
 For exact key lookups, use the atoms GET endpoint:
 
 ```http
-GET /atoms/v1.user.Glen.preference.theme
+GET https://abc123.parametric-memory.dev/atoms/v1.user.Glen.preference.theme
 ```
 
 This is faster than a query recall and always returns the exact atom if it exists.
@@ -61,7 +61,7 @@ This is faster than a query recall and always returns the exact atom if it exist
 ## Batch recall
 
 ```http
-POST /batch-access
+POST https://abc123.parametric-memory.dev/batch-access
 Authorization: Bearer YOUR_API_KEY
 Content-Type: application/json
 ```

@@ -19,6 +19,15 @@ Disallow: /*.woff$
 Disallow: /*.ttf$
 Disallow: /*.eot$
 
+# Decorative hero background video (2026-09-07). GSC Video indexing listed
+# /hero/hero-mobile.mp4 as "Video isn't on a watch page" — correct, it is a
+# muted aria-hidden backdrop on /, not content. Blocking the folder stops
+# Googlebot re-fetching multi-MB mp4s every crawl and clears the report. mp4s
+# ONLY — the poster JPEG in the same folder is the page's LCP image and must
+# stay fetchable so the rendered snapshot matches what users see. Real videos
+# live at /videos/* with VideoObject JSON-LD.
+Disallow: /hero/*.mp4$
+
 # NOTE: /login and /signup are deliberately NOT disallowed here. They carry a
 # `noindex` meta tag, and a page must remain CRAWLABLE for Google to see that
 # tag. Disallowing them would leave Google unable to read the noindex and the

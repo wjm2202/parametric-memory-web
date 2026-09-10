@@ -133,6 +133,15 @@ describe("public/robots.txt — AI answer engine allow-list", () => {
     expect(robots).toMatch(/Disallow:\s*\/\*\.woff\$/);
   });
 
+  // ── Decorative hero video (2026-09-07) ─────────────────────────────────
+  // GSC Video indexing: /hero/hero-mobile.mp4 "Video isn't on a watch page".
+  // The hero backdrop is not content; block the mp4s (not the folder — the
+  // poster JPEG is the LCP image and must stay fetchable).
+  it("disallows the decorative /hero/*.mp4 backdrops but not the /hero/ folder", () => {
+    expect(robots).toMatch(/Disallow:\s*\/hero\/\*\.mp4\$/);
+    expect(robots).not.toMatch(/Disallow:\s*\/hero\/\s*$/m);
+  });
+
   // THE LOAD-BEARING ONE. Blocking /_next/static/ wholesale would deny
   // Googlebot the JS and CSS chunks it needs to RENDER the page — every URL
   // would look like an empty shell and indexing would collapse. Disallow fonts

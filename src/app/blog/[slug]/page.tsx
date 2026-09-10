@@ -5,7 +5,7 @@ import Image from "next/image";
 import { getAllPostSlugs, getPostBySlug } from "@/lib/blog";
 import { compileMdx } from "@/lib/mdx";
 import { mdxComponents } from "@/components/docs/MdxComponents";
-import { buildBlogBreadcrumb } from "@/lib/structured-data";
+import { buildBlogBreadcrumb, toSchemaDateTime } from "@/lib/structured-data";
 
 interface PageProps {
   params: Promise<{ slug: string }>;
@@ -108,8 +108,9 @@ export default async function BlogPostPage({ params }: PageProps) {
     "@type": "BlogPosting",
     headline: frontmatter!.title,
     description: frontmatter!.excerpt,
-    datePublished: frontmatter!.date,
-    dateModified: frontmatter!.date,
+    // Full ISO datetime with timezone — GSC flags date-only values (see toSchemaDateTime).
+    datePublished: toSchemaDateTime(frontmatter!.date),
+    dateModified: toSchemaDateTime(frontmatter!.date),
     author: {
       "@type": "Person",
       name: frontmatter!.author ?? "Entity One",
