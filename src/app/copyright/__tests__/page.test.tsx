@@ -16,7 +16,7 @@ import fs from "node:fs";
 import path from "node:path";
 import { describe, expect, it } from "vitest";
 
-import { SUPPORT_EMAIL } from "@/config/site";
+import { LEGAL_EMAIL } from "@/config/site";
 const PAGE_PATH = path.join(process.cwd(), "src", "app", "copyright", "page.tsx");
 
 const pageSrc = fs.readFileSync(PAGE_PATH, "utf-8");
@@ -91,16 +91,16 @@ describe("/copyright page — load-bearing legal text", () => {
     expect(pageSrc).toContain("Consumer Guarantees Act 1993");
   });
 
-  it("provides a licensing contact via SUPPORT_EMAIL constant", () => {
-    // After the email-centralisation refactor (2026-05-01), the page no
-    // longer hardcodes the literal email. It imports SUPPORT_EMAIL from
-    // src/config/site and references the variable. Both surfaces — the
-    // import and at least one mailto/expression — must be present.
+  it("provides a licensing / takedown contact via the LEGAL_EMAIL constant", () => {
+    // Copyright, licensing and DMCA takedown notices are legal matters, so the
+    // page routes them to legal@ (decided 2026-10-08 with the Proton cutover),
+    // not the general support@ inbox. It must import the constant from
+    // src/config/site rather than hardcode the literal.
     expect(pageSrc).toMatch(/from\s+["']@\/config\/site["']/);
-    expect(pageSrc).toMatch(/SUPPORT_EMAIL/);
-    // Sanity: the constant resolves to a real email at test time, so the
-    // page actually renders a contact address. (Compiled output check.)
-    expect(SUPPORT_EMAIL).toMatch(/@/);
+    expect(pageSrc).toMatch(/LEGAL_EMAIL/);
+    expect(pageSrc).not.toMatch(/SUPPORT_EMAIL/);
+    expect(pageSrc).not.toContain(LEGAL_EMAIL);
+    expect(LEGAL_EMAIL).toBe("legal@parametric-memory.dev");
   });
 
   it("declares it is not legal advice", () => {

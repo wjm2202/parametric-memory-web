@@ -92,3 +92,79 @@ describe("POST /api/waitlist — abuse prevention", () => {
     expect(sendMock).not.toHaveBeenCalled();
   });
 });
+
+/**
+ * Addressing + escaping (Proton cutover, 2026-10-08).
+ *
+ * - The sending subdomain has no inbox, so the confirmation must set replyTo
+ *   to the support@ Proton alias or replies are silently lost.
+ * - The internal alert goes to support@ (never a personal mailbox) with
+ *   replyTo = the signer, so Reply goes straight back to them.
+ * - The signer's address is caller-supplied and the validation regex allows
+ *   `<`, `>` and `"`, so it must be HTML-escaped in the confirmation body.
+ */
+describe("POST /api/waitlist — addressing and escaping", () => {
+  it("sends the internal alert to SUPPORT_EMAIL with replyTo = signer", async () => {
+    const { SUPPORT_EMAIL, TRANSACTIONAL_FROM } = await import("@/config/site");
+    const res = await POST(req({ email: "alert-check@example.com", ip: "10.9.0.1" }));
+    expect(res.status).toBe(200);
+    const alert = sendMock.mock.calls[0][0];
+    expect(alert.from).toBe(TRANSACTIONAL_FROM);
+    expect(alert.to).toEqual([SUPPORT_EMAIL]);
+    expect(alert.replyTo).toBe("alert-check@example.com");
+  });
+
+  it("sends the confirmation to the signer with replyTo = SUPPORT_EMAIL", async () => {
+    const { SUPPORT_EMAIL, TRANSACTIONAL_FROM } = await import("@/config/site");
+    await POST(req({ email: "confirm-check@example.com", ip: "10.9.0.2" }));
+    const confirmation = sendMock.mock.calls[1][0];
+    expect(confirmation.from).toBe(TRANSACTIONAL_FROM);
+    expect(confirmation.to).toEqual(["confirm-check@example.com"]);
+    expect(confirmation.replyTo).toBe(SUPPORT_EMAIL);
+    expect(SUPPORT_EMAIL).toBe("support@parametric-memory.dev");
+  });
+
+  it("HTML-escapes a crafted signer address in the confirmation body", async () => {
+    const crafted = 'x"><b>pwn</b>@evil.example';
+    const res = await POST(req({ email: crafted, ip: "10.9.0.3" }));
+    expect(res.status).toBe(200);
+    const html: string = sendMock.mock.calls[1][0].html;
+    expect(html).not.toContain("<b>pwn</b>");
+    expect(html).toContain("x&quot;&gt;&lt;b&gt;pwn&lt;/b&gt;@evil.example");
+  });
+});
+
+/**
+ * Resend v3+ resolves { data: null, error } instead of throwing. Before
+ * 2026-10-08 the route ignored that and reported success even when no mail
+ * went out. These tests pin the explicit error handling.
+ */
+describe("POST /api/waitlist — Resend API errors", () => {
+  const apiError = {
+    data: null,
+    error: { name: "validation_error", message: "domain not verified" },
+  };
+
+  it("returns 502 when the confirmation send reports an error", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    sendMock
+      .mockResolvedValueOnce({ data: { id: "alert" }, error: null })
+      .mockResolvedValueOnce(apiError);
+    const res = await POST(req({ email: "confirm-fails@example.com", ip: "10.9.1.1" }));
+    expect(res.status).toBe(502);
+    expect(errSpy).toHaveBeenCalledWith("[waitlist] Confirmation not sent:", apiError.error);
+    errSpy.mockRestore();
+  });
+
+  it("still confirms the signer (200) when only the internal alert fails, and logs it", async () => {
+    const errSpy = vi.spyOn(console, "error").mockImplementation(() => {});
+    sendMock
+      .mockResolvedValueOnce(apiError)
+      .mockResolvedValueOnce({ data: { id: "confirmation" }, error: null });
+    const res = await POST(req({ email: "alert-fails@example.com", ip: "10.9.1.2" }));
+    expect(res.status).toBe(200);
+    expect(sendMock).toHaveBeenCalledTimes(2);
+    expect(errSpy).toHaveBeenCalledWith("[waitlist] Internal alert not sent:", apiError.error);
+    errSpy.mockRestore();
+  });
+});

@@ -91,4 +91,4 @@ See [`LICENSE`](./LICENSE) for the full proprietary licence terms,
 authorship statement and New Zealand jurisdiction clause.
 
 Unauthorised use, reproduction, modification or distribution is prohibited.
-Licensing enquiries: entityone22@gmail.com
+Licensing enquiries: legal@parametric-memory.dev

@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { Resend } from "resend";
 
-import { SUPPORT_EMAIL } from "@/config/site";
+import { SUPPORT_EMAIL, TRANSACTIONAL_FROM } from "@/config/site";
+import { escapeHtml } from "@/lib/email";
 import { verifyCsrfOrigin } from "@/lib/csrf";
 import { clientIp, makeFixedWindowLimiter } from "@/lib/rate-limit";
 
@@ -44,10 +45,18 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // 1. Notify us — internal waitlist notification
-    await resend.emails.send({
-      from: "Parametric Memory <noreply@send.parametric-memory.dev>",
+    // NOTE: the Resend SDK (v3+) does NOT throw on API errors (bad key,
+    // unverified domain, rate limit) — it resolves { data: null, error }.
+    // Every send's `error` must be checked explicitly; the catch below only
+    // sees network / programming errors.
+
+    // 1. Notify us — internal waitlist notification. replyTo = the signer, so
+    //    hitting Reply in Proton writes straight back to them. A failure here
+    //    is logged but must not stop the signer getting their confirmation.
+    const alert = await resend.emails.send({
+      from: TRANSACTIONAL_FROM,
       to: [SUPPORT_EMAIL],
+      replyTo: email,
       subject: `[Waitlist] New signup: ${email}`,
       text: [
         "New waitlist signup",
@@ -59,10 +68,16 @@ export async function POST(req: NextRequest) {
       ].join("\n"),
     });
 
-    // 2. Confirmation to the user
-    await resend.emails.send({
-      from: "Parametric Memory <noreply@send.parametric-memory.dev>",
+    if (alert.error) {
+      console.error("[waitlist] Internal alert not sent:", alert.error);
+    }
+
+    // 2. Confirmation to the user. The sending subdomain has no inbox, so
+    //    replies must be routed to a real Proton alias.
+    const confirmation = await resend.emails.send({
+      from: TRANSACTIONAL_FROM,
       to: [email],
+      replyTo: SUPPORT_EMAIL,
       subject: "You're on the Parametric Memory waitlist",
       html: `<!DOCTYPE html>
 <html lang="en">
@@ -105,7 +120,7 @@ export async function POST(req: NextRequest) {
         <tr>
           <td style="background:#0f172a;border:1px solid #1e293b;border-radius:12px;padding:32px;margin-bottom:24px;">
             <p style="margin:0 0 16px;font-size:15px;color:#94a3b8;line-height:1.7;">
-              Thanks for signing up with <strong style="color:#e2e8f0;">${email}</strong>.
+              Thanks for signing up with <strong style="color:#e2e8f0;">${escapeHtml(email)}</strong>.
               You&rsquo;re now on the list for product updates, new features, and integration guides
               from Parametric Memory.
             </p>
@@ -170,6 +185,14 @@ export async function POST(req: NextRequest) {
 </body>
 </html>`,
     });
+
+    if (confirmation.error) {
+      console.error("[waitlist] Confirmation not sent:", confirmation.error);
+      return NextResponse.json(
+        { error: "Failed to send confirmation. Please try again." },
+        { status: 502 },
+      );
+    }
 
     return NextResponse.json({ ok: true });
   } catch (err) {

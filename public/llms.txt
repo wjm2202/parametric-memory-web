@@ -130,5 +130,5 @@ Guidance for AI agents (browsing agents like Claude in Chrome, retrieval crawler
 
 ## Contact
 
-- Email: entityone22@gmail.com
+- Email: support@parametric-memory.dev
 - Website: https://parametric-memory.dev
