@@ -15,7 +15,6 @@ services:
       - STRIPE_WEBHOOK_SECRET=${STRIPE_WEBHOOK_SECRET}
       - STRIPE_PUBLISHABLE_KEY=${STRIPE_PUBLISHABLE_KEY}
       - RESEND_API_KEY=${RESEND_API_KEY}
-      - CONTACT_EMAIL=${CONTACT_EMAIL:-entityone22@gmail.com}
       # Sprint 16: MMPM connection for Substrate Viewer proxy
       - MMPM_API_URL=${MMPM_API_URL:-https://mmpm.co.nz}
       - MMPM_VIZ_API_KEY=${MMPM_VIZ_API_KEY}

@@ -65,7 +65,6 @@ jobs:
           STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
           STRIPE_WEBHOOK_SECRET: whsec_placeholder
           RESEND_API_KEY: re_placeholder
-          CONTACT_EMAIL: ci@parametric-memory.dev
           GIT_COMMIT_SHA: ${{ github.sha }}
           MMPM_API_URL: https://mmpm.co.nz
           MMPM_API_KEY: placeholder
@@ -86,7 +85,6 @@ jobs:
           STRIPE_PUBLISHABLE_KEY: pk_test_placeholder
           STRIPE_WEBHOOK_SECRET: whsec_placeholder
           RESEND_API_KEY: re_placeholder
-          CONTACT_EMAIL: ci@parametric-memory.dev
           MMPM_API_URL: https://mmpm.co.nz
           MMPM_API_KEY: placeholder
           MMPM_VIZ_API_KEY: placeholder

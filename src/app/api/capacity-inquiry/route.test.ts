@@ -25,11 +25,15 @@ afterEach(() => {
 });
 
 /**
- * Minimal NextRequest stand-in. The route only calls `request.json()`.
- * Pass `undefined` to simulate malformed body.
+ * Minimal NextRequest stand-in: what verifyCsrfOrigin reads (method, url,
+ * headers) plus `json()`. Same-origin by default; pass `origin` to simulate a
+ * cross-site caller. Pass `undefined` body to simulate malformed JSON.
  */
-function makeReq(body: unknown): NextRequest {
+function makeReq(body: unknown, origin = "http://localhost"): NextRequest {
   return {
+    method: "POST",
+    url: "http://localhost/api/capacity-inquiry",
+    headers: new Headers({ origin }),
     json: () =>
       body === undefined ? Promise.reject(new Error("malformed json")) : Promise.resolve(body),
   } as unknown as NextRequest;
@@ -111,5 +115,17 @@ describe("POST /api/capacity-inquiry", () => {
 
     expect(res.status).toBe(400);
     expect(await res.json()).toEqual({ error: "invalid_email" });
+  });
+});
+
+describe("POST /api/capacity-inquiry — CSRF", () => {
+  it("rejects a cross-site submission with 403 before touching the handler", async () => {
+    const res = await POST(
+      makeReq(
+        { name: "Eve", email: "eve@example.com", tier: "pro", message: "spam" },
+        "https://evil.example",
+      ),
+    );
+    expect(res.status).toBe(403);
   });
 });

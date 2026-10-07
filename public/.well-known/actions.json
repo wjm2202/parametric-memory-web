@@ -6,7 +6,7 @@
   "version": "2026-04-25",
   "homepage": "https://parametric-memory.dev",
   "llmsTxt": "https://parametric-memory.dev/llms.txt",
-  "contact": "entityone22@gmail.com",
+  "contact": "support@parametric-memory.dev",
   "actions": [
     {
       "@type": "LoginAction",
