@@ -20,15 +20,15 @@ gitignored, so this file and that check exist only on Glen's Mac — run
 | 4 | Identify domain host / DNS provider | Claude | ✅ Done | 2026-10-07 | **DigitalOcean DNS** (ns1–3.digitalocean.com) |
 | 5 | Snapshot existing DNS records (before any change) | Claude | ✅ Done | 2026-10-07 | Public lookup via dns.google; see snapshot |
 | 6 | Add verification TXT → verify in Proton | Claude | ✅ Done | 2026-10-07 | Proton: "Domain verified". DMARC tab already green from existing record |
-| 7 | Add MX records | Glen | 🔄 In progress | 2026-10-07 | Both added. ⚠️ `mailsec` entered at priority 10 — must be **20**. Claude's DNS edits blocked by safety check after step 6 |
+| 7 | Add MX records | Glen | ✅ Done | 2026-10-08 | Both MX live: 10 mail / 20 mailsec (verified via dns.google) |
 | 8 | Add SPF | Glen | ✅ Done | 2026-10-07 | Verified live via dns.google; only one SPF on root |
 | 9 | Add 3 DKIM CNAMEs | Glen | ✅ Done | 2026-10-07 | All 3 verified live via dns.google |
-| 10 | **Edit** existing DMARC (`p=none`) to add `rua` | Claude | ⏳ Pending | | A DMARC record already exists — edit it, never add a second |
+| 10 | **Edit** existing DMARC (`p=none`) to add `rua` | Claude | ⏸ Deferred | 2026-10-08 | Existing `v=DMARC1; p=none;` accepted by Proton. Adding `rua=mailto:dmarc@…` is optional — do it with step 15 |
 | 11 | Create `glen@` + aliases, enable catch-all | Claude | ✅ Done | 2026-10-07 | 6 addresses active; catch-all → `glen@`. Glen entered password once at first create. `glen@` set as **default** sending address |
-| 12 | Test inbound + outbound + spam placement | Claude + Glen | ⏳ Pending | | See [Verification](#verification) |
-| 13 | Swap site off personal Gmail → `support@` (with tests) | Claude | 🔄 Code done, not deployed | 2026-10-08 | See [Website sending](#website-sending-resend). Deploy only after step 12 passes |
-| 14 | Deploy site change | Glen | ⏳ Pending | | Via normal CI/CD |
-| 15 | Tighten DMARC to `p=quarantine` | Claude | ⏳ Pending | | ~2 weeks after step 10, if reports are clean |
+| 12 | Test inbound + outbound + spam placement | Claude + Glen | ✅ Done | 2026-10-08 | Glen confirmed inbound + outbound test mail passed |
+| 13 | Swap site off personal Gmail → `support@` (with tests) | Claude | ✅ Done | 2026-10-08 | Website + compute changes merged; preflight all green |
+| 14 | Deploy site change | Glen | ✅ Done | 2026-10-08 | Deployed. Live checks: llms.txt + actions.json → support@, /contact → support@, /copyright → legal@, no "gmail" in page HTML |
+| 15 | Tighten DMARC to `p=quarantine` | Claude | ⏳ Pending | ~2026-10-22 | Edit `_dmarc` to `v=DMARC1; p=quarantine; rua=mailto:dmarc@parametric-memory.dev` once mail has run cleanly ~2 weeks |
 
 Legend: ✅ Done · ⏳ Pending · 🔄 In progress · ⚠️ Blocked
 
@@ -78,9 +78,9 @@ live on `send.` + `resend._domainkey`.
 | mmpm-compute `src/services/resend-email-provider.ts` | Magic links, TOTP notices, billing/balance warnings, waitlist notices | `noreply@parametric-memory.dev` | user | `support@` |
 | mmpm-compute `notification-service.ts` | Capacity alerts (ops) | `noreply@parametric-memory.dev` | `ADMIN_EMAIL` env, default `glen@` | `support@` |
 
-`TRANSACTIONAL_FROM` = `Parametric Memory <noreply@send.parametric-memory.dev>`
-(`src/config/site.ts`). That subdomain has **no inbox** — its MX is Amazon
-SES's bounce handler — so every send must set `replyTo`.
+`TRANSACTIONAL_FROM` = `Parametric Memory <noreply@parametric-memory.dev>`
+(`src/config/site.ts`; changed 2026-10-08 from `noreply@send.…`, which the new
+Resend account rejects). It has no mailbox of its own, so every send must set `replyTo`.
 
 Changes made 2026-10-08 (all with tests):
 - `SUPPORT_EMAIL` → `support@`; new `LEGAL_EMAIL` (copyright/DMCA page, LICENSE, README).
@@ -101,6 +101,30 @@ mmpm-compute changes 2026-10-08 (uncommitted, branch `stripe`):
   default — those are Glen's real login account, not published addresses.
 - Sender kept as root `noreply@` (website uses `noreply@send.`): both pass
   SPF/DKIM/DMARC via Resend; unifying would change the From on sign-in links.
+
+### Resend account move (2026-10-08)
+
+Pro plan was bought on the Resend account logged in as `entityone22@gmail.com`
+(team "entityone22", $20/mo, renews 8 Nov). The domain was verified on a
+**different** Resend account, which is the one production's API keys belong to.
+Decision: keep the Pro account and move the domain to it (region us-east-1,
+return-path `send` — same as before, so only DKIM changes).
+
+Resend's "claim domain" flow: adding the TXT below and clicking verify
+**transfers the domain and immediately revokes the old team's access** — the
+servers' current key stops sending until they have the new key AND the new
+DKIM is live. Do it in one sitting, at a quiet time.
+
+| Phase | Who | Step |
+|---|---|---|
+| A1 | Glen | DO: set TTL of `resend._domainkey` TXT to 300; wait ≥1 h (old TTL 3600) |
+| A2 | Glen | New Resend account → API keys → create `production-sending`, Sending access, domain `parametric-memory.dev`; store in password manager |
+| B1 | Glen | DO: add TXT `@` = `resend-domain-verification=3c97466be6924e44a1ac45c3c40c3b42` |
+| B2 | Glen/Claude | Resend → "I've added the records" (**this is the cut-over**) |
+| B3 | Glen | DO: replace `resend._domainkey` value with the new account's DKIM; confirm `send` MX/SPF unchanged |
+| B4 | Glen | Web droplet `/home/deploy/parametric-memory-web/.env` + compute `/srv/parametric-memory-compute/.env`: new `RESEND_API_KEY`; recreate/restart |
+| B5 | Claude | Verify: domain "Verified" in Resend; test waitlist + magic link appear in new account's Logs |
+| C | Glen | Old Resend account: revoke its API keys; leave on Free |
 
 **Open issue — customer data in a public file.**
 `public/demo-snapshots/mmpm-research-snap.json` (served publicly; downloadable
@@ -130,7 +154,7 @@ and `content/` appears in this table — add a row here when you add one there.
 | `licensing@parametric-memory.dev` | Catch-all | Internal marketing memo only | Future licensing enquiries |
 | `dmarc@parametric-memory.dev` | Catch-all | DMARC `rua` reports (step 10) | Receives DMARC reports |
 | `ci@parametric-memory.dev` | None | `.github/workflows/lighthouse.yml` dummy `CONTACT_EMAIL` | Not a real inbox; CI placeholder |
-| `noreply@send.parametric-memory.dev` | None (Resend) | `src/app/api/waitlist/route.ts` | Send-only, handled by Resend |
+| `noreply@parametric-memory.dev` | None (Resend sender) | `TRANSACTIONAL_FROM` in `src/config/site.ts`; mmpm-compute sender | Send-only via Resend. Was `noreply@send.…` until 2026-10-08 — `send.` is Resend's bounce host and is rejected as a From on the new account |
 
 **Address budget.** Mail Plus allows 10 addresses. The signup addresses
 (`entityone22@pm.me` default + `entityone22@proton.me`) use 1 slot between them.
