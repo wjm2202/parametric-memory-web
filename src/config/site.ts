@@ -42,13 +42,17 @@ export const LEGAL_EMAIL = "legal@parametric-memory.dev";
 /**
  * Sender for all automated mail the website sends via Resend.
  *
- * `send.parametric-memory.dev` is Resend's sending subdomain (its SPF/MX live
- * there; DKIM is `resend._domainkey` on the root). It has NO inbox — replies
- * to it hit Amazon SES's bounce handler and are lost — so every send MUST set
- * `replyTo` to a real Proton address. Human mail (Proton) uses the root
- * domain; the two never share DNS records.
+ * MUST be on the exact domain verified in Resend — `parametric-memory.dev`.
+ * `send.parametric-memory.dev` is only Resend's return-path (bounce) host
+ * (a CNAME to Resend's MTA), NOT a sending domain: since the 2026-10-08 move
+ * to the Pro Resend account, Resend rejects a From on `send.` with
+ * 403 "domain is not verified". src/config/site.email.test.ts pins this.
+ *
+ * The address has no mailbox of its own (Proton's catch-all would swallow
+ * replies), so every send MUST also set `replyTo` to a real Proton alias.
+ * mmpm-compute uses the same sender (src/services/resend-email-provider.ts).
  */
-export const TRANSACTIONAL_FROM = "Parametric Memory <noreply@send.parametric-memory.dev>";
+export const TRANSACTIONAL_FROM = "Parametric Memory <noreply@parametric-memory.dev>";
 
 /**
  * Support email rendered as a mailto: URL with optional subject.
